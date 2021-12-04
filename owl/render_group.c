@@ -90,8 +90,8 @@ owl_submit_render_group_quad_(struct owl_renderer *renderer,
                           renderer->pipeline.layout[renderer->pipeline.bound],
                           0, OWL_ARRAY_SIZE(sets), sets, 1, &pvm.offset32);
 
-  vkCmdDrawIndexed(renderer->cmd.buffs[active], OWL_ARRAY_SIZE(indices), 1,
-                   0, 0, 0);
+  vkCmdDrawIndexed(renderer->cmd.buffs[active], OWL_ARRAY_SIZE(indices), 1, 0,
+                   0, 0);
 
   return OWL_SUCCESS;
 }

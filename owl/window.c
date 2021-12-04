@@ -9,7 +9,7 @@
 /* clang-format on */
 
 OWL_INTERNAL enum owl_mouse_btn owl_glfw_to_mouse_btn_(int type) {
-#define OWL_MOUSE_BUTTON_CASE(type)                                        \
+#define OWL_MOUSE_BUTTON_CASE(type)                                          \
   case GLFW_MOUSE_BUTTON_##type:                                             \
     return OWL_MOUSE_BUTTON_##type
 
@@ -39,7 +39,7 @@ OWL_INTERNAL enum owl_btn_state owl_glfw_to_mouse_state_(int state) {
 }
 
 OWL_INTERNAL void owl_glfw_window_cb_(GLFWwindow *window, int width,
-                                        int height) {
+                                      int height) {
   struct owl_window *w = glfwGetWindowUserPointer(window);
 
   w->size.width = width;
@@ -47,7 +47,7 @@ OWL_INTERNAL void owl_glfw_window_cb_(GLFWwindow *window, int width,
 }
 
 OWL_INTERNAL void owl_glfw_framebuffer_cb_(GLFWwindow *handle, int width,
-                                             int height) {
+                                           int height) {
   struct owl_window *w = glfwGetWindowUserPointer(handle);
 
   w->framebuffer.width = width;
@@ -55,7 +55,7 @@ OWL_INTERNAL void owl_glfw_framebuffer_cb_(GLFWwindow *handle, int width,
 }
 
 OWL_INTERNAL void owl_glfw_cursor_pos_cb_(GLFWwindow *handle, double x,
-                                            double y) {
+                                          double y) {
   struct owl_window *w = glfwGetWindowUserPointer(handle);
 
   w->cursor[0] = 2.0F * ((float)x / (float)w->size.width) - 1.0F;
@@ -63,7 +63,7 @@ OWL_INTERNAL void owl_glfw_cursor_pos_cb_(GLFWwindow *handle, double x,
 }
 
 OWL_INTERNAL void owl_glfw_mouse_cb_(GLFWwindow *window, int button,
-                                       int action, int modifiers) {
+                                     int action, int modifiers) {
   struct owl_window *w = glfwGetWindowUserPointer(window);
   enum owl_mouse_btn b = owl_glfw_to_mouse_btn_(button);
 

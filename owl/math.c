@@ -192,7 +192,7 @@ void owl_find_dir_v3(float pitch, float yaw, OwlV3 const up, OwlV3 out) {
   OwlM4 pitch_rotation;
 
   OWL_SET_V4(0.0F, 0.0F, -1.0F, 1.0F, direction); /* set direction */
-  owl_cross_v3(direction, up, side);                /* find the side vector */
+  owl_cross_v3(direction, up, side);              /* find the side vector */
 
   owl_make_rotate_m4(pitch, side, pitch_rotation); /* find pitch rotation */
   owl_mul_m4_v4(pitch_rotation, direction, direction);

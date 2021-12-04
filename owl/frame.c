@@ -12,9 +12,9 @@ enum owl_code owl_begin_frame(struct owl_renderer *renderer) {
 
   {
     VkResult const result = vkAcquireNextImageKHR(
-        renderer->device.logical, renderer->swapchain.handle,
-        OWL_VK_TIMEOUT, renderer->sync.img_available[active],
-        VK_NULL_HANDLE, &renderer->swapchain.current);
+        renderer->device.logical, renderer->swapchain.handle, OWL_VK_TIMEOUT,
+        renderer->sync.img_available[active], VK_NULL_HANDLE,
+        &renderer->swapchain.current);
 
     if (VK_ERROR_OUT_OF_DATE_KHR == result) {
       err = OWL_ERROR_UNKNOWN;
@@ -36,14 +36,14 @@ enum owl_code owl_begin_frame(struct owl_renderer *renderer) {
 
   {
     OWL_VK_CHECK(vkWaitForFences(renderer->device.logical, 1,
-                                   &renderer->sync.in_flight[active], VK_TRUE,
-                                   OWL_VK_TIMEOUT));
+                                 &renderer->sync.in_flight[active], VK_TRUE,
+                                 OWL_VK_TIMEOUT));
 
     OWL_VK_CHECK(vkResetFences(renderer->device.logical, 1,
-                                 &renderer->sync.in_flight[active]));
+                               &renderer->sync.in_flight[active]));
 
     OWL_VK_CHECK(vkResetCommandPool(renderer->device.logical,
-                                      renderer->cmd.pools[active], 0));
+                                    renderer->cmd.pools[active], 0));
   }
 
   {
@@ -107,8 +107,8 @@ enum owl_code owl_end_frame(struct owl_renderer *renderer) {
     submit.pCommandBuffers = &renderer->cmd.buffs[active];
 
     OWL_VK_CHECK(
-        vkQueueSubmit(renderer->device.queues[OWL_VK_QUEUE_TYPE_GRAPHICS],
-                      1, &submit, renderer->sync.in_flight[active]));
+        vkQueueSubmit(renderer->device.queues[OWL_VK_QUEUE_TYPE_GRAPHICS], 1,
+                      &submit, renderer->sync.in_flight[active]));
   }
 
   {

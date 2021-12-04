@@ -6,10 +6,10 @@
 #include <vulkan/vulkan.h>
 
 #ifndef NDEBUG
-#define OWL_VK_CHECK(e)                                                    \
+#define OWL_VK_CHECK(e)                                                      \
   do {                                                                       \
     VkResult const result_ = e;                                              \
-    OWL_ASSERT(VK_SUCCESS == result_);                                     \
+    OWL_ASSERT(VK_SUCCESS == result_);                                       \
   } while (0)
 #else
 #define OWL_VK_CHECK(e) e

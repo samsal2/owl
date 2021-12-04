@@ -24,7 +24,7 @@ void *owl_alloc_tmp_submit_mem(struct owl_renderer *renderer,
 
   renderer->dbl_buff.offsets[active] =
       OWL_ALIGN(renderer->dbl_buff.offsets[active] + size,
-                  renderer->dbl_buff.alignment);
+                renderer->dbl_buff.alignment);
 end:
   return data;
 }

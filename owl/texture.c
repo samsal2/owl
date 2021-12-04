@@ -40,7 +40,7 @@ owl_alloc_cmd_buff_(struct owl_renderer const *renderer) {
 }
 
 OWL_INTERNAL void owl_free_cmd_buff_(struct owl_renderer *renderer,
-                                       VkCommandBuffer cmd) {
+                                     VkCommandBuffer cmd) {
   VkSubmitInfo submit;
 
   OWL_VK_CHECK(vkEndCommandBuffer(cmd));
@@ -55,9 +55,8 @@ OWL_INTERNAL void owl_free_cmd_buff_(struct owl_renderer *renderer,
   submit.signalSemaphoreCount = 0;
   submit.pSignalSemaphores = NULL;
 
-  OWL_VK_CHECK(
-      vkQueueSubmit(renderer->device.queues[OWL_VK_QUEUE_TYPE_GRAPHICS], 1,
-                    &submit, NULL));
+  OWL_VK_CHECK(vkQueueSubmit(
+      renderer->device.queues[OWL_VK_QUEUE_TYPE_GRAPHICS], 1, &submit, NULL));
 
   OWL_VK_CHECK(
       vkQueueWaitIdle(renderer->device.queues[OWL_VK_QUEUE_TYPE_GRAPHICS]));
@@ -71,8 +70,8 @@ OWL_INTERNAL uint32_t owl_calc_mips_(int width, int height) {
 }
 
 OWL_INTERNAL VkFormat owl_to_vk_format_(enum owl_pixel_format format) {
-#define OWL_FORMAT_CASE(format)                                            \
-  case OWL_PIXEL_FORMAT_##format:                                          \
+#define OWL_FORMAT_CASE(format)                                              \
+  case OWL_PIXEL_FORMAT_##format:                                            \
     return VK_FORMAT_##format
 
   switch (format) {
@@ -83,8 +82,7 @@ OWL_INTERNAL VkFormat owl_to_vk_format_(enum owl_pixel_format format) {
 #undef OWL_FORMAT_CASE
 }
 
-OWL_INTERNAL OwlDeviceSize
-owl_sizeof_format_(enum owl_pixel_format format) {
+OWL_INTERNAL OwlDeviceSize owl_sizeof_format_(enum owl_pixel_format format) {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
     return sizeof(uint8_t);
@@ -94,10 +92,10 @@ owl_sizeof_format_(enum owl_pixel_format format) {
 }
 
 OWL_INTERNAL void owl_transition_image_layout_(VkCommandBuffer cmd,
-                                                 VkImageLayout from,
-                                                 VkImageLayout to,
-                                                 OtterVkMipLevels mip,
-                                                 VkImage image) {
+                                               VkImageLayout from,
+                                               VkImageLayout to,
+                                               OtterVkMipLevels mip,
+                                               VkImage image) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst = VK_PIPELINE_STAGE_NONE_KHR;
@@ -154,7 +152,7 @@ OWL_INTERNAL void owl_transition_image_layout_(VkCommandBuffer cmd,
 }
 
 OWL_INTERNAL void owl_gen_mips_(VkCommandBuffer cmd, int width, int height,
-                                  OtterVkMipLevels mips, VkImage image) {
+                                OtterVkMipLevels mips, VkImage image) {
   OwlU32 i;
   VkImageMemoryBarrier barrier;
 
@@ -245,7 +243,7 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
   texture->size.height = height;
 
   {
-#define OWL_IMAGE_USAGE                                                    \
+#define OWL_IMAGE_USAGE                                                      \
   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |        \
       VK_IMAGE_USAGE_SAMPLED_BIT;
 
@@ -296,10 +294,10 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
     memory.memoryTypeIndex = type;
 
     OWL_VK_CHECK(vkAllocateMemory(renderer->device.logical, &memory, NULL,
-                                    &texture->mem));
+                                  &texture->mem));
 
     OWL_VK_CHECK(vkBindImageMemory(renderer->device.logical, texture->img,
-                                     texture->mem, 0));
+                                   texture->mem, 0));
   }
 
   {
@@ -322,7 +320,7 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
     view.subresourceRange.layerCount = 1;
 
     OWL_VK_CHECK(vkCreateImageView(renderer->device.logical, &view, NULL,
-                                     &texture->view));
+                                   &texture->view));
   }
 
   /* init the descriptor set */
@@ -336,7 +334,7 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
     set.pSetLayouts = &renderer->texture_layout;
 
     OWL_VK_CHECK(vkAllocateDescriptorSets(renderer->device.logical, &set,
-                                            &texture->set));
+                                          &texture->set));
   }
 
   /* stage, mips and layout */
