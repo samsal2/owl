@@ -22,7 +22,6 @@ void owl_dbg_free_(void *p, char const *f, int l);
 #define OWL_REALLOC(p, s) owl_dbg_realloc_(p, s, __FILE__, __LINE__)
 #define OWL_FREE(p) owl_dbg_free_(p, __FILE__, __LINE__)
 
-
 void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 
 #define OWL_DBG_LOG(...) owl_dbg_log_(__FILE__, __LINE__, __VA_ARGS__)

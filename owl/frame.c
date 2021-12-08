@@ -54,7 +54,7 @@ enum owl_code owl_begin_frame(struct owl_renderer *renderer) {
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin.pInheritanceInfo = NULL;
 
-    OWL_VK_CHECK(vkBeginCommandBuffer(renderer->cmd.buffs[active], &begin));
+    OWL_VK_CHECK(vkBeginCommandBuffer(renderer->cmd.bufs[active], &begin));
   }
 
   {
@@ -71,7 +71,7 @@ enum owl_code owl_begin_frame(struct owl_renderer *renderer) {
     begin.clearValueCount = OWL_ARRAY_SIZE(renderer->swapchain.clear_vals);
     begin.pClearValues = renderer->swapchain.clear_vals;
 
-    vkCmdBeginRenderPass(renderer->cmd.buffs[active], &begin,
+    vkCmdBeginRenderPass(renderer->cmd.bufs[active], &begin,
                          VK_SUBPASS_CONTENTS_INLINE);
   }
 
@@ -88,8 +88,8 @@ enum owl_code owl_end_frame(struct owl_renderer *renderer) {
   int const active = renderer->cmd.active;
 
   {
-    vkCmdEndRenderPass(renderer->cmd.buffs[active]);
-    OWL_VK_CHECK(vkEndCommandBuffer(renderer->cmd.buffs[active]));
+    vkCmdEndRenderPass(renderer->cmd.bufs[active]);
+    OWL_VK_CHECK(vkEndCommandBuffer(renderer->cmd.bufs[active]));
   }
 
   {
@@ -104,7 +104,7 @@ enum owl_code owl_end_frame(struct owl_renderer *renderer) {
     submit.pSignalSemaphores = &renderer->sync.render_finished[active];
     submit.pWaitDstStageMask = &stage;
     submit.commandBufferCount = 1;
-    submit.pCommandBuffers = &renderer->cmd.buffs[active];
+    submit.pCommandBuffers = &renderer->cmd.bufs[active];
 
     OWL_VK_CHECK(
         vkQueueSubmit(renderer->device.queues[OWL_VK_QUEUE_TYPE_GRAPHICS], 1,
@@ -150,13 +150,13 @@ enum owl_code owl_end_frame(struct owl_renderer *renderer) {
     if (OWL_DYNAMIC_BUFFER_COUNT == ++renderer->cmd.active)
       renderer->cmd.active = 0;
 
-    if (OWL_DYNAMIC_BUFFER_COUNT == ++renderer->dbl_buff.active)
-      renderer->dbl_buff.active = 0;
+    if (OWL_DYNAMIC_BUFFER_COUNT == ++renderer->dbl_buf.active)
+      renderer->dbl_buf.active = 0;
   }
 
   /* reset stuff */
   {
-    renderer->dbl_buff.offsets[renderer->dbl_buff.active] = 0;
+    renderer->dbl_buf.offsets[renderer->dbl_buf.active] = 0;
     owl_clear_garbage(renderer);
   }
 

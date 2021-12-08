@@ -10,7 +10,7 @@ enum owl_code owl_bind_pipeline(struct owl_renderer *renderer,
   if (OWL_PIPELINE_TYPE_NONE == type)
     return OWL_SUCCESS;
 
-  vkCmdBindPipeline(renderer->cmd.buffs[active],
+  vkCmdBindPipeline(renderer->cmd.bufs[active],
                     VK_PIPELINE_BIND_POINT_GRAPHICS,
                     renderer->pipeline.as[type]);
 

@@ -32,18 +32,18 @@ owl_submit_render_group_basic_(struct owl_renderer *renderer,
   sets[0] = pvm.set;
   sets[1] = owl_get_texture(basic->texture)->set;
 
-  vkCmdBindVertexBuffers(renderer->cmd.buffs[active], 0, 1, &vtx.buff,
+  vkCmdBindVertexBuffers(renderer->cmd.bufs[active], 0, 1, &vtx.buf,
                          &vtx.offset);
 
-  vkCmdBindIndexBuffer(renderer->cmd.buffs[active], idx.buff, idx.offset,
+  vkCmdBindIndexBuffer(renderer->cmd.bufs[active], idx.buf, idx.offset,
                        VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(renderer->cmd.buffs[active],
+  vkCmdBindDescriptorSets(renderer->cmd.bufs[active],
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
                           renderer->pipeline.layout[renderer->pipeline.bound],
                           0, OWL_ARRAY_SIZE(sets), sets, 1, &pvm.offset32);
 
-  vkCmdDrawIndexed(renderer->cmd.buffs[active], (unsigned)basic->index_count,
+  vkCmdDrawIndexed(renderer->cmd.bufs[active], (unsigned)basic->index_count,
                    1, 0, 0, 0);
 
   return OWL_SUCCESS;
@@ -79,18 +79,18 @@ owl_submit_render_group_quad_(struct owl_renderer *renderer,
   sets[0] = pvm.set;
   sets[1] = owl_get_texture(quad->texture)->set;
 
-  vkCmdBindVertexBuffers(renderer->cmd.buffs[active], 0, 1, &vtx.buff,
+  vkCmdBindVertexBuffers(renderer->cmd.bufs[active], 0, 1, &vtx.buf,
                          &vtx.offset);
 
-  vkCmdBindIndexBuffer(renderer->cmd.buffs[active], idx.buff, idx.offset,
+  vkCmdBindIndexBuffer(renderer->cmd.bufs[active], idx.buf, idx.offset,
                        VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(renderer->cmd.buffs[active],
+  vkCmdBindDescriptorSets(renderer->cmd.bufs[active],
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
                           renderer->pipeline.layout[renderer->pipeline.bound],
                           0, OWL_ARRAY_SIZE(sets), sets, 1, &pvm.offset32);
 
-  vkCmdDrawIndexed(renderer->cmd.buffs[active], OWL_ARRAY_SIZE(indices), 1, 0,
+  vkCmdDrawIndexed(renderer->cmd.bufs[active], OWL_ARRAY_SIZE(indices), 1, 0,
                    0, 0);
 
   return OWL_SUCCESS;

@@ -9,20 +9,20 @@
 #include <math.h>
 
 OWL_INTERNAL VkCommandBuffer
-owl_alloc_cmd_buff_(struct owl_renderer const *renderer) {
+owl_alloc_cmd_buf_(struct owl_renderer const *renderer) {
   VkCommandBuffer cmd;
 
   {
-    VkCommandBufferAllocateInfo buffer;
+    VkCommandBufferAllocateInfo buf;
 
-    buffer.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    buffer.pNext = NULL;
-    buffer.commandPool = renderer->transient_pool;
-    buffer.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    buffer.commandBufferCount = 1;
+    buf.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    buf.pNext = NULL;
+    buf.commandPool = renderer->transient_pool;
+    buf.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    buf.commandBufferCount = 1;
 
     OWL_VK_CHECK(
-        vkAllocateCommandBuffers(renderer->device.logical, &buffer, &cmd));
+        vkAllocateCommandBuffers(renderer->device.logical, &buf, &cmd));
   }
 
   {
@@ -39,8 +39,8 @@ owl_alloc_cmd_buff_(struct owl_renderer const *renderer) {
   return cmd;
 }
 
-OWL_INTERNAL void owl_free_cmd_buff_(struct owl_renderer *renderer,
-                                     VkCommandBuffer cmd) {
+OWL_INTERNAL void owl_free_cmd_buf_(struct owl_renderer *renderer,
+                                    VkCommandBuffer cmd) {
   VkSubmitInfo submit;
 
   OWL_VK_CHECK(vkEndCommandBuffer(cmd));
@@ -343,7 +343,7 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
     OwlByte *stage;
     OwlDeviceSize size;
     struct owl_tmp_submit_mem_ref ref;
-    VkCommandBuffer cmd = owl_alloc_cmd_buff_(renderer);
+    VkCommandBuffer cmd = owl_alloc_cmd_buf_(renderer);
 
     size = (unsigned)width * (unsigned)height * owl_sizeof_format_(format);
 
@@ -368,18 +368,18 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
     copy.imageExtent.height = (OwlU32)height;
     copy.imageExtent.depth = 1;
 
-    cmd = owl_alloc_cmd_buff_(renderer);
+    cmd = owl_alloc_cmd_buf_(renderer);
 
     owl_transition_image_layout_(cmd, VK_IMAGE_LAYOUT_UNDEFINED,
                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mips,
                                  texture->img);
 
-    vkCmdCopyBufferToImage(cmd, ref.buff, texture->img,
+    vkCmdCopyBufferToImage(cmd, ref.buf, texture->img,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 
     owl_gen_mips_(cmd, width, height, mips, texture->img);
 
-    owl_free_cmd_buff_(renderer, cmd);
+    owl_free_cmd_buf_(renderer, cmd);
   }
 
   {

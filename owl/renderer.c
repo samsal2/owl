@@ -829,16 +829,16 @@ OWL_INTERNAL enum owl_code owl_init_cmd_(struct owl_renderer *renderer) {
   }
 
   for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i) {
-    VkCommandBufferAllocateInfo buff;
+    VkCommandBufferAllocateInfo buf;
 
-    buff.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    buff.pNext = NULL;
-    buff.commandPool = renderer->cmd.pools[i];
-    buff.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    buff.commandBufferCount = 1;
+    buf.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    buf.pNext = NULL;
+    buf.commandPool = renderer->cmd.pools[i];
+    buf.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    buf.commandBufferCount = 1;
 
-    OWL_VK_CHECK(vkAllocateCommandBuffers(renderer->device.logical, &buff,
-                                          &renderer->cmd.buffs[i]));
+    OWL_VK_CHECK(vkAllocateCommandBuffers(renderer->device.logical, &buf,
+                                          &renderer->cmd.bufs[i]));
   }
 
   return OWL_SUCCESS;
@@ -849,7 +849,7 @@ OWL_INTERNAL void owl_deinit_cmd_(struct owl_renderer *renderer) {
 
   for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
     vkFreeCommandBuffers(renderer->device.logical, renderer->cmd.pools[i], 1,
-                         &renderer->cmd.buffs[i]);
+                         &renderer->cmd.bufs[i]);
 
   for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
     vkDestroyCommandPool(renderer->device.logical, renderer->cmd.pools[i],
@@ -1665,12 +1665,12 @@ OWL_INTERNAL void owl_deinit_linear_sampler_(struct owl_renderer *renderer) {
   vkDestroySampler(renderer->device.logical, renderer->linear_sampler, NULL);
 }
 
-OWL_INTERNAL enum owl_code owl_init_dbl_buff_(struct owl_renderer *renderer,
-                                              OwlDeviceSize size) {
+OWL_INTERNAL enum owl_code owl_init_dbl_buf_(struct owl_renderer *renderer,
+                                             OwlDeviceSize size) {
   enum owl_code err = OWL_SUCCESS;
 
-  renderer->dbl_buff.active = 0;
-  renderer->dbl_buff.size = size;
+  renderer->dbl_buf.active = 0;
+  renderer->dbl_buf.size = size;
 
   /* init buffers */
   {
@@ -1679,19 +1679,19 @@ OWL_INTERNAL enum owl_code owl_init_dbl_buff_(struct owl_renderer *renderer,
    VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
 
     int i;
-    VkBufferCreateInfo buffer;
-    buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer.pNext = NULL;
-    buffer.flags = 0;
-    buffer.size = size;
-    buffer.usage = OWL_DOUBLE_BUFFER_USAGE;
-    buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    buffer.queueFamilyIndexCount = 0;
-    buffer.pQueueFamilyIndices = NULL;
+    VkBufferCreateInfo buf;
+    buf.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buf.pNext = NULL;
+    buf.flags = 0;
+    buf.size = size;
+    buf.usage = OWL_DOUBLE_BUFFER_USAGE;
+    buf.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    buf.queueFamilyIndexCount = 0;
+    buf.pQueueFamilyIndices = NULL;
 
     for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
-      OWL_VK_CHECK(vkCreateBuffer(renderer->device.logical, &buffer, NULL,
-                                  &renderer->dbl_buff.buffs[i]));
+      OWL_VK_CHECK(vkCreateBuffer(renderer->device.logical, &buf, NULL,
+                                  &renderer->dbl_buf.bufs[i]));
 
 #undef OWL_DOUBLE_BUFFER_USAGE
   }
@@ -1703,40 +1703,40 @@ OWL_INTERNAL enum owl_code owl_init_dbl_buff_(struct owl_renderer *renderer,
     VkMemoryAllocateInfo mem;
 
     vkGetBufferMemoryRequirements(renderer->device.logical,
-                                  renderer->dbl_buff.buffs[0], &req);
+                                  renderer->dbl_buf.bufs[0], &req);
 
     if (OWL_VK_MEMORY_TYPE_NONE ==
         (type = owl_vk_find_mem_type(renderer, req.memoryTypeBits,
                                      OWL_VK_MEMORY_VISIBILITY_CPU_ONLY)))
       goto end;
 
-    renderer->dbl_buff.alignment = req.alignment;
-    renderer->dbl_buff.aligned_size = OWL_ALIGN(size, req.alignment);
+    renderer->dbl_buf.alignment = req.alignment;
+    renderer->dbl_buf.aligned_size = OWL_ALIGN(size, req.alignment);
 
     mem.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     mem.pNext = NULL;
     mem.allocationSize =
-        renderer->dbl_buff.aligned_size * OWL_DYNAMIC_BUFFER_COUNT;
+        renderer->dbl_buf.aligned_size * OWL_DYNAMIC_BUFFER_COUNT;
     mem.memoryTypeIndex = type;
 
     OWL_VK_CHECK(vkAllocateMemory(renderer->device.logical, &mem, NULL,
-                                  &renderer->dbl_buff.mem));
+                                  &renderer->dbl_buf.mem));
   }
 
   /* bind buffers to memory */
   {
     int i;
     for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
-      OWL_VK_CHECK(vkBindBufferMemory(
-          renderer->device.logical, renderer->dbl_buff.buffs[i],
-          renderer->dbl_buff.mem,
-          (unsigned)i * renderer->dbl_buff.aligned_size));
+      OWL_VK_CHECK(
+          vkBindBufferMemory(renderer->device.logical,
+                             renderer->dbl_buf.bufs[i], renderer->dbl_buf.mem,
+                             (unsigned)i * renderer->dbl_buf.aligned_size));
   }
 
   /* map memory */
   {
-    OWL_VK_CHECK(vkMapMemory(renderer->device.logical, renderer->dbl_buff.mem,
-                             0, VK_WHOLE_SIZE, 0, &renderer->dbl_buff.data));
+    OWL_VK_CHECK(vkMapMemory(renderer->device.logical, renderer->dbl_buf.mem,
+                             0, VK_WHOLE_SIZE, 0, &renderer->dbl_buf.data));
   }
 
   {
@@ -1754,7 +1754,7 @@ OWL_INTERNAL enum owl_code owl_init_dbl_buff_(struct owl_renderer *renderer,
     sets.pSetLayouts = layouts;
 
     OWL_VK_CHECK(vkAllocateDescriptorSets(renderer->device.logical, &sets,
-                                          renderer->dbl_buff.sets));
+                                          renderer->dbl_buf.sets));
   }
 
   /* write the descriptor sets */
@@ -1762,21 +1762,21 @@ OWL_INTERNAL enum owl_code owl_init_dbl_buff_(struct owl_renderer *renderer,
     int i;
     for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i) {
       VkWriteDescriptorSet write;
-      VkDescriptorBufferInfo buffer;
+      VkDescriptorBufferInfo buf;
 
-      buffer.buffer = renderer->dbl_buff.buffs[i];
-      buffer.offset = 0;
-      buffer.range = sizeof(struct owl_uniform);
+      buf.buffer = renderer->dbl_buf.bufs[i];
+      buf.offset = 0;
+      buf.range = sizeof(struct owl_uniform);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
-      write.dstSet = renderer->dbl_buff.sets[i];
+      write.dstSet = renderer->dbl_buf.sets[i];
       write.dstBinding = 0;
       write.dstArrayElement = 0;
       write.descriptorCount = 1;
       write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
       write.pImageInfo = NULL;
-      write.pBufferInfo = &buffer;
+      write.pBufferInfo = &buf;
       write.pTexelBufferView = NULL;
 
       vkUpdateDescriptorSets(renderer->device.logical, 1, &write, 0, NULL);
@@ -1787,34 +1787,34 @@ OWL_INTERNAL enum owl_code owl_init_dbl_buff_(struct owl_renderer *renderer,
   {
     int i;
     for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
-      renderer->dbl_buff.offsets[i] = 0;
+      renderer->dbl_buf.offsets[i] = 0;
   }
 
 end:
   return err;
 }
 
-OWL_INTERNAL void owl_deinit_dbl_buff_(struct owl_renderer *renderer) {
+OWL_INTERNAL void owl_deinit_dbl_buf_(struct owl_renderer *renderer) {
   int i;
 
   /* kind of redundant */
   for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
     vkFreeDescriptorSets(renderer->device.logical, renderer->set_pool, 1,
-                         &renderer->dbl_buff.sets[i]);
+                         &renderer->dbl_buf.sets[i]);
 
-  vkFreeMemory(renderer->device.logical, renderer->dbl_buff.mem, NULL);
+  vkFreeMemory(renderer->device.logical, renderer->dbl_buf.mem, NULL);
 
   for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
-    vkDestroyBuffer(renderer->device.logical, renderer->dbl_buff.buffs[i],
+    vkDestroyBuffer(renderer->device.logical, renderer->dbl_buf.bufs[i],
                     NULL);
 }
 
 OWL_INTERNAL enum owl_code owl_init_garbage_(struct owl_renderer *renderer) {
-  renderer->garbage.buff_count = 0;
+  renderer->garbage.buf_count = 0;
   renderer->garbage.mem_count = 0;
   renderer->garbage.set_count = 0;
 
-  OWL_MEMSET(renderer->garbage.buffs, 0, sizeof(renderer->garbage.buffs));
+  OWL_MEMSET(renderer->garbage.bufs, 0, sizeof(renderer->garbage.bufs));
   OWL_MEMSET(renderer->garbage.mems, 0, sizeof(renderer->garbage.mems));
   OWL_MEMSET(renderer->garbage.sets, 0, sizeof(renderer->garbage.sets));
 
@@ -1835,11 +1835,11 @@ OWL_INTERNAL void owl_deinit_garbage_(struct owl_renderer *renderer) {
 
   renderer->garbage.mem_count = 0;
 
-  for (i = 0; i < renderer->garbage.buff_count; ++i)
-    vkDestroyBuffer(renderer->device.logical, renderer->garbage.buffs[i],
+  for (i = 0; i < renderer->garbage.buf_count; ++i)
+    vkDestroyBuffer(renderer->device.logical, renderer->garbage.bufs[i],
                     NULL);
 
-  renderer->garbage.buff_count = 0;
+  renderer->garbage.buf_count = 0;
 }
 
 enum owl_code
@@ -1918,16 +1918,16 @@ owl_init_renderer(struct owl_extent const *extent,
   if (OWL_SUCCESS != (err = owl_init_linear_sampler_(renderer)))
     goto end_deinit_font_pipeline;
 
-  if (OWL_SUCCESS != (err = owl_init_dbl_buff_(renderer, OWL_MB)))
+  if (OWL_SUCCESS != (err = owl_init_dbl_buf_(renderer, OWL_MB)))
     goto end_deinit_linear_sampler;
 
   if (OWL_SUCCESS != (err = owl_init_garbage_(renderer)))
-    goto end_deinit_dbl_buff;
+    goto end_deinit_dbl_buf;
 
   goto end;
 
-end_deinit_dbl_buff:
-  owl_deinit_dbl_buff_(renderer);
+end_deinit_dbl_buf:
+  owl_deinit_dbl_buf_(renderer);
 
 end_deinit_linear_sampler:
   owl_deinit_linear_sampler_(renderer);
@@ -2000,7 +2000,7 @@ void owl_deinit_renderer(struct owl_renderer *renderer) {
   OWL_VK_CHECK(vkDeviceWaitIdle(renderer->device.logical));
 
   owl_deinit_garbage_(renderer);
-  owl_deinit_dbl_buff_(renderer);
+  owl_deinit_dbl_buf_(renderer);
   owl_deinit_linear_sampler_(renderer);
   owl_deinit_font_pipeline_(renderer);
   owl_deinit_wires_pipeline_(renderer);
@@ -2048,21 +2048,21 @@ void owl_destroy_renderer(struct owl_renderer *renderer) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_move_buff_to_garbage_(struct owl_renderer *renderer) {
+owl_move_buf_to_garbage_(struct owl_renderer *renderer) {
   int i, count;
   enum owl_code err = OWL_SUCCESS;
 
   if (OWL_MAX_GARBAGE_ITEMS <=
-      (count = renderer->garbage.buff_count + OWL_DYNAMIC_BUFFER_COUNT)) {
+      (count = renderer->garbage.buf_count + OWL_DYNAMIC_BUFFER_COUNT)) {
     err = OWL_ERROR_UNKNOWN;
     goto end;
   }
 
   for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
-    renderer->garbage.buffs[renderer->garbage.buff_count + i] =
-        renderer->dbl_buff.buffs[i];
+    renderer->garbage.bufs[renderer->garbage.buf_count + i] =
+        renderer->dbl_buf.bufs[i];
 
-  renderer->garbage.buff_count = count;
+  renderer->garbage.buf_count = count;
 
   if (OWL_MAX_GARBAGE_ITEMS <=
       (count = renderer->garbage.set_count + OWL_DYNAMIC_BUFFER_COUNT)) {
@@ -2072,7 +2072,7 @@ owl_move_buff_to_garbage_(struct owl_renderer *renderer) {
 
   for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
     renderer->garbage.sets[renderer->garbage.set_count + i] =
-        renderer->dbl_buff.sets[i];
+        renderer->dbl_buf.sets[i];
 
   renderer->garbage.set_count = count;
 
@@ -2082,7 +2082,7 @@ owl_move_buff_to_garbage_(struct owl_renderer *renderer) {
   }
 
   renderer->garbage.mems[renderer->garbage.set_count + 0] =
-      renderer->dbl_buff.mem;
+      renderer->dbl_buf.mem;
 
   renderer->garbage.mem_count = count;
 
@@ -2090,19 +2090,19 @@ end:
   return err;
 }
 
-enum owl_code owl_reserve_dbl_buff_mem(struct owl_renderer *renderer,
-                                       OwlDeviceSize size) {
+enum owl_code owl_reseve_dbl_buf_mem(struct owl_renderer *renderer,
+                                     OwlDeviceSize size) {
   enum owl_code err = OWL_SUCCESS;
-  int const active = renderer->dbl_buff.active;
-  OwlDeviceSize required = renderer->dbl_buff.offsets[active] + size;
+  int const active = renderer->dbl_buf.active;
+  OwlDeviceSize required = renderer->dbl_buf.offsets[active] + size;
 
-  if (required > renderer->dbl_buff.size) {
-    vkUnmapMemory(renderer->device.logical, renderer->dbl_buff.mem);
+  if (required > renderer->dbl_buf.size) {
+    vkUnmapMemory(renderer->device.logical, renderer->dbl_buf.mem);
 
-    if (OWL_SUCCESS != (err = owl_move_buff_to_garbage_(renderer)))
+    if (OWL_SUCCESS != (err = owl_move_buf_to_garbage_(renderer)))
       goto end;
 
-    if (OWL_SUCCESS != (err = owl_init_dbl_buff_(renderer, 2 * required)))
+    if (OWL_SUCCESS != (err = owl_init_dbl_buf_(renderer, 2 * required)))
       goto end;
   }
 

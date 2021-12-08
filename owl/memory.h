@@ -7,7 +7,7 @@
 struct owl_tmp_submit_mem_ref {
   OwlU32 offset32; /* for uniform usage */
   OwlDeviceSize offset;
-  VkBuffer buff;
+  VkBuffer buf;
   VkDescriptorSet set;
 };
 

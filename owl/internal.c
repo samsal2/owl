@@ -1,8 +1,8 @@
 #include <owl/internal.h>
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 
 void *owl_dbg_malloc_(size_t s, char const *f, int l) {
   void *p = malloc(s);
