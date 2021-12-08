@@ -2,6 +2,7 @@ target_sources(${PROJECT_NAME} PRIVATE
   code.h
   frame.c
   frame.h
+  internal.c
   internal.h
   math.c
   math.h
