@@ -56,15 +56,6 @@ owl_init_instance_(struct owl_vk_extensions const *extensions,
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL enum owl_code owl_init_dbg_(struct owl_renderer *renderer) {
-  VkDebugUtilsMessengerCreateInfoEXT debug;
-  PFN_vkCreateDebugUtilsMessengerEXT init;
-
-  init = OWL_VK_GET_INSTANCE_PROC_ADDR(renderer->instance,
-                                       vkCreateDebugUtilsMessengerEXT);
-
-  OWL_ASSERT(init);
-
 #define OWL_DEBUG_SEVERITY_FLAGS                                             \
   (VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |                         \
    VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |                         \
@@ -75,6 +66,15 @@ OWL_INTERNAL enum owl_code owl_init_dbg_(struct owl_renderer *renderer) {
    VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |                          \
    VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
 
+OWL_INTERNAL enum owl_code owl_init_dbg_(struct owl_renderer *renderer) {
+  VkDebugUtilsMessengerCreateInfoEXT debug;
+  PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
+
+  vkCreateDebugUtilsMessengerEXT = OWL_VK_GET_INSTANCE_PROC_ADDR(
+      renderer->instance, vkCreateDebugUtilsMessengerEXT);
+
+  OWL_ASSERT(vkCreateDebugUtilsMessengerEXT);
+
   debug.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
   debug.pNext = NULL;
   debug.flags = 0;
@@ -83,23 +83,23 @@ OWL_INTERNAL enum owl_code owl_init_dbg_(struct owl_renderer *renderer) {
   debug.pfnUserCallback = owl_vk_debug_cb_;
   debug.pUserData = NULL;
 
-  OWL_VK_CHECK(init(renderer->instance, &debug, NULL, &renderer->debug));
-
+  OWL_VK_CHECK(vkCreateDebugUtilsMessengerEXT(renderer->instance, &debug,
+                                              NULL, &renderer->debug));
   return OWL_SUCCESS;
+}
 
 #undef OWL_DEBUG_TYPE_FLAGS
 #undef OWL_DEBUG_SEVERITY_FLAGS
-}
 
 OWL_INTERNAL void owl_deinit_dbg_(struct owl_renderer *renderer) {
-  PFN_vkDestroyDebugUtilsMessengerEXT deinit;
+  PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessenger;
 
-  deinit = OWL_VK_GET_INSTANCE_PROC_ADDR(renderer->instance,
-                                         vkDestroyDebugUtilsMessengerEXT);
+  vkDestroyDebugUtilsMessenger = OWL_VK_GET_INSTANCE_PROC_ADDR(
+      renderer->instance, vkDestroyDebugUtilsMessengerEXT);
 
-  OWL_ASSERT(deinit);
+  OWL_ASSERT(vkDestroyDebugUtilsMessenger);
 
-  deinit(renderer->instance, renderer->debug, NULL);
+  vkDestroyDebugUtilsMessenger(renderer->instance, renderer->debug, NULL);
 }
 
 #else

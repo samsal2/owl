@@ -24,8 +24,8 @@
 
 struct owl_window;
 
-typedef uint32_t OtterVkMemoryType;
-typedef uint32_t OtterVkMemoryFilter;
+typedef OwlU32 OtterVkMemoryType;
+typedef OwlU32 OtterVkMemoryFilter;
 
 enum owl_vk_mem_visibility {
   OWL_VK_MEMORY_VISIBILITY_CPU_ONLY,
