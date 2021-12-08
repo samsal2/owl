@@ -284,7 +284,7 @@ int main(void) {
 
 #endif
 
-    update_cloth(1.0F / 30.0F, &cloth);
+    update_cloth(1.0F / 60.0F, &cloth);
 
     if (OWL_SUCCESS != owl_begin_frame(renderer)) {
       owl_recreate_renderer(window, renderer);
