@@ -4,7 +4,6 @@
 #define OWL_GLOBAL static
 #define OWL_INTERNAL static
 #define OWL_LOCAL_PERSIST static
-#define OWL_UNUSED(e) ((void)(e))
 
 #include <assert.h>
 #define OWL_ASSERT(e) assert(e)
@@ -23,6 +22,11 @@ void owl_dbg_free_(void *p, char const *f, int l);
 #define OWL_REALLOC(p, s) owl_dbg_realloc_(p, s, __FILE__, __LINE__)
 #define OWL_FREE(p) owl_dbg_free_(p, __FILE__, __LINE__)
 
+
+void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
+
+#define OWL_DBG_LOG(...) owl_dbg_log_(__FILE__, __LINE__, __VA_ARGS__)
+
 #else
 
 #include <stdlib.h>
@@ -30,8 +34,11 @@ void owl_dbg_free_(void *p, char const *f, int l);
 #define OWL_REALLOC realloc
 #define OWL_FREE free
 
+#define OWL_DBG_LOG(...)
+
 #endif
 
+#define OWL_UNUSED(e) ((void)(e))
 #define OWL_ARRAY_SIZE(a) ((long)(sizeof((a)) / sizeof((a)[0])))
 #define OWL_CLAMP(v, l, h) (((v) < (l)) ? (l) : (((v) > (h)) ? (h) : (v)))
 #define OWL_MAX(a, b) (((a) < (b)) ? (b) : (a))

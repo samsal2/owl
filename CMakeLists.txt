@@ -85,6 +85,7 @@ set(OWL_C_CLANG_BASE_COMPILE_FLAGS
 set(OWL_C_CLANG_DEBUG_COMPILE_FLAGS
 		-O0
 		-g
+    -Wno-format-nonliteral # owl_dbg_log_
 		-fsanitize=address
 		-fsanitize=undefined
 		-fsanitize=bounds)
