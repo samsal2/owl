@@ -15,10 +15,12 @@
 #ifndef NDEBUG
 
 void *owl_dbg_malloc_(size_t s, char const *f, int l);
+void *owl_dbg_calloc_(size_t c, size_t s, char const *f, int l);
 void *owl_dbg_realloc_(void *p, size_t s, char const *f, int l);
 void owl_dbg_free_(void *p, char const *f, int l);
 
 #define OWL_MALLOC(s) owl_dbg_malloc_(s, __FILE__, __LINE__)
+#define OWL_CALLOC(c, s) owl_dbg_calloc_(c, s, __FILE__, __LINE__)
 #define OWL_REALLOC(p, s) owl_dbg_realloc_(p, s, __FILE__, __LINE__)
 #define OWL_FREE(p) owl_dbg_free_(p, __FILE__, __LINE__)
 

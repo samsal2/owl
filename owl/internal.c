@@ -10,6 +10,12 @@ void *owl_dbg_malloc_(size_t s, char const *f, int l) {
   return p;
 }
 
+void *owl_dbg_calloc_(size_t c, size_t s, char const *f, int l) {
+  void *p = calloc(c, s);
+  printf("%p = OWL_CALLOC(%lu, %lu) in file %s at line %d\n", p, c, s, f, l);
+  return p;
+}
+
 void *owl_dbg_realloc_(void *p, size_t s, char const *f, int l) {
   void *np = realloc(p, s);
   printf("%p = OWL_REALLOC(%p, %lu) in file %s at line %d\n", np, p, s, f, l);
