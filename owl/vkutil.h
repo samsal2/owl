@@ -1,6 +1,7 @@
 #ifndef OWL_VKUTIL_H_
 #define OWL_VKUTIL_H_
 
+#include <owl/fwd.h>
 #include <owl/renderer.inl>
 #include <owl/types.h>
 #include <vulkan/vulkan.h>
@@ -21,8 +22,6 @@
 #define OWL_MB (1024 * 1024)
 #define OWL_VK_MEMORY_TYPE_NONE (OwlU32) - 1
 #define OWL_ALIGN(v, alignment) ((v + alignment - 1) & ~(alignment - 1))
-
-struct owl_window;
 
 typedef OwlU32 OtterVkMemoryType;
 typedef OwlU32 OtterVkMemoryFilter;

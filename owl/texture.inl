@@ -1,13 +1,12 @@
 #ifndef OWL_TEXTURE_INL_
 #define OWL_TEXTURE_INL_
 
+#include <owl/fwd.h>
 #include <owl/texture.h>
 #include <owl/types.h>
 #include <vulkan/vulkan.h>
 
 #define OWL_VK_TEXTURE_COUNT 16
-
-struct owl_renderer;
 
 typedef OwlU32 OtterVkMipLevels;
 

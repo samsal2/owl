@@ -1,11 +1,11 @@
 #ifndef OWL_FONT_H_
 #define OWL_FONT_H_
 
+#include <owl/fwd.h>
 #include <owl/types.h>
 
 #define OWL_GLYPH_COUNT 128
 
-struct owl_renderer;
 
 struct owl_glyph {
   int offset;

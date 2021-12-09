@@ -1,9 +1,8 @@
 #ifndef OWL_RENDER_GROUP_H_
 #define OWL_RENDER_GROUP_H_
 
+#include <owl/fwd.h>
 #include <owl/types.h>
-
-struct owl_renderer;
 
 struct owl_vertex {
   OwlV3 pos;

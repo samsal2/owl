@@ -2,6 +2,7 @@
 #ifndef OWL_RENDERER_INL_
 #define OWL_RENDERER_INL_
 
+#include <owl/fwd.h>
 #include <owl/pipelines.h>
 #include <owl/renderer.h>
 #include <owl/texture.h>
@@ -15,8 +16,6 @@
 
 typedef OwlU32 OtterVkQueueFamily;
 typedef VkDeviceSize OwlDeviceSize;
-
-struct owl_renderer;
 
 struct owl_vk_surface_provider {
   void const *data;

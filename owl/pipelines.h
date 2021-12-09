@@ -1,9 +1,8 @@
 #ifndef OWL_PIPELINES_H_
 #define OWL_PIPELINES_H_
 
+#include <owl/fwd.h>
 #include <owl/types.h>
-
-struct owl_renderer;
 
 enum owl_pipeline_type {
   OWL_PIPELINE_TYPE_MAIN,

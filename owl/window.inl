@@ -1,9 +1,9 @@
 #ifndef OWL_WINDOW_INL_
 #define OWL_WINDOW_INL_
 
+#include <owl/fwd.h>
 #include <owl/types.h>
 
-struct owl_window;
 struct owl_vk_surface_provider;
 struct owl_vk_extensions;
 

@@ -1,6 +1,7 @@
 #ifndef OWL_TEXTURE_H_
 #define OWL_TEXTURE_H_
 
+#include <owl/fwd.h>
 #include <owl/types.h>
 
 #define OWL_INVALID_TEXTURE -1
@@ -11,7 +12,6 @@ enum owl_sampler_type {
   OWL_SAMPLER_TYPE_COUNT
 };
 
-struct owl_renderer;
 
 enum owl_code owl_create_texture(struct owl_renderer *renderer, int width,
                                  int height, OwlByte const *data,

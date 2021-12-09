@@ -4,6 +4,7 @@ target_sources(${PROJECT_NAME} PRIVATE
   font.h
   frame.c
   frame.h
+  fwd.h
   internal.c
   internal.h
   math.c
