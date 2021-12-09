@@ -141,6 +141,12 @@
     (out)[3] = (scale) * (v)[3];                                             \
   } while (0)
 
+#define OWL_INV_SCALE_V2(v, scale, out)                                      \
+  do {                                                                       \
+    (out)[0] = (v)[0] / (scale);                                             \
+    (out)[1] = (v)[1] / (scale);                                             \
+  } while (0)
+
 #define OWL_INV_SCALE_V3(v, scale, out)                                      \
   do {                                                                       \
     (out)[0] = (v)[0] / (scale);                                             \

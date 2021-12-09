@@ -57,7 +57,7 @@ static void init_cloth_(struct cloth *cloth) {
       OWL_SET_V3(w, h, 0.0F, cloth->vertices_[k].pos);
       OWL_SET_V3(1.0F, 1.0F, 1.0F, cloth->vertices_[k].color);
       OWL_SET_V2((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F,
-                   cloth->vertices_[k].uv);
+                 cloth->vertices_[k].uv);
     }
   }
 
@@ -216,7 +216,7 @@ struct owl_uniform *get_cloth_pvm(struct cloth *cloth) {
 
 #define TEST(fn)                                                             \
   do {                                                                       \
-    if (OWL_SUCCESS != (fn)) {                                             \
+    if (OWL_SUCCESS != (fn)) {                                               \
       printf("something went wrong in call: %s\n", (#fn));                   \
       return 0;                                                              \
     }                                                                        \
@@ -238,6 +238,7 @@ int main(void) {
   OwlV3 center;
   OwlV3 up;
   OwlV3 position;
+  OwlV3 color;
   struct owl_uniform *pvm;
   OwlU32 selected = UNSELECTED;
   float frames = 0.0F;
@@ -245,14 +246,14 @@ int main(void) {
 
   TEST(owl_create_window(600, 600, "cloth-simulation", &window));
   TEST(owl_create_renderer(window, &renderer));
-#if 0
-  TEST(owl_create_texture_from_file(renderer, TEXPATH, &texture));
-#else
-  TEST(owl_create_font(renderer, 32, FONTPATH, &font));
-  texture = font->atlas;
-#endif
+  TEST(owl_create_texture_from_file(renderer, TEXPATH,
+                                    OWL_SAMPLER_TYPE_LINEAR, &texture));
+  TEST(owl_create_font(renderer, 64, FONTPATH, &font));
 
   init_cloth(&cloth, texture);
+
+  OWL_SET_V3(0.0F, 0.0F, 0.0F, color);
+
   pvm = get_cloth_pvm(&cloth);
 
   OWL_IDENTITY_M4(pvm->model);
@@ -298,8 +299,12 @@ int main(void) {
       continue;
     }
 
-    owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
+    owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
     owl_submit_render_group(renderer, &cloth.group);
+
+    owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
+    owl_submit_text_group(renderer, font, window->cursor, color,
+                          "Hello World!");
 
     if (OWL_SUCCESS != owl_end_frame(renderer)) {
       owl_recreate_renderer(window, renderer);
@@ -314,11 +319,8 @@ int main(void) {
 
   printf("avg: %.f\n", frames / time);
 
-#if 0
-  owl_destroy_texture(renderer, texture);
-#else
   owl_destroy_font(renderer, font);
-#endif
+  owl_destroy_texture(renderer, texture);
   owl_destroy_renderer(renderer);
   owl_destroy_window(window);
 }

@@ -1540,12 +1540,14 @@ owl_init_font_pipeline_(struct owl_renderer *renderer) {
   (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |                     \
    VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
 
-  color_blend_attach.blendEnable = VK_FALSE;
-  color_blend_attach.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-  color_blend_attach.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+  color_blend_attach.blendEnable = VK_TRUE;
+  color_blend_attach.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+  color_blend_attach.dstColorBlendFactor =
+      VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
   color_blend_attach.colorBlendOp = VK_BLEND_OP_ADD;
-  color_blend_attach.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-  color_blend_attach.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+  color_blend_attach.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+  color_blend_attach.dstAlphaBlendFactor =
+      VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
   color_blend_attach.alphaBlendOp = VK_BLEND_OP_ADD;
   color_blend_attach.colorWriteMask = OWL_COLOR_WRITE_MASK;
 
@@ -1655,14 +1657,57 @@ owl_init_linear_sampler_(struct owl_renderer *renderer) {
   sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
   sampler.unnormalizedCoordinates = VK_FALSE;
 
-  OWL_VK_CHECK(vkCreateSampler(renderer->device.logical, &sampler, NULL,
-                               &renderer->linear_sampler));
+  OWL_VK_CHECK(
+      vkCreateSampler(renderer->device.logical, &sampler, NULL,
+                      &renderer->sampler.as[OWL_SAMPLER_TYPE_LINEAR]));
 
   return OWL_SUCCESS;
 }
 
+#undef OWL_MAX_ANISOTROPY
+
 OWL_INTERNAL void owl_deinit_linear_sampler_(struct owl_renderer *renderer) {
-  vkDestroySampler(renderer->device.logical, renderer->linear_sampler, NULL);
+  vkDestroySampler(renderer->device.logical,
+                   renderer->sampler.as[OWL_SAMPLER_TYPE_LINEAR], NULL);
+}
+
+#define OWL_MAX_ANISOTROPY 16
+
+OWL_INTERNAL enum owl_code
+owl_init_nearest_sampler_(struct owl_renderer *renderer) {
+  VkSamplerCreateInfo sampler;
+
+  sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+  sampler.pNext = NULL;
+  sampler.flags = 0;
+  sampler.magFilter = VK_FILTER_NEAREST;
+  sampler.minFilter = VK_FILTER_NEAREST;
+  sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+  sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler.mipLodBias = 0.0F;
+  sampler.anisotropyEnable = VK_TRUE;
+  sampler.maxAnisotropy = OWL_MAX_ANISOTROPY;
+  sampler.compareEnable = VK_FALSE;
+  sampler.compareOp = VK_COMPARE_OP_ALWAYS;
+  sampler.minLod = 0.0F;
+  sampler.maxLod = VK_LOD_CLAMP_NONE;
+  sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+  sampler.unnormalizedCoordinates = VK_FALSE;
+
+  OWL_VK_CHECK(
+      vkCreateSampler(renderer->device.logical, &sampler, NULL,
+                      &renderer->sampler.as[OWL_SAMPLER_TYPE_NEAREST]));
+
+  return OWL_SUCCESS;
+}
+
+#undef OWL_MAX_ANISOTROPY
+
+OWL_INTERNAL void owl_deinit_nearest_sampler_(struct owl_renderer *renderer) {
+  vkDestroySampler(renderer->device.logical,
+                   renderer->sampler.as[OWL_SAMPLER_TYPE_NEAREST], NULL);
 }
 
 OWL_INTERNAL enum owl_code owl_init_dbl_buf_(struct owl_renderer *renderer,
@@ -1849,6 +1894,8 @@ owl_init_renderer(struct owl_extent const *extent,
                   struct owl_renderer *renderer) {
   enum owl_code err;
 
+  renderer->extent = *extent;
+
   if (OWL_SUCCESS != (err = owl_init_instance_(extensions, renderer)))
     goto end;
 
@@ -1918,8 +1965,11 @@ owl_init_renderer(struct owl_extent const *extent,
   if (OWL_SUCCESS != (err = owl_init_linear_sampler_(renderer)))
     goto end_deinit_font_pipeline;
 
-  if (OWL_SUCCESS != (err = owl_init_dbl_buf_(renderer, OWL_MB)))
+  if (OWL_SUCCESS != (err = owl_init_nearest_sampler_(renderer)))
     goto end_deinit_linear_sampler;
+
+  if (OWL_SUCCESS != (err = owl_init_dbl_buf_(renderer, OWL_MB)))
+    goto end_deinit_nearest_sampler;
 
   if (OWL_SUCCESS != (err = owl_init_garbage_(renderer)))
     goto end_deinit_dbl_buf;
@@ -1928,6 +1978,9 @@ owl_init_renderer(struct owl_extent const *extent,
 
 end_deinit_dbl_buf:
   owl_deinit_dbl_buf_(renderer);
+
+end_deinit_nearest_sampler:
+  owl_deinit_nearest_sampler_(renderer);
 
 end_deinit_linear_sampler:
   owl_deinit_linear_sampler_(renderer);
@@ -2001,6 +2054,7 @@ void owl_deinit_renderer(struct owl_renderer *renderer) {
 
   owl_deinit_garbage_(renderer);
   owl_deinit_dbl_buf_(renderer);
+  owl_deinit_nearest_sampler_(renderer);
   owl_deinit_linear_sampler_(renderer);
   owl_deinit_font_pipeline_(renderer);
   owl_deinit_wires_pipeline_(renderer);
@@ -2115,6 +2169,8 @@ enum owl_code owl_reinit_renderer(struct owl_extent const *extent,
   enum owl_code err = OWL_SUCCESS;
 
   OWL_VK_CHECK(vkDeviceWaitIdle(renderer->device.logical));
+
+  renderer->extent = *extent;
 
   owl_deinit_font_pipeline_(renderer);
   owl_deinit_wires_pipeline_(renderer);

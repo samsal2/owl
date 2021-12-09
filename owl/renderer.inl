@@ -4,6 +4,7 @@
 
 #include <owl/pipelines.h>
 #include <owl/renderer.h>
+#include <owl/texture.h>
 #include <owl/types.h>
 #include <vulkan/vulkan.h>
 
@@ -32,6 +33,10 @@ struct owl_vk_pipeline {
   enum owl_pipeline_type bound;
   VkPipeline as[OWL_PIPELINE_TYPE_COUNT];
   VkPipelineLayout layout[OWL_PIPELINE_TYPE_COUNT];
+};
+
+struct owl_vk_sampler {
+  VkSampler as[OWL_SAMPLER_TYPE_COUNT];
 };
 
 enum owl_vk_queue_type {
@@ -120,10 +125,11 @@ struct owl_renderer {
   VkShaderModule basic_vertex;
   VkShaderModule basic_fragment;
   VkShaderModule font_fragment;
-  VkSampler linear_sampler;
 #ifdef OWL_ENABLE_VALIDATION
   VkDebugUtilsMessengerEXT debug;
 #endif
+  struct owl_extent extent;
+  struct owl_vk_sampler sampler;
   struct owl_vk_attachment color_attach;
   struct owl_vk_attachment depth_attach;
   struct owl_vk_pipeline pipeline;

@@ -1,8 +1,7 @@
 #include <owl/owl.h>
 #include <stdio.h>
 
-void fill_quad(struct owl_render_group *group,
-               OwlTexture texture) {
+void fill_quad(struct owl_render_group *group, OwlTexture texture) {
   struct owl_vertex *v;
 
   group->type = OWL_RENDER_GROUP_TYPE_QUAD;
@@ -40,7 +39,7 @@ static struct owl_render_group group;
 
 #define TEST(fn)                                                             \
   do {                                                                       \
-    if (OWL_SUCCESS != (fn))                                               \
+    if (OWL_SUCCESS != (fn))                                                 \
       printf("error at: %s\n", #fn);                                         \
   } while (0)
 
@@ -49,7 +48,8 @@ static struct owl_render_group group;
 int main(void) {
   TEST(owl_create_window(600, 600, "OWL", &window));
   TEST(owl_create_renderer(window, &renderer));
-  TEST(owl_create_texture_from_file(renderer, TEXPATH, &texture));
+  TEST(owl_create_texture_from_file(renderer, TEXPATH,
+                                    OWL_SAMPLER_TYPE_LINEAR, &texture));
 
   fill_quad(&group, texture);
 

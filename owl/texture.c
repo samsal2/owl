@@ -235,6 +235,7 @@ OWL_INTERNAL void owl_gen_mips_(VkCommandBuffer cmd, int width, int height,
 enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
                                int height, OwlByte const *data,
                                enum owl_pixel_format format,
+                               enum owl_sampler_type sampler,
                                struct owl_vk_texture *texture) {
   enum owl_code err = OWL_SUCCESS;
   OtterVkMipLevels mips = owl_calc_mips_(width, height);
@@ -388,7 +389,7 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
 
     image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     image.imageView = texture->view;
-    image.sampler = renderer->linear_sampler;
+    image.sampler = renderer->sampler.as[sampler];
 
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.pNext = NULL;
@@ -459,6 +460,7 @@ OWL_INTERNAL void owl_ensure_manager_(struct owl_renderer const *renderer) {
 enum owl_code owl_create_texture(struct owl_renderer *renderer, int width,
                                  int height, OwlByte const *data,
                                  enum owl_pixel_format format,
+                                 enum owl_sampler_type sampler,
                                  OwlTexture *texture) {
   int i;
   enum owl_code err = OWL_SUCCESS;
@@ -471,7 +473,7 @@ enum owl_code owl_create_texture(struct owl_renderer *renderer, int width,
   }
 
   if (OWL_SUCCESS !=
-      (err = owl_init_texture(renderer, width, height, data, format,
+      (err = owl_init_texture(renderer, width, height, data, format, sampler,
                               &g_manager.textures[g_manager.current])))
     goto end;
 
@@ -487,6 +489,7 @@ end:
 
 enum owl_code owl_create_texture_from_file(struct owl_renderer *renderer,
                                            char const *path,
+                                           enum owl_sampler_type sampler,
                                            OwlTexture *texture) {
   int width;
   int height;
@@ -499,9 +502,9 @@ enum owl_code owl_create_texture_from_file(struct owl_renderer *renderer,
     goto end;
   }
 
-  if (OWL_SUCCESS !=
-      (err = owl_create_texture(renderer, width, height, data,
-                                OWL_PIXEL_FORMAT_R8G8B8A8_SRGB, texture))) {
+  if (OWL_SUCCESS != (err = owl_create_texture(renderer, width, height, data,
+                                               OWL_PIXEL_FORMAT_R8G8B8A8_SRGB,
+                                               sampler, texture))) {
     goto end_image_free;
   }
 

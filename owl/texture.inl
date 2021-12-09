@@ -1,6 +1,7 @@
 #ifndef OWL_TEXTURE_INL_
 #define OWL_TEXTURE_INL_
 
+#include <owl/texture.h>
 #include <owl/types.h>
 #include <vulkan/vulkan.h>
 
@@ -28,6 +29,7 @@ struct owl_vk_texture_manager {
 enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
                                int height, OwlByte const *data,
                                enum owl_pixel_format format,
+                               enum owl_sampler_type sampler,
                                struct owl_vk_texture *texture);
 
 void owl_deinit_texture(struct owl_renderer const *renderer,

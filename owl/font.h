@@ -8,13 +8,16 @@
 struct owl_renderer;
 
 struct owl_glyph {
-  int advance;
-  OwlV2I p0;
-  OwlV2I p1;
-  OwlV2I offset;
+  int offset;
+  OwlV2I advance;
+  OwlV2I size;
+  OwlV2I bearing;
 };
 
 struct owl_font {
+  int size;
+  int width;
+  int height;
   OwlTexture atlas;
   struct owl_glyph glyphs[OWL_GLYPH_COUNT];
 };
@@ -23,5 +26,9 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
                               char const *path, struct owl_font **font);
 
 void owl_destroy_font(struct owl_renderer *renderer, struct owl_font *font);
+
+void owl_submit_text_group(struct owl_renderer *renderer,
+                           struct owl_font const *font, OwlV2 const pos,
+                           OwlV3 const color, char const *text);
 
 #endif
