@@ -32,6 +32,7 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 
 #include <stdlib.h>
 #define OWL_MALLOC malloc
+#define OWL_CALLOC calloc
 #define OWL_REALLOC realloc
 #define OWL_FREE free
 

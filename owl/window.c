@@ -178,7 +178,7 @@ void owl_start_timer(struct owl_timer *timer) {
   timer->start = glfwGetTime();
 }
 
-OtterSeconds owl_end_timer(struct owl_timer *timer) {
+OwlSeconds owl_end_timer(struct owl_timer *timer) {
   timer->end = glfwGetTime();
   return timer->end - timer->start;
 }

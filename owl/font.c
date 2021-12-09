@@ -20,7 +20,7 @@ OWL_INTERNAL void owl_calc_dims_(FT_Face face, int *width, int *height) {
   *height = 0;
 
   for (i = OWL_FIRST_CHAR; i < OWL_GLYPH_COUNT; ++i) {
-    /* lets close our eyes and pretend this can't fail! */
+    /* FIXME(samuel): lets close our eyes and pretend this can't fail! */
     FT_Load_Char(face, (unsigned)i, FT_LOAD_RENDER);
 
     *width += (int)face->glyph->bitmap.width;
@@ -37,6 +37,8 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
   FT_Face face;
   enum owl_code err = OWL_SUCCESS;
 
+  /* TODO(samuel): chances are im only going to be creating one font,
+     could do something analogous to owl_vk_texture_manager */
   if (!(*font = OWL_MALLOC(sizeof(**font)))) {
     err = OWL_ERROR_UNKNOWN;
     goto end;
@@ -61,7 +63,7 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
 
   /* temporal buffer utilized to upload the data to the texture.
      idk how bad is this, prob could create a internal wrapper
-     for create texture to utilize a owl_tmp_submit_mem_ref
+     for owl_create_texture to utilize a owl_tmp_submit_mem_ref
      and upload data that way
   */
   if (!(data = OWL_CALLOC((unsigned)((*font)->width * (*font)->height),

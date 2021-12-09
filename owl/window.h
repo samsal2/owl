@@ -6,8 +6,8 @@
 struct owl_vk_surface_provider;
 struct owl_vk_extensions;
 
-typedef double OtterSeconds;
-typedef void *OtterWindowHandle;
+typedef double OwlSeconds;
+typedef void *OwlWindowHandle;
 
 enum owl_btn_state {
   OWL_BUTTON_STATE_NONE,
@@ -24,15 +24,15 @@ enum owl_mouse_btn {
 
 struct owl_window {
   OwlV2 cursor;
-  OtterWindowHandle handle;
+  OwlWindowHandle handle;
   struct owl_extent size;
   struct owl_extent framebuffer;
   enum owl_btn_state mouse[OWL_MOUSE_BUTTON_COUNT];
 };
 
 struct owl_timer {
-  OtterSeconds start;
-  OtterSeconds end;
+  OwlSeconds start;
+  OwlSeconds end;
 };
 
 enum owl_code owl_create_window(int width, int height, char const *title,
@@ -46,6 +46,6 @@ void owl_poll_events(struct owl_window const *window);
 
 void owl_start_timer(struct owl_timer *timer);
 
-OtterSeconds owl_end_timer(struct owl_timer *timer);
+OwlSeconds owl_end_timer(struct owl_timer *timer);
 
 #endif

@@ -80,6 +80,7 @@ set(OWL_C_CLANG_BASE_COMPILE_FLAGS
 		-Wtautological-constant-in-range-compare 
 		-Wunreachable-code-aggressive
 
+    -Wno-format-nonliteral # owl_dbg_log_
 		-Wno-long-long       # C99 required extension
 		-Wno-variadic-macros # C99 required extension
 		-Wno-comment)        # C99 required extension
@@ -87,7 +88,6 @@ set(OWL_C_CLANG_BASE_COMPILE_FLAGS
 set(OWL_C_CLANG_DEBUG_COMPILE_FLAGS
 		-O0
 		-g
-    -Wno-format-nonliteral # owl_dbg_log_
 		-fsanitize=address
 		-fsanitize=undefined
 		-fsanitize=bounds)

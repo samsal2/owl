@@ -1,5 +1,3 @@
-#include "owl/font.h"
-#include "owl/pipelines.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -214,6 +212,12 @@ struct owl_uniform *get_cloth_pvm(struct cloth *cloth) {
   return &cloth->group.storage.as_basic.pvm;
 }
 
+char const *fps_string(OwlSeconds time) {
+  static char buf[256];
+  sprintf(buf, "fps: %.2f\n", 1 / time);
+  return buf;
+}
+
 #define TEST(fn)                                                             \
   do {                                                                       \
     if (OWL_SUCCESS != (fn)) {                                               \
@@ -234,6 +238,7 @@ static struct owl_font *font;
 #define FONTPATH "../../assets/Anonymous Pro.ttf"
 
 int main(void) {
+  OwlV2 fpspos;
   OwlV3 eye;
   OwlV3 center;
   OwlV3 up;
@@ -241,8 +246,7 @@ int main(void) {
   OwlV3 color;
   struct owl_uniform *pvm;
   OwlU32 selected = UNSELECTED;
-  float frames = 0.0F;
-  float time = 0.0F;
+  float frame = 0.0F;
 
   TEST(owl_create_window(600, 600, "cloth-simulation", &window));
   TEST(owl_create_renderer(window, &renderer));
@@ -253,6 +257,7 @@ int main(void) {
   init_cloth(&cloth, texture);
 
   OWL_SET_V3(0.0F, 0.0F, 0.0F, color);
+  OWL_SET_V2(-1.0F, -0.92F, fpspos);
 
   pvm = get_cloth_pvm(&cloth);
 
@@ -303,8 +308,7 @@ int main(void) {
     owl_submit_render_group(renderer, &cloth.group);
 
     owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
-    owl_submit_text_group(renderer, font, window->cursor, color,
-                          "Hello World!");
+    owl_submit_text_group(renderer, font, fpspos, color, fps_string(frame));
 
     if (OWL_SUCCESS != owl_end_frame(renderer)) {
       owl_recreate_renderer(window, renderer);
@@ -312,12 +316,8 @@ int main(void) {
     }
 
     owl_poll_events(window);
-
-    frames += 1.0F;
-    time += owl_end_timer(&timer);
+    frame = owl_end_timer(&timer);
   }
-
-  printf("avg: %.f\n", frames / time);
 
   owl_destroy_font(renderer, font);
   owl_destroy_texture(renderer, texture);
