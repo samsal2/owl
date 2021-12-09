@@ -1,5 +1,7 @@
 target_sources(${PROJECT_NAME} PRIVATE
   code.h
+  font.c
+  font.h
   frame.c
   frame.h
   internal.c

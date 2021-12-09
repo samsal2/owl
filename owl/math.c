@@ -211,7 +211,7 @@ void owl_rotate_m4(OwlM4 const m, float angle, OwlV3 const axis, OwlM4 out) {
 
 void owl_mul_rot_m4(OwlM4 const lhs, OwlM4 const rhs, OwlM4 out) {
   OwlM4 a;
-  OtterM3 b;
+  OwlM3 b;
   OwlV4 c;
 
   OWL_COPY_M4(lhs, a);

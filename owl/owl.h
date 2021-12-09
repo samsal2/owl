@@ -9,5 +9,6 @@
 #include <owl/texture.h>
 #include <owl/types.h>
 #include <owl/window.h>
+#include <owl/font.h>
 
 #endif

@@ -1,4 +1,5 @@
-#include "owl/window.h"
+#include "owl/font.h"
+#include "owl/pipelines.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -226,10 +227,11 @@ static struct owl_renderer *renderer;
 static OwlTexture texture;
 static struct owl_render_group group;
 static struct cloth cloth;
+static struct owl_font *font;
 
 #define UNSELECTED (OwlU32) - 1
-
 #define TEXPATH "../../assets/Chaeyoung.jpeg"
+#define FONTPATH "../../assets/Anonymous Pro.ttf"
 
 int main(void) {
   OwlV3 eye;
@@ -243,7 +245,12 @@ int main(void) {
 
   TEST(owl_create_window(600, 600, "cloth-simulation", &window));
   TEST(owl_create_renderer(window, &renderer));
+#if 0
   TEST(owl_create_texture_from_file(renderer, TEXPATH, &texture));
+#else
+  TEST(owl_create_font(renderer, 32, FONTPATH, &font));
+  texture = font->atlas;
+#endif
 
   init_cloth(&cloth, texture);
   pvm = get_cloth_pvm(&cloth);
@@ -291,7 +298,7 @@ int main(void) {
       continue;
     }
 
-    owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_WIRES);
+    owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
     owl_submit_render_group(renderer, &cloth.group);
 
     if (OWL_SUCCESS != owl_end_frame(renderer)) {
@@ -307,7 +314,11 @@ int main(void) {
 
   printf("avg: %.f\n", frames / time);
 
+#if 0
   owl_destroy_texture(renderer, texture);
+#else
+  owl_destroy_font(renderer, font);
+#endif
   owl_destroy_renderer(renderer);
   owl_destroy_window(window);
 }

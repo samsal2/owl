@@ -30,6 +30,7 @@ add_subdirectory(${PROJECT_NAME})
 # import external libraries
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/glfw)
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/stb)
+add_subdirectory(${PROJECT_SOURCE_DIR}/external/freetype)
 
 if (OWL_BUILD_EXAMPLES)
   add_subdirectory(examples)
@@ -38,6 +39,7 @@ endif (OWL_BUILD_EXAMPLES)
 # link libraries
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw) 
 target_link_libraries(${PROJECT_NAME} PRIVATE stb_image)
+target_link_libraries(${PROJECT_NAME} PRIVATE freetype)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
 
 # include directories

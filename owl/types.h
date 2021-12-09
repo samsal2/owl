@@ -26,7 +26,10 @@ typedef float OwlV2[2];
 typedef float OwlV3[3];
 typedef float OwlV4[4];
 
-typedef OwlV3 OtterM3[3];
+typedef int OwlV2I[2];
+typedef int OwlV3I[3];
+
+typedef OwlV3 OwlM3[3];
 typedef OwlV4 OwlM4[4];
 
 #ifndef NULL
