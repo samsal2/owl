@@ -17,6 +17,7 @@ enum owl_pixel_format {
 };
 
 #include <stdint.h>
+typedef uint8_t OwlU8;
 typedef uint32_t OwlU32;
 typedef uint64_t OwlU64;
 typedef unsigned char OwlByte;

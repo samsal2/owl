@@ -633,7 +633,7 @@ owl_init_swapchain_(struct owl_extent const *extent,
         renderer->device.physical, renderer->surface, &count, modes));
 
     /* fifo is guaranteed */
-    mode = VK_PRESENT_MODE_FIFO_KHR; 
+    mode = VK_PRESENT_MODE_FIFO_KHR;
     for (i = 0; i < count; ++i)
       if (VK_PRESENT_MODE_MAILBOX_KHR == (mode = modes[count - i - 1]))
         break;
@@ -2145,7 +2145,7 @@ end:
 }
 
 enum owl_code owl_reserve_dyn_buf_mem(struct owl_renderer *renderer,
-                                     OwlDeviceSize size) {
+                                      OwlDeviceSize size) {
   enum owl_code err = OWL_SUCCESS;
   int const active = renderer->dyn_buf.active;
   OwlDeviceSize required = renderer->dyn_buf.offsets[active] + size;

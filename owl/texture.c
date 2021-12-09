@@ -85,9 +85,9 @@ OWL_INTERNAL VkFormat owl_to_vk_format_(enum owl_pixel_format format) {
 OWL_INTERNAL OwlDeviceSize owl_sizeof_format_(enum owl_pixel_format format) {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
-    return sizeof(uint8_t);
+    return sizeof(OwlU8);
   case OWL_PIXEL_FORMAT_R8G8B8A8_SRGB:
-    return 4 * sizeof(uint8_t);
+    return 4 * sizeof(OwlU8);
   }
 }
 

@@ -13,7 +13,7 @@
 #define OWL_DYNAMIC_BUFFER_COUNT 2
 #define OWL_MAX_GARBAGE_ITEMS 8
 
-typedef uint32_t OtterVkQueueFamily;
+typedef OwlU32 OtterVkQueueFamily;
 typedef VkDeviceSize OwlDeviceSize;
 
 struct owl_renderer;
@@ -155,7 +155,7 @@ enum owl_code owl_reinit_renderer(struct owl_extent const *extent,
 
 /* makes sure the size fits on the current buffer */
 enum owl_code owl_reserve_dyn_buf_mem(struct owl_renderer *renderer,
-                                     OwlDeviceSize size);
+                                      OwlDeviceSize size);
 
 void owl_clear_garbage(struct owl_renderer *renderer);
 
