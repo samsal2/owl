@@ -80,7 +80,7 @@ struct owl_vk_cmd {
   VkCommandPool pools[OWL_DYNAMIC_BUFFER_COUNT];
 };
 
-struct owl_vk_dbl_buff {
+struct owl_vk_dyn_buf {
   int active;
   void *data;
   VkDeviceSize size;
@@ -137,7 +137,7 @@ struct owl_renderer {
   struct owl_vk_support support;
   struct owl_vk_cmd cmd;
   struct owl_vk_garbage garbage;
-  struct owl_vk_dbl_buff dbl_buf;
+  struct owl_vk_dyn_buf dyn_buf;
   struct owl_vk_swapchain swapchain;
   struct owl_vk_device device;
 };
@@ -154,7 +154,7 @@ enum owl_code owl_reinit_renderer(struct owl_extent const *extent,
                                   struct owl_renderer *renderer);
 
 /* makes sure the size fits on the current buffer */
-enum owl_code owl_reseve_dbl_buf_mem(struct owl_renderer *renderer,
+enum owl_code owl_reserve_dyn_buf_mem(struct owl_renderer *renderer,
                                      OwlDeviceSize size);
 
 void owl_clear_garbage(struct owl_renderer *renderer);

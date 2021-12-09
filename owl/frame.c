@@ -150,13 +150,13 @@ enum owl_code owl_end_frame(struct owl_renderer *renderer) {
     if (OWL_DYNAMIC_BUFFER_COUNT == ++renderer->cmd.active)
       renderer->cmd.active = 0;
 
-    if (OWL_DYNAMIC_BUFFER_COUNT == ++renderer->dbl_buf.active)
-      renderer->dbl_buf.active = 0;
+    if (OWL_DYNAMIC_BUFFER_COUNT == ++renderer->dyn_buf.active)
+      renderer->dyn_buf.active = 0;
   }
 
   /* reset stuff */
   {
-    renderer->dbl_buf.offsets[renderer->dbl_buf.active] = 0;
+    renderer->dyn_buf.offsets[renderer->dyn_buf.active] = 0;
     owl_clear_garbage(renderer);
   }
 
