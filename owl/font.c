@@ -1,3 +1,4 @@
+#include <owl/memory.h>
 #include <math.h>
 #include <owl/font.h>
 #include <owl/internal.h>
@@ -5,6 +6,7 @@
 #include <owl/render_group.h>
 #include <owl/renderer.inl>
 #include <owl/texture.h>
+#include <owl/texture.inl>
 
 /* clang-format off */
 #include <ft2build.h>
@@ -35,6 +37,7 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
   OwlByte *data;
   FT_Library ft;
   FT_Face face;
+  struct owl_tmp_submit_mem_ref ref;
   enum owl_code err = OWL_SUCCESS;
 
   /* TODO(samuel): chances are im only going to be creating one font,
@@ -66,8 +69,8 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
      for owl_create_texture to utilize a owl_tmp_submit_mem_ref
      and upload data that way
   */
-  if (!(data = OWL_CALLOC((unsigned)((*font)->width * (*font)->height),
-                          sizeof(*data)))) {
+  if (!(data = owl_alloc_tmp_submit_mem(
+            renderer, (unsigned)((*font)->width * (*font)->height), &ref))) {
     err = OWL_ERROR_UNKNOWN;
     goto end_err_done_face;
   }
@@ -77,7 +80,7 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
   for (i = OWL_FIRST_CHAR; i < OWL_GLYPH_COUNT; ++i) {
     if (FT_Err_Ok != FT_Load_Char(face, (unsigned)i, FT_LOAD_RENDER)) {
       err = OWL_ERROR_UNKNOWN;
-      goto end_err_free_data;
+      goto end_err_done_face;
     }
 
     /* copy the bitmap into the buffer */
@@ -112,21 +115,17 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
 
   (*font)->size = size;
 
-  if (OWL_SUCCESS !=
-      (err = owl_create_texture(renderer, (*font)->width, (*font)->height,
-                                data, OWL_PIXEL_FORMAT_R8_UNORM,
-                                OWL_SAMPLER_TYPE_LINEAR, &(*font)->atlas)))
+  if (OWL_SUCCESS != (err = owl_create_texture_with_ref(
+                          renderer, (*font)->width, (*font)->height, &ref,
+                          OWL_PIXEL_FORMAT_R8_UNORM, OWL_SAMPLER_TYPE_LINEAR,
+                          &(*font)->atlas)))
 
-    goto end_err_free_data;
+    goto end_err_done_face;
 
-  OWL_FREE(data);
   FT_Done_Face(face);
   FT_Done_FreeType(ft);
 
   goto end;
-
-end_err_free_data:
-  OWL_FREE(data);
 
 end_err_done_face:
   FT_Done_Face(face);

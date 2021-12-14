@@ -8,6 +8,8 @@
 
 #define OWL_VK_TEXTURE_COUNT 16
 
+struct owl_tmp_submit_mem_ref;
+
 typedef OwlU32 OtterVkMipLevels;
 
 struct owl_vk_texture {
@@ -30,6 +32,16 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
                                enum owl_pixel_format format,
                                enum owl_sampler_type sampler,
                                struct owl_vk_texture *texture);
+
+enum owl_code owl_init_texture_with_ref(
+    struct owl_renderer *renderer, int width, int height,
+    struct owl_tmp_submit_mem_ref const *ref, enum owl_pixel_format format,
+    enum owl_sampler_type sampler, struct owl_vk_texture *texture);
+
+enum owl_code owl_create_texture_with_ref(
+    struct owl_renderer *renderer, int width, int height,
+    struct owl_tmp_submit_mem_ref const *ref, enum owl_pixel_format format,
+    enum owl_sampler_type sampler, OwlTexture *texture);
 
 void owl_deinit_texture(struct owl_renderer const *renderer,
                         struct owl_vk_texture *texture);
