@@ -64,11 +64,6 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
 
   owl_calc_dims_(face, &(*font)->width, &(*font)->height);
 
-  /* temporal buffer utilized to upload the data to the texture.
-     idk how bad is this, prob could create a internal wrapper
-     for owl_create_texture to utilize a owl_tmp_submit_mem_ref
-     and upload data that way
-  */
   if (!(data = owl_alloc_tmp_submit_mem(
             renderer, (unsigned)((*font)->width * (*font)->height), &ref))) {
     err = OWL_ERROR_UNKNOWN;
