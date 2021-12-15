@@ -1,8 +1,9 @@
-#include <owl/memory.h>
+#include "owl/types.h"
 #include <math.h>
 #include <owl/font.h>
 #include <owl/internal.h>
 #include <owl/math.h>
+#include <owl/memory.h>
 #include <owl/render_group.h>
 #include <owl/renderer.inl>
 #include <owl/texture.h>
@@ -62,10 +63,12 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
     goto end_err_done_face;
   }
 
-  owl_calc_dims_(face, &(*font)->width, &(*font)->height);
+  owl_calc_dims_(face, &(*font)->atlas_width, &(*font)->atlas_height);
 
   if (!(data = owl_alloc_tmp_submit_mem(
-            renderer, (unsigned)((*font)->width * (*font)->height), &ref))) {
+            renderer,
+            (unsigned)((*font)->atlas_width * (*font)->atlas_height),
+            &ref))) {
     err = OWL_ERROR_UNKNOWN;
     goto end_err_done_face;
   }
@@ -86,15 +89,15 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
         int const dx = x + bx; /* data x position */
 
         for (by = 0; by < (int)face->glyph->bitmap.rows; ++by) {
-          int const dwidth = (*font)->width;                 /* data width */
-          int const bwidth = (int)face->glyph->bitmap.width; /* buf width */
+          int const dw = (*font)->atlas_width;           /* data width */
+          int const bw = (int)face->glyph->bitmap.width; /* buf width */
 
-          data[by * dwidth + dx] =
-              face->glyph->bitmap.buffer[by * bwidth + bx];
+          data[by * dw + dx] = face->glyph->bitmap.buffer[by * bw + bx];
         }
       }
     }
 
+    /* set the current glyph data */
     (*font)->glyphs[i].offset = x;
     (*font)->glyphs[i].advance[0] = (int)face->glyph->advance.x >> 6;
     (*font)->glyphs[i].advance[1] = (int)face->glyph->advance.y >> 6;
@@ -110,11 +113,11 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
 
   (*font)->size = size;
 
-  if (OWL_SUCCESS != (err = owl_create_texture_with_ref(
-                          renderer, (*font)->width, (*font)->height, &ref,
-                          OWL_PIXEL_FORMAT_R8_UNORM, OWL_SAMPLER_TYPE_LINEAR,
-                          &(*font)->atlas)))
-
+  if (OWL_SUCCESS !=
+      (err = owl_create_texture_with_ref(
+           renderer, (*font)->atlas_width, (*font)->atlas_height, &ref,
+           OWL_PIXEL_FORMAT_R8_UNORM, OWL_SAMPLER_TYPE_LINEAR,
+           &(*font)->atlas)))
     goto end_err_done_face;
 
   FT_Done_Face(face);
@@ -140,67 +143,108 @@ void owl_destroy_font(struct owl_renderer *renderer, struct owl_font *font) {
   OWL_FREE(font);
 }
 
-void owl_submit_text_group(struct owl_renderer *renderer,
-                           struct owl_font const *font, OwlV2 const pos,
-                           OwlV3 const color, char const *text) {
+OWL_INTERNAL enum owl_code
+owl_fill_char_quad(struct owl_extent const *window,
+                   struct owl_font const *font, OwlV2 const pos,
+                   OwlV3 const color, char c,
+                   struct owl_render_group *group) {
+  float tex_off;        /* texture offset in texture coords*/
+  OwlV2 fixed_pos;      /* position taking into account the bearing in screen
+                           coords*/
+  OwlV2 glyph_scr_size; /* char size in screen coords */
+  OwlV2 glyph_tex_size; /* uv without the offset in texture coords*/
+
+  struct owl_vertex *v;
+  struct owl_glyph const *g = &font->glyphs[(int)c];
+
+  enum owl_code err = OWL_SUCCESS;
+
+  if ((int)c >= OWL_ARRAY_SIZE(font->glyphs)) {
+    err = OWL_ERROR_UNKNOWN;
+    goto end;
+  }
+
+  fixed_pos[0] = pos[0] + (float)g->bearing[0] / (float)window->width;
+  fixed_pos[1] = pos[1] - (float)g->bearing[1] / (float)window->height;
+
+  glyph_scr_size[0] = (float)g->size[0] / (float)window->width;
+  glyph_scr_size[1] = (float)g->size[1] / (float)window->height;
+
+  tex_off = (float)g->offset / (float)font->atlas_width;
+
+  glyph_tex_size[0] = (float)g->size[0] / (float)font->atlas_width;
+  glyph_tex_size[1] = (float)g->size[1] / (float)font->atlas_height;
+
+  group->type = OWL_RENDER_GROUP_TYPE_QUAD;
+  group->storage.as_quad.texture = font->atlas;
+
+  OWL_IDENTITY_M4(group->storage.as_quad.pvm.proj);
+  OWL_IDENTITY_M4(group->storage.as_quad.pvm.model);
+  OWL_IDENTITY_M4(group->storage.as_quad.pvm.view);
+
+  v = &group->storage.as_quad.vertex[0];
+  v->pos[0] = fixed_pos[0];
+  v->pos[1] = fixed_pos[1];
+  v->pos[2] = 0.0F;
+  OWL_COPY_V3(color, v->color);
+  v->uv[0] = tex_off;
+  v->uv[1] = 0.0F;
+
+  v = &group->storage.as_quad.vertex[1];
+  v->pos[0] = fixed_pos[0] + glyph_scr_size[0];
+  v->pos[1] = fixed_pos[1];
+  v->pos[2] = 0.0F;
+  OWL_COPY_V3(color, v->color);
+  v->uv[0] = tex_off + glyph_tex_size[0];
+  v->uv[1] = 0.0F;
+
+  v = &group->storage.as_quad.vertex[2];
+  v->pos[0] = fixed_pos[0];
+  v->pos[1] = fixed_pos[1] + glyph_scr_size[1];
+  v->pos[2] = 0.0F;
+  OWL_COPY_V3(color, v->color);
+  v->uv[0] = tex_off;
+  v->uv[1] = glyph_tex_size[1];
+
+  v = &group->storage.as_quad.vertex[3];
+  v->pos[0] = fixed_pos[0] + glyph_scr_size[0];
+  v->pos[1] = fixed_pos[1] + glyph_scr_size[1];
+  v->pos[2] = 0.0F;
+  OWL_COPY_V3(color, v->color);
+  v->uv[0] = tex_off + glyph_tex_size[0];
+  v->uv[1] = glyph_tex_size[1];
+
+end:
+  return err;
+}
+
+enum owl_code owl_submit_text_group(struct owl_renderer *renderer,
+                                    struct owl_font const *font,
+                                    OwlV2 const pos, OwlV3 const color,
+                                    char const *text) {
   char const *c;
   OwlV2 cpos; /* move the position to a copy */
+  enum owl_code err = OWL_SUCCESS;
   OWL_COPY_V2(pos, cpos);
 
   /* TODO(samuel): cleanup */
   for (c = text; '\0' != *c; ++c) {
-    struct owl_vertex *v;
     struct owl_render_group group;
-    struct owl_glyph const *glyph = &font->glyphs[(int)*c];
 
-    /* FIXME(samuel): using renderer extent, which in macos it's not 1:1 with
-     * the window size */
-    float const sx =
-        cpos[0] + (float)glyph->bearing[0] / (float)renderer->extent.width;
-
-    float const sy =
-        cpos[1] - (float)glyph->bearing[1] / (float)renderer->extent.height;
-
-    float const cw = (float)glyph->size[0] / (float)renderer->extent.width;
-    float const ch = (float)glyph->size[1] / (float)renderer->extent.height;
-
-    float const tx = (float)glyph->offset / (float)font->width;
-
-    float const tw = (float)glyph->size[0] / (float)font->width;
-    float const th = (float)glyph->size[1] / (float)font->height;
-
-    group.type = OWL_RENDER_GROUP_TYPE_QUAD;
-    group.storage.as_quad.texture = font->atlas;
-
-    OWL_IDENTITY_M4(group.storage.as_quad.pvm.proj);
-    OWL_IDENTITY_M4(group.storage.as_quad.pvm.model);
-    OWL_IDENTITY_M4(group.storage.as_quad.pvm.view);
-
-    v = &group.storage.as_quad.vertex[0];
-    OWL_SET_V3(sx, sy, 0.0F, v->pos);
-    OWL_COPY_V3(color, v->color);
-    OWL_SET_V2(tx, 0.0F, v->uv);
-
-    v = &group.storage.as_quad.vertex[1];
-    OWL_SET_V3(sx + cw, sy, 0.0F, v->pos);
-    OWL_COPY_V3(color, v->color);
-    OWL_SET_V2(tx + tw, 0.0F, v->uv);
-
-    v = &group.storage.as_quad.vertex[2];
-    OWL_SET_V3(sx, sy + ch, 0.0F, v->pos);
-    OWL_COPY_V3(color, v->color);
-    OWL_SET_V2(tx, th, v->uv);
-
-    v = &group.storage.as_quad.vertex[3];
-    OWL_SET_V3(sx + cw, sy + ch, 0.0F, v->pos);
-    OWL_COPY_V3(color, v->color);
-    OWL_SET_V2(tx + tw, th, v->uv);
+    if (OWL_SUCCESS != (err = owl_fill_char_quad(&renderer->extent, font,
+                                                 cpos, color, *c, &group)))
+      goto end;
 
     owl_submit_render_group(renderer, &group);
 
-    cpos[0] += glyph->advance[0] / (float)renderer->extent.width;
+    cpos[0] +=
+        font->glyphs[(int)*c].advance[0] / (float)renderer->extent.width;
 
     /* FIXME(samuel): not sure if i should substract or add */
-    cpos[1] += glyph->advance[1] / (float)renderer->extent.height;
+    cpos[1] +=
+        font->glyphs[(int)*c].advance[1] / (float)renderer->extent.height;
   }
+
+end:
+  return err;
 }
