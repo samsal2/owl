@@ -1014,7 +1014,7 @@ OWL_INTERNAL void owl_deinit_basic_vertex_(struct owl_renderer *renderer) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_basic_fragment_(struct owl_renderer *renderer) {
+owl_init_basic_frag_(struct owl_renderer *renderer) {
   VkShaderModuleCreateInfo shader;
 
   OWL_LOCAL_PERSIST OwlU32 const code[] = {
@@ -1028,18 +1028,18 @@ owl_init_basic_fragment_(struct owl_renderer *renderer) {
   shader.pCode = code;
 
   OWL_VK_CHECK(vkCreateShaderModule(renderer->device.logical, &shader, NULL,
-                                    &renderer->basic_fragment));
+                                    &renderer->basic_frag));
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_deinit_basic_fragment_(struct owl_renderer *renderer) {
-  vkDestroyShaderModule(renderer->device.logical, renderer->basic_fragment,
+OWL_INTERNAL void owl_deinit_basic_frag_(struct owl_renderer *renderer) {
+  vkDestroyShaderModule(renderer->device.logical, renderer->basic_frag,
                         NULL);
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_font_fragment_(struct owl_renderer *renderer) {
+owl_init_font_frag_(struct owl_renderer *renderer) {
   VkShaderModuleCreateInfo shader;
 
   OWL_LOCAL_PERSIST OwlU32 const code[] = {
@@ -1053,13 +1053,13 @@ owl_init_font_fragment_(struct owl_renderer *renderer) {
   shader.pCode = code;
 
   OWL_VK_CHECK(vkCreateShaderModule(renderer->device.logical, &shader, NULL,
-                                    &renderer->font_fragment));
+                                    &renderer->font_frag));
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_deinit_font_fragment_(struct owl_renderer *renderer) {
-  vkDestroyShaderModule(renderer->device.logical, renderer->font_fragment,
+OWL_INTERNAL void owl_deinit_font_frag_(struct owl_renderer *renderer) {
+  vkDestroyShaderModule(renderer->device.logical, renderer->font_frag,
                         NULL);
 }
 
@@ -1214,7 +1214,7 @@ owl_init_main_pipeline_(struct owl_renderer *renderer) {
   stages[1].pNext = NULL;
   stages[1].flags = 0;
   stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  stages[1].module = renderer->basic_fragment;
+  stages[1].module = renderer->basic_frag;
   stages[1].pName = "main";
   stages[1].pSpecializationInfo = NULL;
 
@@ -1403,7 +1403,7 @@ owl_init_wires_pipeline_(struct owl_renderer *renderer) {
   stages[1].pNext = NULL;
   stages[1].flags = 0;
   stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  stages[1].module = renderer->basic_fragment;
+  stages[1].module = renderer->basic_frag;
   stages[1].pName = "main";
   stages[1].pSpecializationInfo = NULL;
 
@@ -1594,7 +1594,7 @@ owl_init_font_pipeline_(struct owl_renderer *renderer) {
   stages[1].pNext = NULL;
   stages[1].flags = 0;
   stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  stages[1].module = renderer->font_fragment;
+  stages[1].module = renderer->font_frag;
   stages[1].pName = "main";
   stages[1].pSpecializationInfo = NULL;
 
@@ -1947,14 +1947,14 @@ owl_init_renderer(struct owl_extent const *extent,
   if (OWL_SUCCESS != (err = owl_init_basic_vertex_(renderer)))
     goto end_deinit_main_layout;
 
-  if (OWL_SUCCESS != (err = owl_init_basic_fragment_(renderer)))
+  if (OWL_SUCCESS != (err = owl_init_basic_frag_(renderer)))
     goto end_deinit_basic_vertex;
 
-  if (OWL_SUCCESS != (err = owl_init_font_fragment_(renderer)))
-    goto end_deinit_basic_fragment;
+  if (OWL_SUCCESS != (err = owl_init_font_frag_(renderer)))
+    goto end_deinit_basic_frag;
 
   if (OWL_SUCCESS != (err = owl_init_main_pipeline_(renderer)))
-    goto end_deinit_font_fragment;
+    goto end_deinit_font_frag;
 
   if (OWL_SUCCESS != (err = owl_init_wires_pipeline_(renderer)))
     goto end_deinit_main_pipeline;
@@ -1994,11 +1994,11 @@ end_deinit_wires_pipeline:
 end_deinit_main_pipeline:
   owl_deinit_main_pipeline_(renderer);
 
-end_deinit_font_fragment:
-  owl_deinit_font_fragment_(renderer);
+end_deinit_font_frag:
+  owl_deinit_font_frag_(renderer);
 
-end_deinit_basic_fragment:
-  owl_deinit_basic_fragment_(renderer);
+end_deinit_basic_frag:
+  owl_deinit_basic_frag_(renderer);
 
 end_deinit_basic_vertex:
   owl_deinit_basic_vertex_(renderer);
@@ -2059,8 +2059,8 @@ void owl_deinit_renderer(struct owl_renderer *renderer) {
   owl_deinit_font_pipeline_(renderer);
   owl_deinit_wires_pipeline_(renderer);
   owl_deinit_main_pipeline_(renderer);
-  owl_deinit_font_fragment_(renderer);
-  owl_deinit_basic_fragment_(renderer);
+  owl_deinit_font_frag_(renderer);
+  owl_deinit_basic_frag_(renderer);
   owl_deinit_basic_vertex_(renderer);
   owl_deinit_main_layout_(renderer);
   owl_deinit_texture_layout_(renderer);
@@ -2106,39 +2106,49 @@ owl_move_buf_to_garbage_(struct owl_renderer *renderer) {
   int i, count;
   enum owl_code err = OWL_SUCCESS;
 
-  if (OWL_MAX_GARBAGE_ITEMS <=
-      (count = renderer->garbage.buf_count + OWL_DYNAMIC_BUFFER_COUNT)) {
-    err = OWL_ERROR_UNKNOWN;
-    goto end;
+  {
+    count = renderer->garbage.buf_count + OWL_DYNAMIC_BUFFER_COUNT;
+
+    if (OWL_MAX_GARBAGE_ITEMS <= count) {
+      err = OWL_ERROR_UNKNOWN;
+      goto end;
+    }
+
+    for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
+      renderer->garbage.bufs[renderer->garbage.buf_count + i] =
+          renderer->dyn_buf.bufs[i];
+
+    renderer->garbage.buf_count = count;
   }
 
-  for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
-    renderer->garbage.bufs[renderer->garbage.buf_count + i] =
-        renderer->dyn_buf.bufs[i];
+  {
+    count = renderer->garbage.set_count + OWL_DYNAMIC_BUFFER_COUNT;
 
-  renderer->garbage.buf_count = count;
+    if (OWL_MAX_GARBAGE_ITEMS <= count) {
+      err = OWL_ERROR_UNKNOWN;
+      goto end;
+    }
 
-  if (OWL_MAX_GARBAGE_ITEMS <=
-      (count = renderer->garbage.set_count + OWL_DYNAMIC_BUFFER_COUNT)) {
-    err = OWL_ERROR_UNKNOWN;
-    goto end;
+    for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
+      renderer->garbage.sets[renderer->garbage.set_count + i] =
+          renderer->dyn_buf.sets[i];
+
+    renderer->garbage.set_count = count;
   }
 
-  for (i = 0; i < OWL_DYNAMIC_BUFFER_COUNT; ++i)
-    renderer->garbage.sets[renderer->garbage.set_count + i] =
-        renderer->dyn_buf.sets[i];
+  {
+    count = renderer->garbage.set_count + 1;
 
-  renderer->garbage.set_count = count;
+    if (OWL_MAX_GARBAGE_ITEMS <= count) {
+      err = OWL_ERROR_UNKNOWN;
+      goto end;
+    }
 
-  if (OWL_MAX_GARBAGE_ITEMS <= (count = renderer->garbage.set_count + 1)) {
-    err = OWL_ERROR_UNKNOWN;
-    goto end;
+    renderer->garbage.mems[renderer->garbage.set_count + 0] =
+        renderer->dyn_buf.mem;
+
+    renderer->garbage.mem_count = count;
   }
-
-  renderer->garbage.mems[renderer->garbage.set_count + 0] =
-      renderer->dyn_buf.mem;
-
-  renderer->garbage.mem_count = count;
 
 end:
   return err;

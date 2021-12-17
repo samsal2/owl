@@ -122,8 +122,8 @@ struct owl_renderer {
   VkDescriptorSetLayout texture_layout;
   VkPipelineLayout main_layout;
   VkShaderModule basic_vertex;
-  VkShaderModule basic_fragment;
-  VkShaderModule font_fragment;
+  VkShaderModule basic_frag;
+  VkShaderModule font_frag;
 #ifdef OWL_ENABLE_VALIDATION
   VkDebugUtilsMessengerEXT debug;
 #endif

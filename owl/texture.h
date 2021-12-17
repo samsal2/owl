@@ -12,7 +12,6 @@ enum owl_sampler_type {
   OWL_SAMPLER_TYPE_COUNT
 };
 
-
 enum owl_code owl_create_texture(struct owl_renderer *renderer, int width,
                                  int height, OwlByte const *data,
                                  enum owl_pixel_format format,
