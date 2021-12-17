@@ -1,8 +1,8 @@
 #include <owl/internal.h>
-#include <owl/renderer.inl>
+#include <owl/renderer_internal.h>
 #include <owl/types.h>
 #include <owl/window.h>
-#include <owl/window.inl>
+#include <owl/window_internal.h>
 /* clang-format off */
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>

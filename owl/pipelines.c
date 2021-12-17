@@ -1,5 +1,5 @@
 #include <owl/pipelines.h>
-#include <owl/renderer.inl>
+#include <owl/renderer_internal.h>
 
 enum owl_code owl_bind_pipeline(struct owl_renderer *renderer,
                                 enum owl_pipeline_type type) {

@@ -214,7 +214,7 @@ struct owl_uniform *get_cloth_pvm(struct cloth *cloth) {
 
 char const *fps_string(OwlSeconds time) {
   static char buf[256];
-  sprintf(buf, "fps: %.2f\n", 1 / time);
+  snprintf(buf, 256, "fps: %.2f\n", 1 / time);
   return buf;
 }
 
@@ -256,8 +256,8 @@ int main(void) {
 
   init_cloth(&cloth, texture);
 
-  OWL_SET_V3(0.0F, 0.0F, 0.0F, color);
-  OWL_SET_V2(-1.0F, -0.92F, fpspos);
+  OWL_SET_V3(1.0F, 1.0F, 1.0F, color);
+  OWL_SET_V2(-1.0F, -0.93F, fpspos);
 
   pvm = get_cloth_pvm(&cloth);
 
@@ -265,7 +265,11 @@ int main(void) {
   OWL_IDENTITY_M4(pvm->view);
   OWL_IDENTITY_M4(pvm->proj);
 
+#if 0
   owl_ortho_m4(-2.0F, 2.0F, -2.0F, 2.0F, 0.1F, 10.0F, pvm->proj);
+#else
+  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F, pvm->proj);
+#endif
 
   OWL_SET_V3(0.0F, 0.0F, 2.0F, eye);
   OWL_SET_V3(0.0F, 0.0F, 0.0F, center);
@@ -307,7 +311,10 @@ int main(void) {
     owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
     owl_submit_render_group(renderer, &cloth.group);
 
+#if 1
     owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
+#endif
+
     owl_submit_text_group(renderer, font, fpspos, color, fps_string(frame));
 
     if (OWL_SUCCESS != owl_end_frame(renderer)) {

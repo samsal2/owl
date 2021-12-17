@@ -1,13 +1,13 @@
-#include "owl/types.h"
 #include <math.h>
 #include <owl/font.h>
 #include <owl/internal.h>
 #include <owl/math.h>
 #include <owl/memory.h>
 #include <owl/render_group.h>
-#include <owl/renderer.inl>
+#include <owl/renderer_internal.h>
 #include <owl/texture.h>
-#include <owl/texture.inl>
+#include <owl/texture_internal.h>
+#include <owl/types.h>
 
 /* clang-format off */
 #include <ft2build.h>

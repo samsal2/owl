@@ -1,4 +1,4 @@
-#include "owl/renderer.inl"
+#include <owl/renderer_internal.h>
 #include <owl/internal.h>
 #include <owl/memory.h>
 

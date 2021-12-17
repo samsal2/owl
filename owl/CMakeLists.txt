@@ -18,13 +18,13 @@ target_sources(${PROJECT_NAME} PRIVATE
   render_group.h
   renderer.c
   renderer.h
-  renderer.inl
+  renderer_internal.h
   texture.c
   texture.h
-  texture.inl
+  texture_internal.h
   types.h
   vkutil.c
   vkutil.h
   window.c
   window.h
-  window.inl)
+  window_internal.h)

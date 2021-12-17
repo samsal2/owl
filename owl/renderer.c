@@ -1,10 +1,10 @@
 #include <owl/internal.h>
 #include <owl/render_group.h>
-#include <owl/renderer.inl>
+#include <owl/renderer_internal.h>
 #include <owl/types.h>
 #include <owl/vkutil.h>
 #include <owl/window.h>
-#include <owl/window.inl>
+#include <owl/window_internal.h>
 
 #define OWL_VK_GET_INSTANCE_PROC_ADDR(i, fn)                                 \
   ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))

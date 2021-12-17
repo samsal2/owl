@@ -2,7 +2,7 @@
 #define OWL_VKUTIL_H_
 
 #include <owl/fwd.h>
-#include <owl/renderer.inl>
+#include <owl/renderer_internal.h>
 #include <owl/types.h>
 #include <vulkan/vulkan.h>
 

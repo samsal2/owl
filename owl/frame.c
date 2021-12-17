@@ -1,6 +1,6 @@
 #include <owl/frame.h>
 #include <owl/internal.h>
-#include <owl/renderer.inl>
+#include <owl/renderer_internal.h>
 #include <owl/types.h>
 #include <owl/vkutil.h>
 

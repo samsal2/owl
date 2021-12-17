@@ -1,7 +1,8 @@
 #include <owl/internal.h>
 #include <owl/memory.h>
 #include <owl/render_group.h>
-#include <owl/texture.inl>
+#include <owl/renderer_internal.h>
+#include <owl/texture_internal.h>
 
 OWL_INTERNAL enum owl_code
 owl_submit_render_group_basic_(struct owl_renderer *renderer,
