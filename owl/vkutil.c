@@ -1,5 +1,5 @@
 #include <owl/internal.h>
-#include <owl/vkutil.h>
+#include <owl/renderer_internal.h>
 
 #define OWL_MAX_QUEUE_PROPERTIES 16
 

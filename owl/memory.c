@@ -1,6 +1,6 @@
-#include <owl/renderer_internal.h>
 #include <owl/internal.h>
 #include <owl/memory.h>
+#include <owl/renderer_internal.h>
 
 void *owl_alloc_tmp_submit_mem(struct owl_renderer *renderer,
                                OwlDeviceSize size,

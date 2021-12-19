@@ -3,19 +3,18 @@
 #define OWL_RENDERER_INL_
 
 #include <owl/fwd.h>
+#include <owl/memory.h>
 #include <owl/pipelines.h>
 #include <owl/renderer.h>
 #include <owl/texture.h>
 #include <owl/types.h>
+#include <owl/vkutil.h>
 #include <vulkan/vulkan.h>
 
 #define OWL_MAX_PHYSICAL_DEVICE_OPTIONS 8
 #define OWL_MAX_SWAPCHAIN_IMAGES 8
 #define OWL_DYNAMIC_BUFFER_COUNT 2
 #define OWL_MAX_GARBAGE_ITEMS 8
-
-typedef OwlU32 OtterVkQueueFamily;
-typedef VkDeviceSize OwlDeviceSize;
 
 struct owl_vk_surface_provider {
   void const *data;
@@ -36,12 +35,6 @@ struct owl_vk_pipeline {
 
 struct owl_vk_sampler {
   VkSampler as[OWL_SAMPLER_TYPE_COUNT];
-};
-
-enum owl_vk_queue_type {
-  OWL_VK_QUEUE_TYPE_GRAPHICS,
-  OWL_VK_QUEUE_TYPE_PRESENT,
-  OWL_VK_QUEUE_TYPE_COUNT
 };
 
 struct owl_vk_device {

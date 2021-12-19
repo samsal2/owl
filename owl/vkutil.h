@@ -2,7 +2,6 @@
 #define OWL_VKUTIL_H_
 
 #include <owl/fwd.h>
-#include <owl/renderer_internal.h>
 #include <owl/types.h>
 #include <vulkan/vulkan.h>
 
@@ -25,6 +24,14 @@
 
 typedef OwlU32 OtterVkMemoryType;
 typedef OwlU32 OtterVkMemoryFilter;
+typedef OwlU32 OtterVkQueueFamily;
+typedef VkDeviceSize OwlDeviceSize;
+
+enum owl_vk_queue_type {
+  OWL_VK_QUEUE_TYPE_GRAPHICS,
+  OWL_VK_QUEUE_TYPE_PRESENT,
+  OWL_VK_QUEUE_TYPE_COUNT
+};
 
 enum owl_vk_mem_visibility {
   OWL_VK_MEMORY_VISIBILITY_CPU_ONLY,

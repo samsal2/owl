@@ -1034,8 +1034,7 @@ owl_init_basic_frag_(struct owl_renderer *renderer) {
 }
 
 OWL_INTERNAL void owl_deinit_basic_frag_(struct owl_renderer *renderer) {
-  vkDestroyShaderModule(renderer->device.logical, renderer->basic_frag,
-                        NULL);
+  vkDestroyShaderModule(renderer->device.logical, renderer->basic_frag, NULL);
 }
 
 OWL_INTERNAL enum owl_code
@@ -1059,8 +1058,7 @@ owl_init_font_frag_(struct owl_renderer *renderer) {
 }
 
 OWL_INTERNAL void owl_deinit_font_frag_(struct owl_renderer *renderer) {
-  vkDestroyShaderModule(renderer->device.logical, renderer->font_frag,
-                        NULL);
+  vkDestroyShaderModule(renderer->device.logical, renderer->font_frag, NULL);
 }
 
 OWL_INTERNAL enum owl_code

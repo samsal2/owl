@@ -1,5 +1,6 @@
 #include <owl/internal.h>
 #include <owl/memory.h>
+#include <owl/renderer_internal.h>
 #include <owl/texture.h>
 #include <owl/texture_internal.h>
 #include <owl/types.h>
@@ -68,7 +69,6 @@ OWL_INTERNAL void owl_free_cmd_buf_(struct owl_renderer *renderer,
 OWL_INTERNAL uint32_t owl_calc_mips_(int width, int height) {
   return (uint32_t)(floor(log2(OWL_MAX(width, height))) + 1);
 }
-
 
 OWL_INTERNAL VkFormat owl_to_vk_format_(enum owl_pixel_format format) {
 #define OWL_FORMAT_CASE(format)                                              \
