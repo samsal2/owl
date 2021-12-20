@@ -227,7 +227,7 @@ float owl_mag_v2(OwlV2 const v);
 
 float owl_mag_v3(OwlV3 const v);
 
-void owl_normalize_v3(OwlV3 const v, OwlV3 out);
+void owl_norm_v3(OwlV3 const v, OwlV3 out);
 
 void owl_make_rotate_m4(float angle, OwlV3 const axis, OwlM4 out);
 
