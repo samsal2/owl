@@ -1,6 +1,7 @@
 #include <owl/internal.h>
 #include <owl/renderer_internal.h>
 #include <owl/types.h>
+#include <owl/math.h>
 #include <owl/window.h>
 #include <owl/window_internal.h>
 /* clang-format off */
@@ -61,8 +62,10 @@ OWL_INTERNAL void owl_glfw_cursor_pos_cb_(GLFWwindow *handle, double x,
                                           double y) {
   struct owl_window *w = glfwGetWindowUserPointer(handle);
 
-  w->cursor[0] = 2.0F * ((float)x / (float)w->size.width) - 1.0F;
-  w->cursor[1] = 2.0F * ((float)y / (float)w->size.height) - 1.0F;
+  OWL_COPY_V2(w->cursor.current, w->cursor.previous);
+
+  w->cursor.current[0] = 2.0F * ((float)x / (float)w->size.width) - 1.0F;
+  w->cursor.current[1] = 2.0F * ((float)y / (float)w->size.height) - 1.0F;
 }
 
 OWL_INTERNAL void owl_glfw_mouse_cb_(GLFWwindow *window, int button,
@@ -118,6 +121,9 @@ enum owl_code owl_init_window(int width, int height, char const *title,
   glfwSetMouseButtonCallback(window->handle, owl_glfw_mouse_cb_);
   glfwSetKeyCallback(window->handle, owl_glfw_keyboard_cb_);
 
+  OWL_ZERO_V2(window->cursor.previous);
+  OWL_ZERO_V2(window->cursor.current);
+
   return OWL_SUCCESS;
 }
 
@@ -151,6 +157,8 @@ enum owl_code owl_vk_fill_info(struct owl_window const *window,
   provider->data = window;
   provider->get = owl_vk_init_surface_;
   extensions->names = glfwGetRequiredInstanceExtensions(&count);
+
+  OWL_ASSERT(OWL_MAX_EXTENSIONS > count);
 
   OWL_MEMCPY(names, extensions->names, count * sizeof(char const *));
   names[count++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;

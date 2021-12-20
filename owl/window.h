@@ -151,11 +151,16 @@ enum owl_keyboard_key {
 
 #define OWL_KEYBOARD_KEY_LAST OWL_KEYBOARD_KEY_MENU
 
+struct owl_cursor {
+  OwlV2 previous;
+  OwlV2 current;
+};
+
 struct owl_window {
-  OwlV2 cursor;
   OwlWindowHandle handle;
   struct owl_extent size;
   struct owl_extent framebuffer;
+  struct owl_cursor cursor;
   enum owl_btn_state mouse[OWL_MOUSE_BUTTON_COUNT];
   enum owl_btn_state keyboard[OWL_KEYBOARD_KEY_LAST];
 };

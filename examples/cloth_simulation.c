@@ -290,10 +290,10 @@ int main(void) {
 
     if (UNSELECTED == selected &&
         OWL_BUTTON_STATE_PRESS == window->mouse[OWL_MOUSE_BUTTON_LEFT])
-      selected = select_particle_at(window->cursor, &cloth);
+      selected = select_particle_at(window->cursor.current, &cloth);
 
     if (UNSELECTED != selected)
-      change_particle_position(selected, window->cursor, &cloth);
+      change_particle_position(selected, window->cursor.current, &cloth);
 
     if (UNSELECTED != selected &&
         OWL_BUTTON_STATE_RELEASE == window->mouse[OWL_MOUSE_BUTTON_LEFT])
