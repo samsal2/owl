@@ -32,6 +32,9 @@ OWL_INTERNAL enum owl_btn_state owl_glfw_to_mouse_state_(int state) {
 
   case GLFW_RELEASE:
     return OWL_BUTTON_STATE_RELEASE;
+    
+  case GLFW_REPEAT:
+    return OWL_BUTTON_STATE_REPEAT;
 
   default:
     return OWL_BUTTON_STATE_NONE;
@@ -72,6 +75,17 @@ OWL_INTERNAL void owl_glfw_mouse_cb_(GLFWwindow *window, int button,
   w->mouse[b] = owl_glfw_to_mouse_state_(action);
 }
 
+OWL_INTERNAL void owl_glfw_keyboard_cb_(GLFWwindow *window, int key,
+                                        int scancode, int action, int mods) {
+  struct owl_window *w = glfwGetWindowUserPointer(window);
+
+  OWL_UNUSED(scancode);
+  OWL_UNUSED(action);
+  OWL_UNUSED(mods);
+
+  w->keyboard[key] = owl_glfw_to_mouse_state_(action);
+}
+
 OWL_INTERNAL enum owl_code
 owl_vk_init_surface_(struct owl_renderer const *renderer, void const *data,
                      void *out) {
@@ -94,20 +108,15 @@ enum owl_code owl_init_window(int width, int height, char const *title,
   window->handle = glfwCreateWindow(width, height, title, NULL, NULL);
 
   glfwSetWindowUserPointer(window->handle, window);
-
   glfwGetWindowSize(window->handle, &window->size.width,
                     &window->size.height);
-
   glfwGetFramebufferSize(window->handle, &window->framebuffer.width,
                          &window->framebuffer.height);
-
   glfwSetWindowSizeCallback(window->handle, owl_glfw_window_cb_);
-
   glfwSetFramebufferSizeCallback(window->handle, owl_glfw_framebuffer_cb_);
-
   glfwSetCursorPosCallback(window->handle, owl_glfw_cursor_pos_cb_);
-
   glfwSetMouseButtonCallback(window->handle, owl_glfw_mouse_cb_);
+  glfwSetKeyCallback(window->handle, owl_glfw_keyboard_cb_);
 
   return OWL_SUCCESS;
 }

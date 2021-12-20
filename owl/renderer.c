@@ -2101,10 +2101,10 @@ void owl_destroy_renderer(struct owl_renderer *renderer) {
 
 OWL_INTERNAL enum owl_code
 owl_move_buf_to_garbage_(struct owl_renderer *renderer) {
-  int i, count;
   enum owl_code err = OWL_SUCCESS;
 
   {
+    int i, count;
     count = renderer->garbage.buf_count + OWL_DYNAMIC_BUFFER_COUNT;
 
     if (OWL_MAX_GARBAGE_ITEMS <= count) {
@@ -2120,6 +2120,7 @@ owl_move_buf_to_garbage_(struct owl_renderer *renderer) {
   }
 
   {
+    int i, count;
     count = renderer->garbage.set_count + OWL_DYNAMIC_BUFFER_COUNT;
 
     if (OWL_MAX_GARBAGE_ITEMS <= count) {
@@ -2135,6 +2136,7 @@ owl_move_buf_to_garbage_(struct owl_renderer *renderer) {
   }
 
   {
+    int count;
     count = renderer->garbage.set_count + 1;
 
     if (OWL_MAX_GARBAGE_ITEMS <= count) {
