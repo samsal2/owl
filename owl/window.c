@@ -122,6 +122,15 @@ enum owl_code owl_init_window(int width, int height, char const *title,
   OWL_ZERO_V2(window->cursor.previous);
   OWL_ZERO_V2(window->cursor.current);
 
+  {
+    int i;
+    for (i = 0; i < OWL_MOUSE_BUTTON_COUNT; ++i)
+      window->mouse[i] = OWL_BUTTON_STATE_NONE;
+
+    for (i = 0; i < OWL_KEYBOARD_KEY_LAST; ++i)
+      window->keyboard[i] = OWL_BUTTON_STATE_NONE;
+  }
+
   return OWL_SUCCESS;
 }
 
