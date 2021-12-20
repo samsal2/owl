@@ -62,8 +62,6 @@ OWL_INTERNAL void owl_glfw_cursor_pos_cb_(GLFWwindow *handle, double x,
                                           double y) {
   struct owl_window *w = glfwGetWindowUserPointer(handle);
 
-  OWL_COPY_V2(w->cursor.current, w->cursor.previous);
-
   w->cursor.current[0] = 2.0F * ((float)x / (float)w->size.width) - 1.0F;
   w->cursor.current[1] = 2.0F * ((float)y / (float)w->size.height) - 1.0F;
 }
@@ -186,8 +184,9 @@ int owl_should_window_close(struct owl_window const *window) {
   return glfwWindowShouldClose(window->handle);
 }
 
-void owl_poll_events(struct owl_window const *window) {
+void owl_poll_events(struct owl_window *window) {
   OWL_UNUSED(window);
+  OWL_COPY_V2(window->cursor.current, window->cursor.previous);
   glfwPollEvents();
 }
 

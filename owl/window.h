@@ -177,7 +177,7 @@ void owl_destroy_window(struct owl_window *window);
 
 int owl_should_window_close(struct owl_window const *window);
 
-void owl_poll_events(struct owl_window const *window);
+void owl_poll_events(struct owl_window *window);
 
 void owl_start_timer(struct owl_timer *timer);
 
