@@ -2,6 +2,7 @@
 #define OWL_PIPELINES_H_
 
 #include <owl/fwd.h>
+#include <owl/code.h>
 #include <owl/types.h>
 
 enum owl_pipeline_type {

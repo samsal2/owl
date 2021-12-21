@@ -2,6 +2,7 @@
 #define OWL_FONT_H_
 
 #include <owl/fwd.h>
+#include <owl/code.h>
 #include <owl/types.h>
 
 #define OWL_GLYPH_COUNT 128

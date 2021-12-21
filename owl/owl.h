@@ -1,6 +1,7 @@
 #ifndef OWL_H_
 #define OWL_H_
 
+#include <owl/code.h>
 #include <owl/font.h>
 #include <owl/frame.h>
 #include <owl/math.h>

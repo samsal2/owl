@@ -2108,7 +2108,7 @@ owl_move_buf_to_garbage_(struct owl_renderer *renderer) {
     count = renderer->garbage.buf_count + OWL_DYNAMIC_BUFFER_COUNT;
 
     if (OWL_MAX_GARBAGE_ITEMS <= count) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 
@@ -2124,7 +2124,7 @@ owl_move_buf_to_garbage_(struct owl_renderer *renderer) {
     count = renderer->garbage.set_count + OWL_DYNAMIC_BUFFER_COUNT;
 
     if (OWL_MAX_GARBAGE_ITEMS <= count) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 
@@ -2140,7 +2140,7 @@ owl_move_buf_to_garbage_(struct owl_renderer *renderer) {
     count = renderer->garbage.set_count + 1;
 
     if (OWL_MAX_GARBAGE_ITEMS <= count) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 

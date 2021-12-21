@@ -286,7 +286,7 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
     if (OWL_VK_MEMORY_TYPE_NONE ==
         (type = owl_vk_find_mem_type(renderer, requirements.memoryTypeBits,
                                      OWL_VK_MEMORY_VISIBILITY_GPU_ONLY))) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_INVALID_MEM_TYPE;
       goto end;
     }
 
@@ -350,7 +350,7 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
     size = (unsigned)width * (unsigned)height * owl_sizeof_format_(format);
 
     if (!(stage = owl_alloc_tmp_submit_mem(renderer, size, &ref))) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_BAD_ALLOC;
       goto end;
     }
 
@@ -463,7 +463,7 @@ enum owl_code owl_init_texture_with_ref(
     if (OWL_VK_MEMORY_TYPE_NONE ==
         (type = owl_vk_find_mem_type(renderer, requirements.memoryTypeBits,
                                      OWL_VK_MEMORY_VISIBILITY_GPU_ONLY))) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_INVALID_MEM_TYPE;
       goto end;
     }
 
@@ -634,7 +634,7 @@ enum owl_code owl_create_texture(struct owl_renderer *renderer, int width,
   owl_ensure_manager_(renderer);
 
   if (OWL_INVALID_TEXTURE == g_manager.current) {
-    err = OWL_ERROR_UNKNOWN;
+    err = OWL_ERROR_BAD_HANDLE;
     goto end;
   }
 
@@ -664,7 +664,7 @@ enum owl_code owl_create_texture_from_file(struct owl_renderer *renderer,
   enum owl_code err = OWL_SUCCESS;
 
   if (!(data = stbi_load(path, &width, &height, &channels, STBI_rgb_alpha))) {
-    err = OWL_ERROR_UNKNOWN;
+    err = OWL_ERROR_BAD_INIT;
     goto end;
   }
 
@@ -708,7 +708,7 @@ enum owl_code owl_create_texture_with_ref(
   owl_ensure_manager_(renderer);
 
   if (OWL_INVALID_TEXTURE == g_manager.current) {
-    err = OWL_ERROR_UNKNOWN;
+    err = OWL_ERROR_BAD_HANDLE;
     goto end;
   }
 

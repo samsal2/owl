@@ -3,6 +3,7 @@
 #include <owl/renderer_internal.h>
 #include <owl/types.h>
 #include <owl/vkutil.h>
+#include <owl/code.h>
 
 #define OWL_VK_TIMEOUT (OwlU64) - 1
 
@@ -17,19 +18,19 @@ enum owl_code owl_begin_frame(struct owl_renderer *renderer) {
         &renderer->swapchain.current);
 
     if (VK_ERROR_OUT_OF_DATE_KHR == result) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
       goto end;
     }
 
 #if 1
     if (VK_SUBOPTIMAL_KHR == result) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
       goto end;
     }
 #endif
 
     if (VK_ERROR_SURFACE_LOST_KHR == result) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
       goto end;
     }
   }
@@ -128,19 +129,19 @@ enum owl_code owl_end_frame(struct owl_renderer *renderer) {
         renderer->device.queues[OWL_VK_QUEUE_TYPE_PRESENT], &present);
 
     if (VK_ERROR_OUT_OF_DATE_KHR == result) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
       goto end;
     }
 
 #if 1
     if (VK_SUBOPTIMAL_KHR == result) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
       goto end;
     }
 #endif
 
     if (VK_ERROR_SURFACE_LOST_KHR == result) {
-      err = OWL_ERROR_UNKNOWN;
+      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
       goto end;
     }
   }

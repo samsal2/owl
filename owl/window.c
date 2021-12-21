@@ -95,7 +95,7 @@ owl_vk_init_surface_(struct owl_renderer const *renderer, void const *data,
 
   if (VK_SUCCESS != glfwCreateWindowSurface(renderer->instance,
                                             window->handle, NULL, surface))
-    return OWL_ERROR_UNKNOWN;
+    return OWL_ERROR_BAD_INIT;
 
   return OWL_SUCCESS;
 }
@@ -103,7 +103,7 @@ owl_vk_init_surface_(struct owl_renderer const *renderer, void const *data,
 enum owl_code owl_init_window(int width, int height, char const *title,
                               struct owl_window *window) {
   if (GLFW_FALSE == glfwInit())
-    return OWL_ERROR_UNKNOWN;
+    return OWL_ERROR_BAD_INIT;
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   window->handle = glfwCreateWindow(width, height, title, NULL, NULL);

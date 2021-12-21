@@ -1,11 +1,6 @@
 #ifndef OWL_TYPES_H_
 #define OWL_TYPES_H_
 
-enum owl_code {
-  OWL_SUCCESS, /**/
-  OWL_ERROR_UNKNOWN
-};
-
 struct owl_extent {
   int width;
   int height;

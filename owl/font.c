@@ -8,6 +8,7 @@
 #include <owl/texture.h>
 #include <owl/texture_internal.h>
 #include <owl/types.h>
+#include <owl/code.h>
 
 /* clang-format off */
 #include <ft2build.h>
@@ -44,17 +45,17 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
   /* TODO(samuel): chances are im only going to be creating one font,
      could do something analogous to owl_vk_texture_manager */
   if (!(*font = OWL_MALLOC(sizeof(**font)))) {
-    err = OWL_ERROR_UNKNOWN;
+    err = OWL_ERROR_BAD_ALLOC;
     goto end;
   }
 
   if (FT_Err_Ok != (FT_Init_FreeType(&ft))) {
-    err = OWL_ERROR_UNKNOWN;
+    err = OWL_ERROR_BAD_INIT;
     goto end_err_free_font;
   }
 
   if (FT_Err_Ok != (FT_New_Face(ft, path, 0, &face))) {
-    err = OWL_ERROR_UNKNOWN;
+    err = OWL_ERROR_BAD_INIT;
     goto end_err_done_ft;
   }
 
@@ -69,7 +70,7 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
             renderer,
             (unsigned)((*font)->atlas_width * (*font)->atlas_height),
             &ref))) {
-    err = OWL_ERROR_UNKNOWN;
+    err = OWL_ERROR_BAD_ALLOC;
     goto end_err_done_face;
   }
 
@@ -160,7 +161,7 @@ owl_fill_char_quad(struct owl_extent const *window,
   enum owl_code err = OWL_SUCCESS;
 
   if ((int)c >= OWL_ARRAY_SIZE(font->glyphs)) {
-    err = OWL_ERROR_UNKNOWN;
+    err = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
 
