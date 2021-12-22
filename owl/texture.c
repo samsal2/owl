@@ -1,3 +1,4 @@
+#include <math.h>
 #include <owl/internal.h>
 #include <owl/memory.h>
 #include <owl/renderer_internal.h>
@@ -6,8 +7,6 @@
 #include <owl/types.h>
 #include <owl/vkutil.h>
 #include <stb/stb_image.h>
-
-#include <math.h>
 
 OWL_INTERNAL VkCommandBuffer
 owl_alloc_cmd_buf_(struct owl_renderer const *renderer) {

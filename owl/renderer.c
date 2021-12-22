@@ -1,4 +1,3 @@
-#include "vulkan/vulkan_core.h"
 #include <owl/internal.h>
 #include <owl/render_group.h>
 #include <owl/renderer_internal.h>
@@ -9,9 +8,6 @@
 
 #define OWL_VK_GET_INSTANCE_PROC_ADDR(i, fn)                                 \
   ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))
-
-#define OWL_SURFACE_PROVIDER_EXECUTE(renderer, provider, out)                \
-  (provider)->get(renderer, (provider)->data, out)
 
 #ifdef OWL_ENABLE_VALIDATION
 OWL_GLOBAL char const *const validation_layers[] = {
@@ -30,7 +26,7 @@ static VKAPI_ATTR VKAPI_CALL VkBool32 owl_vk_debug_cb_(
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_instance_(struct owl_vk_extensions const *extensions,
+owl_init_instance_(struct owl_vk_plataform const *plataform,
                    struct owl_renderer *renderer) {
   VkApplicationInfo app;
   VkInstanceCreateInfo instance;
@@ -49,8 +45,8 @@ owl_init_instance_(struct owl_vk_extensions const *extensions,
   instance.pApplicationInfo = &app;
   instance.enabledLayerCount = OWL_ARRAY_SIZE(validation_layers);
   instance.ppEnabledLayerNames = validation_layers;
-  instance.enabledExtensionCount = extensions->count;
-  instance.ppEnabledExtensionNames = extensions->names;
+  instance.enabledExtensionCount = plataform->extension_count;
+  instance.ppEnabledExtensionNames = plataform->extensions;
 
   OWL_VK_CHECK(vkCreateInstance(&instance, NULL, &renderer->instance));
 
@@ -137,9 +133,10 @@ OWL_INTERNAL void owl_deinit_instance_(struct owl_renderer *renderer) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_surface_(struct owl_vk_surface_provider const *provider,
+owl_init_surface_(struct owl_vk_plataform const *plataform,
                   struct owl_renderer *renderer) {
-  return OWL_SURFACE_PROVIDER_EXECUTE(renderer, provider, &renderer->surface);
+  return plataform->get_surface(renderer, plataform->surface_data,
+                                &renderer->surface);
 }
 
 OWL_INTERNAL void owl_deinit_surface_(struct owl_renderer *renderer) {
@@ -533,7 +530,6 @@ owl_init_depth_attachment_(struct owl_extent const *extent,
   }
 
   {
-
     VkMemoryRequirements req;
     VkMemoryAllocateInfo mem;
     vkGetImageMemoryRequirements(renderer->device, renderer->depth_img, &req);
@@ -552,7 +548,6 @@ owl_init_depth_attachment_(struct owl_extent const *extent,
   }
 
   {
-
     VkImageViewCreateInfo view;
     view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view.pNext = NULL;
@@ -1872,16 +1867,14 @@ OWL_INTERNAL void owl_deinit_dyn_garbage_(struct owl_renderer *renderer) {
   renderer->dyn_garbage_buf_count = 0;
 }
 
-enum owl_code
-owl_init_renderer(struct owl_extent const *extent,
-                  struct owl_vk_surface_provider const *provider,
-                  struct owl_vk_extensions const *extensions,
-                  struct owl_renderer *renderer) {
+enum owl_code owl_init_renderer(struct owl_extent const *extent,
+                                struct owl_vk_plataform const *plataform,
+                                struct owl_renderer *renderer) {
   enum owl_code err;
 
   renderer->extent = *extent;
 
-  if (OWL_SUCCESS != (err = owl_init_instance_(extensions, renderer)))
+  if (OWL_SUCCESS != (err = owl_init_instance_(plataform, renderer)))
     goto end;
 
 /* FIXME(samuel): if surface fails debug isnt' destroyed */
@@ -1890,7 +1883,7 @@ owl_init_renderer(struct owl_extent const *extent,
     goto end;
 #endif
 
-  if (OWL_SUCCESS != (err = owl_init_surface_(provider, renderer)))
+  if (OWL_SUCCESS != (err = owl_init_surface_(plataform, renderer)))
     goto end_deinit_instance;
 
   if (OWL_SUCCESS != (err = owl_init_device_(renderer)))
@@ -2070,15 +2063,13 @@ void owl_deinit_renderer(struct owl_renderer *renderer) {
 
 enum owl_code owl_create_renderer(struct owl_window const *window,
                                   struct owl_renderer **renderer) {
-  struct owl_vk_surface_provider provider;
-  struct owl_vk_extensions extensions;
+  struct owl_vk_plataform plataform;
 
-  owl_vk_fill_info(window, &provider, &extensions);
+  owl_vk_fill_info(window, &plataform);
 
   *renderer = OWL_MALLOC(sizeof(**renderer));
 
-  return owl_init_renderer(&window->framebuffer, &provider, &extensions,
-                           *renderer);
+  return owl_init_renderer(&window->framebuffer, &plataform, *renderer);
 }
 
 void owl_destroy_renderer(struct owl_renderer *renderer) {

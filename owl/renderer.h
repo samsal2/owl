@@ -1,6 +1,7 @@
 #ifndef OWL_RENDERER_H_
 #define OWL_RENDERER_H_
 
+#include <owl/code.h>
 #include <owl/fwd.h>
 #include <owl/types.h>
 

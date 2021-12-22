@@ -141,37 +141,35 @@ void owl_deinit_window(struct owl_window *window) {
 
 #ifndef OWL_ENABLE_VALIDATION
 enum owl_code owl_vk_fill_info(struct owl_window const *window,
-                               struct owl_vk_surface_provider *provider,
-                               struct owl_vk_extensions *extensions) {
-  uint32_t count;
+                               struct owl_vk_plataform *plataform) {
+  OwlU32 count;
 
-  provider->data = window;
-  provider->get = owl_vk_init_surface_;
+  plataform->surface_data = window;
+  plataform->get_surface = owl_vk_init_surface_;
 
-  extensions->names = glfwGetRequiredInstanceExtensions(&count);
-  extensions->count = (int)count;
+  extensions->extensions = glfwGetRequiredInstanceExtensions(&count);
+  extensions->extension_count = count;
 
   return OWL_SUCCESS;
 }
 #else
 #define OWL_MAX_EXTENSIONS 64
 enum owl_code owl_vk_fill_info(struct owl_window const *window,
-                               struct owl_vk_surface_provider *provider,
-                               struct owl_vk_extensions *extensions) {
-  uint32_t count;
+                               struct owl_vk_plataform *plataform) {
+  OwlU32 count;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 
-  provider->data = window;
-  provider->get = owl_vk_init_surface_;
-  extensions->names = glfwGetRequiredInstanceExtensions(&count);
+  plataform->surface_data = window;
+  plataform->get_surface = owl_vk_init_surface_;
+  plataform->extensions = glfwGetRequiredInstanceExtensions(&count);
 
   OWL_ASSERT(OWL_MAX_EXTENSIONS > count);
 
-  OWL_MEMCPY(names, extensions->names, count * sizeof(char const *));
+  OWL_MEMCPY(names, plataform->extensions, count * sizeof(char const *));
   names[count++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 
-  extensions->names = names;
-  extensions->count = count;
+  plataform->extensions = names;
+  plataform->extension_count = count;
 
   return OWL_SUCCESS;
 }
