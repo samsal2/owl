@@ -1,21 +1,21 @@
+#include <owl/code.h>
 #include <owl/frame.h>
 #include <owl/internal.h>
 #include <owl/renderer_internal.h>
 #include <owl/types.h>
 #include <owl/vkutil.h>
-#include <owl/code.h>
 
 #define OWL_VK_TIMEOUT (OwlU64) - 1
 
 enum owl_code owl_begin_frame(struct owl_renderer *renderer) {
   enum owl_code err = OWL_SUCCESS;
-  int const active = renderer->cmd.active;
+  OwlU32 const active = renderer->active_buf;
 
   {
     VkResult const result = vkAcquireNextImageKHR(
-        renderer->device.logical, renderer->swapchain.handle, OWL_VK_TIMEOUT,
-        renderer->sync.img_available[active], VK_NULL_HANDLE,
-        &renderer->swapchain.current);
+        renderer->device, renderer->swapchain, OWL_VK_TIMEOUT,
+        renderer->img_available_sema[active], VK_NULL_HANDLE,
+        &renderer->active_img);
 
     if (VK_ERROR_OUT_OF_DATE_KHR == result) {
       err = OWL_ERROR_OUTDATED_SWAPCHAIN;
@@ -36,15 +36,15 @@ enum owl_code owl_begin_frame(struct owl_renderer *renderer) {
   }
 
   {
-    OWL_VK_CHECK(vkWaitForFences(renderer->device.logical, 1,
-                                 &renderer->sync.in_flight[active], VK_TRUE,
+    OWL_VK_CHECK(vkWaitForFences(renderer->device, 1,
+                                 &renderer->in_flight_fence[active], VK_TRUE,
                                  OWL_VK_TIMEOUT));
 
-    OWL_VK_CHECK(vkResetFences(renderer->device.logical, 1,
-                               &renderer->sync.in_flight[active]));
+    OWL_VK_CHECK(vkResetFences(renderer->device, 1,
+                               &renderer->in_flight_fence[active]));
 
-    OWL_VK_CHECK(vkResetCommandPool(renderer->device.logical,
-                                    renderer->cmd.pools[active], 0));
+    OWL_VK_CHECK(vkResetCommandPool(renderer->device,
+                                    renderer->draw_cmd_pools[active], 0));
   }
 
   {
@@ -55,24 +55,25 @@ enum owl_code owl_begin_frame(struct owl_renderer *renderer) {
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin.pInheritanceInfo = NULL;
 
-    OWL_VK_CHECK(vkBeginCommandBuffer(renderer->cmd.bufs[active], &begin));
+    OWL_VK_CHECK(
+        vkBeginCommandBuffer(renderer->draw_cmd_bufs[active], &begin));
   }
 
   {
     VkRenderPassBeginInfo begin;
-    OwlU32 const image = renderer->swapchain.current;
+    OwlU32 const img = renderer->active_img;
 
     begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     begin.pNext = NULL;
-    begin.renderPass = renderer->main_pass;
-    begin.framebuffer = renderer->swapchain.framebuffers[image];
+    begin.renderPass = renderer->main_render_pass;
+    begin.framebuffer = renderer->framebuffers[img];
     begin.renderArea.offset.x = 0;
     begin.renderArea.offset.y = 0;
-    begin.renderArea.extent = renderer->swapchain.extent;
-    begin.clearValueCount = OWL_ARRAY_SIZE(renderer->swapchain.clear_vals);
-    begin.pClearValues = renderer->swapchain.clear_vals;
+    begin.renderArea.extent = renderer->swapchain_extent;
+    begin.clearValueCount = OWL_ARRAY_SIZE(renderer->clear_vals);
+    begin.pClearValues = renderer->clear_vals;
 
-    vkCmdBeginRenderPass(renderer->cmd.bufs[active], &begin,
+    vkCmdBeginRenderPass(renderer->draw_cmd_bufs[active], &begin,
                          VK_SUBPASS_CONTENTS_INLINE);
   }
 
@@ -86,11 +87,11 @@ end:
 
 enum owl_code owl_end_frame(struct owl_renderer *renderer) {
   enum owl_code err = OWL_SUCCESS;
-  int const active = renderer->cmd.active;
+  OwlU32 const active = renderer->active_buf;
 
   {
-    vkCmdEndRenderPass(renderer->cmd.bufs[active]);
-    OWL_VK_CHECK(vkEndCommandBuffer(renderer->cmd.bufs[active]));
+    vkCmdEndRenderPass(renderer->draw_cmd_bufs[active]);
+    OWL_VK_CHECK(vkEndCommandBuffer(renderer->draw_cmd_bufs[active]));
   }
 
   {
@@ -100,16 +101,15 @@ enum owl_code owl_end_frame(struct owl_renderer *renderer) {
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit.pNext = NULL;
     submit.waitSemaphoreCount = 1;
-    submit.pWaitSemaphores = &renderer->sync.img_available[active];
+    submit.pWaitSemaphores = &renderer->img_available_sema[active];
     submit.signalSemaphoreCount = 1;
-    submit.pSignalSemaphores = &renderer->sync.render_finished[active];
+    submit.pSignalSemaphores = &renderer->renderer_finished_sema[active];
     submit.pWaitDstStageMask = &stage;
     submit.commandBufferCount = 1;
-    submit.pCommandBuffers = &renderer->cmd.bufs[active];
+    submit.pCommandBuffers = &renderer->draw_cmd_bufs[active];
 
-    OWL_VK_CHECK(
-        vkQueueSubmit(renderer->device.queues[OWL_VK_QUEUE_TYPE_GRAPHICS], 1,
-                      &submit, renderer->sync.in_flight[active]));
+    OWL_VK_CHECK(vkQueueSubmit(renderer->graphics_queue, 1, &submit,
+                               renderer->in_flight_fence[active]));
   }
 
   {
@@ -119,14 +119,13 @@ enum owl_code owl_end_frame(struct owl_renderer *renderer) {
     present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     present.pNext = NULL;
     present.waitSemaphoreCount = 1;
-    present.pWaitSemaphores = &renderer->sync.render_finished[active];
+    present.pWaitSemaphores = &renderer->renderer_finished_sema[active];
     present.swapchainCount = 1;
-    present.pSwapchains = &renderer->swapchain.handle;
-    present.pImageIndices = &renderer->swapchain.current;
+    present.pSwapchains = &renderer->swapchain;
+    present.pImageIndices = &renderer->active_img;
     present.pResults = NULL;
 
-    result = vkQueuePresentKHR(
-        renderer->device.queues[OWL_VK_QUEUE_TYPE_PRESENT], &present);
+    result = vkQueuePresentKHR(renderer->present_queue, &present);
 
     if (VK_ERROR_OUT_OF_DATE_KHR == result) {
       err = OWL_ERROR_OUTDATED_SWAPCHAIN;
@@ -148,16 +147,13 @@ enum owl_code owl_end_frame(struct owl_renderer *renderer) {
 
   /* swap actives */
   {
-    if (OWL_DYNAMIC_BUFFER_COUNT == ++renderer->cmd.active)
-      renderer->cmd.active = 0;
-
-    if (OWL_DYNAMIC_BUFFER_COUNT == ++renderer->dyn_buf.active)
-      renderer->dyn_buf.active = 0;
+    if (OWL_DYN_BUF_COUNT == ++renderer->active_buf)
+      renderer->active_buf = 0;
   }
 
   /* reset stuff */
   {
-    renderer->dyn_buf.offsets[renderer->dyn_buf.active] = 0;
+    renderer->dyn_offsets[renderer->active_buf] = 0;
     owl_clear_garbage(renderer);
   }
 

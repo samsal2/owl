@@ -76,7 +76,7 @@ enum owl_keyboard_key {
   OWL_KEYBOARD_KEY_GRAVE_ACCENT = 96 /* ` */,
   OWL_KEYBOARD_KEY_WORLD_1 = 161 /* non-US #1 */,
   OWL_KEYBOARD_KEY_WORLD_2 = 162 /* non-US #2 */,
-  /* Function keys */ 
+  /* Function keys */
   OWL_KEYBOARD_KEY_ESCAPE = 256,
   OWL_KEYBOARD_KEY_ENTER = 257,
   OWL_KEYBOARD_KEY_TAB = 258,

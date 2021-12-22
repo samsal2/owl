@@ -6,24 +6,24 @@ void *owl_alloc_tmp_submit_mem(struct owl_renderer *renderer,
                                OwlDeviceSize size,
                                struct owl_tmp_submit_mem_ref *ref) {
   OwlByte *data;
-  int const active = renderer->dyn_buf.active;
+  OwlU32 const active = renderer->active_buf;
 
   if (OWL_SUCCESS != owl_reserve_dyn_buf_mem(renderer, size)) {
     data = NULL;
     goto end;
   }
 
-  ref->offset32 = (OwlU32)renderer->dyn_buf.offsets[active];
-  ref->offset = renderer->dyn_buf.offsets[active];
-  ref->buf = renderer->dyn_buf.bufs[active];
-  ref->set = renderer->dyn_buf.sets[active];
+  ref->offset32 = (OwlU32)renderer->dyn_offsets[active];
+  ref->offset = renderer->dyn_offsets[active];
+  ref->buf = renderer->dyn_bufs[active];
+  ref->set = renderer->dyn_sets[active];
 
-  data = (OwlByte *)renderer->dyn_buf.data +
-         (unsigned)active * renderer->dyn_buf.aligned_size +
-         renderer->dyn_buf.offsets[active];
+  data = (OwlByte *)renderer->dyn_data +
+         (unsigned)active * renderer->dyn_aligned_size +
+         renderer->dyn_offsets[active];
 
-  renderer->dyn_buf.offsets[active] = OWL_ALIGN(
-      renderer->dyn_buf.offsets[active] + size, renderer->dyn_buf.alignment);
+  renderer->dyn_offsets[active] = OWL_ALIGN(
+      renderer->dyn_offsets[active] + size, renderer->dyn_alignment);
 end:
   return data;
 }

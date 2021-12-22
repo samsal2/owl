@@ -1,4 +1,5 @@
 #include <math.h>
+#include <owl/code.h>
 #include <owl/font.h>
 #include <owl/internal.h>
 #include <owl/math.h>
@@ -8,7 +9,6 @@
 #include <owl/texture.h>
 #include <owl/texture_internal.h>
 #include <owl/types.h>
-#include <owl/code.h>
 
 /* clang-format off */
 #include <ft2build.h>

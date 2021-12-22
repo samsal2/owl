@@ -1,7 +1,7 @@
 #include <owl/internal.h>
+#include <owl/math.h>
 #include <owl/renderer_internal.h>
 #include <owl/types.h>
-#include <owl/math.h>
 #include <owl/window.h>
 #include <owl/window_internal.h>
 /* clang-format off */
@@ -33,7 +33,7 @@ OWL_INTERNAL enum owl_btn_state owl_glfw_to_mouse_state_(int state) {
 
   case GLFW_RELEASE:
     return OWL_BUTTON_STATE_RELEASE;
-    
+
   case GLFW_REPEAT:
     return OWL_BUTTON_STATE_REPEAT;
 
@@ -171,7 +171,7 @@ enum owl_code owl_vk_fill_info(struct owl_window const *window,
   names[count++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 
   extensions->names = names;
-  extensions->count = (int)count;
+  extensions->count = count;
 
   return OWL_SUCCESS;
 }

@@ -3,16 +3,16 @@
 
 enum owl_code owl_bind_pipeline(struct owl_renderer *renderer,
                                 enum owl_pipeline_type type) {
-  int const active = renderer->cmd.active;
+  OwlU32 const active = renderer->active_buf;
 
-  renderer->pipeline.bound = type;
+  renderer->bound_pipeline = type;
 
   if (OWL_PIPELINE_TYPE_NONE == type)
     return OWL_SUCCESS;
 
-  vkCmdBindPipeline(renderer->cmd.bufs[active],
+  vkCmdBindPipeline(renderer->draw_cmd_bufs[active],
                     VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    renderer->pipeline.as[type]);
+                    renderer->pipelines[type]);
 
   return OWL_SUCCESS;
 }

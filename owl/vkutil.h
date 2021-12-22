@@ -39,16 +39,16 @@ enum owl_vk_mem_visibility {
   OWL_VK_MEMORY_VISIBILITY_CPU_TO_GPU
 };
 
-int owl_vk_query_families(
-    struct owl_renderer const *renderer, VkPhysicalDevice device,
-    OtterVkQueueFamily families[OWL_VK_QUEUE_TYPE_COUNT]);
+int owl_vk_query_families(struct owl_renderer const *renderer,
+                          VkPhysicalDevice device, OwlU32 *graphics_family,
+                          OwlU32 *present_family);
 
 int owl_vk_validate_extensions(OwlU32 count,
                                VkExtensionProperties const *extensions);
 
 int owl_vk_shares_families(struct owl_renderer const *renderer);
 
-int owl_vk_queue_count(struct owl_renderer const *renderer);
+OwlU32 owl_vk_queue_count(struct owl_renderer const *renderer);
 
 OtterVkMemoryType owl_vk_find_mem_type(struct owl_renderer const *renderer,
                                        OtterVkMemoryFilter filter,

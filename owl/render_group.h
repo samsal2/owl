@@ -1,8 +1,8 @@
 #ifndef OWL_RENDER_GROUP_H_
 #define OWL_RENDER_GROUP_H_
 
-#include <owl/fwd.h>
 #include <owl/code.h>
+#include <owl/fwd.h>
 #include <owl/types.h>
 
 struct owl_vertex {
