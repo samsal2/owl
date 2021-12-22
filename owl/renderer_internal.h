@@ -62,6 +62,7 @@ struct owl_renderer {
   VkImageView depth_view;
   VkDeviceMemory depth_mem;
   /* ====================================================================== */
+  VkPresentModeKHR present_mode;
   VkSwapchainKHR swapchain;
   VkExtent2D swapchain_extent;
   OwlU32 img_count;

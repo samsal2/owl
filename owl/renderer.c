@@ -143,165 +143,163 @@ OWL_INTERNAL void owl_deinit_surface_(struct owl_renderer *renderer) {
   vkDestroySurfaceKHR(renderer->instance, renderer->surface, NULL);
 }
 
+OWL_INTERNAL void owl_fill_device_options_(struct owl_renderer *renderer) {
+  OwlU32 count;
+  OWL_VK_CHECK(vkEnumeratePhysicalDevices(renderer->instance, &count, NULL));
+
+  OWL_ASSERT(OWL_MAX_DEVICE_OPTIONS > count);
+
+  OWL_VK_CHECK(vkEnumeratePhysicalDevices(renderer->instance, &count,
+                                          renderer->device_options));
+
+  renderer->device_options_count = count;
+}
+
+#define OWL_MAX_EXTENSIONS 64
+OWL_INTERNAL void owl_select_physical_device_(struct owl_renderer *renderer) {
+  OwlU32 i;
+  static VkExtensionProperties extensions[OWL_MAX_EXTENSIONS];
+
+  for (i = 0; i < renderer->device_options_count; ++i) {
+    OwlU32 formats, modes, count;
+
+    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
+        renderer->device_options[i], renderer->surface, &formats, NULL));
+
+    if (!formats)
+      continue;
+
+    OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
+        renderer->device_options[i], renderer->surface, &modes, NULL));
+
+    if (!modes)
+      continue;
+
+    if (!owl_vk_query_families(renderer, renderer->device_options[i],
+                               &renderer->graphics_family,
+                               &renderer->present_family))
+      continue;
+
+    vkGetPhysicalDeviceFeatures(renderer->device_options[i],
+                                &renderer->device_features);
+
+    if (!renderer->device_features.samplerAnisotropy)
+      continue;
+
+    OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(
+        renderer->device_options[i], NULL, &count, NULL));
+
+    OWL_ASSERT(OWL_MAX_EXTENSIONS > count);
+
+    OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(
+        renderer->device_options[i], NULL, &count, extensions));
+
+    if (!owl_vk_validate_extensions(count, extensions))
+      continue;
+
+    renderer->physical_device = renderer->device_options[i];
+
+    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        renderer->physical_device, renderer->surface,
+        &renderer->surface_capabilities));
+
+    vkGetPhysicalDeviceProperties(renderer->physical_device,
+                                  &renderer->device_properties);
+
+    vkGetPhysicalDeviceMemoryProperties(renderer->physical_device,
+                                        &renderer->device_mem_properties);
+
+    break;
+  }
+
+  OWL_ASSERT(renderer->device_options_count != i);
+}
+#undef OWL_MAX_EXTENSIONS
+
+#define OWL_MAX_SURFACE_FORMATS 16
+OWL_INTERNAL void owl_select_surface_format_(struct owl_renderer *renderer) {
+  OwlU32 i, count;
+  VkSurfaceFormatKHR formats[OWL_MAX_SURFACE_FORMATS];
+
+  OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
+      renderer->physical_device, renderer->surface, &count, NULL));
+
+  OWL_ASSERT(OWL_MAX_SURFACE_FORMATS > count);
+
+  OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
+      renderer->physical_device, renderer->surface, &count, formats));
+
+  for (i = 0; i < count; ++i) {
+    if (VK_FORMAT_B8G8R8A8_SRGB != formats[i].format)
+      continue;
+
+    if (VK_COLOR_SPACE_SRGB_NONLINEAR_KHR != formats[i].colorSpace)
+      continue;
+
+    renderer->surface_format.format = VK_FORMAT_B8G8R8A8_SRGB;
+    renderer->surface_format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    break;
+  }
+
+  OWL_ASSERT(OWL_MAX_SURFACE_FORMATS != i);
+}
+#undef OWL_MAX_SURFACE_FORMATS
+
+OWL_INTERNAL void owl_select_sample_count_(struct owl_renderer *renderer) {
+  VkSampleCountFlags const samples =
+      renderer->device_properties.limits.framebufferColorSampleCounts &
+      renderer->device_properties.limits.framebufferDepthSampleCounts;
+
+  if (VK_SAMPLE_COUNT_2_BIT & samples) {
+    renderer->samples = VK_SAMPLE_COUNT_2_BIT;
+  } else {
+    OWL_ASSERT(0 && "disabling multisampling is not supported");
+    renderer->samples = VK_SAMPLE_COUNT_1_BIT;
+  }
+}
+
 OWL_INTERNAL enum owl_code owl_init_device_(struct owl_renderer *renderer) {
+  VkDeviceCreateInfo device;
+  VkDeviceQueueCreateInfo queues[2];
+  float const prio = 1.0F;
+  char const *extensions[] = OWL_VK_DEVICE_EXTENSIONS;
   enum owl_code err = OWL_SUCCESS;
 
-  /* fill options */
-  {
-    OwlU32 count;
-    OWL_VK_CHECK(
-        vkEnumeratePhysicalDevices(renderer->instance, &count, NULL));
+  owl_fill_device_options_(renderer);
 
-    OWL_ASSERT(OWL_MAX_DEVICE_OPTIONS > count);
+  owl_select_physical_device_(renderer);
 
-    OWL_VK_CHECK(vkEnumeratePhysicalDevices(renderer->instance, &count,
-                                            renderer->device_options));
+  owl_select_surface_format_(renderer);
 
-    renderer->device_options_count = count;
-  }
+  owl_select_sample_count_(renderer);
 
-  /* select physical device and queue families */
-  {
-#define OWL_MAX_EXTENSIONS 64
-    OwlU32 i;
-    static VkExtensionProperties extensions[OWL_MAX_EXTENSIONS];
+  queues[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  queues[0].pNext = NULL;
+  queues[0].flags = 0;
+  queues[0].queueFamilyIndex = renderer->graphics_family;
+  queues[0].queueCount = 1;
+  queues[0].pQueuePriorities = &prio;
 
-    for (i = 0; i < renderer->device_options_count; ++i) {
-      OwlU32 formats, modes, count;
+  queues[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  queues[0].pNext = NULL;
+  queues[0].flags = 0;
+  queues[0].queueFamilyIndex = renderer->present_family;
+  queues[0].queueCount = 1;
+  queues[0].pQueuePriorities = &prio;
 
-      OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
-          renderer->device_options[i], renderer->surface, &formats, NULL));
+  device.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+  device.pNext = NULL;
+  device.flags = 0;
+  device.queueCreateInfoCount = owl_vk_queue_count(renderer);
+  device.pQueueCreateInfos = queues;
+  device.enabledLayerCount = 0;      /* deprecated */
+  device.ppEnabledLayerNames = NULL; /* deprecated */
+  device.enabledExtensionCount = OWL_ARRAY_SIZE(extensions);
+  device.ppEnabledExtensionNames = extensions;
+  device.pEnabledFeatures = &renderer->device_features;
 
-      if (!formats)
-        continue;
-
-      OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-          renderer->device_options[i], renderer->surface, &modes, NULL));
-
-      if (!modes)
-        continue;
-
-      if (!owl_vk_query_families(renderer, renderer->device_options[i],
-                                 &renderer->graphics_family,
-                                 &renderer->present_family))
-        continue;
-
-      vkGetPhysicalDeviceFeatures(renderer->device_options[i],
-                                  &renderer->device_features);
-
-      if (!renderer->device_features.samplerAnisotropy)
-        continue;
-
-      OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(
-          renderer->device_options[i], NULL, &count, NULL));
-
-      OWL_ASSERT(OWL_MAX_EXTENSIONS > count);
-
-      OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(
-          renderer->device_options[i], NULL, &count, extensions));
-
-      if (!owl_vk_validate_extensions(count, extensions))
-        continue;
-
-      renderer->physical_device = renderer->device_options[i];
-
-      OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-          renderer->physical_device, renderer->surface,
-          &renderer->surface_capabilities));
-
-      vkGetPhysicalDeviceProperties(renderer->physical_device,
-                                    &renderer->device_properties);
-
-      vkGetPhysicalDeviceMemoryProperties(renderer->physical_device,
-                                          &renderer->device_mem_properties);
-
-      break;
-    }
-
-    OWL_ASSERT(renderer->device_options_count != i);
-
-#undef OWL_MAX_EXTENSIONS
-  }
-
-  /* select surface format */
-  {
-#define OWL_MAX_SURFACE_FORMATS 16
-    OwlU32 i, count;
-    VkSurfaceFormatKHR formats[OWL_MAX_SURFACE_FORMATS];
-
-    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
-        renderer->physical_device, renderer->surface, &count, NULL));
-
-    OWL_ASSERT(OWL_MAX_SURFACE_FORMATS > count);
-
-    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
-        renderer->physical_device, renderer->surface, &count, formats));
-
-    for (i = 0; i < count; ++i) {
-      if (VK_FORMAT_B8G8R8A8_SRGB != formats[i].format)
-        continue;
-
-      if (VK_COLOR_SPACE_SRGB_NONLINEAR_KHR != formats[i].colorSpace)
-        continue;
-
-      renderer->surface_format.format = VK_FORMAT_B8G8R8A8_SRGB;
-      renderer->surface_format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-      break;
-    }
-
-    OWL_ASSERT(OWL_MAX_SURFACE_FORMATS != i);
-
-#undef OWL_MAX_SURFACE_FORMATS
-  }
-
-  /* find multisampling option */
-  {
-    VkSampleCountFlags const samples =
-        renderer->device_properties.limits.framebufferColorSampleCounts &
-        renderer->device_properties.limits.framebufferDepthSampleCounts;
-
-    if (VK_SAMPLE_COUNT_2_BIT & samples) {
-      renderer->samples = VK_SAMPLE_COUNT_2_BIT;
-    } else {
-      OWL_ASSERT(0 && "disabling multisampling is not supported");
-      renderer->samples = VK_SAMPLE_COUNT_1_BIT;
-    }
-  }
-
-  {
-    VkDeviceCreateInfo device;
-    VkDeviceQueueCreateInfo queues[2];
-    float const prio = 1.0F;
-    char const *extensions[] = OWL_VK_DEVICE_EXTENSIONS;
-
-    queues[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queues[0].pNext = NULL;
-    queues[0].flags = 0;
-    queues[0].queueFamilyIndex = renderer->graphics_family;
-    queues[0].queueCount = 1;
-    queues[0].pQueuePriorities = &prio;
-
-    queues[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queues[0].pNext = NULL;
-    queues[0].flags = 0;
-    queues[0].queueFamilyIndex = renderer->present_family;
-    queues[0].queueCount = 1;
-    queues[0].pQueuePriorities = &prio;
-
-    device.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    device.pNext = NULL;
-    device.flags = 0;
-    device.queueCreateInfoCount = owl_vk_queue_count(renderer);
-    device.pQueueCreateInfos = queues;
-    device.enabledLayerCount = 0;      /* deprecated */
-    device.ppEnabledLayerNames = NULL; /* deprecated */
-    device.enabledExtensionCount = OWL_ARRAY_SIZE(extensions);
-    device.ppEnabledExtensionNames = extensions;
-    device.pEnabledFeatures = &renderer->device_features;
-
-    OWL_VK_CHECK(vkCreateDevice(renderer->physical_device, &device, NULL,
-                                &renderer->device));
-  }
+  OWL_VK_CHECK(vkCreateDevice(renderer->physical_device, &device, NULL,
+                              &renderer->device));
 
   vkGetDeviceQueue(renderer->device, renderer->graphics_family, 0,
                    &renderer->graphics_queue);
@@ -450,6 +448,7 @@ owl_init_color_attachment_(struct owl_extent const *extent,
     OWL_VK_CHECK(
         vkCreateImage(renderer->device, &img, NULL, &renderer->color_img));
   }
+
   {
     VkMemoryRequirements req;
     VkMemoryAllocateInfo mem;
@@ -579,57 +578,59 @@ owl_deinit_depth_attachment_(struct owl_renderer *renderer) {
   vkDestroyImage(renderer->device, renderer->depth_img, NULL);
 }
 
+#define OWL_VK_NO_RESTRICTIONS (OwlU32) - 1
+OWL_INTERNAL void
+owl_select_swapchain_extent_(struct owl_extent const *extent,
+                             struct owl_renderer *renderer) {
+  VkSurfaceCapabilitiesKHR const *cap = &renderer->surface_capabilities;
+
+  if (OWL_VK_NO_RESTRICTIONS == cap->currentExtent.width) {
+    renderer->swapchain_extent = cap->currentExtent;
+  } else {
+    OwlU32 min_width = cap->minImageExtent.width;
+    OwlU32 min_height = cap->minImageExtent.height;
+    OwlU32 max_width = cap->maxImageExtent.width;
+    OwlU32 max_height = cap->maxImageExtent.height;
+
+    renderer->swapchain_extent.width =
+        OWL_CLAMP((OwlU32)extent->width, min_width, max_width);
+    renderer->swapchain_extent.height =
+        OWL_CLAMP((OwlU32)extent->height, min_height, max_height);
+  }
+}
+#undef OWL_VK_NO_RESTRICTIONS
+
+#define OWL_MAX_PRESENT_MODES 6
+OWL_INTERNAL void owl_select_present_mode_(struct owl_renderer *renderer) {
+  OwlU32 i, count;
+  VkPresentModeKHR modes[OWL_MAX_PRESENT_MODES];
+
+  OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
+      renderer->physical_device, renderer->surface, &count, NULL));
+
+  OWL_ASSERT(OWL_MAX_PRESENT_MODES > count);
+
+  OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
+      renderer->physical_device, renderer->surface, &count, modes));
+
+  /* fifo is guaranteed */
+  renderer->present_mode = VK_PRESENT_MODE_FIFO_KHR;
+
+  for (i = 0; i < count; ++i)
+    if (VK_PRESENT_MODE_MAILBOX_KHR ==
+        (renderer->present_mode = modes[count - i - 1]))
+      break;
+}
+#undef OWL_MAX_PRESENT_MODES
+
 OWL_INTERNAL enum owl_code
 owl_init_swapchain_(struct owl_extent const *extent,
                     struct owl_renderer *renderer) {
   OwlU32 families[2];
-  VkPresentModeKHR mode;
 
-  /* select the swapchain extent */
-  {
-#define OWL_VK_NO_RESTRICTIONS (OwlU32) - 1
-    if (OWL_VK_NO_RESTRICTIONS ==
-        renderer->surface_capabilities.currentExtent.width) {
-      renderer->swapchain_extent =
-          renderer->surface_capabilities.currentExtent;
-    } else {
-      OwlU32 min_width = renderer->surface_capabilities.minImageExtent.width;
-      OwlU32 min_height =
-          renderer->surface_capabilities.minImageExtent.height;
-      OwlU32 max_width = renderer->surface_capabilities.maxImageExtent.width;
-      OwlU32 max_height =
-          renderer->surface_capabilities.maxImageExtent.height;
+  owl_select_swapchain_extent_(extent, renderer);
 
-      renderer->swapchain_extent.width =
-          OWL_CLAMP((OwlU32)extent->width, min_width, max_width);
-      renderer->swapchain_extent.height =
-          OWL_CLAMP((OwlU32)extent->height, min_height, max_height);
-    }
-#undef OWL_VK_NO_RESTRICTIONS
-  }
-
-  /* find present mode */
-  {
-#define OWL_MAX_PRESENT_MODES 6
-    OwlU32 i, count;
-    VkPresentModeKHR modes[OWL_MAX_PRESENT_MODES];
-
-    OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-        renderer->physical_device, renderer->surface, &count, NULL));
-
-    OWL_ASSERT(OWL_MAX_PRESENT_MODES > count);
-
-    OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-        renderer->physical_device, renderer->surface, &count, modes));
-
-    /* fifo is guaranteed */
-    mode = VK_PRESENT_MODE_FIFO_KHR;
-    for (i = 0; i < count; ++i)
-      if (VK_PRESENT_MODE_MAILBOX_KHR == (mode = modes[count - i - 1]))
-        break;
-
-#undef OWL_MAX_PRESENT_MODES
-  }
+  owl_select_present_mode_(renderer);
 
   {
     VkSwapchainCreateInfoKHR swapchain;
@@ -646,7 +647,7 @@ owl_init_swapchain_(struct owl_extent const *extent,
     swapchain.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     swapchain.preTransform = renderer->surface_capabilities.currentTransform;
     swapchain.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapchain.presentMode = mode;
+    swapchain.presentMode = renderer->present_mode;
     swapchain.clipped = VK_TRUE;
     swapchain.oldSwapchain = NULL;
 
@@ -700,6 +701,7 @@ owl_init_swapchain_(struct owl_extent const *extent,
                                      &renderer->swapchain_views[i]));
     }
   }
+
   {
     OwlU32 i;
     for (i = 0; i < renderer->img_count; ++i) {
