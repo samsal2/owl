@@ -98,11 +98,11 @@ struct owl_renderer {
   VkSemaphore renderer_finished_sema[OWL_DYN_BUF_COUNT];
   VkFence in_flight_fence[OWL_DYN_BUF_COUNT];
   /* ====================================================================== */
-  void *dyn_data;
   VkDeviceMemory dyn_mem;
   VkDeviceSize dyn_buf_size;
   VkDeviceSize dyn_aligned_size;
   VkDeviceSize dyn_alignment;
+  OwlByte *dyn_data[OWL_DYN_BUF_COUNT];
   VkBuffer dyn_bufs[OWL_DYN_BUF_COUNT];
   VkDescriptorSet dyn_sets[OWL_DYN_BUF_COUNT];
   VkDeviceSize dyn_offsets[OWL_DYN_BUF_COUNT];
@@ -113,6 +113,7 @@ struct owl_renderer {
   VkDeviceMemory dyn_garbage_mems[OWL_MAX_GARBAGE_ITEMS];
   VkBuffer dyn_garbage_bufs[OWL_MAX_GARBAGE_ITEMS];
   VkDescriptorSet dyn_garbage_sets[OWL_MAX_GARBAGE_ITEMS];
+  /* ====================================================================== */
 };
 
 enum owl_code owl_init_renderer(struct owl_extent const *extent,

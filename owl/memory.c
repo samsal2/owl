@@ -18,9 +18,7 @@ void *owl_alloc_tmp_submit_mem(struct owl_renderer *renderer,
   ref->buf = renderer->dyn_bufs[active];
   ref->set = renderer->dyn_sets[active];
 
-  data = (OwlByte *)renderer->dyn_data +
-         (unsigned)active * renderer->dyn_aligned_size +
-         renderer->dyn_offsets[active];
+  data = renderer->dyn_data[active] + renderer->dyn_offsets[active];
 
   renderer->dyn_offsets[active] = OWL_ALIGN(
       renderer->dyn_offsets[active] + size, renderer->dyn_alignment);

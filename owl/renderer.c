@@ -1761,8 +1761,14 @@ OWL_INTERNAL enum owl_code owl_init_dyn_(struct owl_renderer *renderer,
 
   /* map memory */
   {
+    OwlU32 i;
+    void *data;
     OWL_VK_CHECK(vkMapMemory(renderer->device, renderer->dyn_mem, 0,
-                             VK_WHOLE_SIZE, 0, &renderer->dyn_data));
+                             VK_WHOLE_SIZE, 0, &data));
+
+    for (i = 0; i < OWL_DYN_BUF_COUNT; ++i)
+      renderer->dyn_data[i] =
+          (OwlByte *)data + i * renderer->dyn_aligned_size;
   }
 
   {
