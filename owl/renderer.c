@@ -2105,8 +2105,8 @@ OWL_INTERNAL void owl_deinit_nearest_sampler_(struct owl_renderer *renderer) {
                    renderer->samplers[OWL_SAMPLER_TYPE_NEAREST], NULL);
 }
 
-OWL_INTERNAL enum owl_code owl_init_dyn_(struct owl_renderer *renderer,
-                                         OwlDeviceSize size) {
+OWL_INTERNAL enum owl_code owl_init_dyn_buf_(struct owl_renderer *renderer,
+                                             OwlDeviceSize size) {
   enum owl_code err = OWL_SUCCESS;
 
   renderer->active_buf = 0;
@@ -2161,9 +2161,9 @@ OWL_INTERNAL enum owl_code owl_init_dyn_(struct owl_renderer *renderer,
   {
     OwlU32 i;
     for (i = 0; i < OWL_DYN_BUF_COUNT; ++i)
-      OWL_VK_CHECK(vkBindBufferMemory(
-          renderer->device, renderer->dyn_bufs[i], renderer->dyn_mem,
-          (unsigned)i * renderer->dyn_aligned_size));
+      OWL_VK_CHECK(vkBindBufferMemory(renderer->device, renderer->dyn_bufs[i],
+                                      renderer->dyn_mem,
+                                      i * renderer->dyn_aligned_size));
   }
 
   /* map memory */
@@ -2277,7 +2277,7 @@ OWL_INTERNAL enum owl_code owl_init_dyn_(struct owl_renderer *renderer,
   return err;
 }
 
-OWL_INTERNAL void owl_deinit_dyn_(struct owl_renderer *renderer) {
+OWL_INTERNAL void owl_deinit_dyn_buf_(struct owl_renderer *renderer) {
   OwlU32 i;
 
   vkFreeDescriptorSets(renderer->device, renderer->set_pool,
@@ -2316,15 +2316,21 @@ owl_init_dyn_garbage_(struct owl_renderer *renderer) {
 OWL_INTERNAL void owl_deinit_dyn_garbage_(struct owl_renderer *renderer) {
   OwlU32 i;
 
-  for (i = 0; i < renderer->dyn_garbage_light_set_count; ++i)
-    vkFreeDescriptorSets(renderer->device, renderer->set_pool, 1,
-                         &renderer->dyn_garbage_light_sets[i]);
+  if (renderer->dyn_garbage_light_set_count) {
+    vkFreeDescriptorSets(renderer->device, renderer->set_pool,
+                         renderer->dyn_garbage_light_set_count,
+                         renderer->dyn_garbage_light_sets);
 
-  for (i = 0; i < renderer->dyn_garbage_pvm_set_count; ++i)
-    vkFreeDescriptorSets(renderer->device, renderer->set_pool, 1,
-                         &renderer->dyn_garbage_pvm_sets[i]);
+    renderer->dyn_garbage_light_set_count = 0;
+  }
 
-  renderer->dyn_garbage_pvm_set_count = 0;
+  if (renderer->dyn_garbage_pvm_set_count) {
+    vkFreeDescriptorSets(renderer->device, renderer->set_pool,
+                         renderer->dyn_garbage_pvm_set_count,
+                         renderer->dyn_garbage_pvm_sets);
+
+    renderer->dyn_garbage_pvm_set_count = 0;
+  }
 
   for (i = 0; i < renderer->dyn_garbage_mem_count; ++i)
     vkFreeMemory(renderer->device, renderer->dyn_garbage_mems[i], NULL);
@@ -2431,16 +2437,16 @@ enum owl_code owl_init_renderer(struct owl_extent const *extent,
   if (OWL_SUCCESS != (err = owl_init_nearest_sampler_(renderer)))
     goto end_deinit_linear_sampler;
 
-  if (OWL_SUCCESS != (err = owl_init_dyn_(renderer, OWL_MB)))
+  if (OWL_SUCCESS != (err = owl_init_dyn_buf_(renderer, OWL_MB)))
     goto end_deinit_nearest_sampler;
 
   if (OWL_SUCCESS != (err = owl_init_dyn_garbage_(renderer)))
-    goto end_deinit_dyn;
+    goto end_deinit_dyn_buf;
 
   goto end;
 
-end_deinit_dyn:
-  owl_deinit_dyn_(renderer);
+end_deinit_dyn_buf:
+  owl_deinit_dyn_buf_(renderer);
 
 end_deinit_nearest_sampler:
   owl_deinit_nearest_sampler_(renderer);
@@ -2531,7 +2537,7 @@ void owl_deinit_renderer(struct owl_renderer *renderer) {
   OWL_VK_CHECK(vkDeviceWaitIdle(renderer->device));
 
   owl_deinit_dyn_garbage_(renderer);
-  owl_deinit_dyn_(renderer);
+  owl_deinit_dyn_buf_(renderer);
   owl_deinit_nearest_sampler_(renderer);
   owl_deinit_linear_sampler_(renderer);
   owl_deinit_light_pipeline_(renderer);
@@ -2569,11 +2575,9 @@ void owl_deinit_renderer(struct owl_renderer *renderer) {
 enum owl_code owl_create_renderer(struct owl_window const *window,
                                   struct owl_renderer **renderer) {
   struct owl_vk_plataform plataform;
-
   owl_vk_fill_info(window, &plataform);
 
   *renderer = OWL_MALLOC(sizeof(**renderer));
-
   return owl_init_renderer(&window->framebuffer, &plataform, *renderer);
 }
 
@@ -2670,7 +2674,7 @@ enum owl_code owl_reserve_dyn_buf_mem(struct owl_renderer *renderer,
     if (OWL_SUCCESS != (err = owl_move_dyn_to_garbage_(renderer)))
       goto end;
 
-    if (OWL_SUCCESS != (err = owl_init_dyn_(renderer, 2 * required)))
+    if (OWL_SUCCESS != (err = owl_init_dyn_buf_(renderer, 2 * required)))
       goto end;
   }
 
