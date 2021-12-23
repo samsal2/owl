@@ -3,12 +3,10 @@
 #define OWL_RENDERER_INL_
 
 #include <owl/fwd.h>
-#include <owl/memory.h>
 #include <owl/pipelines.h>
 #include <owl/renderer.h>
 #include <owl/texture.h>
 #include <owl/types.h>
-#include <owl/vkutil.h>
 #include <vulkan/vulkan.h>
 
 #define OWL_MAX_DEVICE_OPTIONS 8
@@ -16,6 +14,37 @@
 #define OWL_DYN_BUF_COUNT 2
 #define OWL_MAX_GARBAGE_ITEMS 8
 #define OWL_CLEAR_VAL_COUNT 2
+#define OWL_MB (1024 * 1024)
+#define OWL_VK_MEMORY_TYPE_NONE (OwlU32) - 1
+#define OWL_VK_DEVICE_EXTENSIONS { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
+
+#define OWL_ALIGN(v, alignment) ((v + alignment - 1) & ~(alignment - 1))
+
+#ifndef NDEBUG
+#define OWL_VK_CHECK(e)                                                      \
+  do {                                                                       \
+    VkResult const result_ = e;                                              \
+    OWL_ASSERT(VK_SUCCESS == result_);                                       \
+  } while (0)
+#else
+#define OWL_VK_CHECK(e) e
+#endif
+
+#define OWL_VK_DEVICE_EXTENSIONS { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
+#define OWL_MB (1024 * 1024)
+#define OWL_VK_MEMORY_TYPE_NONE (OwlU32) - 1
+#define OWL_ALIGN(v, alignment) ((v + alignment - 1) & ~(alignment - 1))
+
+typedef OwlU32 OwlVkMemoryType;
+typedef OwlU32 OwlVkMemoryFilter;
+typedef OwlU32 OwlVkQueueFamily;
+typedef VkDeviceSize OwlDeviceSize;
+
+enum owl_vk_mem_visibility {
+  OWL_VK_MEMORY_VISIBILITY_CPU_ONLY,
+  OWL_VK_MEMORY_VISIBILITY_GPU_ONLY,
+  OWL_VK_MEMORY_VISIBILITY_CPU_TO_GPU
+};
 
 struct owl_vk_plataform {
   void const *surface_data;
@@ -47,8 +76,8 @@ struct owl_renderer {
   VkPhysicalDevice physical_device;
   VkDevice device;
   VkSampleCountFlags samples;
-  OwlU32 graphics_family;
-  OwlU32 present_family;
+  OwlVkQueueFamily graphics_family;
+  OwlVkQueueFamily present_family;
   VkQueue graphics_queue;
   VkQueue present_queue;
   /* ====================================================================== */
@@ -72,10 +101,12 @@ struct owl_renderer {
   /* ====================================================================== */
   VkFramebuffer framebuffers[OWL_MAX_SWAPCHAIN_IMAGES];
   /* ====================================================================== */
-  VkDescriptorSetLayout uniform_set_layout;
-  VkDescriptorSetLayout texture_set_layout;
+  VkDescriptorSetLayout pvm_set_layout;
+  VkDescriptorSetLayout tex_set_layout;
+  VkDescriptorSetLayout light_set_layout;
   /* ====================================================================== */
   VkPipelineLayout main_pipeline_layout;
+  VkPipelineLayout light_pipeline_layout;
   /* ====================================================================== */
   VkCommandPool cmd_pool;
   /* ====================================================================== */
@@ -84,10 +115,12 @@ struct owl_renderer {
   VkShaderModule basic_vert_shader;
   VkShaderModule basic_frag_shader;
   VkShaderModule font_frag_shader;
+  VkShaderModule light_vert_shader;
+  VkShaderModule light_frag_shader;
   /* ====================================================================== */
   enum owl_pipeline_type bound_pipeline;
   VkPipeline pipelines[OWL_PIPELINE_TYPE_COUNT];
-  VkPipelineLayout pipeline_layouts[OWL_PIPELINE_TYPE_COUNT];
+  VkPipelineLayout pipeline_layouts[OWL_PIPELINE_TYPE_COUNT]; /* non owning */
   /* ====================================================================== */
   VkSampler samplers[OWL_SAMPLER_TYPE_COUNT];
   /* ====================================================================== */
@@ -104,7 +137,8 @@ struct owl_renderer {
   VkDeviceSize dyn_alignment;
   OwlByte *dyn_data[OWL_DYN_BUF_COUNT];
   VkBuffer dyn_bufs[OWL_DYN_BUF_COUNT];
-  VkDescriptorSet dyn_sets[OWL_DYN_BUF_COUNT];
+  VkDescriptorSet dyn_pvm_sets[OWL_DYN_BUF_COUNT];
+  VkDescriptorSet dyn_light_set[OWL_DYN_BUF_COUNT];
   VkDeviceSize dyn_offsets[OWL_DYN_BUF_COUNT];
   /* ====================================================================== */
   OwlU32 dyn_garbage_buf_count;
@@ -120,8 +154,10 @@ enum owl_code owl_init_renderer(struct owl_extent const *extent,
                                 struct owl_vk_plataform const *plataform,
                                 struct owl_renderer *renderer);
 
+/* frees all resources used by the renderer (not the renderer itself) */
 void owl_deinit_renderer(struct owl_renderer *renderer);
 
+/* reinits required resources after a framebuffer size change */
 enum owl_code owl_reinit_renderer(struct owl_extent const *extent,
                                   struct owl_renderer *renderer);
 
@@ -129,6 +165,13 @@ enum owl_code owl_reinit_renderer(struct owl_extent const *extent,
 enum owl_code owl_reserve_dyn_buf_mem(struct owl_renderer *renderer,
                                       OwlDeviceSize size);
 
+/* clear the accumulated garbage of the dynamic buffer */
 void owl_clear_garbage(struct owl_renderer *renderer);
+
+/* find the memory type used by vulkan given the visiblity and filter */
+OwlVkMemoryType owl_vk_find_mem_type(struct owl_renderer const *renderer,
+                                       OwlVkMemoryFilter filter,
+                                       enum owl_vk_mem_visibility visibility);
+
 
 #endif

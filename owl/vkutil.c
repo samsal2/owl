@@ -3,48 +3,6 @@
 
 #define OWL_MAX_QUEUE_PROPERTIES 16
 
-#define OWL_QUEUE_UNSELECTED (OwlU32) - 1
-int owl_vk_query_families(struct owl_renderer const *renderer,
-                          VkPhysicalDevice device, OwlU32 *graphics_family,
-                          OwlU32 *present_family) {
-  OwlU32 i;
-  OwlU32 count;
-  VkQueueFamilyProperties props[OWL_MAX_QUEUE_PROPERTIES];
-
-  vkGetPhysicalDeviceQueueFamilyProperties(device, &count, NULL);
-  OWL_ASSERT(OWL_MAX_QUEUE_PROPERTIES > count);
-  vkGetPhysicalDeviceQueueFamilyProperties(device, &count, props);
-
-  *graphics_family = OWL_QUEUE_UNSELECTED;
-  *present_family = OWL_QUEUE_UNSELECTED;
-
-  for (i = 0; i < count; ++i) {
-    VkBool32 surface;
-
-    if (!props[i].queueCount)
-      continue;
-
-    if (VK_QUEUE_GRAPHICS_BIT & props[i].queueFlags)
-      *graphics_family = i;
-
-    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(
-        device, i, renderer->surface, &surface));
-
-    if (surface)
-      *present_family = i;
-
-    if (OWL_QUEUE_UNSELECTED == *graphics_family)
-      continue;
-
-    if (OWL_QUEUE_UNSELECTED == *present_family)
-      continue;
-
-    return 1;
-  }
-
-  return 0;
-}
-#undef OWL_QUEUE_UNSELECTED
 
 int owl_vk_validate_extensions(OwlU32 count,
                                VkExtensionProperties const *extensions) {
@@ -85,11 +43,11 @@ owl_vk_as_property_flags(enum owl_vk_mem_visibility visibility) {
   }
 }
 
-OtterVkMemoryType
+OwlVkMemoryType
 owl_vk_find_mem_type(struct owl_renderer const *renderer,
-                     OtterVkMemoryFilter filter,
+                     OwlVkMemoryFilter filter,
                      enum owl_vk_mem_visibility visibility) {
-  OtterVkMemoryType type;
+  OwlVkMemoryType type;
   VkMemoryPropertyFlags props = owl_vk_as_property_flags(visibility);
 
   for (type = 0; type < renderer->device_mem_properties.memoryTypeCount;

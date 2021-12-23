@@ -23,8 +23,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   texture.h
   texture_internal.h
   types.h
-  vkutil.c
-  vkutil.h
   window.c
   window.h
   window_internal.h)

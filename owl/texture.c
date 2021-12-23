@@ -5,7 +5,6 @@
 #include <owl/texture.h>
 #include <owl/texture_internal.h>
 #include <owl/types.h>
-#include <owl/vkutil.h>
 #include <stb/stb_image.h>
 
 OWL_INTERNAL VkCommandBuffer
@@ -319,7 +318,7 @@ enum owl_code owl_init_texture(struct owl_renderer *renderer, int width,
     set.pNext = NULL;
     set.descriptorPool = renderer->set_pool;
     set.descriptorSetCount = 1;
-    set.pSetLayouts = &renderer->texture_set_layout;
+    set.pSetLayouts = &renderer->tex_set_layout;
 
     OWL_VK_CHECK(
         vkAllocateDescriptorSets(renderer->device, &set, &texture->set));
@@ -487,7 +486,7 @@ enum owl_code owl_init_texture_with_ref(
     set.pNext = NULL;
     set.descriptorPool = renderer->set_pool;
     set.descriptorSetCount = 1;
-    set.pSetLayouts = &renderer->texture_set_layout;
+    set.pSetLayouts = &renderer->tex_set_layout;
 
     OWL_VK_CHECK(
         vkAllocateDescriptorSets(renderer->device, &set, &texture->set));

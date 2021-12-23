@@ -11,16 +11,22 @@ struct owl_vertex {
   OwlV2 uv;
 };
 
-struct owl_uniform {
+struct owl_pvm {
   OwlM4 proj;
   OwlM4 view;
   OwlM4 model;
 };
 
+struct owl_lighting {
+  OwlV3 light;
+  OwlV3 view;
+};
+
 enum owl_render_group_type {
   OWL_RENDER_GROUP_TYPE_NOP,
   OWL_RENDER_GROUP_TYPE_BASIC,
-  OWL_RENDER_GROUP_TYPE_QUAD
+  OWL_RENDER_GROUP_TYPE_QUAD,
+  OWL_RENDER_GROUP_LIGHT_TEST
 };
 
 struct owl_render_group_basic {
@@ -29,18 +35,26 @@ struct owl_render_group_basic {
   OwlU32 index_count;
   OwlU32 const *index;
   struct owl_vertex const *vertex;
-  struct owl_uniform pvm;
+  struct owl_pvm pvm;
 };
 
 struct owl_render_group_quad {
   OwlTexture texture;
   struct owl_vertex vertex[4];
-  struct owl_uniform pvm;
+  struct owl_pvm pvm;
+};
+
+struct owl_render_group_light_test {
+  OwlTexture texture;
+  struct owl_vertex vertex[4];
+  struct owl_pvm pvm;
+  struct owl_lighting lighting;
 };
 
 struct owl_render_group_storage {
   struct owl_render_group_basic as_basic;
   struct owl_render_group_quad as_quad;
+  struct owl_render_group_light_test as_light;
 };
 
 struct owl_render_group {

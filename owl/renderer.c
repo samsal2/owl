@@ -1,13 +1,117 @@
+#include "vulkan/vulkan_core.h"
 #include <owl/internal.h>
 #include <owl/render_group.h>
 #include <owl/renderer_internal.h>
 #include <owl/types.h>
-#include <owl/vkutil.h>
 #include <owl/window.h>
 #include <owl/window_internal.h>
 
 #define OWL_VK_GET_INSTANCE_PROC_ADDR(i, fn)                                 \
   ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))
+
+OWL_INTERNAL int owl_vk_query_families(struct owl_renderer const *renderer,
+                                       VkPhysicalDevice device,
+                                       OwlU32 *graphics_family,
+                                       OwlU32 *present_family) {
+#define OWL_MAX_QUEUE_PROPERTIES 16
+#define OWL_QUEUE_UNSELECTED (OwlU32) - 1
+  OwlU32 i;
+  OwlU32 count;
+  VkQueueFamilyProperties props[OWL_MAX_QUEUE_PROPERTIES];
+
+  vkGetPhysicalDeviceQueueFamilyProperties(device, &count, NULL);
+  OWL_ASSERT(OWL_MAX_QUEUE_PROPERTIES > count);
+  vkGetPhysicalDeviceQueueFamilyProperties(device, &count, props);
+
+  *graphics_family = OWL_QUEUE_UNSELECTED;
+  *present_family = OWL_QUEUE_UNSELECTED;
+
+  for (i = 0; i < count; ++i) {
+    VkBool32 surface;
+
+    if (!props[i].queueCount)
+      continue;
+
+    if (VK_QUEUE_GRAPHICS_BIT & props[i].queueFlags)
+      *graphics_family = i;
+
+    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(
+        device, i, renderer->surface, &surface));
+
+    if (surface)
+      *present_family = i;
+
+    if (OWL_QUEUE_UNSELECTED == *graphics_family)
+      continue;
+
+    if (OWL_QUEUE_UNSELECTED == *present_family)
+      continue;
+
+    return 1;
+  }
+
+  return 0;
+#undef OWL_QUEUE_UNSELECTED
+#undef OWL_MAX_QUEUE_PROPERTIES
+}
+
+OWL_INTERNAL int
+owl_vk_validate_extensions(OwlU32 count,
+                           VkExtensionProperties const *extensions) {
+  char const *validate[] = OWL_VK_DEVICE_EXTENSIONS;
+  OwlU32 i, j, found[OWL_ARRAY_SIZE(validate)];
+
+  OWL_MEMSET(found, 0, sizeof(found));
+
+  for (i = 0; i < count; ++i)
+    for (j = 0; j < OWL_ARRAY_SIZE(validate); ++j)
+      if (!strcmp(validate[j], extensions[i].extensionName))
+        found[j] = 1;
+
+  for (i = 0; i < OWL_ARRAY_SIZE(validate); ++i)
+    if (!found[i])
+      return 0;
+
+  return 1;
+}
+
+OWL_INTERNAL int owl_vk_shares_families(struct owl_renderer const *renderer) {
+  return renderer->graphics_family == renderer->present_family;
+}
+
+OWL_INTERNAL OwlU32 owl_vk_queue_count(struct owl_renderer const *renderer) {
+  return owl_vk_shares_families(renderer) ? 1 : 2;
+}
+
+OWL_INTERNAL VkMemoryPropertyFlags
+owl_vk_as_property_flags(enum owl_vk_mem_visibility visibility) {
+  switch (visibility) {
+  case OWL_VK_MEMORY_VISIBILITY_CPU_ONLY:
+  case OWL_VK_MEMORY_VISIBILITY_CPU_TO_GPU:
+    return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+  case OWL_VK_MEMORY_VISIBILITY_GPU_ONLY:
+    return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+  }
+}
+
+OwlVkMemoryType owl_vk_find_mem_type(struct owl_renderer const *renderer,
+                                     OwlVkMemoryFilter filter,
+                                     enum owl_vk_mem_visibility visibility) {
+  OwlVkMemoryType type;
+  VkMemoryPropertyFlags props = owl_vk_as_property_flags(visibility);
+
+  for (type = 0; type < renderer->device_mem_properties.memoryTypeCount;
+       ++type) {
+    uint32_t flags =
+        renderer->device_mem_properties.memoryTypes[type].propertyFlags;
+
+    if ((flags & props) && (filter & (1U << type)))
+      return type;
+  }
+
+  return OWL_VK_MEMORY_TYPE_NONE;
+}
 
 #ifdef OWL_ENABLE_VALIDATION
 OWL_GLOBAL char const *const validation_layers[] = {
@@ -578,10 +682,10 @@ owl_deinit_depth_attachment_(struct owl_renderer *renderer) {
   vkDestroyImage(renderer->device, renderer->depth_img, NULL);
 }
 
-#define OWL_VK_NO_RESTRICTIONS (OwlU32) - 1
 OWL_INTERNAL void
 owl_select_swapchain_extent_(struct owl_extent const *extent,
                              struct owl_renderer *renderer) {
+#define OWL_VK_NO_RESTRICTIONS (OwlU32) - 1
   VkSurfaceCapabilitiesKHR const *cap = &renderer->surface_capabilities;
 
   if (OWL_VK_NO_RESTRICTIONS == cap->currentExtent.width) {
@@ -597,11 +701,11 @@ owl_select_swapchain_extent_(struct owl_extent const *extent,
     renderer->swapchain_extent.height =
         OWL_CLAMP((OwlU32)extent->height, min_height, max_height);
   }
-}
 #undef OWL_VK_NO_RESTRICTIONS
+}
 
-#define OWL_MAX_PRESENT_MODES 6
 OWL_INTERNAL void owl_select_present_mode_(struct owl_renderer *renderer) {
+#define OWL_MAX_PRESENT_MODES 6
   OwlU32 i, count;
   VkPresentModeKHR modes[OWL_MAX_PRESENT_MODES];
 
@@ -620,8 +724,8 @@ OWL_INTERNAL void owl_select_present_mode_(struct owl_renderer *renderer) {
     if (VK_PRESENT_MODE_MAILBOX_KHR ==
         (renderer->present_mode = modes[count - i - 1]))
       break;
-}
 #undef OWL_MAX_PRESENT_MODES
+}
 
 OWL_INTERNAL enum owl_code
 owl_init_swapchain_(struct owl_extent const *extent,
@@ -660,7 +764,7 @@ owl_init_swapchain_(struct owl_extent const *extent,
       families[1] = renderer->present_family;
 
       swapchain.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-      swapchain.queueFamilyIndexCount = OWL_VK_QUEUE_TYPE_COUNT;
+      swapchain.queueFamilyIndexCount = owl_vk_queue_count(renderer);
       swapchain.pQueueFamilyIndices = families;
     }
 
@@ -668,14 +772,17 @@ owl_init_swapchain_(struct owl_extent const *extent,
                                       &renderer->swapchain));
   }
 
-  OWL_VK_CHECK(vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
-                                       &renderer->img_count, NULL));
+  {
+    OWL_VK_CHECK(vkGetSwapchainImagesKHR(
+        renderer->device, renderer->swapchain, &renderer->img_count, NULL));
 
-  OWL_ASSERT(OWL_MAX_SWAPCHAIN_IMAGES > renderer->img_count);
+    OWL_ASSERT(OWL_MAX_SWAPCHAIN_IMAGES > renderer->img_count);
 
-  OWL_VK_CHECK(vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
-                                       &renderer->img_count,
-                                       renderer->swapchain_imgs));
+    OWL_VK_CHECK(vkGetSwapchainImagesKHR(
+        renderer->device, renderer->swapchain, &renderer->img_count,
+        renderer->swapchain_imgs));
+  }
+
   {
     OwlU32 i;
     for (i = 0; i < renderer->img_count; ++i) {
@@ -907,19 +1014,19 @@ owl_init_uniform_set_layout_(struct owl_renderer *renderer) {
   layout.pBindings = &binding;
 
   OWL_VK_CHECK(vkCreateDescriptorSetLayout(renderer->device, &layout, NULL,
-                                           &renderer->uniform_set_layout));
+                                           &renderer->pvm_set_layout));
 
   return OWL_SUCCESS;
 }
 
 OWL_INTERNAL void
 owl_deinit_uniform_set_layout_(struct owl_renderer *renderer) {
-  vkDestroyDescriptorSetLayout(renderer->device, renderer->uniform_set_layout,
+  vkDestroyDescriptorSetLayout(renderer->device, renderer->pvm_set_layout,
                                NULL);
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_texture_set_layout_(struct owl_renderer *renderer) {
+owl_init_tex_set_layout_(struct owl_renderer *renderer) {
   VkDescriptorSetLayoutBinding binding;
   VkDescriptorSetLayoutCreateInfo layout;
 
@@ -936,14 +1043,41 @@ owl_init_texture_set_layout_(struct owl_renderer *renderer) {
   layout.pBindings = &binding;
 
   OWL_VK_CHECK(vkCreateDescriptorSetLayout(renderer->device, &layout, NULL,
-                                           &renderer->texture_set_layout));
+                                           &renderer->tex_set_layout));
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void
-owl_deinit_texture_set_layout_(struct owl_renderer *renderer) {
-  vkDestroyDescriptorSetLayout(renderer->device, renderer->texture_set_layout,
+OWL_INTERNAL void owl_deinit_tex_set_layout_(struct owl_renderer *renderer) {
+  vkDestroyDescriptorSetLayout(renderer->device, renderer->tex_set_layout,
+                               NULL);
+}
+
+OWL_INTERNAL enum owl_code
+owl_init_light_set_layout_(struct owl_renderer *renderer) {
+  VkDescriptorSetLayoutBinding binding;
+  VkDescriptorSetLayoutCreateInfo layout;
+
+  binding.binding = 0;
+  binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+  binding.descriptorCount = 1;
+  binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+  binding.pImmutableSamplers = NULL;
+
+  layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  layout.pNext = NULL;
+  layout.flags = 0;
+  layout.bindingCount = 1;
+  layout.pBindings = &binding;
+
+  OWL_VK_CHECK(vkCreateDescriptorSetLayout(renderer->device, &layout, NULL,
+                                           &renderer->light_set_layout));
+
+  return OWL_SUCCESS;
+}
+
+OWL_INTERNAL void owl_deinit_light_set_layout_(struct owl_renderer *renderer) {
+  vkDestroyDescriptorSetLayout(renderer->device, renderer->light_set_layout,
                                NULL);
 }
 
@@ -952,8 +1086,8 @@ owl_init_main_pipeline_layout_(struct owl_renderer *renderer) {
   VkPipelineLayoutCreateInfo layout;
   VkDescriptorSetLayout sets[2];
 
-  sets[0] = renderer->uniform_set_layout;
-  sets[1] = renderer->texture_set_layout;
+  sets[0] = renderer->pvm_set_layout;
+  sets[1] = renderer->tex_set_layout;
 
   layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   layout.pNext = NULL;
@@ -969,8 +1103,38 @@ owl_init_main_pipeline_layout_(struct owl_renderer *renderer) {
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_deinit_pipeline_layout_(struct owl_renderer *renderer) {
+OWL_INTERNAL void
+owl_deinit_main_pipeline_layout_(struct owl_renderer *renderer) {
   vkDestroyPipelineLayout(renderer->device, renderer->main_pipeline_layout,
+                          NULL);
+}
+
+OWL_INTERNAL enum owl_code
+owl_init_light_pipeline_layout_(struct owl_renderer *renderer) {
+  VkPipelineLayoutCreateInfo layout;
+  VkDescriptorSetLayout sets[3];
+
+  sets[0] = renderer->pvm_set_layout;
+  sets[1] = renderer->tex_set_layout;
+  sets[2] = renderer->light_set_layout;
+
+  layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  layout.pNext = NULL;
+  layout.flags = 0;
+  layout.setLayoutCount = OWL_ARRAY_SIZE(sets);
+  layout.pSetLayouts = sets;
+  layout.pushConstantRangeCount = 0;
+  layout.pPushConstantRanges = NULL;
+
+  OWL_VK_CHECK(vkCreatePipelineLayout(renderer->device, &layout, NULL,
+                                      &renderer->light_pipeline_layout));
+
+  return OWL_SUCCESS;
+}
+
+OWL_INTERNAL void
+owl_deinit_light_pipeline_layout_(struct owl_renderer *renderer) {
+  vkDestroyPipelineLayout(renderer->device, renderer->light_pipeline_layout,
                           NULL);
 }
 
@@ -1047,6 +1211,56 @@ owl_init_font_frag_shader_(struct owl_renderer *renderer) {
 OWL_INTERNAL void
 owl_deinit_font_frag_shader_(struct owl_renderer *renderer) {
   vkDestroyShaderModule(renderer->device, renderer->font_frag_shader, NULL);
+}
+
+OWL_INTERNAL enum owl_code
+owl_init_light_vert_shader_(struct owl_renderer *renderer) {
+  VkShaderModuleCreateInfo shader;
+
+  OWL_LOCAL_PERSIST OwlU32 const code[] = {
+#include <shaders/light_vert.spv.u32>
+  };
+
+  shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  shader.pNext = NULL;
+  shader.flags = 0;
+  shader.codeSize = sizeof(code);
+  shader.pCode = code;
+
+  OWL_VK_CHECK(vkCreateShaderModule(renderer->device, &shader, NULL,
+                                    &renderer->light_vert_shader));
+
+  return OWL_SUCCESS;
+}
+
+OWL_INTERNAL void
+owl_deinit_light_vert_shader_(struct owl_renderer *renderer) {
+  vkDestroyShaderModule(renderer->device, renderer->light_vert_shader, NULL);
+}
+
+OWL_INTERNAL enum owl_code
+owl_init_light_frag_shader_(struct owl_renderer *renderer) {
+  VkShaderModuleCreateInfo shader;
+
+  OWL_LOCAL_PERSIST OwlU32 const code[] = {
+#include <shaders/light_frag.spv.u32>
+  };
+
+  shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  shader.pNext = NULL;
+  shader.flags = 0;
+  shader.codeSize = sizeof(code);
+  shader.pCode = code;
+
+  OWL_VK_CHECK(vkCreateShaderModule(renderer->device, &shader, NULL,
+                                    &renderer->light_frag_shader));
+
+  return OWL_SUCCESS;
+}
+
+OWL_INTERNAL void
+owl_deinit_light_frag_shader_(struct owl_renderer *renderer) {
+  vkDestroyShaderModule(renderer->device, renderer->light_frag_shader, NULL);
 }
 
 OWL_INTERNAL enum owl_code
@@ -1621,6 +1835,198 @@ OWL_INTERNAL void owl_deinit_font_pipeline_(struct owl_renderer *renderer) {
                     renderer->pipelines[OWL_PIPELINE_TYPE_FONT], NULL);
 }
 
+OWL_INTERNAL enum owl_code
+owl_init_light_pipeline_(struct owl_renderer *renderer) {
+  VkVertexInputBindingDescription input_binding;
+  VkVertexInputAttributeDescription input_attr[3];
+  VkPipelineVertexInputStateCreateInfo input;
+  VkPipelineInputAssemblyStateCreateInfo input_assembly;
+  VkViewport viewport;
+  VkRect2D scissor;
+  VkPipelineViewportStateCreateInfo viewport_state;
+  VkPipelineRasterizationStateCreateInfo rasterization;
+  VkPipelineMultisampleStateCreateInfo multisample;
+  VkPipelineColorBlendAttachmentState color_blend_attach;
+  VkPipelineColorBlendStateCreateInfo color_blend;
+  VkPipelineDepthStencilStateCreateInfo depth_stencil;
+  VkPipelineShaderStageCreateInfo stages[2];
+  VkGraphicsPipelineCreateInfo pipeline;
+
+  input_binding.binding = 0;
+  input_binding.stride = sizeof(struct owl_vertex);
+  input_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+  input_attr[0].binding = 0;
+  input_attr[0].location = 0;
+  input_attr[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+  input_attr[0].offset = offsetof(struct owl_vertex, pos);
+  input_attr[1].binding = 0;
+  input_attr[1].location = 1;
+  input_attr[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+  input_attr[1].offset = offsetof(struct owl_vertex, color);
+  input_attr[2].binding = 0;
+  input_attr[2].location = 2;
+  input_attr[2].format = VK_FORMAT_R32G32_SFLOAT;
+  input_attr[2].offset = offsetof(struct owl_vertex, uv);
+
+  input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+  input.pNext = NULL;
+  input.flags = 0;
+  input.vertexBindingDescriptionCount = 1;
+  input.pVertexBindingDescriptions = &input_binding;
+  input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(input_attr);
+  input.pVertexAttributeDescriptions = input_attr;
+
+  input_assembly.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+  input_assembly.pNext = NULL;
+  input_assembly.flags = 0;
+  input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  input_assembly.primitiveRestartEnable = VK_FALSE;
+
+  viewport.x = 0.0F;
+  viewport.y = 0.0F;
+  viewport.width = renderer->swapchain_extent.width;
+  viewport.height = renderer->swapchain_extent.height;
+  viewport.minDepth = 0.0F;
+  viewport.maxDepth = 1.0F;
+
+  scissor.offset.x = 0;
+  scissor.offset.y = 0;
+  scissor.extent = renderer->swapchain_extent;
+
+  viewport_state.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  viewport_state.pNext = NULL;
+  viewport_state.flags = 0;
+  viewport_state.viewportCount = 1;
+  viewport_state.pViewports = &viewport;
+  viewport_state.scissorCount = 1;
+  viewport_state.pScissors = &scissor;
+
+  rasterization.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+  rasterization.pNext = NULL;
+  rasterization.flags = 0;
+  rasterization.depthClampEnable = VK_FALSE;
+  rasterization.rasterizerDiscardEnable = VK_FALSE;
+  rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+  rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+  rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+  rasterization.depthBiasEnable = VK_FALSE;
+  rasterization.depthBiasConstantFactor = 0.0F;
+  rasterization.depthBiasClamp = 0.0F;
+  rasterization.depthBiasSlopeFactor = 0.0F;
+  rasterization.lineWidth = 1.0F;
+
+  multisample.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+  multisample.pNext = NULL;
+  multisample.flags = 0;
+  multisample.rasterizationSamples = renderer->samples;
+  multisample.sampleShadingEnable = VK_FALSE;
+  multisample.minSampleShading = 1.0F;
+  multisample.pSampleMask = NULL;
+  multisample.alphaToCoverageEnable = VK_FALSE;
+  multisample.alphaToOneEnable = VK_FALSE;
+
+#define OWL_COLOR_WRITE_MASK                                                 \
+  (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |                     \
+   VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
+
+  color_blend_attach.blendEnable = VK_TRUE;
+  color_blend_attach.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+  color_blend_attach.dstColorBlendFactor =
+      VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+  color_blend_attach.colorBlendOp = VK_BLEND_OP_ADD;
+  color_blend_attach.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+  color_blend_attach.dstAlphaBlendFactor =
+      VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+  color_blend_attach.alphaBlendOp = VK_BLEND_OP_ADD;
+  color_blend_attach.colorWriteMask = OWL_COLOR_WRITE_MASK;
+
+#undef OWL_COLOR_WRITE_MASK
+
+  color_blend.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+  color_blend.pNext = NULL;
+  color_blend.flags = 0;
+  color_blend.logicOpEnable = VK_FALSE;
+  color_blend.logicOp = VK_LOGIC_OP_COPY;
+  color_blend.attachmentCount = 1;
+  color_blend.pAttachments = &color_blend_attach;
+  color_blend.blendConstants[0] = 0.0F;
+  color_blend.blendConstants[1] = 0.0F;
+  color_blend.blendConstants[2] = 0.0F;
+  color_blend.blendConstants[3] = 0.0F;
+
+  depth_stencil.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  depth_stencil.pNext = NULL;
+  depth_stencil.flags = 0;
+  depth_stencil.depthTestEnable = VK_TRUE;
+  depth_stencil.depthWriteEnable = VK_TRUE;
+  depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
+  depth_stencil.depthBoundsTestEnable = VK_FALSE;
+  depth_stencil.stencilTestEnable = VK_FALSE;
+  depth_stencil.minDepthBounds = 0.0F;
+  depth_stencil.maxDepthBounds = 1.0F;
+
+  OWL_MEMSET(&depth_stencil.front, 0, sizeof(depth_stencil.front));
+
+  OWL_MEMSET(&depth_stencil.back, 0, sizeof(depth_stencil.back));
+
+  stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  stages[0].pNext = NULL;
+  stages[0].flags = 0;
+  stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+  stages[0].module = renderer->light_vert_shader;
+  stages[0].pName = "main";
+  stages[0].pSpecializationInfo = NULL;
+
+  stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  stages[1].pNext = NULL;
+  stages[1].flags = 0;
+  stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+  stages[1].module = renderer->light_frag_shader;
+  stages[1].pName = "main";
+  stages[1].pSpecializationInfo = NULL;
+
+  pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+  pipeline.pNext = NULL;
+  pipeline.flags = 0;
+  pipeline.stageCount = OWL_ARRAY_SIZE(stages);
+  pipeline.pStages = stages;
+  pipeline.pVertexInputState = &input;
+  pipeline.pInputAssemblyState = &input_assembly;
+  pipeline.pTessellationState = NULL;
+  pipeline.pViewportState = &viewport_state;
+  pipeline.pRasterizationState = &rasterization;
+  pipeline.pMultisampleState = &multisample;
+  pipeline.pDepthStencilState = &depth_stencil;
+  pipeline.pColorBlendState = &color_blend;
+  pipeline.pDynamicState = NULL;
+  pipeline.layout = renderer->light_pipeline_layout;
+  pipeline.renderPass = renderer->main_render_pass;
+  pipeline.subpass = 0;
+  pipeline.basePipelineHandle = NULL;
+  pipeline.basePipelineIndex = -1;
+
+  OWL_VK_CHECK(vkCreateGraphicsPipelines(
+      renderer->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
+      &renderer->pipelines[OWL_PIPELINE_TYPE_LIGHT]));
+
+  renderer->pipeline_layouts[OWL_PIPELINE_TYPE_LIGHT] =
+      renderer->light_pipeline_layout;
+
+  return OWL_SUCCESS;
+}
+
+OWL_INTERNAL void owl_deinit_light_pipeline_(struct owl_renderer *renderer) {
+  vkDestroyPipeline(renderer->device,
+                    renderer->pipelines[OWL_PIPELINE_TYPE_LIGHT], NULL);
+}
+
 #define OWL_MAX_ANISOTROPY 16
 
 OWL_INTERNAL enum owl_code
@@ -1771,13 +2177,14 @@ OWL_INTERNAL enum owl_code owl_init_dyn_(struct owl_renderer *renderer,
           (OwlByte *)data + i * renderer->dyn_aligned_size;
   }
 
+  /* init pvm descriptor sets */
   {
     OwlU32 i;
     VkDescriptorSetAllocateInfo sets;
     VkDescriptorSetLayout layouts[OWL_DYN_BUF_COUNT];
 
     for (i = 0; i < OWL_DYN_BUF_COUNT; ++i)
-      layouts[i] = renderer->uniform_set_layout;
+      layouts[i] = renderer->pvm_set_layout;
 
     sets.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     sets.pNext = NULL;
@@ -1786,10 +2193,28 @@ OWL_INTERNAL enum owl_code owl_init_dyn_(struct owl_renderer *renderer,
     sets.pSetLayouts = layouts;
 
     OWL_VK_CHECK(vkAllocateDescriptorSets(renderer->device, &sets,
-                                          renderer->dyn_sets));
+                                          renderer->dyn_pvm_sets));
   }
 
-  /* write the descriptor sets */
+  {
+    OwlU32 i;
+    VkDescriptorSetAllocateInfo sets;
+    VkDescriptorSetLayout layouts[OWL_DYN_BUF_COUNT];
+
+    for (i = 0; i < OWL_DYN_BUF_COUNT; ++i)
+      layouts[i] = renderer->light_set_layout;
+
+    sets.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    sets.pNext = NULL;
+    sets.descriptorPool = renderer->set_pool;
+    sets.descriptorSetCount = OWL_ARRAY_SIZE(layouts);
+    sets.pSetLayouts = layouts;
+
+    OWL_VK_CHECK(vkAllocateDescriptorSets(renderer->device, &sets,
+                                          renderer->dyn_light_set));
+  }
+
+  /* write the pvm descriptor sets */
   {
     OwlU32 i;
     for (i = 0; i < OWL_DYN_BUF_COUNT; ++i) {
@@ -1798,11 +2223,37 @@ OWL_INTERNAL enum owl_code owl_init_dyn_(struct owl_renderer *renderer,
 
       buf.buffer = renderer->dyn_bufs[i];
       buf.offset = 0;
-      buf.range = sizeof(struct owl_uniform);
+      buf.range = sizeof(struct owl_pvm);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
-      write.dstSet = renderer->dyn_sets[i];
+      write.dstSet = renderer->dyn_pvm_sets[i];
+      write.dstBinding = 0;
+      write.dstArrayElement = 0;
+      write.descriptorCount = 1;
+      write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+      write.pImageInfo = NULL;
+      write.pBufferInfo = &buf;
+      write.pTexelBufferView = NULL;
+
+      vkUpdateDescriptorSets(renderer->device, 1, &write, 0, NULL);
+    }
+  }
+
+  /* write light sets */
+  {
+    OwlU32 i;
+    for (i = 0; i < OWL_DYN_BUF_COUNT; ++i) {
+      VkWriteDescriptorSet write;
+      VkDescriptorBufferInfo buf;
+
+      buf.buffer = renderer->dyn_bufs[i];
+      buf.offset = 0;
+      buf.range = sizeof(struct owl_lighting);
+
+      write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      write.pNext = NULL;
+      write.dstSet = renderer->dyn_light_set[i];
       write.dstBinding = 0;
       write.dstArrayElement = 0;
       write.descriptorCount = 1;
@@ -1831,7 +2282,7 @@ OWL_INTERNAL void owl_deinit_dyn_(struct owl_renderer *renderer) {
   /* kind of redundant */
   for (i = 0; i < OWL_DYN_BUF_COUNT; ++i)
     vkFreeDescriptorSets(renderer->device, renderer->set_pool, 1,
-                         &renderer->dyn_sets[i]);
+                         &renderer->dyn_pvm_sets[i]);
 
   vkFreeMemory(renderer->device, renderer->dyn_mem, NULL);
 
@@ -1924,14 +2375,20 @@ enum owl_code owl_init_renderer(struct owl_extent const *extent,
   if (OWL_SUCCESS != (err = owl_init_uniform_set_layout_(renderer)))
     goto end_deinit_sync;
 
-  if (OWL_SUCCESS != (err = owl_init_texture_set_layout_(renderer)))
+  if (OWL_SUCCESS != (err = owl_init_tex_set_layout_(renderer)))
     goto end_deinit_uniform_set_layout;
 
+  if (OWL_SUCCESS != (err = owl_init_light_set_layout_(renderer)))
+    goto end_deinit_tex_set_layout;
+
   if (OWL_SUCCESS != (err = owl_init_main_pipeline_layout_(renderer)))
-    goto end_deinit_texture_set_layout;
+    goto end_deinit_light_set_layout;
+
+  if (OWL_SUCCESS != (err = owl_init_light_pipeline_layout_(renderer)))
+    goto end_deinit_main_pipeline_layout;
 
   if (OWL_SUCCESS != (err = owl_init_basic_vert_shader_(renderer)))
-    goto end_deinit_main_pipeline_layout;
+    goto end_deinit_light_pipeline_layout;
 
   if (OWL_SUCCESS != (err = owl_init_basic_frag_shader_(renderer)))
     goto end_deinit_basic_vert_shader;
@@ -1939,8 +2396,14 @@ enum owl_code owl_init_renderer(struct owl_extent const *extent,
   if (OWL_SUCCESS != (err = owl_init_font_frag_shader_(renderer)))
     goto end_deinit_basic_frag_shader;
 
-  if (OWL_SUCCESS != (err = owl_init_main_pipeline_(renderer)))
+  if (OWL_SUCCESS != (err = owl_init_light_vert_shader_(renderer)))
     goto end_deinit_font_frag_shader;
+
+  if (OWL_SUCCESS != (err = owl_init_light_frag_shader_(renderer)))
+    goto end_deinit_light_vert_shader;
+
+  if (OWL_SUCCESS != (err = owl_init_main_pipeline_(renderer)))
+    goto end_deinit_light_frag_shader;
 
   if (OWL_SUCCESS != (err = owl_init_wires_pipeline_(renderer)))
     goto end_deinit_main_pipeline;
@@ -1948,8 +2411,11 @@ enum owl_code owl_init_renderer(struct owl_extent const *extent,
   if (OWL_SUCCESS != (err = owl_init_font_pipeline_(renderer)))
     goto end_deinit_wires_pipeline;
 
-  if (OWL_SUCCESS != (err = owl_init_linear_sampler_(renderer)))
+  if (OWL_SUCCESS != (err = owl_init_light_pipeline_(renderer)))
     goto end_deinit_font_pipeline;
+
+  if (OWL_SUCCESS != (err = owl_init_linear_sampler_(renderer)))
+    goto end_deinit_light_pipeline;
 
   if (OWL_SUCCESS != (err = owl_init_nearest_sampler_(renderer)))
     goto end_deinit_linear_sampler;
@@ -1971,6 +2437,9 @@ end_deinit_nearest_sampler:
 end_deinit_linear_sampler:
   owl_deinit_linear_sampler_(renderer);
 
+end_deinit_light_pipeline:
+  owl_deinit_light_pipeline_(renderer);
+
 end_deinit_font_pipeline:
   owl_deinit_font_pipeline_(renderer);
 
@@ -1979,6 +2448,12 @@ end_deinit_wires_pipeline:
 
 end_deinit_main_pipeline:
   owl_deinit_main_pipeline_(renderer);
+
+end_deinit_light_frag_shader:
+  owl_deinit_light_frag_shader_(renderer);
+
+end_deinit_light_vert_shader:
+  owl_deinit_light_vert_shader_(renderer);
 
 end_deinit_font_frag_shader:
   owl_deinit_font_frag_shader_(renderer);
@@ -1989,11 +2464,17 @@ end_deinit_basic_frag_shader:
 end_deinit_basic_vert_shader:
   owl_deinit_basic_vert_shader_(renderer);
 
-end_deinit_main_pipeline_layout:
-  owl_deinit_pipeline_layout_(renderer);
+end_deinit_light_pipeline_layout:
+  owl_deinit_light_pipeline_layout_(renderer);
 
-end_deinit_texture_set_layout:
-  owl_deinit_texture_set_layout_(renderer);
+end_deinit_main_pipeline_layout:
+  owl_deinit_main_pipeline_layout_(renderer);
+
+end_deinit_light_set_layout:
+  owl_deinit_light_set_layout_(renderer);
+
+end_deinit_tex_set_layout:
+  owl_deinit_tex_set_layout_(renderer);
 
 end_deinit_uniform_set_layout:
   owl_deinit_uniform_set_layout_(renderer);
@@ -2042,14 +2523,19 @@ void owl_deinit_renderer(struct owl_renderer *renderer) {
   owl_deinit_dyn_(renderer);
   owl_deinit_nearest_sampler_(renderer);
   owl_deinit_linear_sampler_(renderer);
+  owl_deinit_light_pipeline_(renderer);
   owl_deinit_font_pipeline_(renderer);
   owl_deinit_wires_pipeline_(renderer);
   owl_deinit_main_pipeline_(renderer);
+  owl_deinit_light_frag_shader_(renderer);
+  owl_deinit_light_vert_shader_(renderer);
   owl_deinit_font_frag_shader_(renderer);
   owl_deinit_basic_frag_shader_(renderer);
   owl_deinit_basic_vert_shader_(renderer);
-  owl_deinit_pipeline_layout_(renderer);
-  owl_deinit_texture_set_layout_(renderer);
+  owl_deinit_light_pipeline_layout_(renderer);
+  owl_deinit_main_pipeline_layout_(renderer);
+  owl_deinit_light_set_layout_(renderer);
+  owl_deinit_tex_set_layout_(renderer);
   owl_deinit_uniform_set_layout_(renderer);
   owl_deinit_sync_(renderer);
   owl_deinit_draw_cmd_(renderer);
@@ -2116,7 +2602,7 @@ owl_move_buf_to_garbage_(struct owl_renderer *renderer) {
 
     for (i = 0; i < OWL_DYN_BUF_COUNT; ++i)
       renderer->dyn_garbage_sets[renderer->dyn_garbage_set_count + i] =
-          renderer->dyn_sets[i];
+          renderer->dyn_pvm_sets[i];
 
     renderer->dyn_garbage_set_count = count;
   }

@@ -3,7 +3,6 @@
 #include <owl/internal.h>
 #include <owl/renderer_internal.h>
 #include <owl/types.h>
-#include <owl/vkutil.h>
 
 #define OWL_VK_TIMEOUT (OwlU64) - 1
 

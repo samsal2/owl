@@ -1,14 +1,14 @@
 #ifndef OWL_MEMORY_H_
 #define OWL_MEMORY_H_
 
-#include <owl/vkutil.h>
-#include <vulkan/vulkan.h>
+#include <owl/renderer_internal.h>
 
 struct owl_tmp_submit_mem_ref {
   OwlU32 offset32; /* for uniform usage */
   OwlDeviceSize offset;
   VkBuffer buf;
-  VkDescriptorSet set;
+  VkDescriptorSet pvm_set;
+  VkDescriptorSet light_set;
 };
 
 /* valid until next frame, no need to free
