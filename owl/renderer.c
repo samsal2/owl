@@ -1076,7 +1076,8 @@ owl_init_light_set_layout_(struct owl_renderer *renderer) {
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_deinit_light_set_layout_(struct owl_renderer *renderer) {
+OWL_INTERNAL void
+owl_deinit_light_set_layout_(struct owl_renderer *renderer) {
   vkDestroyDescriptorSetLayout(renderer->device, renderer->light_set_layout,
                                NULL);
 }
@@ -2211,7 +2212,7 @@ OWL_INTERNAL enum owl_code owl_init_dyn_(struct owl_renderer *renderer,
     sets.pSetLayouts = layouts;
 
     OWL_VK_CHECK(vkAllocateDescriptorSets(renderer->device, &sets,
-                                          renderer->dyn_light_set));
+                                          renderer->dyn_light_sets));
   }
 
   /* write the pvm descriptor sets */
@@ -2253,7 +2254,7 @@ OWL_INTERNAL enum owl_code owl_init_dyn_(struct owl_renderer *renderer,
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
-      write.dstSet = renderer->dyn_light_set[i];
+      write.dstSet = renderer->dyn_light_sets[i];
       write.dstBinding = 0;
       write.dstArrayElement = 0;
       write.descriptorCount = 1;
@@ -2279,10 +2280,13 @@ OWL_INTERNAL enum owl_code owl_init_dyn_(struct owl_renderer *renderer,
 OWL_INTERNAL void owl_deinit_dyn_(struct owl_renderer *renderer) {
   OwlU32 i;
 
-  /* kind of redundant */
-  for (i = 0; i < OWL_DYN_BUF_COUNT; ++i)
-    vkFreeDescriptorSets(renderer->device, renderer->set_pool, 1,
-                         &renderer->dyn_pvm_sets[i]);
+  vkFreeDescriptorSets(renderer->device, renderer->set_pool,
+                       OWL_ARRAY_SIZE(renderer->dyn_light_sets),
+                       renderer->dyn_light_sets);
+
+  vkFreeDescriptorSets(renderer->device, renderer->set_pool,
+                       OWL_ARRAY_SIZE(renderer->dyn_pvm_sets),
+                       renderer->dyn_pvm_sets);
 
   vkFreeMemory(renderer->device, renderer->dyn_mem, NULL);
 
@@ -2294,14 +2298,17 @@ OWL_INTERNAL enum owl_code
 owl_init_dyn_garbage_(struct owl_renderer *renderer) {
   renderer->dyn_garbage_buf_count = 0;
   renderer->dyn_garbage_mem_count = 0;
-  renderer->dyn_garbage_set_count = 0;
+  renderer->dyn_garbage_pvm_set_count = 0;
+  renderer->dyn_garbage_light_set_count = 0;
 
   OWL_MEMSET(renderer->dyn_garbage_bufs, 0,
              sizeof(renderer->dyn_garbage_bufs));
   OWL_MEMSET(renderer->dyn_garbage_mems, 0,
              sizeof(renderer->dyn_garbage_mems));
-  OWL_MEMSET(renderer->dyn_garbage_sets, 0,
-             sizeof(renderer->dyn_garbage_sets));
+  OWL_MEMSET(renderer->dyn_garbage_pvm_sets, 0,
+             sizeof(renderer->dyn_garbage_pvm_sets));
+  OWL_MEMSET(renderer->dyn_garbage_light_sets, 0,
+             sizeof(renderer->dyn_garbage_pvm_sets));
 
   return OWL_SUCCESS;
 }
@@ -2309,11 +2316,15 @@ owl_init_dyn_garbage_(struct owl_renderer *renderer) {
 OWL_INTERNAL void owl_deinit_dyn_garbage_(struct owl_renderer *renderer) {
   OwlU32 i;
 
-  for (i = 0; i < renderer->dyn_garbage_set_count; ++i)
+  for (i = 0; i < renderer->dyn_garbage_light_set_count; ++i)
     vkFreeDescriptorSets(renderer->device, renderer->set_pool, 1,
-                         &renderer->dyn_garbage_sets[i]);
+                         &renderer->dyn_garbage_light_sets[i]);
 
-  renderer->dyn_garbage_set_count = 0;
+  for (i = 0; i < renderer->dyn_garbage_pvm_set_count; ++i)
+    vkFreeDescriptorSets(renderer->device, renderer->set_pool, 1,
+                         &renderer->dyn_garbage_pvm_sets[i]);
+
+  renderer->dyn_garbage_pvm_set_count = 0;
 
   for (i = 0; i < renderer->dyn_garbage_mem_count; ++i)
     vkFreeMemory(renderer->device, renderer->dyn_garbage_mems[i], NULL);
@@ -2572,54 +2583,75 @@ void owl_destroy_renderer(struct owl_renderer *renderer) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_move_buf_to_garbage_(struct owl_renderer *renderer) {
+owl_move_dyn_to_garbage_(struct owl_renderer *renderer) {
   enum owl_code err = OWL_SUCCESS;
 
   {
-    OwlU32 i, count;
-    count = renderer->dyn_garbage_buf_count + OWL_DYN_BUF_COUNT;
+    OwlU32 i;
+    OwlU32 pcnt = renderer->dyn_garbage_buf_count;
+    OwlU32 ncnt = renderer->dyn_garbage_buf_count + OWL_DYN_BUF_COUNT;
 
-    if (OWL_MAX_GARBAGE_ITEMS <= count) {
+    if (OWL_MAX_GARBAGE_ITEMS <= ncnt) {
       err = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 
     for (i = 0; i < OWL_DYN_BUF_COUNT; ++i)
-      renderer->dyn_garbage_bufs[renderer->dyn_garbage_buf_count + i] =
-          renderer->dyn_bufs[i];
+      renderer->dyn_garbage_bufs[pcnt + i] = renderer->dyn_bufs[i];
 
-    renderer->dyn_garbage_buf_count = count;
+    renderer->dyn_garbage_buf_count = ncnt;
   }
 
   {
-    OwlU32 i, count;
-    count = renderer->dyn_garbage_set_count + OWL_DYN_BUF_COUNT;
+    OwlU32 i;
+    /* previous count */
+    OwlU32 pcnt = renderer->dyn_garbage_pvm_set_count;
+    /* new count */
+    OwlU32 ncnt = renderer->dyn_garbage_pvm_set_count + OWL_DYN_BUF_COUNT;
 
-    if (OWL_MAX_GARBAGE_ITEMS <= count) {
+    if (OWL_MAX_GARBAGE_ITEMS <= ncnt) {
       err = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 
     for (i = 0; i < OWL_DYN_BUF_COUNT; ++i)
-      renderer->dyn_garbage_sets[renderer->dyn_garbage_set_count + i] =
-          renderer->dyn_pvm_sets[i];
+      renderer->dyn_garbage_pvm_sets[pcnt + i] = renderer->dyn_pvm_sets[i];
 
-    renderer->dyn_garbage_set_count = count;
+    renderer->dyn_garbage_pvm_set_count = ncnt;
   }
 
   {
-    OwlU32 count;
-    count = renderer->dyn_garbage_set_count + 1;
+    OwlU32 i;
+    /* previous count */
+    OwlU32 pcnt = renderer->dyn_garbage_light_set_count;
+    /* new count */
+    OwlU32 ncnt = renderer->dyn_garbage_light_set_count + OWL_DYN_BUF_COUNT;
 
-    if (OWL_MAX_GARBAGE_ITEMS <= count) {
+    if (OWL_MAX_GARBAGE_ITEMS <= ncnt) {
       err = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 
-    renderer->dyn_garbage_mems[renderer->dyn_garbage_set_count + 0] =
-        renderer->dyn_mem;
+    for (i = 0; i < OWL_DYN_BUF_COUNT; ++i)
+      renderer->dyn_garbage_light_sets[pcnt + i] =
+          renderer->dyn_light_sets[i];
 
-    renderer->dyn_garbage_mem_count = count;
+    renderer->dyn_garbage_pvm_set_count = ncnt;
+  }
+
+  {
+    /* previous count */
+    OwlU32 pcnt = renderer->dyn_garbage_mem_count;
+    /* new count */
+    OwlU32 ncnt = renderer->dyn_garbage_mem_count + 1;
+
+    if (OWL_MAX_GARBAGE_ITEMS <= ncnt) {
+      err = OWL_ERROR_OUT_OF_BOUNDS;
+      goto end;
+    }
+
+    renderer->dyn_garbage_mems[pcnt + 0] = renderer->dyn_mem;
+    renderer->dyn_garbage_mem_count = ncnt;
   }
 
 end:
@@ -2635,7 +2667,7 @@ enum owl_code owl_reserve_dyn_buf_mem(struct owl_renderer *renderer,
   if (required > renderer->dyn_buf_size) {
     vkUnmapMemory(renderer->device, renderer->dyn_mem);
 
-    if (OWL_SUCCESS != (err = owl_move_buf_to_garbage_(renderer)))
+    if (OWL_SUCCESS != (err = owl_move_dyn_to_garbage_(renderer)))
       goto end;
 
     if (OWL_SUCCESS != (err = owl_init_dyn_(renderer, 2 * required)))

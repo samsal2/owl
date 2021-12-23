@@ -17,7 +17,7 @@ void *owl_alloc_tmp_submit_mem(struct owl_renderer *renderer,
   ref->offset = renderer->dyn_offsets[active];
   ref->buf = renderer->dyn_bufs[active];
   ref->pvm_set = renderer->dyn_pvm_sets[active];
-  ref->light_set = renderer->dyn_light_set[active];
+  ref->light_set = renderer->dyn_light_sets[active];
 
   data = renderer->dyn_data[active] + renderer->dyn_offsets[active];
 

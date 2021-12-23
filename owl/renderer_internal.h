@@ -138,15 +138,17 @@ struct owl_renderer {
   OwlByte *dyn_data[OWL_DYN_BUF_COUNT];
   VkBuffer dyn_bufs[OWL_DYN_BUF_COUNT];
   VkDescriptorSet dyn_pvm_sets[OWL_DYN_BUF_COUNT];
-  VkDescriptorSet dyn_light_set[OWL_DYN_BUF_COUNT];
+  VkDescriptorSet dyn_light_sets[OWL_DYN_BUF_COUNT];
   VkDeviceSize dyn_offsets[OWL_DYN_BUF_COUNT];
   /* ====================================================================== */
-  OwlU32 dyn_garbage_buf_count;
-  OwlU32 dyn_garbage_set_count;
   OwlU32 dyn_garbage_mem_count;
+  OwlU32 dyn_garbage_buf_count;
+  OwlU32 dyn_garbage_pvm_set_count;
+  OwlU32 dyn_garbage_light_set_count;
   VkDeviceMemory dyn_garbage_mems[OWL_MAX_GARBAGE_ITEMS];
   VkBuffer dyn_garbage_bufs[OWL_MAX_GARBAGE_ITEMS];
-  VkDescriptorSet dyn_garbage_sets[OWL_MAX_GARBAGE_ITEMS];
+  VkDescriptorSet dyn_garbage_pvm_sets[OWL_MAX_GARBAGE_ITEMS];
+  VkDescriptorSet dyn_garbage_light_sets[OWL_MAX_GARBAGE_ITEMS];
   /* ====================================================================== */
 };
 
