@@ -62,7 +62,11 @@ struct owl_vk_config {
 
 struct owl_renderer {
   /* ====================================================================== */
+  /* misc */
+  /* ====================================================================== */
   struct owl_extent extent;
+  /* ====================================================================== */
+
   /* ====================================================================== */
   /* instance */
   /* ====================================================================== */
@@ -81,6 +85,15 @@ struct owl_renderer {
   /* ====================================================================== */
   /* device */
   /* ====================================================================== */
+  VkDevice device;
+  VkPhysicalDevice physical_device;
+
+  VkQueue graphics_queue;
+  OwlVkQueueFamily graphics_family;
+
+  VkQueue present_queue;
+  OwlVkQueueFamily present_family;
+
   OwlU32 device_options_count;
   VkPhysicalDevice device_options[OWL_MAX_DEVICE_OPTIONS];
 
@@ -88,16 +101,7 @@ struct owl_renderer {
   VkPhysicalDeviceProperties device_properties;
   VkPhysicalDeviceMemoryProperties device_mem_properties;
 
-  VkPhysicalDevice physical_device;
-  VkDevice device;
-
   VkSampleCountFlags samples;
-
-  OwlVkQueueFamily graphics_family;
-  VkQueue graphics_queue;
-
-  OwlVkQueueFamily present_family;
-  VkQueue present_queue;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -172,6 +176,8 @@ struct owl_renderer {
   VkPipeline pipelines[OWL_PIPELINE_TYPE_COUNT];
   VkPipelineLayout pipeline_layouts[OWL_PIPELINE_TYPE_COUNT]; /* non owning */
   /* ====================================================================== */
+
+  /* ====================================================================== */
   /* double buffering resources */
   /* ====================================================================== */
   OwlU32 dyn_active_buf;
@@ -185,6 +191,8 @@ struct owl_renderer {
   VkBuffer dyn_bufs[OWL_DYN_BUF_COUNT];
   VkDescriptorSet dyn_pvm_sets[OWL_DYN_BUF_COUNT];
   VkDeviceSize dyn_offsets[OWL_DYN_BUF_COUNT];
+  /* ====================================================================== */
+
   /* ====================================================================== */
   /* double buffering garbage */
   /* ====================================================================== */

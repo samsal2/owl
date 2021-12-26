@@ -56,7 +56,7 @@ int main(void) {
   while (!owl_should_window_close(window)) {
     if (OWL_SUCCESS != owl_begin_frame(renderer)) {
       printf("recreating renderer\n");
-      owl_recreate_renderer(window, renderer);
+      owl_recreate_swapchain(window, renderer);
       continue;
     }
 
@@ -65,7 +65,7 @@ int main(void) {
 
     if (OWL_SUCCESS != owl_end_frame(renderer)) {
       printf("recreating renderer\n");
-      owl_recreate_renderer(window, renderer);
+      owl_recreate_swapchain(window, renderer);
       continue;
     }
 

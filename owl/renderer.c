@@ -2751,7 +2751,7 @@ end:
   return err;
 }
 
-enum owl_code owl_recreate_renderer(struct owl_window const *window,
+enum owl_code owl_recreate_swapchain(struct owl_window const *window,
                                     struct owl_renderer *renderer) {
   return owl_reinit_renderer(&window->framebuffer, renderer);
 }
