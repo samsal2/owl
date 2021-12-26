@@ -154,8 +154,8 @@ enum owl_code owl_vk_fill_info(struct owl_window const *window,
 }
 #else
 #define OWL_MAX_EXTENSIONS 64
-enum owl_code owl_vk_fill_info(struct owl_window const *window,
-                               struct owl_vk_plataform *plataform) {
+enum owl_code owl_vk_fill_config(struct owl_window const *window,
+                                 struct owl_vk_config *plataform) {
   OwlU32 count;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 

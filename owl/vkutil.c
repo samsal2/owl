@@ -3,7 +3,6 @@
 
 #define OWL_MAX_QUEUE_PROPERTIES 16
 
-
 int owl_vk_validate_extensions(OwlU32 count,
                                VkExtensionProperties const *extensions) {
   char const *validate[] = OWL_VK_DEVICE_EXTENSIONS;
@@ -43,10 +42,9 @@ owl_vk_as_property_flags(enum owl_vk_mem_visibility visibility) {
   }
 }
 
-OwlVkMemoryType
-owl_vk_find_mem_type(struct owl_renderer const *renderer,
-                     OwlVkMemoryFilter filter,
-                     enum owl_vk_mem_visibility visibility) {
+OwlVkMemoryType owl_vk_find_mem_type(struct owl_renderer const *renderer,
+                                     OwlVkMemoryFilter filter,
+                                     enum owl_vk_mem_visibility visibility) {
   OwlVkMemoryType type;
   VkMemoryPropertyFlags props = owl_vk_as_property_flags(visibility);
 

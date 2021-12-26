@@ -55,6 +55,7 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
   }
 
   if (FT_Err_Ok != (FT_New_Face(ft, path, 0, &face))) {
+    OWL_ASSERT(0 && "nani?");
     err = OWL_ERROR_BAD_INIT;
     goto end_err_done_ft;
   }

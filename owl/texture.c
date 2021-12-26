@@ -16,7 +16,7 @@ owl_alloc_cmd_buf_(struct owl_renderer const *renderer) {
 
     buf.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     buf.pNext = NULL;
-    buf.commandPool = renderer->cmd_pool;
+    buf.commandPool = renderer->transient_cmd_pool;
     buf.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     buf.commandBufferCount = 1;
 
@@ -56,7 +56,8 @@ OWL_INTERNAL void owl_free_cmd_buf_(struct owl_renderer *renderer,
   OWL_VK_CHECK(vkQueueSubmit(renderer->graphics_queue, 1, &submit, NULL));
   OWL_VK_CHECK(vkQueueWaitIdle(renderer->graphics_queue));
 
-  vkFreeCommandBuffers(renderer->device, renderer->cmd_pool, 1, &cmd);
+  vkFreeCommandBuffers(renderer->device, renderer->transient_cmd_pool, 1,
+                       &cmd);
 }
 
 OWL_INTERNAL uint32_t owl_calc_mips_(int width, int height) {

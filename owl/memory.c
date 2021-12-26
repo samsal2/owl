@@ -6,7 +6,7 @@ void *owl_alloc_tmp_submit_mem(struct owl_renderer *renderer,
                                OwlDeviceSize size,
                                struct owl_tmp_submit_mem_ref *ref) {
   OwlByte *data;
-  OwlU32 const active = renderer->active_buf;
+  OwlU32 const active = renderer->dyn_active_buf;
 
   if (OWL_SUCCESS != owl_reserve_dyn_buf_mem(renderer, size)) {
     data = NULL;
@@ -17,7 +17,6 @@ void *owl_alloc_tmp_submit_mem(struct owl_renderer *renderer,
   ref->offset = renderer->dyn_offsets[active];
   ref->buf = renderer->dyn_bufs[active];
   ref->pvm_set = renderer->dyn_pvm_sets[active];
-  ref->light_set = renderer->dyn_light_sets[active];
 
   data = renderer->dyn_data[active] + renderer->dyn_offsets[active];
 

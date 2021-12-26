@@ -14,7 +14,7 @@ owl_submit_render_group_basic_(struct owl_renderer *renderer,
   struct owl_tmp_submit_mem_ref vtx;
   struct owl_tmp_submit_mem_ref idx;
   struct owl_tmp_submit_mem_ref pvm;
-  OwlU32 const active = renderer->active_buf;
+  OwlU32 const active = renderer->dyn_active_buf;
 
   size = sizeof(*basic->vertex) * (unsigned)basic->vertex_count;
   data = owl_alloc_tmp_submit_mem(renderer, size, &vtx);
@@ -34,18 +34,18 @@ owl_submit_render_group_basic_(struct owl_renderer *renderer,
   sets[0] = pvm.pvm_set;
   sets[1] = owl_get_texture(basic->texture)->set;
 
-  vkCmdBindVertexBuffers(renderer->draw_cmd_bufs[active], 0, 1, &vtx.buf,
+  vkCmdBindVertexBuffers(renderer->frame_cmd_bufs[active], 0, 1, &vtx.buf,
                          &vtx.offset);
 
-  vkCmdBindIndexBuffer(renderer->draw_cmd_bufs[active], idx.buf, idx.offset,
+  vkCmdBindIndexBuffer(renderer->frame_cmd_bufs[active], idx.buf, idx.offset,
                        VK_INDEX_TYPE_UINT32);
 
   vkCmdBindDescriptorSets(
-      renderer->draw_cmd_bufs[active], VK_PIPELINE_BIND_POINT_GRAPHICS,
+      renderer->frame_cmd_bufs[active], VK_PIPELINE_BIND_POINT_GRAPHICS,
       renderer->pipeline_layouts[renderer->bound_pipeline], 0,
       OWL_ARRAY_SIZE(sets), sets, 1, &pvm.offset32);
 
-  vkCmdDrawIndexed(renderer->draw_cmd_bufs[active],
+  vkCmdDrawIndexed(renderer->frame_cmd_bufs[active],
                    (unsigned)basic->index_count, 1, 0, 0, 0);
 
   return OWL_SUCCESS;
@@ -61,7 +61,7 @@ owl_submit_render_group_quad_(struct owl_renderer *renderer,
   struct owl_tmp_submit_mem_ref idx;
   struct owl_tmp_submit_mem_ref pvm;
   OwlU32 const indices[] = {2, 3, 1, 1, 0, 2};
-  OwlU32 const active = renderer->active_buf;
+  OwlU32 const active = renderer->dyn_active_buf;
 
   size = sizeof(quad->vertex);
   data = owl_alloc_tmp_submit_mem(renderer, size, &vtx);
@@ -81,18 +81,18 @@ owl_submit_render_group_quad_(struct owl_renderer *renderer,
   sets[0] = pvm.pvm_set;
   sets[1] = owl_get_texture(quad->texture)->set;
 
-  vkCmdBindVertexBuffers(renderer->draw_cmd_bufs[active], 0, 1, &vtx.buf,
+  vkCmdBindVertexBuffers(renderer->frame_cmd_bufs[active], 0, 1, &vtx.buf,
                          &vtx.offset);
 
-  vkCmdBindIndexBuffer(renderer->draw_cmd_bufs[active], idx.buf, idx.offset,
+  vkCmdBindIndexBuffer(renderer->frame_cmd_bufs[active], idx.buf, idx.offset,
                        VK_INDEX_TYPE_UINT32);
 
   vkCmdBindDescriptorSets(
-      renderer->draw_cmd_bufs[active], VK_PIPELINE_BIND_POINT_GRAPHICS,
+      renderer->frame_cmd_bufs[active], VK_PIPELINE_BIND_POINT_GRAPHICS,
       renderer->pipeline_layouts[renderer->bound_pipeline], 0,
       OWL_ARRAY_SIZE(sets), sets, 1, &pvm.offset32);
 
-  vkCmdDrawIndexed(renderer->draw_cmd_bufs[active], OWL_ARRAY_SIZE(indices),
+  vkCmdDrawIndexed(renderer->frame_cmd_bufs[active], OWL_ARRAY_SIZE(indices),
                    1, 0, 0, 0);
 
   return OWL_SUCCESS;

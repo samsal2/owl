@@ -8,7 +8,6 @@ struct owl_tmp_submit_mem_ref {
   OwlDeviceSize offset;
   VkBuffer buf;
   VkDescriptorSet pvm_set;
-  VkDescriptorSet light_set;
 };
 
 /* valid until next frame, no need to free

@@ -5,7 +5,8 @@ endmacro()
 
 # add_example(hello_world)
 add_example(cloth_simulation)
-add_example(fluid_simulation)
+# add_example(fluid_simulation)
+# add_example(light)
 
 add_example(test)
 

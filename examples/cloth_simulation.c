@@ -208,7 +208,7 @@ void init_cloth(struct cloth *cloth, OwlTexture texture) {
   cloth->group.storage.as_basic.vertex = cloth->vertices_;
 }
 
-struct owl_uniform *get_cloth_pvm(struct cloth *cloth) {
+struct owl_pvm *get_cloth_pvm(struct cloth *cloth) {
   return &cloth->group.storage.as_basic.pvm;
 }
 
@@ -235,7 +235,7 @@ static struct owl_font *font;
 
 #define UNSELECTED (OwlU32) - 1
 #define TEXPATH "../../assets/Chaeyoung.jpeg"
-#define FONTPATH "../../assets/Anonymous Pro.ttf"
+#define FONTPATH "../../assets/SourceCodePro-Regular.ttf"
 
 int main(void) {
   OwlV2 fpspos;
@@ -244,7 +244,7 @@ int main(void) {
   OwlV3 up;
   OwlV3 position;
   OwlV3 color;
-  struct owl_uniform *pvm;
+  struct owl_pvm *pvm;
   OwlU32 selected = UNSELECTED;
   float frame = 0.0F;
 
