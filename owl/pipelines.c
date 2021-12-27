@@ -1,7 +1,7 @@
 #include <owl/pipelines.h>
-#include <owl/renderer_internal.h>
+#include <owl/vk_renderer.h>
 
-enum owl_code owl_bind_pipeline(struct owl_renderer *renderer,
+enum owl_code owl_bind_pipeline(struct owl_vk_renderer *renderer,
                                 enum owl_pipeline_type type) {
   OwlU32 const active = renderer->dyn_active_buf;
 

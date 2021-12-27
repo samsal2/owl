@@ -5,7 +5,7 @@
 #include <owl/fwd.h>
 #include <owl/types.h>
 
-enum owl_code owl_begin_frame(struct owl_renderer *renderer);
-enum owl_code owl_end_frame(struct owl_renderer *renderer);
+enum owl_code owl_begin_frame(struct owl_vk_renderer *renderer);
+enum owl_code owl_end_frame(struct owl_vk_renderer *renderer);
 
 #endif

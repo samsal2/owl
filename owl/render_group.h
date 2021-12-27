@@ -62,7 +62,7 @@ struct owl_render_group {
   struct owl_render_group_storage storage;
 };
 
-enum owl_code owl_submit_render_group(struct owl_renderer *renderer,
+enum owl_code owl_submit_render_group(struct owl_vk_renderer *renderer,
                                       struct owl_render_group const *group);
 
 #endif

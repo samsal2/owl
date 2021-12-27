@@ -1,12 +1,12 @@
-#include "owl/code.h"
 #include <owl/internal.h>
 #include <owl/memory.h>
 #include <owl/render_group.h>
-#include <owl/renderer_internal.h>
-#include <owl/texture_internal.h>
+#include <owl/vk_renderer.h>
+#include <owl/vk_texture_manager.h>
+#include <owl/texture.h>
 
 OWL_INTERNAL enum owl_code
-owl_submit_render_group_basic_(struct owl_renderer *renderer,
+owl_submit_render_group_basic_(struct owl_vk_renderer *renderer,
                                struct owl_render_group_basic const *basic) {
   OwlByte *data;
   VkDeviceSize size;
@@ -15,6 +15,7 @@ owl_submit_render_group_basic_(struct owl_renderer *renderer,
   struct owl_tmp_submit_mem_ref idx;
   struct owl_tmp_submit_mem_ref pvm;
   OwlU32 const active = renderer->dyn_active_buf;
+  struct owl_vk_texture_manager *tmgr = owl_peek_texture_manager_(renderer);
 
   size = sizeof(*basic->vertex) * (unsigned)basic->vertex_count;
   data = owl_alloc_tmp_submit_mem(renderer, size, &vtx);
@@ -32,7 +33,7 @@ owl_submit_render_group_basic_(struct owl_renderer *renderer,
   OWL_MEMCPY(data, &basic->pvm, size);
 
   sets[0] = pvm.pvm_set;
-  sets[1] = owl_get_texture(basic->texture)->set;
+  sets[1] = tmgr->textures[basic->texture].set;
 
   vkCmdBindVertexBuffers(renderer->frame_cmd_bufs[active], 0, 1, &vtx.buf,
                          &vtx.offset);
@@ -52,7 +53,7 @@ owl_submit_render_group_basic_(struct owl_renderer *renderer,
 }
 
 OWL_INTERNAL enum owl_code
-owl_submit_render_group_quad_(struct owl_renderer *renderer,
+owl_submit_render_group_quad_(struct owl_vk_renderer *renderer,
                               struct owl_render_group_quad const *quad) {
   OwlByte *data;
   VkDeviceSize size;
@@ -62,6 +63,7 @@ owl_submit_render_group_quad_(struct owl_renderer *renderer,
   struct owl_tmp_submit_mem_ref pvm;
   OwlU32 const indices[] = {2, 3, 1, 1, 0, 2};
   OwlU32 const active = renderer->dyn_active_buf;
+  struct owl_vk_texture_manager *tmgr = owl_peek_texture_manager_(renderer);
 
   size = sizeof(quad->vertex);
   data = owl_alloc_tmp_submit_mem(renderer, size, &vtx);
@@ -79,7 +81,7 @@ owl_submit_render_group_quad_(struct owl_renderer *renderer,
   OWL_MEMCPY(data, &quad->pvm, size);
 
   sets[0] = pvm.pvm_set;
-  sets[1] = owl_get_texture(quad->texture)->set;
+  sets[1] = tmgr->textures[quad->texture].set;
 
   vkCmdBindVertexBuffers(renderer->frame_cmd_bufs[active], 0, 1, &vtx.buf,
                          &vtx.offset);
@@ -100,7 +102,7 @@ owl_submit_render_group_quad_(struct owl_renderer *renderer,
 
 #if 0
 OWL_INTERNAL enum owl_code owl_submit_render_group_light_(
-    struct owl_renderer *renderer,
+    struct owl_vk_renderer *renderer,
     struct owl_render_group_light_test const *test) {
   OwlByte *data;
   VkDeviceSize size;
@@ -159,7 +161,7 @@ OWL_INTERNAL enum owl_code owl_submit_render_group_light_(
 }
 #endif
 
-enum owl_code owl_submit_render_group(struct owl_renderer *renderer,
+enum owl_code owl_submit_render_group(struct owl_vk_renderer *renderer,
                                       struct owl_render_group const *group) {
   switch (group->type) {
   case OWL_RENDER_GROUP_TYPE_NOP:

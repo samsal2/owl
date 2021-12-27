@@ -33,7 +33,7 @@ void fill_quad(struct owl_render_group *group, OwlTexture texture) {
 }
 
 static struct owl_window *window;
-static struct owl_renderer *renderer;
+static struct owl_vk_renderer *renderer;
 static OwlTexture texture;
 static struct owl_render_group group;
 

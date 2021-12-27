@@ -13,18 +13,21 @@ enum owl_sampler_type {
   OWL_SAMPLER_TYPE_COUNT
 };
 
-enum owl_code owl_create_texture(struct owl_renderer *renderer, int width,
+enum owl_code owl_create_texture(struct owl_vk_renderer *renderer, int width,
                                  int height, OwlByte const *data,
                                  enum owl_pixel_format format,
                                  enum owl_sampler_type sampler,
                                  OwlTexture *texture);
 
-enum owl_code owl_create_texture_from_file(struct owl_renderer *renderer,
+enum owl_code owl_create_texture_from_file(struct owl_vk_renderer *renderer,
                                            char const *path,
                                            enum owl_sampler_type sampler,
                                            OwlTexture *texture);
 
-void owl_destroy_texture(struct owl_renderer const *renderer,
+void owl_destroy_texture(struct owl_vk_renderer const *renderer,
                          OwlTexture texture);
+
+struct owl_vk_texture_manager *
+owl_peek_texture_manager_(struct owl_vk_renderer const *renderer);
 
 #endif

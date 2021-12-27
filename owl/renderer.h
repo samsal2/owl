@@ -5,16 +5,12 @@
 #include <owl/fwd.h>
 #include <owl/types.h>
 
-#ifndef NDEBUG
-#define OWL_ENABLE_VALIDATION
-#endif
-
 enum owl_code owl_create_renderer(struct owl_window const *window,
-                                  struct owl_renderer **renderer);
+                                  struct owl_vk_renderer **renderer);
 
 enum owl_code owl_recreate_swapchain(struct owl_window const *window,
-                                     struct owl_renderer *renderer);
+                                     struct owl_vk_renderer *renderer);
 
-void owl_destroy_renderer(struct owl_renderer *renderer);
+void owl_destroy_renderer(struct owl_vk_renderer *renderer);
 
 #endif

@@ -18,11 +18,16 @@ target_sources(${PROJECT_NAME} PRIVATE
   render_group.h
   renderer.c
   renderer.h
-  renderer_internal.h
+  slab_arena.c
+  slab_arena.h
+  vk_renderer.c
+  vk_renderer.h
   texture.c
   texture.h
-  texture_internal.h
+  vk_texture.c
+  vk_texture.h
+  vk_texture_manager.c
+  vk_texture_manager.h
   types.h
   window.c
-  window.h
-  window_internal.h)
+  window.h)

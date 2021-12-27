@@ -227,7 +227,7 @@ char const *fps_string(OwlSeconds time) {
   } while (0)
 
 static struct owl_window *window;
-static struct owl_renderer *renderer;
+static struct owl_vk_renderer *renderer;
 static OwlTexture texture;
 static struct owl_render_group group;
 static struct cloth cloth;
@@ -253,6 +253,7 @@ int main(void) {
   TEST(owl_create_texture_from_file(renderer, TEXPATH,
                                     OWL_SAMPLER_TYPE_LINEAR, &texture));
   TEST(owl_create_font(renderer, 64, FONTPATH, &font));
+
 
   init_cloth(&cloth, texture);
 

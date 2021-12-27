@@ -1,9 +1,9 @@
 #include <owl/internal.h>
 #include <owl/math.h>
-#include <owl/renderer_internal.h>
 #include <owl/types.h>
+#include <owl/vk_config.h>
+#include <owl/vk_renderer.h>
 #include <owl/window.h>
-#include <owl/window_internal.h>
 /* clang-format off */
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
@@ -46,24 +46,24 @@ OWL_INTERNAL void owl_glfw_window_cb_(GLFWwindow *window, int width,
                                       int height) {
   struct owl_window *w = glfwGetWindowUserPointer(window);
 
-  w->size.width = width;
-  w->size.height = height;
+  w->width = width;
+  w->height = height;
 }
 
 OWL_INTERNAL void owl_glfw_framebuffer_cb_(GLFWwindow *handle, int width,
                                            int height) {
   struct owl_window *w = glfwGetWindowUserPointer(handle);
 
-  w->framebuffer.width = width;
-  w->framebuffer.height = height;
+  w->framebuffer_width = width;
+  w->framebuffer_height = height;
 }
 
 OWL_INTERNAL void owl_glfw_cursor_pos_cb_(GLFWwindow *handle, double x,
                                           double y) {
   struct owl_window *w = glfwGetWindowUserPointer(handle);
 
-  w->cursor.current[0] = 2.0F * ((float)x / (float)w->size.width) - 1.0F;
-  w->cursor.current[1] = 2.0F * ((float)y / (float)w->size.height) - 1.0F;
+  w->cursor.current[0] = 2.0F * ((float)x / (float)w->width) - 1.0F;
+  w->cursor.current[1] = 2.0F * ((float)y / (float)w->height) - 1.0F;
 }
 
 OWL_INTERNAL void owl_glfw_mouse_cb_(GLFWwindow *window, int button,
@@ -88,8 +88,8 @@ OWL_INTERNAL void owl_glfw_keyboard_cb_(GLFWwindow *window, int key,
 }
 
 OWL_INTERNAL enum owl_code
-owl_vk_init_surface_(struct owl_renderer const *renderer, void const *data,
-                     void *out) {
+owl_vk_init_surface_(void const *data, struct owl_vk_renderer const *renderer,
+                     VkSurfaceKHR *out) {
   VkSurfaceKHR *surface = out;
   struct owl_window const *window = data;
 
@@ -100,8 +100,9 @@ owl_vk_init_surface_(struct owl_renderer const *renderer, void const *data,
   return OWL_SUCCESS;
 }
 
-enum owl_code owl_init_window(int width, int height, char const *title,
-                              struct owl_window *window) {
+OWL_INTERNAL enum owl_code owl_init_window(int width, int height,
+                                           char const *title,
+                                           struct owl_window *window) {
   if (GLFW_FALSE == glfwInit())
     return OWL_ERROR_BAD_INIT;
 
@@ -109,10 +110,9 @@ enum owl_code owl_init_window(int width, int height, char const *title,
   window->handle = glfwCreateWindow(width, height, title, NULL, NULL);
 
   glfwSetWindowUserPointer(window->handle, window);
-  glfwGetWindowSize(window->handle, &window->size.width,
-                    &window->size.height);
-  glfwGetFramebufferSize(window->handle, &window->framebuffer.width,
-                         &window->framebuffer.height);
+  glfwGetWindowSize(window->handle, &window->width, &window->height);
+  glfwGetFramebufferSize(window->handle, &window->framebuffer_width,
+                         &window->framebuffer_height);
   glfwSetWindowSizeCallback(window->handle, owl_glfw_window_cb_);
   glfwSetFramebufferSizeCallback(window->handle, owl_glfw_framebuffer_cb_);
   glfwSetCursorPosCallback(window->handle, owl_glfw_cursor_pos_cb_);
@@ -134,46 +134,53 @@ enum owl_code owl_init_window(int width, int height, char const *title,
   return OWL_SUCCESS;
 }
 
-void owl_deinit_window(struct owl_window *window) {
+OWL_INTERNAL void owl_deinit_window(struct owl_window *window) {
   glfwDestroyWindow(window->handle);
   glfwTerminate();
 }
 
-#ifndef OWL_ENABLE_VALIDATION
-enum owl_code owl_vk_fill_info(struct owl_window const *window,
-                               struct owl_vk_plataform *plataform) {
-  OwlU32 count;
-
-  plataform->surface_data = window;
-  plataform->get_surface = owl_vk_init_surface_;
-
-  extensions->extensions = glfwGetRequiredInstanceExtensions(&count);
-  extensions->extension_count = count;
-
-  return OWL_SUCCESS;
-}
-#else
+#ifndef NDEBUG
 #define OWL_MAX_EXTENSIONS 64
-enum owl_code owl_vk_fill_config(struct owl_window const *window,
-                                 struct owl_vk_config *plataform) {
+enum owl_code owl_fill_vk_config(struct owl_window const *window,
+                                 struct owl_vk_config *config) {
   OwlU32 count;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 
-  plataform->surface_data = window;
-  plataform->get_surface = owl_vk_init_surface_;
-  plataform->extensions = glfwGetRequiredInstanceExtensions(&count);
+  config->width = (OwlU32)window->framebuffer_width;
+  config->height = (OwlU32)window->framebuffer_height;
+
+  config->user_data = window;
+  config->create_surface = owl_vk_init_surface_;
+  config->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
 
   OWL_ASSERT(OWL_MAX_EXTENSIONS > count);
 
-  OWL_MEMCPY(names, plataform->extensions, count * sizeof(char const *));
+  OWL_MEMCPY(names, config->instance_extensions,
+             count * sizeof(char const *));
   names[count++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 
-  plataform->extensions = names;
-  plataform->extension_count = count;
+  config->instance_extensions = names;
+  config->instance_extension_count = count;
 
   return OWL_SUCCESS;
 }
 #undef OWL_MAX_EXTENSIONS
+#else
+enum owl_code owl_fill_vk_config(struct owl_window const *window,
+                                 struct owl_vk_config *config) {
+  OwlU32 count;
+
+  config->width = (OwlU32)window->framebuffer_width;
+  config->height = (OwlU32)window->framebuffer_height;
+
+  config->user_data = window;
+  config->create_surface = owl_vk_init_surface_;
+
+  config->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
+  config->instance_extension_count = count;
+
+  return OWL_SUCCESS;
+}
 #endif
 
 enum owl_code owl_create_window(int width, int height, char const *title,

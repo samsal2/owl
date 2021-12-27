@@ -1,10 +1,10 @@
 #ifndef OWL_WINDOW_H_
 #define OWL_WINDOW_H_
 
+#include <owl/code.h>
 #include <owl/types.h>
 
-struct owl_vk_surface_provider;
-struct owl_vk_extensions;
+struct owl_vk_config;
 
 typedef double OwlSeconds;
 typedef void *OwlWindowHandle;
@@ -158,8 +158,12 @@ struct owl_cursor {
 
 struct owl_window {
   OwlWindowHandle handle;
-  struct owl_extent size;
-  struct owl_extent framebuffer;
+  
+  int width;
+  int height;
+  int framebuffer_width;
+  int framebuffer_height;
+  
   struct owl_cursor cursor;
   enum owl_btn_state mouse[OWL_MOUSE_BUTTON_COUNT];
   enum owl_btn_state keyboard[OWL_KEYBOARD_KEY_LAST];
@@ -183,4 +187,6 @@ void owl_start_timer(struct owl_timer *timer);
 
 OwlSeconds owl_end_timer(struct owl_timer *timer);
 
+enum owl_code owl_fill_vk_config(struct owl_window const *window,
+                                 struct owl_vk_config *config);
 #endif

@@ -1,3 +1,4 @@
+#include "owl/vk_texture_manager.h"
 #include <math.h>
 #include <owl/code.h>
 #include <owl/font.h>
@@ -5,10 +6,9 @@
 #include <owl/math.h>
 #include <owl/memory.h>
 #include <owl/render_group.h>
-#include <owl/renderer_internal.h>
 #include <owl/texture.h>
-#include <owl/texture_internal.h>
 #include <owl/types.h>
+#include <owl/vk_renderer.h>
 
 /* clang-format off */
 #include <ft2build.h>
@@ -32,7 +32,7 @@ OWL_INTERNAL void owl_calc_dims_(FT_Face face, int *width, int *height) {
   }
 }
 
-enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
+enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
                               char const *path, struct owl_font **font) {
   int i;
   int x;
@@ -41,6 +41,7 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
   FT_Face face;
   struct owl_tmp_submit_mem_ref ref;
   enum owl_code err = OWL_SUCCESS;
+  struct owl_vk_texture_manager *tmgr = owl_peek_texture_manager_(renderer);
 
   /* TODO(samuel): chances are im only going to be creating one font,
      could do something analogous to owl_vk_texture_manager */
@@ -115,11 +116,13 @@ enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
 
   (*font)->size = size;
 
-  if (OWL_SUCCESS !=
-      (err = owl_create_texture_with_ref(
-           renderer, (*font)->atlas_width, (*font)->atlas_height, &ref,
-           OWL_PIXEL_FORMAT_R8_UNORM, OWL_SAMPLER_TYPE_LINEAR,
-           &(*font)->atlas)))
+  /* FIXME (samuel): check for NULL form the tmgr request */
+  err = owl_init_vk_texture_with_ref(
+      renderer, (*font)->atlas_width, (*font)->atlas_height, &ref,
+      OWL_PIXEL_FORMAT_R8_UNORM, OWL_SAMPLER_TYPE_NEAREST,
+      owl_request_texture_mem(tmgr, &(*font)->atlas));
+
+  if (OWL_SUCCESS != err)
     goto end_err_done_face;
 
   FT_Done_Face(face);
@@ -140,15 +143,15 @@ end:
   return err;
 }
 
-void owl_destroy_font(struct owl_renderer *renderer, struct owl_font *font) {
+void owl_destroy_font(struct owl_vk_renderer *renderer,
+                      struct owl_font *font) {
   owl_destroy_texture(renderer, font->atlas);
   OWL_FREE(font);
 }
 
 OWL_INTERNAL enum owl_code
-owl_fill_char_quad(struct owl_extent const *window,
-                   struct owl_font const *font, OwlV2 const pos,
-                   OwlV3 const color, char c,
+owl_fill_char_quad(OwlU32 width, OwlU32 height, struct owl_font const *font,
+                   OwlV2 const pos, OwlV3 const color, char c,
                    struct owl_render_group *group) {
   float tex_off;        /* texture offset in texture coords*/
   OwlV2 fixed_pos;      /* position taking into account the bearing in screen
@@ -166,11 +169,11 @@ owl_fill_char_quad(struct owl_extent const *window,
     goto end;
   }
 
-  fixed_pos[0] = pos[0] + (float)g->bearing[0] / (float)window->width;
-  fixed_pos[1] = pos[1] - (float)g->bearing[1] / (float)window->height;
+  fixed_pos[0] = pos[0] + (float)g->bearing[0] / (float)width;
+  fixed_pos[1] = pos[1] - (float)g->bearing[1] / (float)height;
 
-  glyph_scr_size[0] = (float)g->size[0] / (float)window->width;
-  glyph_scr_size[1] = (float)g->size[1] / (float)window->height;
+  glyph_scr_size[0] = (float)g->size[0] / (float)width;
+  glyph_scr_size[1] = (float)g->size[1] / (float)height;
 
   tex_off = (float)g->offset / (float)font->atlas_width;
 
@@ -220,7 +223,7 @@ end:
   return err;
 }
 
-enum owl_code owl_submit_text_group(struct owl_renderer *renderer,
+enum owl_code owl_submit_text_group(struct owl_vk_renderer *renderer,
                                     struct owl_font const *font,
                                     OwlV2 const pos, OwlV3 const color,
                                     char const *text) {
@@ -233,18 +236,17 @@ enum owl_code owl_submit_text_group(struct owl_renderer *renderer,
   for (c = text; '\0' != *c; ++c) {
     struct owl_render_group group;
 
-    if (OWL_SUCCESS != (err = owl_fill_char_quad(&renderer->extent, font,
-                                                 cpos, color, *c, &group)))
+    if (OWL_SUCCESS !=
+        (err = owl_fill_char_quad(renderer->width, renderer->height, font,
+                                  cpos, color, *c, &group)))
       goto end;
 
     owl_submit_render_group(renderer, &group);
 
-    cpos[0] +=
-        font->glyphs[(int)*c].advance[0] / (float)renderer->extent.width;
+    cpos[0] += font->glyphs[(int)*c].advance[0] / (float)renderer->width;
 
     /* FIXME(samuel): not sure if i should substract or add */
-    cpos[1] +=
-        font->glyphs[(int)*c].advance[1] / (float)renderer->extent.height;
+    cpos[1] += font->glyphs[(int)*c].advance[1] / (float)renderer->height;
   }
 
 end:

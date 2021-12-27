@@ -22,12 +22,13 @@ struct owl_font {
   struct owl_glyph glyphs[OWL_GLYPH_COUNT];
 };
 
-enum owl_code owl_create_font(struct owl_renderer *renderer, int size,
+enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
                               char const *path, struct owl_font **font);
 
-void owl_destroy_font(struct owl_renderer *renderer, struct owl_font *font);
+void owl_destroy_font(struct owl_vk_renderer *renderer,
+                      struct owl_font *font);
 
-enum owl_code owl_submit_text_group(struct owl_renderer *renderer,
+enum owl_code owl_submit_text_group(struct owl_vk_renderer *renderer,
                                     struct owl_font const *font,
                                     OwlV2 const pos, OwlV3 const color,
                                     char const *text);

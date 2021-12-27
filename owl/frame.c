@@ -1,12 +1,13 @@
 #include <owl/code.h>
 #include <owl/frame.h>
 #include <owl/internal.h>
-#include <owl/renderer_internal.h>
+#include <owl/vk_renderer.h>
+#include <owl/vk_internal.h>
 #include <owl/types.h>
 
 #define OWL_VK_TIMEOUT (OwlU64) - 1
 
-enum owl_code owl_begin_frame(struct owl_renderer *renderer) {
+enum owl_code owl_begin_frame(struct owl_vk_renderer *renderer) {
   enum owl_code err = OWL_SUCCESS;
   OwlU32 const active = renderer->dyn_active_buf;
 
@@ -79,7 +80,7 @@ end:
 }
 #undef OWL_VK_TIMEOUT
 
-enum owl_code owl_end_frame(struct owl_renderer *renderer) {
+enum owl_code owl_end_frame(struct owl_vk_renderer *renderer) {
   enum owl_code err = OWL_SUCCESS;
   OwlU32 const active = renderer->dyn_active_buf;
 
@@ -146,7 +147,7 @@ enum owl_code owl_end_frame(struct owl_renderer *renderer) {
   /* reset offset */
   renderer->dyn_offsets[renderer->dyn_active_buf] = 0;
 
-  owl_clear_garbage(renderer);
+  owl_clear_dyn_garbage(renderer);
 
 end:
   return err;

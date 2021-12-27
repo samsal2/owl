@@ -14,7 +14,7 @@ enum owl_pipeline_type {
 
 #define OWL_PIPELINE_TYPE_NONE OWL_PIPELINE_TYPE_COUNT
 
-enum owl_code owl_bind_pipeline(struct owl_renderer *renderer,
+enum owl_code owl_bind_pipeline(struct owl_vk_renderer *renderer,
                                 enum owl_pipeline_type type);
 
 #endif
