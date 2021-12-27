@@ -1,5 +1,3 @@
-#include "owl/code.h"
-#include "owl/types.h"
 #include <owl/internal.h>
 #include <owl/texture.h>
 #include <owl/vk_texture.h>

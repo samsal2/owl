@@ -1,4 +1,3 @@
-#include "owl/vk_texture_manager.h"
 #include <math.h>
 #include <owl/code.h>
 #include <owl/font.h>
@@ -9,6 +8,7 @@
 #include <owl/texture.h>
 #include <owl/types.h>
 #include <owl/vk_renderer.h>
+#include <owl/vk_texture_manager.h>
 
 /* clang-format off */
 #include <ft2build.h>

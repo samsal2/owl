@@ -1,6 +1,7 @@
 #include <owl/internal.h>
 #include <owl/memory.h>
 #include <owl/render_group.h>
+#include <owl/slab_arena.h>
 #include <owl/vk_config.h>
 #include <owl/vk_internal.h>
 #include <owl/vk_renderer.h>
@@ -9,18 +10,14 @@
 #define OWL_VK_DEVICE_EXTENSIONS { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 /* clang-format on */
 
+OWL_GLOBAL struct owl_slab_arena g_arena;
+
 #ifndef NDEBUG
 
 #define OWL_VK_GET_INSTANCE_PROC_ADDR(i, fn)                                 \
   ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))
 
-#define OWL_VK_CHECK(e)                                                      \
-  do {                                                                       \
-    VkResult const result_ = e;                                              \
-    OWL_ASSERT(VK_SUCCESS == result_);                                       \
-  } while (0)
-
-OWL_GLOBAL char const *const validation_layers[] = {
+OWL_GLOBAL char const *const g_validation_layers[] = {
     "VK_LAYER_KHRONOS_validation"};
 
 #include <stdio.h>
@@ -53,8 +50,8 @@ owl_init_instance_(struct owl_vk_config const *config,
   instance.pNext = NULL;
   instance.flags = 0;
   instance.pApplicationInfo = &app;
-  instance.enabledLayerCount = OWL_ARRAY_SIZE(validation_layers);
-  instance.ppEnabledLayerNames = validation_layers;
+  instance.enabledLayerCount = OWL_ARRAY_SIZE(g_validation_layers);
+  instance.ppEnabledLayerNames = g_validation_layers;
   instance.enabledExtensionCount = config->instance_extension_count;
   instance.ppEnabledExtensionNames = config->instance_extensions;
 
@@ -2464,6 +2461,8 @@ enum owl_code owl_init_vk_renderer(struct owl_vk_config const *config,
 
   renderer->width = config->width;
   renderer->height = config->height;
+
+  owl_init_slab_arena(&g_arena);
 
   if (OWL_SUCCESS != (err = owl_init_instance_(config, renderer)))
     goto end;

@@ -33,9 +33,6 @@ owl_request_texture_mem(struct owl_vk_texture_manager *manager,
   if (OWL_INVALID_TEXTURE == (*handle = manager->current))
     return NULL;
 
-  for (i = 0; i < OWL_VK_TEXTURE_COUNT; ++i)
-    if (!manager->slots[i])
-      manager->current = i;
   manager->slots[manager->current] = 1;
 
   /* find the next empty slot and set current to it */
@@ -45,7 +42,6 @@ owl_request_texture_mem(struct owl_vk_texture_manager *manager,
       break;
     }
   }
-      
 
   /* if no slot was found, current is invalid */
   if (OWL_VK_TEXTURE_COUNT == i)

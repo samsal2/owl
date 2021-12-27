@@ -45,6 +45,8 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 #define OWL_CLAMP(v, l, h) (((v) < (l)) ? (l) : (((v) > (h)) ? (h) : (v)))
 #define OWL_MAX(a, b) (((a) < (b)) ? (b) : (a))
 
+#define OWL_SIZEOF(a) ((long)(sizeof(a)))
+
 /* clang-format off */
 #define OWL_ALIGNOF(t) ((size_t)&((struct { char c; t v; } *)0)->v)
 #define OWL_OFFSETOF(t) ((size_t)&((t *)0)->v)
