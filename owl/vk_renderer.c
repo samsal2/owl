@@ -1,3 +1,4 @@
+#include "vulkan/vulkan_core.h"
 #include <owl/internal.h>
 #include <owl/memory.h>
 #include <owl/render_group.h>
@@ -9,8 +10,6 @@
 /* clang-format off */
 #define OWL_VK_DEVICE_EXTENSIONS { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
 /* clang-format on */
-
-OWL_GLOBAL struct owl_slab_arena g_arena;
 
 #ifndef NDEBUG
 
@@ -172,8 +171,8 @@ OWL_INTERNAL int owl_vk_query_families(struct owl_vk_renderer const *renderer,
                                        VkPhysicalDevice device,
                                        OwlU32 *graphics_family,
                                        OwlU32 *present_family) {
-#define OWL_MAX_QUEUE_PROPERTIES 32
 #define OWL_QUEUE_UNSELECTED (OwlU32) - 1
+#define OWL_MAX_QUEUE_PROPERTIES 32
   OwlU32 i, count;
   OWL_LOCAL_PERSIST VkQueueFamilyProperties props[OWL_MAX_QUEUE_PROPERTIES];
 
@@ -2461,8 +2460,6 @@ enum owl_code owl_init_vk_renderer(struct owl_vk_config const *config,
 
   renderer->width = config->width;
   renderer->height = config->height;
-
-  owl_init_slab_arena(&g_arena);
 
   if (OWL_SUCCESS != (err = owl_init_instance_(config, renderer)))
     goto end;
