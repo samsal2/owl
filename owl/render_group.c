@@ -1,9 +1,9 @@
 #include <owl/internal.h>
 #include <owl/memory.h>
 #include <owl/render_group.h>
+#include <owl/texture.h>
 #include <owl/vk_renderer.h>
 #include <owl/vk_texture_manager.h>
-#include <owl/texture.h>
 
 OWL_INTERNAL enum owl_code
 owl_submit_render_group_basic_(struct owl_vk_renderer *renderer,

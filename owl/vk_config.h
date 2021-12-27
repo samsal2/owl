@@ -1,8 +1,8 @@
 #ifndef ARES_VK_CONFIG_H_
 #define ARES_VK_CONFIG_H_
 
-#include <owl/types.h>
 #include <owl/code.h>
+#include <owl/types.h>
 #include <vulkan/vulkan.h>
 
 struct owl_vk_renderer;

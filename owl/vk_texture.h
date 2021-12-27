@@ -2,8 +2,8 @@
 #define OWL_VK_TEXTURE_H_
 
 #include <owl/fwd.h>
-#include <owl/types.h>
 #include <owl/texture.h>
+#include <owl/types.h>
 #include <vulkan/vulkan.h>
 
 struct owl_tmp_submit_mem_ref;
@@ -19,10 +19,10 @@ struct owl_vk_texture {
 };
 
 enum owl_code owl_init_vk_texture(struct owl_vk_renderer *renderer, int width,
-                               int height, OwlByte const *data,
-                               enum owl_pixel_format format,
-                               enum owl_sampler_type sampler,
-                               struct owl_vk_texture *texture);
+                                  int height, OwlByte const *data,
+                                  enum owl_pixel_format format,
+                                  enum owl_sampler_type sampler,
+                                  struct owl_vk_texture *texture);
 
 enum owl_code owl_init_vk_texture_with_ref(
     struct owl_vk_renderer *renderer, int width, int height,
@@ -30,7 +30,6 @@ enum owl_code owl_init_vk_texture_with_ref(
     enum owl_sampler_type sampler, struct owl_vk_texture *texture);
 
 void owl_deinit_vk_texture(struct owl_vk_renderer const *renderer,
-                        struct owl_vk_texture *texture);
-
+                           struct owl_vk_texture *texture);
 
 #endif

@@ -158,12 +158,12 @@ struct owl_cursor {
 
 struct owl_window {
   OwlWindowHandle handle;
-  
+
   int width;
   int height;
   int framebuffer_width;
   int framebuffer_height;
-  
+
   struct owl_cursor cursor;
   enum owl_btn_state mouse[OWL_MOUSE_BUTTON_COUNT];
   enum owl_btn_state keyboard[OWL_KEYBOARD_KEY_LAST];

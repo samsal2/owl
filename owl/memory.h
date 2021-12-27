@@ -21,7 +21,7 @@ void *owl_alloc_tmp_submit_mem(struct owl_vk_renderer *renderer,
                                OwlVkDeviceSize size,
                                struct owl_tmp_submit_mem_ref *ref);
 
-#define OWL_VK_MEMORY_TYPE_NONE (OwlVkMemoryType)-1
+#define OWL_VK_MEMORY_TYPE_NONE (OwlVkMemoryType) - 1
 
 OwlVkMemoryType owl_vk_find_mem_type(struct owl_vk_renderer const *renderer,
                                      OwlVkMemoryFilter filter,

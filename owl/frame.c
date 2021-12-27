@@ -1,9 +1,9 @@
 #include <owl/code.h>
 #include <owl/frame.h>
 #include <owl/internal.h>
-#include <owl/vk_renderer.h>
-#include <owl/vk_internal.h>
 #include <owl/types.h>
+#include <owl/vk_internal.h>
+#include <owl/vk_renderer.h>
 
 #define OWL_VK_TIMEOUT (OwlU64) - 1
 

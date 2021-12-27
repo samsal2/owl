@@ -38,7 +38,6 @@ owl_vk_as_property_flags(enum owl_vk_mem_vis vis) {
   }
 }
 
-
 OwlVkMemoryType owl_vk_find_mem_type(struct owl_vk_renderer const *renderer,
                                      OwlVkMemoryFilter filter,
                                      enum owl_vk_mem_vis vis) {

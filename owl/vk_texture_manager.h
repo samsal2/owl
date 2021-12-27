@@ -24,6 +24,6 @@ owl_request_texture_mem(struct owl_vk_texture_manager *manager,
 
 struct owl_vk_texture *
 owl_release_texture_mem(struct owl_vk_texture_manager *manager,
-                       OwlTexture handle);
+                        OwlTexture handle);
 
 #endif

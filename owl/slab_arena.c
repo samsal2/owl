@@ -21,7 +21,7 @@ void *owl_alloc_from_arena(struct owl_slab_arena *arena, int size) {
 
   ++arena->owners;
   arena->pos = owl_align_size_(arena->pos + size, sizeof(void *));
-  
+
   return data;
 }
 
@@ -32,7 +32,7 @@ void owl_free_from_arena(struct owl_slab_arena *arena, void *data) {
     --arena->owners;
 
   if (!arena->owners)
-      arena->pos = 0;
+    arena->pos = 0;
 }
 
 void owl_deinit_slab_arena(struct owl_slab_arena *arena) {
