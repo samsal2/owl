@@ -46,8 +46,8 @@ OWL_INTERNAL void owl_glfw_window_cb_(GLFWwindow *window, int width,
                                       int height) {
   struct owl_window *w = glfwGetWindowUserPointer(window);
 
-  w->width = width;
-  w->height = height;
+  w->window_width = width;
+  w->window_height = height;
 }
 
 OWL_INTERNAL void owl_glfw_framebuffer_cb_(GLFWwindow *handle, int width,
@@ -62,8 +62,8 @@ OWL_INTERNAL void owl_glfw_cursor_pos_cb_(GLFWwindow *handle, double x,
                                           double y) {
   struct owl_window *w = glfwGetWindowUserPointer(handle);
 
-  w->cursor.current[0] = 2.0F * ((float)x / (float)w->width) - 1.0F;
-  w->cursor.current[1] = 2.0F * ((float)y / (float)w->height) - 1.0F;
+  w->cursor.cur_pos[0] = 2.0F * ((float)x / (float)w->window_width) - 1.0F;
+  w->cursor.cur_pos[1] = 2.0F * ((float)y / (float)w->window_height) - 1.0F;
 }
 
 OWL_INTERNAL void owl_glfw_mouse_cb_(GLFWwindow *window, int button,
@@ -88,16 +88,33 @@ OWL_INTERNAL void owl_glfw_keyboard_cb_(GLFWwindow *window, int key,
 }
 
 OWL_INTERNAL enum owl_code
-owl_vk_init_surface_(void const *data, struct owl_vk_renderer const *renderer,
-                     VkSurfaceKHR *out) {
+owl_init_vk_surface_cb_(void const *data,
+                        struct owl_vk_renderer const *renderer,
+                        VkSurfaceKHR *out) {
   VkSurfaceKHR *surface = out;
   struct owl_window const *window = data;
-
-  if (VK_SUCCESS != glfwCreateWindowSurface(renderer->instance,
-                                            window->handle, NULL, surface))
+  int err = glfwCreateWindowSurface(renderer->instance, window->handle, NULL,
+                                    surface);
+  if (VK_SUCCESS != err)
     return OWL_ERROR_BAD_INIT;
 
   return OWL_SUCCESS;
+}
+
+OWL_INTERNAL void owl_init_timer_(struct owl_window *window) {
+  window->timer_now = 0.0;
+  window->timer_past = 0.0;
+  window->timer_dt = 0.16667;
+}
+
+OWL_INTERNAL void owl_update_timer_(struct owl_window *window) {
+  window->timer_past = window->timer_now;
+  window->timer_now = glfwGetTime();
+  window->timer_dt = window->timer_now - window->timer_past;
+}
+
+OWL_INTERNAL void owl_update_prev_cursor_(struct owl_window *window) {
+  OWL_COPY_V2(window->cursor.cur_pos, window->cursor.prev_pos);
 }
 
 OWL_INTERNAL enum owl_code owl_init_window(int width, int height,
@@ -110,7 +127,8 @@ OWL_INTERNAL enum owl_code owl_init_window(int width, int height,
   window->handle = glfwCreateWindow(width, height, title, NULL, NULL);
 
   glfwSetWindowUserPointer(window->handle, window);
-  glfwGetWindowSize(window->handle, &window->width, &window->height);
+  glfwGetWindowSize(window->handle, &window->window_width,
+                    &window->window_height);
   glfwGetFramebufferSize(window->handle, &window->framebuffer_width,
                          &window->framebuffer_height);
   glfwSetWindowSizeCallback(window->handle, owl_glfw_window_cb_);
@@ -119,8 +137,8 @@ OWL_INTERNAL enum owl_code owl_init_window(int width, int height,
   glfwSetMouseButtonCallback(window->handle, owl_glfw_mouse_cb_);
   glfwSetKeyCallback(window->handle, owl_glfw_keyboard_cb_);
 
-  OWL_ZERO_V2(window->cursor.previous);
-  OWL_ZERO_V2(window->cursor.current);
+  OWL_ZERO_V2(window->cursor.prev_pos);
+  OWL_ZERO_V2(window->cursor.cur_pos);
 
   {
     int i;
@@ -130,6 +148,8 @@ OWL_INTERNAL enum owl_code owl_init_window(int width, int height,
     for (i = 0; i < OWL_KEYBOARD_KEY_LAST; ++i)
       window->keyboard[i] = OWL_BUTTON_STATE_NONE;
   }
+
+  owl_init_timer_(window);
 
   return OWL_SUCCESS;
 }
@@ -146,11 +166,11 @@ enum owl_code owl_fill_vk_config(struct owl_window const *window,
   OwlU32 count;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 
-  config->width = (OwlU32)window->framebuffer_width;
-  config->height = (OwlU32)window->framebuffer_height;
+  config->framebuffer_width = (OwlU32)window->framebuffer_width;
+  config->framebuffer_height = (OwlU32)window->framebuffer_height;
 
-  config->user_data = window;
-  config->create_surface = owl_vk_init_surface_;
+  config->surface_user_data = window;
+  config->create_surface = owl_init_vk_surface_cb_;
   config->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
 
   OWL_ASSERT(OWL_MAX_EXTENSIONS > count);
@@ -174,7 +194,7 @@ enum owl_code owl_fill_vk_config(struct owl_window const *window,
   config->height = (OwlU32)window->framebuffer_height;
 
   config->user_data = window;
-  config->create_surface = owl_vk_init_surface_;
+  config->create_surface = owl_init_vk_surface_cb_;
 
   config->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
   config->instance_extension_count = count;
@@ -199,16 +219,7 @@ int owl_should_window_close(struct owl_window const *window) {
 }
 
 void owl_poll_events(struct owl_window *window) {
-  OWL_UNUSED(window);
-  OWL_COPY_V2(window->cursor.current, window->cursor.previous);
+  owl_update_prev_cursor_(window);
   glfwPollEvents();
-}
-
-void owl_start_timer(struct owl_timer *timer) {
-  timer->start = glfwGetTime();
-}
-
-OwlSeconds owl_end_timer(struct owl_timer *timer) {
-  timer->end = glfwGetTime();
-  return timer->end - timer->start;
+  owl_update_timer_(window);
 }

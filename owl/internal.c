@@ -18,7 +18,7 @@ void *owl_dbg_calloc_(size_t c, size_t s, char const *f, int l) {
 void *owl_dbg_realloc_(void *p, size_t s, char const *f, int l) {
   void *np = realloc(p, s);
   printf("%p = OWL_REALLOC(%p, %lu) in file %s at line %d\n", np, p, s, f, l);
-  return realloc(p, s);
+  return np;
 }
 
 void owl_dbg_free_(void *p, char const *f, int l) {

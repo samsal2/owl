@@ -16,11 +16,9 @@ owl_ensure_manager_(struct owl_vk_renderer const *renderer) {
   g_is_texture_manager_active = 1;
 }
 
-enum owl_code owl_create_texture(struct owl_vk_renderer *renderer, int width,
-                                 int height, OwlByte const *data,
-                                 enum owl_pixel_format format,
-                                 enum owl_sampler_type sampler,
-                                 OwlTexture *texture) {
+enum owl_code owl_create_texture(struct owl_vk_renderer *renderer,
+                                 struct owl_texture_attr const *attr,
+                                 OwlByte const *data, OwlTexture *texture) {
   struct owl_vk_texture *mem;
   enum owl_code err = OWL_SUCCESS;
 
@@ -28,32 +26,31 @@ enum owl_code owl_create_texture(struct owl_vk_renderer *renderer, int width,
 
   /* TODO: check for NULL */
   mem = owl_request_texture_mem(&g_texture_manager, texture);
-  err = owl_init_vk_texture(renderer, width, height, data, format, sampler,
-                            mem);
+  err = owl_init_vk_texture(renderer, attr, data, mem);
 
   if (OWL_SUCCESS != err)
     owl_release_texture_mem(&g_texture_manager, *texture);
 
   return err;
 }
-
 enum owl_code owl_create_texture_from_file(struct owl_vk_renderer *renderer,
+                                           struct owl_texture_attr *attr,
                                            char const *path,
-                                           enum owl_sampler_type sampler,
                                            OwlTexture *texture) {
   OwlByte *data;
-  int width;
-  int height;
   int channels;
   enum owl_code err = OWL_SUCCESS;
 
-  data = stbi_load(path, &width, &height, &channels, STBI_rgb_alpha);
+  data =
+      stbi_load(path, &attr->width, &attr->height, &channels, STBI_rgb_alpha);
 
   if (!data)
     return OWL_ERROR_BAD_ALLOC;
 
-  err = owl_create_texture(renderer, width, height, data,
-                           OWL_PIXEL_FORMAT_R8G8B8A8_SRGB, sampler, texture);
+  /* FIXME: HACK, only R8G8B8A8 is support for files atm */
+  attr->format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
+
+  err = owl_create_texture(renderer, attr, data, texture);
 
   stbi_image_free(data);
 

@@ -1,3 +1,5 @@
+#include "owl/code.h"
+#include "vulkan/vulkan_core.h"
 #include <math.h>
 #include <owl/internal.h>
 #include <owl/memory.h>
@@ -62,7 +64,7 @@ OWL_INTERNAL uint32_t owl_calc_mips_(int width, int height) {
   return (uint32_t)(floor(log2(OWL_MAX(width, height))) + 1);
 }
 
-OWL_INTERNAL VkFormat owl_to_vk_format_(enum owl_pixel_format format) {
+OWL_INTERNAL VkFormat owl_as_vk_format_(enum owl_pixel_format format) {
 #define OWL_FORMAT_CASE(format)                                              \
   case OWL_PIXEL_FORMAT_##format:                                            \
     return VK_FORMAT_##format
@@ -225,183 +227,76 @@ OWL_INTERNAL void owl_gen_mips_(VkCommandBuffer cmd, int width, int height,
                        NULL, 1, &barrier);
 }
 
-enum owl_code owl_init_vk_texture(struct owl_vk_renderer *renderer, int width,
-                                  int height, OwlByte const *data,
-                                  enum owl_pixel_format format,
-                                  enum owl_sampler_type sampler,
-                                  struct owl_vk_texture *texture) {
-  enum owl_code err = OWL_SUCCESS;
-  OwlU32 mips = owl_calc_mips_(width, height);
-
-  texture->width = (OwlU32)width;
-  texture->height = (OwlU32)height;
-
-  {
-#define OWL_IMAGE_USAGE                                                      \
-  VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |        \
-      VK_IMAGE_USAGE_SAMPLED_BIT;
-
-    VkImageCreateInfo img;
-    img.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    img.pNext = NULL;
-    img.flags = 0;
-    img.imageType = VK_IMAGE_TYPE_2D;
-    img.format = owl_to_vk_format_(format);
-    img.extent.width = (OwlU32)width;
-    img.extent.height = (OwlU32)height;
-    img.extent.depth = 1;
-    img.mipLevels = mips;
-    img.arrayLayers = 1;
-    img.samples = VK_SAMPLE_COUNT_1_BIT;
-    img.tiling = VK_IMAGE_TILING_OPTIMAL;
-    img.usage = OWL_IMAGE_USAGE;
-    img.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    img.queueFamilyIndexCount = 0;
-    img.pQueueFamilyIndices = NULL;
-    img.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    OWL_VK_CHECK(vkCreateImage(renderer->device, &img, NULL, &texture->img));
-
-#undef OWL_IMAGE_USAGE
+VkFilter owl_as_vk_filter_(enum owl_sampler_filter filter) {
+  switch (filter) {
+  case OWL_SAMPLER_FILTER_NEAREST:
+    return VK_FILTER_NEAREST;
+  case OWL_SAMPLER_FILTER_LINEAR:
+    return VK_FILTER_LINEAR;
   }
-
-  /* init memory */
-  {
-    VkMemoryAllocateInfo mem;
-    VkMemoryRequirements req;
-
-    vkGetImageMemoryRequirements(renderer->device, texture->img, &req);
-
-    mem.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    mem.pNext = NULL;
-    mem.allocationSize = req.size;
-    mem.memoryTypeIndex = owl_vk_find_mem_type(renderer, req.memoryTypeBits,
-                                               OWL_VK_MEMORY_VIS_GPU_ONLY);
-
-    OWL_VK_CHECK(
-        vkAllocateMemory(renderer->device, &mem, NULL, &texture->mem));
-
-    OWL_VK_CHECK(
-        vkBindImageMemory(renderer->device, texture->img, texture->mem, 0));
-  }
-
-  {
-    VkImageViewCreateInfo view;
-
-    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view.pNext = NULL;
-    view.flags = 0;
-    view.image = texture->img;
-    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = owl_to_vk_format_(format);
-    view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view.subresourceRange.baseMipLevel = 0;
-    view.subresourceRange.levelCount = mips;
-    view.subresourceRange.baseArrayLayer = 0;
-    view.subresourceRange.layerCount = 1;
-
-    OWL_VK_CHECK(
-        vkCreateImageView(renderer->device, &view, NULL, &texture->view));
-  }
-
-  /* init the descriptor set */
-  {
-    VkDescriptorSetAllocateInfo set;
-
-    set.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    set.pNext = NULL;
-    set.descriptorPool = renderer->set_pool;
-    set.descriptorSetCount = 1;
-    set.pSetLayouts = &renderer->tex_set_layout;
-
-    OWL_VK_CHECK(
-        vkAllocateDescriptorSets(renderer->device, &set, &texture->set));
-  }
-
-  /* stage, mips and layout */
-  {
-    VkBufferImageCopy copy;
-    OwlByte *stage;
-    OwlVkDeviceSize size;
-    struct owl_tmp_submit_mem_ref ref;
-    VkCommandBuffer cmd = owl_alloc_cmd_buf_(renderer);
-
-    size = (unsigned)width * (unsigned)height * owl_sizeof_format_(format);
-
-    if (!(stage = owl_alloc_tmp_submit_mem(renderer, size, &ref))) {
-      err = OWL_ERROR_BAD_ALLOC;
-      goto end;
-    }
-
-    OWL_MEMCPY(stage, data, size);
-
-    copy.bufferOffset = ref.offset;
-    copy.bufferRowLength = 0;
-    copy.bufferImageHeight = 0;
-    copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    copy.imageSubresource.mipLevel = 0;
-    copy.imageSubresource.baseArrayLayer = 0;
-    copy.imageSubresource.layerCount = 1;
-    copy.imageOffset.x = 0;
-    copy.imageOffset.y = 0;
-    copy.imageOffset.z = 0;
-    copy.imageExtent.width = (OwlU32)width;
-    copy.imageExtent.height = (OwlU32)height;
-    copy.imageExtent.depth = 1;
-
-    cmd = owl_alloc_cmd_buf_(renderer);
-
-    owl_transition_image_layout_(cmd, VK_IMAGE_LAYOUT_UNDEFINED,
-                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mips,
-                                 texture->img);
-
-    vkCmdCopyBufferToImage(cmd, ref.buf, texture->img,
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-
-    owl_gen_mips_(cmd, width, height, mips, texture->img);
-
-    owl_free_cmd_buf_(renderer, cmd);
-  }
-
-  {
-    VkDescriptorImageInfo image;
-    VkWriteDescriptorSet write;
-
-    image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    image.imageView = texture->view;
-    image.sampler = renderer->samplers[sampler];
-
-    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.pNext = NULL;
-    write.dstSet = texture->set;
-    write.dstBinding = 0;
-    write.dstArrayElement = 0;
-    write.descriptorCount = 1;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    write.pImageInfo = &image;
-    write.pBufferInfo = NULL;
-    write.pTexelBufferView = NULL;
-
-    vkUpdateDescriptorSets(renderer->device, 1, &write, 0, NULL);
-  }
-
-end:
-  return err;
 }
 
-enum owl_code owl_init_vk_texture_with_ref(
-    struct owl_vk_renderer *renderer, int width, int height,
-    struct owl_tmp_submit_mem_ref const *ref, enum owl_pixel_format format,
-    enum owl_sampler_type sampler, struct owl_vk_texture *texture) {
-  enum owl_code err = OWL_SUCCESS;
-  OwlU32 mips = owl_calc_mips_(width, height);
+VkSamplerMipmapMode owl_as_vk_mipmap_mode_(enum owl_sampler_mip_mode mode) {
+  switch (mode) {
+  case OWL_SAMPLER_MIP_MODE_NEAREST:
+    return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+  case OWL_SAMPLER_MIP_MODE_LINEAR:
+    return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+  }
+}
 
-  texture->width = (OwlU32)width;
-  texture->height = (OwlU32)height;
+VkSamplerAddressMode owl_as_vk_addr_mode_(enum owl_sampler_addr_mode mode) {
+  switch (mode) {
+  case OWL_SAMPLER_ADDR_MODE_REPEAT:
+    return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+  case OWL_SAMPLER_ADDR_MODE_MIRRORED_REPEAT:
+    return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+
+  case OWL_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE:
+    return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+  case OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER:
+    return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+  }
+}
+
+OWL_INTERNAL OwlVkDeviceSize
+owl_attr_required_size_(struct owl_texture_attr const *attr) {
+  return owl_sizeof_format_(attr->format) * (OwlVkDeviceSize)attr->width *
+         (OwlVkDeviceSize)attr->height;
+}
+
+enum owl_code owl_init_vk_texture(struct owl_vk_renderer *renderer,
+                                  struct owl_texture_attr const *attr,
+                                  OwlByte const *data,
+                                  struct owl_vk_texture *texture) {
+  OwlByte *stage;
+  OwlVkDeviceSize size;
+  struct owl_tmp_submit_mem_ref ref;
+
+  OWL_ASSERT(owl_is_dyn_buf_flushed(renderer));
+
+  size = owl_attr_required_size_(attr);
+
+  if (!(stage = owl_alloc_tmp_submit_mem(renderer, size, &ref)))
+    return OWL_ERROR_BAD_ALLOC;
+
+  OWL_MEMCPY(stage, data, size);
+
+  return owl_init_vk_texture_with_ref(renderer, attr, &ref, texture);
+}
+
+enum owl_code
+owl_init_vk_texture_with_ref(struct owl_vk_renderer *renderer,
+                             struct owl_texture_attr const *attr,
+                             struct owl_tmp_submit_mem_ref const *ref,
+                             struct owl_vk_texture *texture) {
+  enum owl_code err = OWL_SUCCESS;
+  OwlU32 mips = owl_calc_mips_(attr->width, attr->height);
+
+  texture->width = (OwlU32)attr->width;
+  texture->height = (OwlU32)attr->height;
 
   {
 #define OWL_IMAGE_USAGE                                                      \
@@ -413,9 +308,9 @@ enum owl_code owl_init_vk_texture_with_ref(
     image.pNext = NULL;
     image.flags = 0;
     image.imageType = VK_IMAGE_TYPE_2D;
-    image.format = owl_to_vk_format_(format);
-    image.extent.width = (uint32_t)width;
-    image.extent.height = (uint32_t)height;
+    image.format = owl_as_vk_format_(attr->format);
+    image.extent.width = (OwlU32)attr->width;
+    image.extent.height = (OwlU32)attr->height;
     image.extent.depth = 1;
     image.mipLevels = mips;
     image.arrayLayers = 1;
@@ -461,7 +356,7 @@ enum owl_code owl_init_vk_texture_with_ref(
     view.flags = 0;
     view.image = texture->img;
     view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = owl_to_vk_format_(format);
+    view.format = owl_as_vk_format_(attr->format);
     view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
     view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -505,8 +400,8 @@ enum owl_code owl_init_vk_texture_with_ref(
     copy.imageOffset.x = 0;
     copy.imageOffset.y = 0;
     copy.imageOffset.z = 0;
-    copy.imageExtent.width = (OwlU32)width;
-    copy.imageExtent.height = (OwlU32)height;
+    copy.imageExtent.width = (OwlU32)attr->width;
+    copy.imageExtent.height = (OwlU32)attr->height;
     copy.imageExtent.depth = 1;
 
     cmd = owl_alloc_cmd_buf_(renderer);
@@ -518,9 +413,38 @@ enum owl_code owl_init_vk_texture_with_ref(
     vkCmdCopyBufferToImage(cmd, ref->buf, texture->img,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 
-    owl_gen_mips_(cmd, width, height, mips, texture->img);
+    owl_gen_mips_(cmd, attr->width, attr->height, mips, texture->img);
 
     owl_free_cmd_buf_(renderer, cmd);
+  }
+
+  {
+#define OWL_MAX_ANISOTROPY 16
+
+    VkSamplerCreateInfo sampler;
+    sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler.pNext = NULL;
+    sampler.flags = 0;
+    sampler.magFilter = owl_as_vk_filter_(attr->mag_filter);
+    sampler.minFilter = owl_as_vk_filter_(attr->min_filter);
+    sampler.mipmapMode = owl_as_vk_mipmap_mode_(attr->mip_mode);
+    sampler.addressModeU = owl_as_vk_addr_mode_(attr->wrap_u);
+    sampler.addressModeV = owl_as_vk_addr_mode_(attr->wrap_v);
+    sampler.addressModeW = owl_as_vk_addr_mode_(attr->wrap_w);
+    sampler.mipLodBias = 0.0F;
+    sampler.anisotropyEnable = VK_TRUE;
+    sampler.maxAnisotropy = OWL_MAX_ANISOTROPY;
+    sampler.compareEnable = VK_FALSE;
+    sampler.compareOp = VK_COMPARE_OP_ALWAYS;
+    sampler.minLod = 0.0F;
+    sampler.maxLod = VK_LOD_CLAMP_NONE;
+    sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    sampler.unnormalizedCoordinates = VK_FALSE;
+
+    OWL_VK_CHECK(
+        vkCreateSampler(renderer->device, &sampler, NULL, &texture->sampler));
+
+#undef OWL_MAX_ANISOTROPY
   }
 
   {
@@ -529,7 +453,7 @@ enum owl_code owl_init_vk_texture_with_ref(
 
     image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     image.imageView = texture->view;
-    image.sampler = renderer->samplers[sampler];
+    image.sampler = texture->sampler;
 
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.pNext = NULL;
@@ -545,6 +469,8 @@ enum owl_code owl_init_vk_texture_with_ref(
     vkUpdateDescriptorSets(renderer->device, 1, &write, 0, NULL);
   }
 
+  owl_flush_dyn_buf(renderer);
+
   return err;
 }
 
@@ -552,6 +478,7 @@ void owl_deinit_vk_texture(struct owl_vk_renderer const *renderer,
                            struct owl_vk_texture *texture) {
   OWL_VK_CHECK(vkDeviceWaitIdle(renderer->device));
 
+  vkDestroySampler(renderer->device, texture->sampler, NULL);
   vkFreeDescriptorSets(renderer->device, renderer->set_pool, 1,
                        &texture->set);
   vkFreeMemory(renderer->device, texture->mem, NULL);

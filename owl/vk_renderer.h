@@ -37,7 +37,6 @@ struct owl_vk_renderer {
   /* ====================================================================== */
   VkSurfaceKHR surface;
   VkSurfaceFormatKHR surface_format;
-  VkSurfaceCapabilitiesKHR surface_capabilities;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -68,9 +67,7 @@ struct owl_vk_renderer {
   VkSwapchainKHR swapchain;
   VkExtent2D swapchain_extent;
   VkPresentModeKHR swapchain_present_mode;
-
   VkClearValue swapchain_clear_vals[OWL_CLEAR_VAL_COUNT];
-
   OwlU32 swapchain_active_img;
   OwlU32 swapchain_img_count;
   VkImage swapchain_imgs[OWL_MAX_SWAPCHAIN_IMAGES];
@@ -165,33 +162,12 @@ struct owl_vk_renderer {
   /* ====================================================================== */
 
   /* ====================================================================== */
-  /* offscreen render pass resources */
+  /* 3D model pipeline resources */
   /* ====================================================================== */
-  VkRenderPass offscreen_render_pass;
-
-  VkImage offscreen_pos_img;
-  VkDeviceMemory offscreen_pos_mem;
-  VkImageView offscreen_pos_view;
-  VkFormat offscreen_pos_fmt;
-
-  VkImage offscreen_normal_img;
-  VkDeviceMemory offscreen_normal_mem;
-  VkImageView offscreen_normal_view;
-  VkFormat offscreen_normal_fmt;
-
-  VkImage offscreen_albedo_img;
-  VkDeviceMemory offscreen_albedo_mem;
-  VkImageView offscreen_albedo_view;
-  VkFormat offscreen_albedo_fmt;
-
-  VkImage offscreen_depth_img;
-  VkDeviceMemory offscreen_depth_mem;
-  VkImageView offscreen_depth_view;
-  VkFormat offscreen_depth_fmt;
-
-  VkCommandPool offscreen_cmd_pool;
-  VkCommandBuffer offscreen_cmd_buf;
-  VkFramebuffer offscreen_framebuffer;
+  VkDescriptorSetLayout model_image_set_layout;
+  VkDescriptorSetLayout model_ubo_set_layout;
+  VkPipelineLayout model_pipeline_layout;
+  VkPipeline model_pbr_pipeline;
   /* ====================================================================== */
 };
 
@@ -209,5 +185,9 @@ enum owl_code owl_reserve_dyn_buf_mem(struct owl_vk_renderer *renderer,
                                       OwlVkDeviceSize size);
 
 void owl_clear_dyn_garbage(struct owl_vk_renderer *renderer);
+
+int owl_is_dyn_buf_flushed(struct owl_vk_renderer *renderer);
+
+void owl_flush_dyn_buf(struct owl_vk_renderer *renderer);
 
 #endif

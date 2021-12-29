@@ -152,26 +152,25 @@ enum owl_keyboard_key {
 #define OWL_KEYBOARD_KEY_LAST OWL_KEYBOARD_KEY_MENU
 
 struct owl_cursor {
-  OwlV2 previous;
-  OwlV2 current;
+  OwlV2 prev_pos;
+  OwlV2 cur_pos;
 };
 
 struct owl_window {
   OwlWindowHandle handle;
 
-  int width;
-  int height;
+  int window_width;
+  int window_height;
   int framebuffer_width;
   int framebuffer_height;
+
+  OwlSeconds timer_dt;
+  OwlSeconds timer_past;
+  OwlSeconds timer_now;
 
   struct owl_cursor cursor;
   enum owl_btn_state mouse[OWL_MOUSE_BUTTON_COUNT];
   enum owl_btn_state keyboard[OWL_KEYBOARD_KEY_LAST];
-};
-
-struct owl_timer {
-  OwlSeconds start;
-  OwlSeconds end;
 };
 
 enum owl_code owl_create_window(int width, int height, char const *title,
@@ -182,10 +181,6 @@ void owl_destroy_window(struct owl_window *window);
 int owl_should_window_close(struct owl_window const *window);
 
 void owl_poll_events(struct owl_window *window);
-
-void owl_start_timer(struct owl_timer *timer);
-
-OwlSeconds owl_end_timer(struct owl_timer *timer);
 
 enum owl_code owl_fill_vk_config(struct owl_window const *window,
                                  struct owl_vk_config *config);

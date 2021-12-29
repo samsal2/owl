@@ -1,1 +1,1 @@
-target_sources(stb_image PRIVATE stb_image.h stb_image.c)
+target_sources(stb PRIVATE stb_image.h stb_image.c)

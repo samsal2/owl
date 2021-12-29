@@ -1,13 +1,13 @@
 #include <owl/internal.h>
 #include <owl/memory.h>
-#include <owl/render_group.h>
+#include <owl/render_command.h>
 #include <owl/texture.h>
 #include <owl/vk_renderer.h>
 #include <owl/vk_texture_manager.h>
 
 OWL_INTERNAL enum owl_code
 owl_submit_render_group_basic_(struct owl_vk_renderer *renderer,
-                               struct owl_render_group_basic const *basic) {
+                               struct owl_render_command_basic const *basic) {
   OwlByte *data;
   VkDeviceSize size;
   VkDescriptorSet sets[2];
@@ -54,7 +54,7 @@ owl_submit_render_group_basic_(struct owl_vk_renderer *renderer,
 
 OWL_INTERNAL enum owl_code
 owl_submit_render_group_quad_(struct owl_vk_renderer *renderer,
-                              struct owl_render_group_quad const *quad) {
+                              struct owl_render_command_quad const *quad) {
   OwlByte *data;
   VkDeviceSize size;
   VkDescriptorSet sets[2];
@@ -162,22 +162,15 @@ OWL_INTERNAL enum owl_code owl_submit_render_group_light_(
 #endif
 
 enum owl_code owl_submit_render_group(struct owl_vk_renderer *renderer,
-                                      struct owl_render_group const *group) {
+                                      struct owl_render_command const *group) {
   switch (group->type) {
-  case OWL_RENDER_GROUP_TYPE_NOP:
+  case OWL_RENDER_COMMAND_TYPE_NOP:
     return OWL_SUCCESS;
 
-  case OWL_RENDER_GROUP_TYPE_BASIC:
+  case OWL_RENDER_COMMAND_TYPE_BASIC:
     return owl_submit_render_group_basic_(renderer, &group->storage.as_basic);
 
-  case OWL_RENDER_GROUP_TYPE_QUAD:
+  case OWL_RENDER_COMMAND_TYPE_QUAD:
     return owl_submit_render_group_quad_(renderer, &group->storage.as_quad);
-
-#if 0
-  case OWL_RENDER_GROUP_LIGHT_TEST:
-    return owl_submit_render_group_light_(renderer, &group->storage.as_light);
-#endif
-  case OWL_RENDER_GROUP_LIGHT_TEST:
-    return OWL_ERROR_UNKNOWN;
   }
 }

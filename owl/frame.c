@@ -145,8 +145,7 @@ enum owl_code owl_end_frame(struct owl_vk_renderer *renderer) {
     renderer->dyn_active_buf = 0;
 
   /* reset offset */
-  renderer->dyn_offsets[renderer->dyn_active_buf] = 0;
-
+  owl_flush_dyn_buf(renderer);
   owl_clear_dyn_garbage(renderer);
 
 end:

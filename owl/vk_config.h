@@ -12,13 +12,13 @@ typedef enum owl_code (*OwlVkSurfaceCreator)(void const *,
                                              VkSurfaceKHR *);
 
 struct owl_vk_config {
-  OwlU32 width;
-  OwlU32 height;
+  OwlU32 framebuffer_width;
+  OwlU32 framebuffer_height;
 
   OwlU32 instance_extension_count;
   char const **instance_extensions;
 
-  void const *user_data;
+  void const *surface_user_data;
   OwlVkSurfaceCreator create_surface;
 };
 

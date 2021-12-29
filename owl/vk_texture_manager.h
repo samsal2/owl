@@ -3,7 +3,7 @@
 
 #include <owl/vk_texture.h>
 
-#define OWL_VK_TEXTURE_COUNT 16
+#define OWL_VK_TEXTURE_COUNT 64
 
 struct owl_vk_texture_manager {
   int current;

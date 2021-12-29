@@ -1,8 +1,8 @@
+#include "owl/code.h"
 #include "vulkan/vulkan_core.h"
 #include <owl/internal.h>
 #include <owl/memory.h>
-#include <owl/render_group.h>
-#include <owl/slab_arena.h>
+#include <owl/render_command.h>
 #include <owl/vk_config.h>
 #include <owl/vk_internal.h>
 #include <owl/vk_renderer.h>
@@ -144,7 +144,7 @@ OWL_INTERNAL void owl_deinit_instance_(struct owl_vk_renderer *renderer) {
 OWL_INTERNAL enum owl_code
 owl_init_surface_(struct owl_vk_config const *config,
                   struct owl_vk_renderer *renderer) {
-  return config->create_surface(config->user_data, renderer,
+  return config->create_surface(config->surface_user_data, renderer,
                                 &renderer->surface);
 }
 
@@ -172,14 +172,14 @@ OWL_INTERNAL int owl_vk_query_families(struct owl_vk_renderer const *renderer,
                                        OwlU32 *graphics_family,
                                        OwlU32 *present_family) {
 #define OWL_QUEUE_UNSELECTED (OwlU32) - 1
-#define OWL_MAX_QUEUE_PROPERTIES 32
+  int found = 0;
   OwlU32 i, count;
-  OWL_LOCAL_PERSIST VkQueueFamilyProperties props[OWL_MAX_QUEUE_PROPERTIES];
+  VkQueueFamilyProperties *props;
 
   vkGetPhysicalDeviceQueueFamilyProperties(device, &count, NULL);
 
-  if (OWL_MAX_QUEUE_PROPERTIES <= count)
-    return OWL_ERROR_OUT_OF_SPACE;
+  if (!(props = OWL_MALLOC(count * sizeof(*props))))
+    return OWL_ERROR_BAD_ALLOC;
 
   vkGetPhysicalDeviceQueueFamilyProperties(device, &count, props);
 
@@ -207,12 +207,14 @@ OWL_INTERNAL int owl_vk_query_families(struct owl_vk_renderer const *renderer,
     if (OWL_QUEUE_UNSELECTED == *present_family)
       continue;
 
-    return 1;
+    found = 1;
+    goto end_free_props;
   }
 
-  return 0;
-#undef OWL_QUEUE_UNSELECTED
-#undef OWL_MAX_QUEUE_PROPERTIES
+end_free_props:
+  OWL_FREE(props);
+
+  return found;
 }
 
 OWL_INTERNAL int
@@ -240,9 +242,9 @@ owl_select_physical_device_(struct owl_vk_renderer *renderer) {
   OwlU32 i;
 
   for (i = 0; i < renderer->device_options_count; ++i) {
-#define OWL_MAX_EXTENSIONS 64
-    OwlU32 formats, modes, extension_count;
-    OWL_LOCAL_PERSIST VkExtensionProperties extensions[OWL_MAX_EXTENSIONS];
+    OwlU32 formats, modes;
+    OwlU32 extension_count;
+    VkExtensionProperties *extensions;
 
     OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
         renderer->device_options[i], renderer->surface, &formats, NULL));
@@ -270,20 +272,20 @@ owl_select_physical_device_(struct owl_vk_renderer *renderer) {
     OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(
         renderer->device_options[i], NULL, &extension_count, NULL));
 
-    if (OWL_MAX_EXTENSIONS <= extension_count)
-      return OWL_ERROR_OUT_OF_SPACE;
+    if (!(extensions = OWL_MALLOC(extension_count * sizeof(*extensions))))
+      return OWL_ERROR_BAD_ALLOC;
 
     OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(
         renderer->device_options[i], NULL, &extension_count, extensions));
 
-    if (!owl_vk_validate_extensions(extension_count, extensions))
+    if (!owl_vk_validate_extensions(extension_count, extensions)) {
+      OWL_FREE(extensions);
       continue;
+    }
+
+    OWL_FREE(extensions);
 
     renderer->physical_device = renderer->device_options[i];
-
-    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-        renderer->physical_device, renderer->surface,
-        &renderer->surface_capabilities));
 
     vkGetPhysicalDeviceProperties(renderer->physical_device,
                                   &renderer->device_properties);
@@ -292,25 +294,23 @@ owl_select_physical_device_(struct owl_vk_renderer *renderer) {
                                         &renderer->device_mem_properties);
 
     return OWL_SUCCESS;
-
-#undef OWL_MAX_EXTENSIONS
   }
 
   return OWL_ERROR_NO_SUITABLE_DEVICE;
 }
 
-#define OWL_MAX_SURFACE_FORMATS 16
 OWL_INTERNAL enum owl_code
 owl_select_surface_format_(struct owl_vk_renderer *renderer, VkFormat format,
                            VkColorSpaceKHR color_space) {
   OwlU32 i, count;
-  VkSurfaceFormatKHR formats[OWL_MAX_SURFACE_FORMATS];
+  VkSurfaceFormatKHR *formats;
+  enum owl_code err = OWL_SUCCESS;
 
   OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
       renderer->physical_device, renderer->surface, &count, NULL));
 
-  if (OWL_MAX_SURFACE_FORMATS <= count)
-    return OWL_ERROR_OUT_OF_SPACE;
+  if (!(formats = OWL_MALLOC(count * sizeof(*formats))))
+    return OWL_ERROR_BAD_ALLOC;
 
   OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
       renderer->physical_device, renderer->surface, &count, formats));
@@ -325,12 +325,18 @@ owl_select_surface_format_(struct owl_vk_renderer *renderer, VkFormat format,
     renderer->surface_format.format = format;
     renderer->surface_format.colorSpace = color_space;
 
-    return OWL_SUCCESS;
+    err = OWL_SUCCESS;
+    goto end_free_formats;
   }
 
-  return OWL_ERROR_NO_SUITABLE_FORMAT;
+  /* if the loop ends without finding a format */
+  err = OWL_ERROR_NO_SUITABLE_FORMAT;
+
+end_free_formats:
+  OWL_FREE(formats);
+
+  return err;
 }
-#undef OWL_MAX_SURFACE_FORMATS
 
 OWL_INTERNAL enum owl_code
 owl_select_sample_count_(struct owl_vk_renderer *renderer) {
@@ -422,15 +428,18 @@ owl_clamp_swapchain_extent_(OwlU32 width, OwlU32 height,
                             struct owl_vk_renderer *renderer) {
 #define OWL_VK_NO_RESTRICTIONS (OwlU32) - 1
 
-  VkSurfaceCapabilitiesKHR const *cap = &renderer->surface_capabilities;
+  VkSurfaceCapabilitiesKHR capabilities;
 
-  if (OWL_VK_NO_RESTRICTIONS == cap->currentExtent.width) {
-    renderer->swapchain_extent = cap->currentExtent;
+  OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+      renderer->physical_device, renderer->surface, &capabilities));
+
+  if (OWL_VK_NO_RESTRICTIONS == capabilities.currentExtent.width) {
+    renderer->swapchain_extent = capabilities.currentExtent;
   } else {
-    OwlU32 min_width = cap->minImageExtent.width;
-    OwlU32 min_height = cap->minImageExtent.height;
-    OwlU32 max_width = cap->maxImageExtent.width;
-    OwlU32 max_height = cap->maxImageExtent.height;
+    OwlU32 min_width = capabilities.minImageExtent.width;
+    OwlU32 min_height = capabilities.minImageExtent.height;
+    OwlU32 max_width = capabilities.maxImageExtent.width;
+    OwlU32 max_height = capabilities.maxImageExtent.height;
 
     renderer->swapchain_extent.width = OWL_CLAMP(width, min_width, max_width);
     renderer->swapchain_extent.height =
@@ -443,15 +452,14 @@ owl_clamp_swapchain_extent_(OwlU32 width, OwlU32 height,
 OWL_INTERNAL enum owl_code
 owl_select_present_mode_(struct owl_vk_renderer *renderer,
                          VkPresentModeKHR mode) {
-#define OWL_MAX_PRESENT_MODES 6
   OwlU32 i, count;
-  VkPresentModeKHR modes[OWL_MAX_PRESENT_MODES];
+  VkPresentModeKHR *modes;
 
   OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
       renderer->physical_device, renderer->surface, &count, NULL));
 
-  if (OWL_MAX_PRESENT_MODES <= count)
-    return OWL_ERROR_OUT_OF_SPACE;
+  if (!(modes = OWL_MALLOC(count * sizeof(*modes))))
+    return OWL_ERROR_BAD_ALLOC;
 
   OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
       renderer->physical_device, renderer->surface, &count, modes));
@@ -463,9 +471,9 @@ owl_select_present_mode_(struct owl_vk_renderer *renderer,
     if (mode == (renderer->swapchain_present_mode = modes[count - i - 1]))
       break;
 
-  return OWL_SUCCESS;
+  OWL_FREE(modes);
 
-#undef OWL_MAX_PRESENT_MODES
+  return OWL_SUCCESS;
 }
 
 OWL_INTERNAL enum owl_code
@@ -474,14 +482,20 @@ owl_init_swapchain_(struct owl_vk_config const *config,
   OwlU32 families[2];
   enum owl_code err = OWL_SUCCESS;
 
-  owl_clamp_swapchain_extent_(config->width, config->height, renderer);
+  owl_clamp_swapchain_extent_(config->framebuffer_width,
+                              config->framebuffer_height, renderer);
 
   if (OWL_SUCCESS !=
       (err = owl_select_present_mode_(renderer, VK_PRESENT_MODE_FIFO_KHR)))
     goto end;
 
   {
+    VkSurfaceCapabilitiesKHR capabilities;
     VkSwapchainCreateInfoKHR swapchain;
+
+    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        renderer->physical_device, renderer->surface, &capabilities));
+
     swapchain.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapchain.pNext = NULL;
     swapchain.flags = 0;
@@ -493,7 +507,7 @@ owl_init_swapchain_(struct owl_vk_config const *config,
     swapchain.imageExtent.height = renderer->swapchain_extent.height;
     swapchain.imageArrayLayers = 1;
     swapchain.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    swapchain.preTransform = renderer->surface_capabilities.currentTransform;
+    swapchain.preTransform = capabilities.currentTransform;
     swapchain.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     swapchain.presentMode = renderer->swapchain_present_mode;
     swapchain.clipped = VK_TRUE;
@@ -659,8 +673,8 @@ owl_init_general_samplers_(struct owl_vk_renderer *renderer) {
     sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     sampler.pNext = NULL;
     sampler.flags = 0;
-    sampler.magFilter = VK_FILTER_NEAREST;
-    sampler.minFilter = VK_FILTER_NEAREST;
+    sampler.magFilter = VK_FILTER_LINEAR;
+    sampler.minFilter = VK_FILTER_LINEAR;
     sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -677,7 +691,7 @@ owl_init_general_samplers_(struct owl_vk_renderer *renderer) {
 
     OWL_VK_CHECK(
         vkCreateSampler(renderer->device, &sampler, NULL,
-                        &renderer->samplers[OWL_SAMPLER_TYPE_NEAREST]));
+                        &renderer->samplers[OWL_SAMPLER_TYPE_CLAMP]));
   }
 
   return OWL_SUCCESS;
@@ -687,7 +701,7 @@ owl_init_general_samplers_(struct owl_vk_renderer *renderer) {
 OWL_INTERNAL void
 owl_deinit_general_samplers_(struct owl_vk_renderer *renderer) {
   vkDestroySampler(renderer->device,
-                   renderer->samplers[OWL_SAMPLER_TYPE_NEAREST], NULL);
+                   renderer->samplers[OWL_SAMPLER_TYPE_CLAMP], NULL);
   vkDestroySampler(renderer->device,
                    renderer->samplers[OWL_SAMPLER_TYPE_LINEAR], NULL);
 }
@@ -1087,6 +1101,8 @@ owl_deinit_main_framebuffers_(struct owl_vk_renderer *renderer) {
 
 OWL_INTERNAL enum owl_code
 owl_init_main_set_layouts_(struct owl_vk_renderer *renderer) {
+  enum owl_code err = OWL_SUCCESS;
+
   {
     VkDescriptorSetLayoutBinding binding;
     VkDescriptorSetLayoutCreateInfo layout;
@@ -1127,7 +1143,7 @@ owl_init_main_set_layouts_(struct owl_vk_renderer *renderer) {
                                              &renderer->tex_set_layout));
   }
 
-  return OWL_SUCCESS;
+  return err;
 }
 
 OWL_INTERNAL void
@@ -2023,443 +2039,12 @@ end:
   return err;
 }
 
-#if 0
-OWL_INTERNAL enum owl_code
-owl_init_offscreen_(struct owl_renderer *renderer) {
-  /* set formats */
-  {
-    renderer->offscreen_pos_fmt = VK_FORMAT_R16G16B16A16_SFLOAT;
-    renderer->offscreen_normal_fmt = VK_FORMAT_R16G16B16A16_SFLOAT;
-    renderer->offscreen_albedo_fmt = VK_FORMAT_R8G8B8A8_UNORM;
-    renderer->offscreen_depth_fmt = VK_FORMAT_D32_SFLOAT;
-  }
-
-  /* init offscreen render pass */
-  {
-    VkAttachmentReference refs[4];
-    VkAttachmentDescription attachs[4];
-    VkSubpassDescription subpass;
-    VkSubpassDependency deps[2];
-    VkRenderPassCreateInfo pass;
-
-    refs[0].attachment = 0;
-    refs[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    refs[1].attachment = 1;
-    refs[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    refs[2].attachment = 2;
-    refs[2].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    refs[3].attachment = 3;
-    refs[3].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    attachs[0].flags = 0;
-    attachs[0].format = renderer->offscreen_pos_fmt;
-    attachs[0].samples = VK_SAMPLE_COUNT_1_BIT;
-    attachs[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachs[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachs[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachs[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachs[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachs[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    attachs[1].flags = 0;
-    attachs[1].format = renderer->offscreen_normal_fmt;
-    attachs[1].samples = VK_SAMPLE_COUNT_1_BIT;
-    attachs[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachs[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachs[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachs[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachs[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachs[1].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    attachs[2].flags = 0;
-    attachs[2].format = renderer->offscreen_albedo_fmt;
-    attachs[2].samples = VK_SAMPLE_COUNT_1_BIT;
-    attachs[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachs[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachs[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachs[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachs[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachs[2].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    attachs[2].flags = 0;
-    attachs[2].format = renderer->offscreen_depth_fmt;
-    attachs[2].samples = VK_SAMPLE_COUNT_1_BIT;
-    attachs[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachs[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachs[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachs[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachs[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachs[2].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    subpass.flags = 0;
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.inputAttachmentCount = 0;
-    subpass.pInputAttachments = NULL;
-    subpass.colorAttachmentCount = 3;
-    subpass.pColorAttachments = &refs[0];
-    subpass.pResolveAttachments = NULL;
-    subpass.pDepthStencilAttachment = NULL;
-    subpass.preserveAttachmentCount = 0;
-    subpass.pPreserveAttachments = NULL;
-
-#define OWL_VK_DST_ACCESS_MASK                                               \
-  VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-
-    deps[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    deps[0].dstSubpass = 0;
-    deps[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    deps[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    deps[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    deps[0].dstAccessMask = OWL_VK_DST_ACCESS_MASK;
-    deps[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-#undef OWL_VK_DST_ACCESS_MASK
-
-#define OWL_VK_SRC_ACCESS_MASK                                               \
-  VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-
-    deps[1].srcSubpass = 0;
-    deps[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    deps[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    deps[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    deps[1].srcAccessMask = OWL_VK_SRC_ACCESS_MASK;
-    deps[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    deps[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-#undef OWL_VK_SRC_ACCESS_MASK
-
-    pass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    pass.pNext = NULL;
-    pass.flags = 0;
-    pass.attachmentCount = OWL_ARRAY_SIZE(attachs);
-    pass.pAttachments = attachs;
-    pass.subpassCount = 1;
-    pass.pSubpasses = &subpass;
-    pass.dependencyCount = OWL_ARRAY_SIZE(deps);
-    pass.pDependencies = deps;
-
-    OWL_VK_CHECK(vkCreateRenderPass(renderer->device, &pass, NULL,
-                                    &renderer->offscreen_render_pass));
-  }
-
-  {
-    VkImageCreateInfo img;
-    img.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    img.pNext = NULL;
-    img.flags = 0;
-    img.imageType = VK_IMAGE_TYPE_2D;
-    img.format = renderer->offscreen_pos_fmt;
-    img.extent.width = renderer->swapchain_extent.width;
-    img.extent.height = renderer->swapchain_extent.height;
-    img.extent.depth = 1;
-    img.mipLevels = 1;
-    img.arrayLayers = 1;
-    img.samples = VK_SAMPLE_COUNT_1_BIT;
-    img.tiling = VK_IMAGE_TILING_OPTIMAL;
-    img.usage =
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    img.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    img.queueFamilyIndexCount = 0;
-    img.pQueueFamilyIndices = NULL;
-    img.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    OWL_VK_CHECK(vkCreateImage(renderer->device, &img, NULL,
-                               &renderer->offscreen_pos_img));
-  }
-
-  {
-    VkMemoryAllocateInfo mem;
-    VkMemoryRequirements req;
-
-    vkGetImageMemoryRequirements(renderer->device,
-                                 renderer->offscreen_pos_img, &req);
-
-    mem.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    mem.pNext = NULL;
-    mem.allocationSize = req.size;
-    mem.memoryTypeIndex = owl_vk_find_mem_type(
-        renderer, req.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_GPU_ONLY);
-
-    OWL_VK_CHECK(vkAllocateMemory(renderer->device, &mem, NULL,
-                                  &renderer->offscreen_pos_mem));
-  }
-
-  {
-    VkImageViewCreateInfo view;
-    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view.pNext = NULL;
-    view.flags = 0;
-    view.image = renderer->offscreen_pos_img;
-    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = renderer->offscreen_pos_fmt;
-    view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view.subresourceRange.baseMipLevel = 0;
-    view.subresourceRange.levelCount = 1;
-    view.subresourceRange.baseArrayLayer = 0;
-    view.subresourceRange.layerCount = 1;
-
-    OWL_VK_CHECK(vkCreateImageView(renderer->device, &view, NULL,
-                                   &renderer->offscreen_pos_view));
-  }
-
-  {
-    VkImageCreateInfo img;
-    img.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    img.pNext = NULL;
-    img.flags = 0;
-    img.imageType = VK_IMAGE_TYPE_2D;
-    img.format = renderer->offscreen_normal_fmt;
-    img.extent.width = renderer->swapchain_extent.width;
-    img.extent.height = renderer->swapchain_extent.height;
-    img.extent.depth = 1;
-    img.mipLevels = 1;
-    img.arrayLayers = 1;
-    img.samples = VK_SAMPLE_COUNT_1_BIT;
-    img.tiling = VK_IMAGE_TILING_OPTIMAL;
-    img.usage =
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    img.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    img.queueFamilyIndexCount = 0;
-    img.pQueueFamilyIndices = NULL;
-    img.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    OWL_VK_CHECK(vkCreateImage(renderer->device, &img, NULL,
-                               &renderer->offscreen_normal_img));
-  }
-
-  {
-    VkMemoryAllocateInfo mem;
-    VkMemoryRequirements req;
-
-    vkGetImageMemoryRequirements(renderer->device,
-                                 renderer->offscreen_normal_img, &req);
-
-    mem.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    mem.pNext = NULL;
-    mem.allocationSize = req.size;
-    mem.memoryTypeIndex = owl_vk_find_mem_type(
-        renderer, req.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_GPU_ONLY);
-
-    OWL_VK_CHECK(vkAllocateMemory(renderer->device, &mem, NULL,
-                                  &renderer->offscreen_normal_mem));
-  }
-
-  {
-    VkImageViewCreateInfo view;
-    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view.pNext = NULL;
-    view.flags = 0;
-    view.image = renderer->offscreen_normal_img;
-    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = renderer->offscreen_normal_fmt;
-    view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view.subresourceRange.baseMipLevel = 0;
-    view.subresourceRange.levelCount = 1;
-    view.subresourceRange.baseArrayLayer = 0;
-    view.subresourceRange.layerCount = 1;
-
-    OWL_VK_CHECK(vkCreateImageView(renderer->device, &view, NULL,
-                                   &renderer->offscreen_normal_view));
-  }
-
-  {
-    VkImageCreateInfo img;
-    img.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    img.pNext = NULL;
-    img.flags = 0;
-    img.imageType = VK_IMAGE_TYPE_2D;
-    img.format = renderer->offscreen_albedo_fmt;
-    img.extent.width = renderer->swapchain_extent.width;
-    img.extent.height = renderer->swapchain_extent.height;
-    img.extent.depth = 1;
-    img.mipLevels = 1;
-    img.arrayLayers = 1;
-    img.samples = VK_SAMPLE_COUNT_1_BIT;
-    img.tiling = VK_IMAGE_TILING_OPTIMAL;
-    img.usage =
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    img.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    img.queueFamilyIndexCount = 0;
-    img.pQueueFamilyIndices = NULL;
-    img.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    OWL_VK_CHECK(vkCreateImage(renderer->device, &img, NULL,
-                               &renderer->offscreen_albedo_img));
-  }
-
-  {
-    VkMemoryAllocateInfo mem;
-    VkMemoryRequirements req;
-
-    vkGetImageMemoryRequirements(renderer->device,
-                                 renderer->offscreen_albedo_img, &req);
-
-    mem.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    mem.pNext = NULL;
-    mem.allocationSize = req.size;
-    mem.memoryTypeIndex = owl_vk_find_mem_type(
-        renderer, req.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_GPU_ONLY);
-
-    OWL_VK_CHECK(vkAllocateMemory(renderer->device, &mem, NULL,
-                                  &renderer->offscreen_albedo_mem));
-  }
-
-  {
-    VkImageViewCreateInfo view;
-    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view.pNext = NULL;
-    view.flags = 0;
-    view.image = renderer->offscreen_albedo_img;
-    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = renderer->offscreen_albedo_fmt;
-    view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view.subresourceRange.baseMipLevel = 0;
-    view.subresourceRange.levelCount = 1;
-    view.subresourceRange.baseArrayLayer = 0;
-    view.subresourceRange.layerCount = 1;
-
-    OWL_VK_CHECK(vkCreateImageView(renderer->device, &view, NULL,
-                                   &renderer->offscreen_albedo_view));
-  }
-
-  {
-    VkImageCreateInfo img;
-    img.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    img.pNext = NULL;
-    img.flags = 0;
-    img.imageType = VK_IMAGE_TYPE_2D;
-    img.format = renderer->offscreen_depth_fmt;
-    img.extent.width = renderer->swapchain_extent.width;
-    img.extent.height = renderer->swapchain_extent.height;
-    img.extent.depth = 1;
-    img.mipLevels = 1;
-    img.arrayLayers = 1;
-    img.samples = VK_SAMPLE_COUNT_1_BIT;
-    img.tiling = VK_IMAGE_TILING_OPTIMAL;
-    img.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-                VK_IMAGE_USAGE_SAMPLED_BIT;
-    img.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    img.queueFamilyIndexCount = 0;
-    img.pQueueFamilyIndices = NULL;
-    img.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    OWL_VK_CHECK(vkCreateImage(renderer->device, &img, NULL,
-                               &renderer->offscreen_depth_img));
-  }
-
-  {
-    VkMemoryAllocateInfo mem;
-    VkMemoryRequirements req;
-
-    vkGetImageMemoryRequirements(renderer->device,
-                                 renderer->offscreen_depth_img, &req);
-
-    mem.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    mem.pNext = NULL;
-    mem.allocationSize = req.size;
-    mem.memoryTypeIndex = owl_vk_find_mem_type(
-        renderer, req.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_GPU_ONLY);
-
-    OWL_VK_CHECK(vkAllocateMemory(renderer->device, &mem, NULL,
-                                  &renderer->offscreen_depth_mem));
-  }
-
-  {
-    VkImageViewCreateInfo view;
-    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view.pNext = NULL;
-    view.flags = 0;
-    view.image = renderer->offscreen_depth_img;
-    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = renderer->offscreen_depth_fmt;
-    view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view.subresourceRange.aspectMask =
-        VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-    view.subresourceRange.baseMipLevel = 0;
-    view.subresourceRange.levelCount = 1;
-    view.subresourceRange.baseArrayLayer = 0;
-    view.subresourceRange.layerCount = 1;
-
-    OWL_VK_CHECK(vkCreateImageView(renderer->device, &view, NULL,
-                                   &renderer->offscreen_depth_view));
-  }
-
-  /* init cmd pool */
-  {
-    VkCommandPoolCreateInfo pool;
-    pool.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    pool.pNext = NULL;
-    pool.flags = 0;
-    pool.queueFamilyIndex = renderer->graphics_family;
-
-    OWL_VK_CHECK(vkCreateCommandPool(renderer->device, &pool, NULL,
-                                     &renderer->offscreen_cmd_pool));
-  }
-
-  /* init cmd buf */
-  {
-    VkCommandBufferAllocateInfo buf;
-    buf.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    buf.pNext = NULL;
-    buf.commandPool = renderer->offscreen_cmd_pool;
-    buf.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    buf.commandBufferCount = 1;
-
-    OWL_VK_CHECK(vkAllocateCommandBuffers(renderer->device, &buf,
-                                          &renderer->offscreen_cmd_buf));
-  }
-
-  {
-    VkFramebufferCreateInfo framebuffer;
-    VkImageView attachs[4];
-
-    attachs[0] = renderer->offscreen_pos_view;
-    attachs[1] = renderer->offscreen_normal_view;
-    attachs[2] = renderer->offscreen_albedo_view;
-    attachs[3] = renderer->offscreen_depth_view;
-
-    framebuffer.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebuffer.pNext = NULL;
-    framebuffer.flags = 0;
-    framebuffer.renderPass = renderer->offscreen_render_pass;
-    framebuffer.attachmentCount = OWL_ARRAY_SIZE(attachs);
-    framebuffer.pAttachments = attachs;
-    framebuffer.width = renderer->swapchain_extent.width;
-    framebuffer.height = renderer->swapchain_extent.height;
-    framebuffer.layers = 1;
-
-    OWL_VK_CHECK(vkCreateFramebuffer(renderer->device, &framebuffer, NULL,
-                                     &renderer->offscreen_framebuffer));
-  }
-
-  return OWL_SUCCESS;
-}
-#endif
-
 enum owl_code owl_init_vk_renderer(struct owl_vk_config const *config,
                                    struct owl_vk_renderer *renderer) {
   enum owl_code err;
 
-  renderer->width = config->width;
-  renderer->height = config->height;
+  renderer->width = config->framebuffer_width;
+  renderer->height = config->framebuffer_height;
 
   if (OWL_SUCCESS != (err = owl_init_instance_(config, renderer)))
     goto end;
@@ -2619,13 +2204,14 @@ end:
 }
 
 void owl_clear_dyn_garbage(struct owl_vk_renderer *renderer) {
-  // NOTE: abusing that it's still on a valid state
   owl_deinit_dyn_garbage_(renderer);
 }
 
 enum owl_code owl_reinit_vk_swapchain(struct owl_vk_config const *config,
                                       struct owl_vk_renderer *renderer) {
   enum owl_code err = OWL_SUCCESS;
+
+  OWL_VK_CHECK(vkDeviceWaitIdle(renderer->device));
 
   owl_deinit_main_pipelines_(renderer);
   owl_deinit_main_framebuffers_(renderer);
@@ -2671,4 +2257,12 @@ end_deinit_swapchain:
 
 end:
   return err;
+}
+
+int owl_is_dyn_buf_flushed(struct owl_vk_renderer *renderer) {
+  return 0 == renderer->dyn_offsets[renderer->dyn_active_buf];
+}
+
+void owl_flush_dyn_buf(struct owl_vk_renderer *renderer) {
+  renderer->dyn_offsets[renderer->dyn_active_buf] = 0;
 }

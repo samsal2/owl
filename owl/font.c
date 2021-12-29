@@ -4,7 +4,7 @@
 #include <owl/internal.h>
 #include <owl/math.h>
 #include <owl/memory.h>
-#include <owl/render_group.h>
+#include <owl/render_command.h>
 #include <owl/texture.h>
 #include <owl/types.h>
 #include <owl/vk_renderer.h>
@@ -56,7 +56,6 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
   }
 
   if (FT_Err_Ok != (FT_New_Face(ft, path, 0, &face))) {
-    OWL_ASSERT(0 && "nani?");
     err = OWL_ERROR_BAD_INIT;
     goto end_err_done_ft;
   }
@@ -116,14 +115,25 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
 
   (*font)->size = size;
 
-  /* FIXME (samuel): check for NULL form the tmgr request */
-  err = owl_init_vk_texture_with_ref(
-      renderer, (*font)->atlas_width, (*font)->atlas_height, &ref,
-      OWL_PIXEL_FORMAT_R8_UNORM, OWL_SAMPLER_TYPE_NEAREST,
-      owl_request_texture_mem(tmgr, &(*font)->atlas));
+  {
+    struct owl_texture_attr attr;
+    attr.width = (*font)->atlas_width;
+    attr.height = (*font)->atlas_height;
+    attr.format = OWL_PIXEL_FORMAT_R8_UNORM;
+    attr.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
+    attr.min_filter = OWL_SAMPLER_FILTER_LINEAR;
+    attr.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
+    attr.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
+    attr.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
+    attr.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-  if (OWL_SUCCESS != err)
-    goto end_err_done_face;
+    err = owl_init_vk_texture_with_ref(
+        renderer, &attr, &ref,
+        owl_request_texture_mem(tmgr, &(*font)->atlas));
+
+    if (OWL_SUCCESS != err)
+      goto end_err_done_face;
+  }
 
   FT_Done_Face(face);
   FT_Done_FreeType(ft);
@@ -152,10 +162,10 @@ void owl_destroy_font(struct owl_vk_renderer *renderer,
 OWL_INTERNAL enum owl_code
 owl_fill_char_quad(OwlU32 width, OwlU32 height, struct owl_font const *font,
                    OwlV2 const pos, OwlV3 const color, char c,
-                   struct owl_render_group *group) {
-  float tex_off;        /* texture offset in texture coords*/
-  OwlV2 fixed_pos;      /* position taking into account the bearing in screen
-                           coords*/
+                   struct owl_render_command *group) {
+  float uv_off;         /* texture offset in texture coords*/
+  OwlV2 screen_pos;     /* position taking into account the bearing in screen
+                          coords*/
   OwlV2 glyph_scr_size; /* char size in screen coords */
   OwlV2 glyph_tex_size; /* uv without the offset in texture coords*/
 
@@ -169,18 +179,18 @@ owl_fill_char_quad(OwlU32 width, OwlU32 height, struct owl_font const *font,
     goto end;
   }
 
-  fixed_pos[0] = pos[0] + (float)g->bearing[0] / (float)width;
-  fixed_pos[1] = pos[1] - (float)g->bearing[1] / (float)height;
+  screen_pos[0] = pos[0] + (float)g->bearing[0] / (float)width;
+  screen_pos[1] = pos[1] - (float)g->bearing[1] / (float)height;
 
   glyph_scr_size[0] = (float)g->size[0] / (float)width;
   glyph_scr_size[1] = (float)g->size[1] / (float)height;
 
-  tex_off = (float)g->offset / (float)font->atlas_width;
+  uv_off = (float)g->offset / (float)font->atlas_width;
 
   glyph_tex_size[0] = (float)g->size[0] / (float)font->atlas_width;
   glyph_tex_size[1] = (float)g->size[1] / (float)font->atlas_height;
 
-  group->type = OWL_RENDER_GROUP_TYPE_QUAD;
+  group->type = OWL_RENDER_COMMAND_TYPE_QUAD;
   group->storage.as_quad.texture = font->atlas;
 
   OWL_IDENTITY_M4(group->storage.as_quad.pvm.proj);
@@ -188,35 +198,35 @@ owl_fill_char_quad(OwlU32 width, OwlU32 height, struct owl_font const *font,
   OWL_IDENTITY_M4(group->storage.as_quad.pvm.view);
 
   v = &group->storage.as_quad.vertex[0];
-  v->pos[0] = fixed_pos[0];
-  v->pos[1] = fixed_pos[1];
+  v->pos[0] = screen_pos[0];
+  v->pos[1] = screen_pos[1];
   v->pos[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
-  v->uv[0] = tex_off;
+  v->uv[0] = uv_off;
   v->uv[1] = 0.0F;
 
   v = &group->storage.as_quad.vertex[1];
-  v->pos[0] = fixed_pos[0] + glyph_scr_size[0];
-  v->pos[1] = fixed_pos[1];
+  v->pos[0] = screen_pos[0] + glyph_scr_size[0];
+  v->pos[1] = screen_pos[1];
   v->pos[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
-  v->uv[0] = tex_off + glyph_tex_size[0];
+  v->uv[0] = uv_off + glyph_tex_size[0];
   v->uv[1] = 0.0F;
 
   v = &group->storage.as_quad.vertex[2];
-  v->pos[0] = fixed_pos[0];
-  v->pos[1] = fixed_pos[1] + glyph_scr_size[1];
+  v->pos[0] = screen_pos[0];
+  v->pos[1] = screen_pos[1] + glyph_scr_size[1];
   v->pos[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
-  v->uv[0] = tex_off;
+  v->uv[0] = uv_off;
   v->uv[1] = glyph_tex_size[1];
 
   v = &group->storage.as_quad.vertex[3];
-  v->pos[0] = fixed_pos[0] + glyph_scr_size[0];
-  v->pos[1] = fixed_pos[1] + glyph_scr_size[1];
+  v->pos[0] = screen_pos[0] + glyph_scr_size[0];
+  v->pos[1] = screen_pos[1] + glyph_scr_size[1];
   v->pos[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
-  v->uv[0] = tex_off + glyph_tex_size[0];
+  v->uv[0] = uv_off + glyph_tex_size[0];
   v->uv[1] = glyph_tex_size[1];
 
 end:
@@ -230,15 +240,17 @@ enum owl_code owl_submit_text_group(struct owl_vk_renderer *renderer,
   char const *c;
   OwlV2 cpos; /* move the position to a copy */
   enum owl_code err = OWL_SUCCESS;
+
   OWL_COPY_V2(pos, cpos);
 
   /* TODO(samuel): cleanup */
   for (c = text; '\0' != *c; ++c) {
-    struct owl_render_group group;
+    struct owl_render_command group;
 
-    if (OWL_SUCCESS !=
-        (err = owl_fill_char_quad(renderer->width, renderer->height, font,
-                                  cpos, color, *c, &group)))
+    err = owl_fill_char_quad(renderer->width, renderer->height, font, cpos,
+                             color, *c, &group);
+
+    if (OWL_SUCCESS != err)
       goto end;
 
     owl_submit_render_group(renderer, &group);

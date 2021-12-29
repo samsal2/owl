@@ -6,7 +6,7 @@
 #include <owl/frame.h>
 #include <owl/math.h>
 #include <owl/pipelines.h>
-#include <owl/render_group.h>
+#include <owl/render_command.h>
 #include <owl/renderer.h>
 #include <owl/texture.h>
 #include <owl/types.h>

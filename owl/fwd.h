@@ -3,6 +3,6 @@
 
 struct owl_window;
 struct owl_vk_renderer;
-struct owl_render_group;
+struct owl_render_command;
 
 #endif

@@ -14,8 +14,8 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl.h
   pipelines.c
   pipelines.h
-  render_group.c
-  render_group.h
+  render_command.c
+  render_command.h
   renderer.c
   renderer.h
   slab_arena.c

@@ -6,11 +6,6 @@ struct owl_extent {
   int height;
 };
 
-enum owl_pixel_format {
-  OWL_PIXEL_FORMAT_R8_UNORM,
-  OWL_PIXEL_FORMAT_R8G8B8A8_SRGB
-};
-
 #include <stdint.h>
 typedef uint8_t OwlU8;
 typedef uint32_t OwlU32;
