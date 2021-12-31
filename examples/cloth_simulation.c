@@ -29,10 +29,10 @@ struct cloth {
   struct particle particles[PARTICLE_COUNT];
 
   /* priv draw info */
-  struct owl_render_command group;
+  struct owl_draw_cmd group;
 
   OwlU32 indices_[IDXS_COUNT];
-  struct owl_vertex vertices_[PARTICLE_COUNT];
+  struct owl_draw_cmd_vertex vertices_[PARTICLE_COUNT];
 };
 
 static void init_cloth_(struct cloth *cloth) {
@@ -54,8 +54,7 @@ static void init_cloth_(struct cloth *cloth) {
 
       OWL_SET_V3(w, h, 0.0F, cloth->vertices_[k].pos);
       OWL_SET_V3(1.0F, 1.0F, 1.0F, cloth->vertices_[k].color);
-      OWL_SET_V2((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F,
-                 cloth->vertices_[k].uv);
+      OWL_SET_V2((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F, cloth->vertices_[k].uv);
     }
   }
 
@@ -197,45 +196,47 @@ static OwlU32 select_particle_at(OwlV2 const pos, struct cloth *cloth) {
   return current;
 }
 
-void init_cloth(struct cloth *cloth, OwlTexture texture) {
+void init_cloth(struct cloth *cloth, struct owl_img *img) {
   init_cloth_(cloth);
 
-  cloth->group.type = OWL_RENDER_COMMAND_TYPE_BASIC;
-  cloth->group.storage.as_basic.texture = texture;
+  cloth->group.type = OWL_DRAW_CMD_TYPE_BASIC;
+  cloth->group.storage.as_basic.img = img;
   cloth->group.storage.as_basic.index_count = IDXS_COUNT;
-  cloth->group.storage.as_basic.index = cloth->indices_;
+  cloth->group.storage.as_basic.indices = cloth->indices_;
   cloth->group.storage.as_basic.vertex_count = PARTICLE_COUNT;
-  cloth->group.storage.as_basic.vertex = cloth->vertices_;
+  cloth->group.storage.as_basic.vertices = cloth->vertices_;
 }
 
-struct owl_pvm *get_cloth_pvm(struct cloth *cloth) {
-  return &cloth->group.storage.as_basic.pvm;
+struct owl_draw_cmd_ubo *get_cloth_pvm(struct cloth *cloth) {
+  return &cloth->group.storage.as_basic.ubo;
 }
 
-char const *fps_string(OwlSeconds time) {
+char const *fps_string(double time) {
   static char buf[256];
   snprintf(buf, 256, "fps: %.2f\n", 1 / time);
   return buf;
 }
 
-#define TEST(fn)                                                             \
-  do {                                                                       \
-    if (OWL_SUCCESS != (fn)) {                                               \
-      printf("something went wrong in call: %s\n", (#fn));                   \
-      return 0;                                                              \
-    }                                                                        \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    if (OWL_SUCCESS != (fn)) {                                                 \
+      printf("something went wrong in call: %s\n", (#fn));                     \
+      return 0;                                                                \
+    }                                                                          \
   } while (0)
 
 static struct owl_window *window;
 static struct owl_vk_renderer *renderer;
-static struct owl_texture_attr tex_attr;
-static OwlTexture texture;
-static struct owl_render_command group;
+static struct owl_img_desc img_attr;
+static struct owl_img *img;
+static struct owl_draw_cmd group;
 static struct cloth cloth;
 static struct owl_font *font;
+static struct owl_input_state *input;
 
 #define UNSELECTED (OwlU32) - 1
 #define TEXPATH "../../assets/Chaeyoung.jpeg"
+#define MODELPATH "../../assets/Suzanne.gltf"
 #define FONTPATH "../../assets/SourceCodePro-Regular.ttf"
 
 int main(void) {
@@ -245,23 +246,23 @@ int main(void) {
   OwlV3 up;
   OwlV3 position;
   OwlV3 color;
-  struct owl_pvm *pvm;
+  struct owl_draw_cmd_ubo *pvm;
   OwlU32 selected = UNSELECTED;
 
-  TEST(owl_create_window(600, 600, "cloth-simulation", &window));
+  TEST(owl_create_window(600, 600, "cloth-simulation", &input, &window));
   TEST(owl_create_renderer(window, &renderer));
 
-  tex_attr.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-  tex_attr.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-  tex_attr.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-  tex_attr.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  tex_attr.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  tex_attr.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  img_attr.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
+  img_attr.min_filter = OWL_SAMPLER_FILTER_LINEAR;
+  img_attr.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
+  img_attr.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  img_attr.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  img_attr.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-  TEST(owl_create_texture_from_file(renderer, &tex_attr, TEXPATH, &texture));
+  TEST(owl_create_img_from_file(renderer, &img_attr, TEXPATH, &img));
   TEST(owl_create_font(renderer, 64, FONTPATH, &font));
 
-  init_cloth(&cloth, texture);
+  init_cloth(&cloth, img);
 
   OWL_SET_V3(1.0F, 1.0F, 1.0F, color);
   OWL_SET_V2(-1.0F, -0.93F, fpspos);
@@ -288,18 +289,18 @@ int main(void) {
 
   owl_translate_m4(position, pvm->model);
 
-  while (!owl_should_window_close(window)) {
+  while (!owl_is_window_done(window)) {
 #if 1
 
     if (UNSELECTED == selected &&
-        OWL_BUTTON_STATE_PRESS == window->mouse[OWL_MOUSE_BUTTON_LEFT])
-      selected = select_particle_at(window->cursor.cur_pos, &cloth);
+        OWL_BUTTON_STATE_PRESS == input->mouse[OWL_MOUSE_BUTTON_LEFT])
+      selected = select_particle_at(input->cur_cursor_pos, &cloth);
 
     if (UNSELECTED != selected)
-      change_particle_position(selected, window->cursor.cur_pos, &cloth);
+      change_particle_position(selected, input->cur_cursor_pos, &cloth);
 
     if (UNSELECTED != selected &&
-        OWL_BUTTON_STATE_RELEASE == window->mouse[OWL_MOUSE_BUTTON_LEFT])
+        OWL_BUTTON_STATE_RELEASE == input->mouse[OWL_MOUSE_BUTTON_LEFT])
       selected = UNSELECTED;
 
 #endif
@@ -312,25 +313,24 @@ int main(void) {
     }
 
     owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
-    owl_submit_render_group(renderer, &cloth.group);
+    owl_submit_draw_cmd(renderer, &cloth.group);
 
 #if 1
     owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
 #endif
 
-    owl_submit_text_group(renderer, font, fpspos, color,
-                          fps_string(window->timer_dt));
+    owl_submit_text(renderer, font, fpspos, color, fps_string(input->dt_time));
 
     if (OWL_SUCCESS != owl_end_frame(renderer)) {
       owl_recreate_swapchain(window, renderer);
       continue;
     }
 
-    owl_poll_events(window);
+    owl_poll_window_input(window);
   }
 
   owl_destroy_font(renderer, font);
-  owl_destroy_texture(renderer, texture);
+  owl_destroy_img(renderer, img);
   owl_destroy_renderer(renderer);
   owl_destroy_window(window);
 }

@@ -1,53 +1,54 @@
 #include <owl/owl.h>
 #include <stdio.h>
 
-void fill_quad(struct owl_render_command *group, OwlTexture texture) {
-  struct owl_vertex *v;
+void fill_quad(struct owl_draw_cmd *group, struct owl_img *img) {
+  struct owl_draw_cmd_vertex *v;
 
-  group->type = OWL_RENDER_COMMAND_TYPE_QUAD;
-  group->storage.as_quad.texture = texture;
+  group->type = OWL_DRAW_CMD_TYPE_QUAD;
+  group->storage.as_quad.img = img;
 
-  v = &group->storage.as_quad.vertex[0];
+  v = &group->storage.as_quad.vertices[0];
   OWL_SET_V3(-0.5F, -0.5F, 0.0F, v->pos);
   OWL_SET_V3(1.0F, 1.0F, 1.0F, v->color);
   OWL_SET_V2(0.0F, 0.0F, v->uv);
 
-  v = &group->storage.as_quad.vertex[1];
+  v = &group->storage.as_quad.vertices[1];
   OWL_SET_V3(0.5F, -0.5F, 0.0F, v->pos);
   OWL_SET_V3(1.0F, 1.0F, 1.0F, v->color);
   OWL_SET_V2(1.0F, 0.0F, v->uv);
 
-  v = &group->storage.as_quad.vertex[2];
+  v = &group->storage.as_quad.vertices[2];
   OWL_SET_V3(-0.5F, 0.5F, 0.0F, v->pos);
   OWL_SET_V3(1.0F, 1.0F, 1.0F, v->color);
   OWL_SET_V2(0.0F, 1.0F, v->uv);
 
-  v = &group->storage.as_quad.vertex[3];
+  v = &group->storage.as_quad.vertices[3];
   OWL_SET_V3(0.5F, 0.5F, 0.0F, v->pos);
   OWL_SET_V3(1.0F, 1.0F, 1.0F, v->color);
   OWL_SET_V2(1.0F, 1.0F, v->uv);
 
-  OWL_IDENTITY_M4(group->storage.as_quad.pvm.proj);
-  OWL_IDENTITY_M4(group->storage.as_quad.pvm.view);
-  OWL_IDENTITY_M4(group->storage.as_quad.pvm.model);
+  OWL_IDENTITY_M4(group->storage.as_quad.ubo.proj);
+  OWL_IDENTITY_M4(group->storage.as_quad.ubo.view);
+  OWL_IDENTITY_M4(group->storage.as_quad.ubo.model);
 }
 
 static struct owl_window *window;
 static struct owl_vk_renderer *renderer;
-static struct owl_texture_attr tex_attr;
-static OwlTexture texture;
-static struct owl_render_command group;
+static struct owl_img_desc tex_attr;
+static struct owl_img *img;
+static struct owl_draw_cmd group;
+static struct owl_input_state *input;
 
-#define TEST(fn)                                                             \
-  do {                                                                       \
-    if (OWL_SUCCESS != (fn))                                                 \
-      printf("error at: %s\n", #fn);                                         \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    if (OWL_SUCCESS != (fn))                                                   \
+      printf("error at: %s\n", #fn);                                           \
   } while (0)
 
 #define TEXPATH "../../assets/Chaeyoung.jpeg"
 
 int main(void) {
-  TEST(owl_create_window(600, 600, "OWL", &window));
+  TEST(owl_create_window(600, 600, "OWL", &input, &window));
   TEST(owl_create_renderer(window, &renderer));
 
   tex_attr.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
@@ -57,11 +58,12 @@ int main(void) {
   tex_attr.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
   tex_attr.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-  TEST(owl_create_texture_from_file(renderer, &tex_attr, TEXPATH, &texture));
+  TEST(owl_create_img_from_file(renderer, &tex_attr, TEXPATH, &img));
 
-  fill_quad(&group, texture);
+  fill_quad(&group, img);
 
-  while (!owl_should_window_close(window)) {
+  while (!owl_is_window_done(window)) {
+
     if (OWL_SUCCESS != owl_begin_frame(renderer)) {
       printf("recreating renderer\n");
       owl_recreate_swapchain(window, renderer);
@@ -69,7 +71,7 @@ int main(void) {
     }
 
     owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
-    owl_submit_render_group(renderer, &group);
+    owl_submit_draw_cmd(renderer, &group);
 
     if (OWL_SUCCESS != owl_end_frame(renderer)) {
       printf("recreating renderer\n");
@@ -77,10 +79,10 @@ int main(void) {
       continue;
     }
 
-    owl_poll_events(window);
+    owl_poll_window_input(window);
   }
 
-  owl_destroy_texture(renderer, texture);
+  owl_destroy_img(renderer, img);
   owl_destroy_renderer(renderer);
   owl_destroy_window(window);
 }

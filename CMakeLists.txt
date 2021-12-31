@@ -4,11 +4,6 @@ project(owl)
 
 option(OWL_BUILD_EXAMPLES "Build examples" ON)
 
-# C options
-set(CMAKE_C_STANDARD 90)
-set(CMAKE_C_EXTENSIONS OFF)
-set(C_STANDARD_REQUIRED ON)
-
 # Misc
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -25,7 +20,8 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 # add library sources
-add_subdirectory(${PROJECT_NAME})
+add_subdirectory(include/owl)
+add_subdirectory(source)
 
 # import external libraries
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/glfw)
@@ -45,8 +41,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE freetype)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
 
 # include directories
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
-target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC include/)
+target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR})
+
+# standard
+target_compile_features(${PROJECT_NAME} PRIVATE c_std_90)
 
 set(OWL_C_CLANG_BASE_COMPILE_FLAGS 
 		-Wall
