@@ -1,8 +1,7 @@
-#include "../include/owl/frame.h"
+#include "frame.h"
 
 #include "internal.h"
-#include "vk_internal.h"
-#include "vk_renderer.h"
+#include "renderer.h"
 
 #define OWL_VK_TIMEOUT (OwlU64) - 1
 

@@ -1,13 +1,7 @@
 #include "font.h"
-#include "dyn_buf.h"
-#include "img.h"
-#include "internal.h"
-#include "vk_renderer.h"
 
-#include "../include/owl/draw_cmd.h"
-#include "../include/owl/font.h"
-#include "../include/owl/img.h"
-#include "../include/owl/math.h"
+#include "internal.h"
+#include "renderer.h"
 
 /* clang-format off */
 #include <ft2build.h>
@@ -65,7 +59,7 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
 
   owl_calc_dims_(face, &(*font)->atlas_width, &(*font)->atlas_height);
 
-  if (!(data = owl_dyn_buf_alloc(
+  if (!(data = owl_alloc_tmp_frame_mem(
             renderer, (unsigned)((*font)->atlas_width * (*font)->atlas_height),
             &ref))) {
     err = OWL_ERROR_BAD_ALLOC;

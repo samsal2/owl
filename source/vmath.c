@@ -1,4 +1,6 @@
-#include "../include/owl/math.h"
+#include "vmath.h"
+
+#include <math.h>
 
 #ifndef OWL_SQRTF
 #include <math.h>

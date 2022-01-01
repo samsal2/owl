@@ -1,14 +1,10 @@
-#include "../include/owl/img.h"
+#include "img.h"
+
+#include "internal.h"
+#include "renderer.h"
 
 #include <math.h>
 #include <stb/stb_image.h>
-
-#include "dyn_buf.h"
-#include "img.h"
-#include "internal.h"
-#include "memory.h"
-#include "vk_internal.h"
-#include "vk_renderer.h"
 
 OWL_INTERNAL VkCommandBuffer
 owl_alloc_cmd_buf_(struct owl_vk_renderer const *renderer) {
@@ -460,7 +456,7 @@ enum owl_code owl_init_vk_img(struct owl_vk_renderer *renderer,
 
   size = owl_attr_required_size_(attr);
 
-  if (!(stage = owl_dyn_buf_alloc(renderer, size, &ref)))
+  if (!(stage = owl_alloc_tmp_frame_mem(renderer, size, &ref)))
     return OWL_ERROR_BAD_ALLOC;
 
   OWL_MEMCPY(stage, data, size);
@@ -505,7 +501,7 @@ void owl_deinit_vk_img(struct owl_vk_renderer const *renderer,
 
 enum owl_code owl_create_img(struct owl_vk_renderer *renderer,
                              struct owl_img_desc const *attr,
-                             unsigned char const *data, struct owl_img **img) {
+                             OwlByte const *data, struct owl_img **img) {
   enum owl_code err = OWL_SUCCESS;
 
   if (!(*img = OWL_MALLOC(sizeof(**img))))

@@ -1,7 +1,5 @@
-#ifndef OWL_SOURCE_FONT_H_
-#define OWL_SOURCE_FONT_H_
-
-#include "../include/owl/types.h"
+#ifndef OWL_FONT_H_
+#define OWL_FONT_H_
 
 #include "img.h"
 

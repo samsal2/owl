@@ -1,26 +1,22 @@
 target_sources(${PROJECT_NAME} PRIVATE
-  draw_cmd.c
-  dyn_buf.c
-  dyn_buf.h
+  CMakeLists.txt
   font.c
   font.h
   frame.c
-  glfw_window.c
-  glfw_window.h
+  frame.h
   img.c
   img.h
   internal.c
   internal.h
-  math.c
-  memory.c
-  memory.h
   pipelines.c
+  pipelines.h
   renderer.c
   renderer.h
   text.c
-  vk_config.h
-  vk_internal.h
-  vk_renderer.c
-  vk_renderer.h
+  text.h
+  vmath.c
+  vmath.h
   window.c
-  window.h)
+  window.h
+  draw_cmd.c
+  draw_cmd.h)

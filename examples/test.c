@@ -32,9 +32,10 @@ void fill_quad(struct owl_draw_cmd *group, struct owl_img *img) {
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.model);
 }
 
+static struct owl_window_desc window_desc;
 static struct owl_window *window;
 static struct owl_vk_renderer *renderer;
-static struct owl_img_desc tex_attr;
+static struct owl_img_desc img_desc;
 static struct owl_img *img;
 static struct owl_draw_cmd group;
 static struct owl_input_state *input;
@@ -48,17 +49,21 @@ static struct owl_input_state *input;
 #define TEXPATH "../../assets/Chaeyoung.jpeg"
 
 int main(void) {
-  TEST(owl_create_window(600, 600, "OWL", &input, &window));
+  window_desc.height = 600;
+  window_desc.width = 600;
+  window_desc.title = "test";
+
+  TEST(owl_create_window(&window_desc, &input, &window));
   TEST(owl_create_renderer(window, &renderer));
 
-  tex_attr.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-  tex_attr.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-  tex_attr.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-  tex_attr.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  tex_attr.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  tex_attr.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  img_desc.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
+  img_desc.min_filter = OWL_SAMPLER_FILTER_LINEAR;
+  img_desc.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
+  img_desc.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  img_desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  img_desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-  TEST(owl_create_img_from_file(renderer, &tex_attr, TEXPATH, &img));
+  TEST(owl_create_img_from_file(renderer, &img_desc, TEXPATH, &img));
 
   fill_quad(&group, img);
 

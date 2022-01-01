@@ -20,8 +20,8 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 # add library sources
-add_subdirectory(include/owl)
 add_subdirectory(source)
+add_subdirectory(include)
 
 # import external libraries
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/glfw)
@@ -41,7 +41,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE freetype)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
 
 # include directories
-target_include_directories(${PROJECT_NAME} PUBLIC include/)
+target_include_directories(${PROJECT_NAME} PUBLIC include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR})
 
 # standard

@@ -1,7 +1,6 @@
-#include "../include/owl/pipelines.h"
+#include "pipelines.h"
 
 #include "renderer.h"
-#include "vk_renderer.h"
 
 enum owl_code owl_bind_pipeline(struct owl_vk_renderer *renderer,
                                 enum owl_pipeline_type type) {

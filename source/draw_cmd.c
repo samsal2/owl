@@ -1,9 +1,8 @@
-#include "../include/owl/draw_cmd.h"
+#include "draw_cmd.h"
 
-#include "dyn_buf.h"
 #include "img.h"
 #include "internal.h"
-#include "vk_renderer.h"
+#include "renderer.h"
 
 OWL_INTERNAL enum owl_code
 owl_submit_draw_cmd_basic_(struct owl_vk_renderer *renderer,
@@ -16,7 +15,7 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *renderer,
     struct owl_dyn_buf_ref ref;
 
     size = sizeof(*basic->vertices) * (unsigned)basic->vertex_count;
-    data = owl_dyn_buf_alloc(renderer, size, &ref);
+    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
 
     OWL_MEMCPY(data, basic->vertices, size);
 
@@ -30,7 +29,7 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *renderer,
     struct owl_dyn_buf_ref ref;
 
     size = sizeof(*basic->indices) * (unsigned)basic->index_count;
-    data = owl_dyn_buf_alloc(renderer, size, &ref);
+    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
 
     OWL_MEMCPY(data, basic->indices, size);
 
@@ -45,7 +44,7 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *renderer,
     struct owl_dyn_buf_ref ref;
 
     size = sizeof(basic->ubo);
-    data = owl_dyn_buf_alloc(renderer, size, &ref);
+    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
 
     OWL_MEMCPY(data, &basic->ubo, size);
 
@@ -75,7 +74,7 @@ owl_submit_draw_cmd_quad_(struct owl_vk_renderer *renderer,
     struct owl_dyn_buf_ref ref;
 
     size = sizeof(quad->vertices);
-    data = owl_dyn_buf_alloc(renderer, size, &ref);
+    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
 
     OWL_MEMCPY(data, quad->vertices, size);
 
@@ -90,7 +89,7 @@ owl_submit_draw_cmd_quad_(struct owl_vk_renderer *renderer,
     OwlU32 const indices[] = {2, 3, 1, 1, 0, 2};
 
     size = sizeof(indices);
-    data = owl_dyn_buf_alloc(renderer, size, &ref);
+    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
 
     OWL_MEMCPY(data, indices, size);
 
@@ -105,7 +104,7 @@ owl_submit_draw_cmd_quad_(struct owl_vk_renderer *renderer,
     struct owl_dyn_buf_ref ref;
 
     size = sizeof(quad->ubo);
-    data = owl_dyn_buf_alloc(renderer, size, &ref);
+    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
 
     OWL_MEMCPY(data, &quad->ubo, size);
 

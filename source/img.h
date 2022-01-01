@@ -1,13 +1,10 @@
-#ifndef OWL_SOURCE_IMG_H_
-#define OWL_SOURCE_IMG_H_
+#ifndef OWL_IMG_H_
+#define OWL_IMG_H_
 
-#include "../include/owl/code.h"
-#include "../include/owl/types.h"
+#include <owl/owl.h>
 #include <vulkan/vulkan.h>
 
-struct owl_vk_renderer;
 struct owl_dyn_buf_ref;
-struct owl_img_desc;
 
 struct owl_img {
   OwlU32 width;
@@ -21,16 +18,16 @@ struct owl_img {
 };
 
 enum owl_code owl_init_vk_img_from_ref(struct owl_vk_renderer *renderer,
-                                       struct owl_img_desc const *attr,
+                                       struct owl_img_desc const *desc,
                                        struct owl_dyn_buf_ref const *ref,
                                        struct owl_img *img);
 
 enum owl_code owl_init_vk_img(struct owl_vk_renderer *renderer,
-                              struct owl_img_desc const *attr,
+                              struct owl_img_desc const *desc,
                               OwlByte const *data, struct owl_img *img);
 
 enum owl_code owl_init_vk_img_from_file(struct owl_vk_renderer *renderer,
-                                        struct owl_img_desc *attr,
+                                        struct owl_img_desc *desc,
                                         char const *path, struct owl_img *img);
 
 void owl_deinit_vk_img(struct owl_vk_renderer const *renderer,

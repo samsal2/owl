@@ -1,10 +1,9 @@
-#include "../include/owl/text.h"
-#include "../include/owl/draw_cmd.h"
-#include "../include/owl/math.h"
+
+#include "text.h"
 
 #include "font.h"
 #include "internal.h"
-#include "vk_renderer.h"
+#include "renderer.h"
 
 OWL_INTERNAL enum owl_code owl_fill_char_quad_(OwlU32 width, OwlU32 height,
                                                struct owl_font const *font,
@@ -76,31 +75,30 @@ OWL_INTERNAL enum owl_code owl_fill_char_quad_(OwlU32 width, OwlU32 height,
   return OWL_SUCCESS;
 }
 
-enum owl_code owl_submit_text(struct owl_vk_renderer *renderer,
-                              struct owl_font const *font, OwlV2 const pos,
-                              OwlV3 const color, char const *text) {
+enum owl_code owl_submit_text_cmd(struct owl_vk_renderer *renderer,
+                                  struct owl_text_cmd const *cmd) {
   char const *c;
-  OwlV2 cpos; /* move the position to a copy */
+  OwlV2 pos; /* move the position to a copy */
   enum owl_code err = OWL_SUCCESS;
 
-  OWL_COPY_V2(pos, cpos);
+  OWL_COPY_V2(cmd->pos, pos);
 
   /* TODO(samuel): cleanup */
-  for (c = text; '\0' != *c; ++c) {
+  for (c = cmd->text; '\0' != *c; ++c) {
     struct owl_draw_cmd group;
 
-    err = owl_fill_char_quad_(renderer->width, renderer->height, font, cpos,
-                              color, *c, &group);
+    err = owl_fill_char_quad_(renderer->width, renderer->height, cmd->font, pos,
+                              cmd->color, *c, &group);
 
     if (OWL_SUCCESS != err)
       goto end;
 
     owl_submit_draw_cmd(renderer, &group);
 
-    cpos[0] += font->glyphs[(int)*c].advance[0] / (float)renderer->width;
+    pos[0] += cmd->font->glyphs[(int)*c].advance[0] / (float)renderer->width;
 
     /* FIXME(samuel): not sure if i should substract or add */
-    cpos[1] += font->glyphs[(int)*c].advance[1] / (float)renderer->height;
+    pos[1] += cmd->font->glyphs[(int)*c].advance[1] / (float)renderer->height;
   }
 
 end:

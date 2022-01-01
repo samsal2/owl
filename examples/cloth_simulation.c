@@ -225,14 +225,16 @@ char const *fps_string(double time) {
     }                                                                          \
   } while (0)
 
+static struct owl_window_desc window_desc;
 static struct owl_window *window;
 static struct owl_vk_renderer *renderer;
-static struct owl_img_desc img_attr;
+static struct owl_img_desc img_desc;
 static struct owl_img *img;
 static struct owl_draw_cmd group;
 static struct cloth cloth;
 static struct owl_font *font;
 static struct owl_input_state *input;
+static struct owl_text_cmd text;
 
 #define UNSELECTED (OwlU32) - 1
 #define TEXPATH "../../assets/Chaeyoung.jpeg"
@@ -240,7 +242,6 @@ static struct owl_input_state *input;
 #define FONTPATH "../../assets/SourceCodePro-Regular.ttf"
 
 int main(void) {
-  OwlV2 fpspos;
   OwlV3 eye;
   OwlV3 center;
   OwlV3 up;
@@ -249,23 +250,28 @@ int main(void) {
   struct owl_draw_cmd_ubo *pvm;
   OwlU32 selected = UNSELECTED;
 
-  TEST(owl_create_window(600, 600, "cloth-simulation", &input, &window));
+  window_desc.height = 600;
+  window_desc.width = 600;
+  window_desc.title = "cloth-sim";
+
+  TEST(owl_create_window(&window_desc, &input, &window));
   TEST(owl_create_renderer(window, &renderer));
 
-  img_attr.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-  img_attr.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-  img_attr.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-  img_attr.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  img_attr.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  img_attr.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  img_desc.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
+  img_desc.min_filter = OWL_SAMPLER_FILTER_LINEAR;
+  img_desc.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
+  img_desc.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  img_desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  img_desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-  TEST(owl_create_img_from_file(renderer, &img_attr, TEXPATH, &img));
+  TEST(owl_create_img_from_file(renderer, &img_desc, TEXPATH, &img));
   TEST(owl_create_font(renderer, 64, FONTPATH, &font));
 
   init_cloth(&cloth, img);
 
-  OWL_SET_V3(1.0F, 1.0F, 1.0F, color);
-  OWL_SET_V2(-1.0F, -0.93F, fpspos);
+  text.font = font;
+  OWL_SET_V3(1.0F, 1.0F, 1.0F, text.color);
+  OWL_SET_V2(-1.0F, -0.93F, text.pos);
 
   pvm = get_cloth_pvm(&cloth);
 
@@ -319,7 +325,8 @@ int main(void) {
     owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
 #endif
 
-    owl_submit_text(renderer, font, fpspos, color, fps_string(input->dt_time));
+    text.text = fps_string(input->dt_time);
+    owl_submit_text_cmd(renderer, &text);
 
     if (OWL_SUCCESS != owl_end_frame(renderer)) {
       owl_recreate_swapchain(window, renderer);
