@@ -1,21 +1,21 @@
 #include "draw_cmd.h"
 
-#include "img.h"
 #include "internal.h"
 #include "renderer.h"
+#include "texture.h"
 
 OWL_INTERNAL enum owl_code
 owl_submit_draw_cmd_basic_(struct owl_vk_renderer *renderer,
                            struct owl_draw_cmd_basic const *basic) {
-  OwlU32 const active = renderer->dyn_active_buf;
+  int const active = renderer->dyn_active_buf;
 
   {
-    OwlByte *data;
+    owl_byte *data;
     VkDeviceSize size;
     struct owl_dyn_buf_ref ref;
 
-    size = sizeof(*basic->vertices) * (unsigned)basic->vertex_count;
-    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
+    size = sizeof(*basic->vertices) * (VkDeviceSize)basic->vertices_count;
+    data = owl_dyn_buf_alloc(renderer, size, &ref);
 
     OWL_MEMCPY(data, basic->vertices, size);
 
@@ -24,12 +24,12 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *renderer,
   }
 
   {
-    OwlByte *data;
+    owl_byte *data;
     VkDeviceSize size;
     struct owl_dyn_buf_ref ref;
 
-    size = sizeof(*basic->indices) * (unsigned)basic->index_count;
-    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
+    size = sizeof(*basic->indices) * (VkDeviceSize)basic->indices_count;
+    data = owl_dyn_buf_alloc(renderer, size, &ref);
 
     OWL_MEMCPY(data, basic->indices, size);
 
@@ -38,18 +38,18 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *renderer,
   }
 
   {
-    OwlByte *data;
+    owl_byte *data;
     VkDeviceSize size;
     VkDescriptorSet sets[2];
     struct owl_dyn_buf_ref ref;
 
     size = sizeof(basic->ubo);
-    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
+    data = owl_dyn_buf_alloc(renderer, size, &ref);
 
     OWL_MEMCPY(data, &basic->ubo, size);
 
     sets[0] = ref.pvm_set;
-    sets[1] = basic->img->set;
+    sets[1] = basic->texture->set;
 
     vkCmdBindDescriptorSets(
         renderer->frame_cmd_bufs[active], VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -58,7 +58,7 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *renderer,
   }
 
   vkCmdDrawIndexed(renderer->frame_cmd_bufs[active],
-                   (unsigned)basic->index_count, 1, 0, 0, 0);
+                   (owl_u32)basic->indices_count, 1, 0, 0, 0);
 
   return OWL_SUCCESS;
 }
@@ -66,15 +66,15 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *renderer,
 OWL_INTERNAL enum owl_code
 owl_submit_draw_cmd_quad_(struct owl_vk_renderer *renderer,
                           struct owl_draw_cmd_quad const *quad) {
-  OwlU32 const active = renderer->dyn_active_buf;
+  int const active = renderer->dyn_active_buf;
 
   {
-    OwlByte *data;
+    owl_byte *data;
     VkDeviceSize size;
     struct owl_dyn_buf_ref ref;
 
     size = sizeof(quad->vertices);
-    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
+    data = owl_dyn_buf_alloc(renderer, size, &ref);
 
     OWL_MEMCPY(data, quad->vertices, size);
 
@@ -83,13 +83,13 @@ owl_submit_draw_cmd_quad_(struct owl_vk_renderer *renderer,
   }
 
   {
-    OwlByte *data;
+    owl_byte *data;
     VkDeviceSize size;
     struct owl_dyn_buf_ref ref;
-    OwlU32 const indices[] = {2, 3, 1, 1, 0, 2};
+    owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
 
     size = sizeof(indices);
-    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
+    data = owl_dyn_buf_alloc(renderer, size, &ref);
 
     OWL_MEMCPY(data, indices, size);
 
@@ -98,18 +98,18 @@ owl_submit_draw_cmd_quad_(struct owl_vk_renderer *renderer,
   }
 
   {
-    OwlByte *data;
+    owl_byte *data;
     VkDeviceSize size;
     VkDescriptorSet sets[2];
     struct owl_dyn_buf_ref ref;
 
     size = sizeof(quad->ubo);
-    data = owl_alloc_tmp_frame_mem(renderer, size, &ref);
+    data = owl_dyn_buf_alloc(renderer, size, &ref);
 
     OWL_MEMCPY(data, &quad->ubo, size);
 
     sets[0] = ref.pvm_set;
-    sets[1] = quad->img->set;
+    sets[1] = quad->texture->set;
 
     vkCmdBindDescriptorSets(
         renderer->frame_cmd_bufs[active], VK_PIPELINE_BIND_POINT_GRAPHICS,

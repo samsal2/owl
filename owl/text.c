@@ -1,20 +1,22 @@
 
 #include "text.h"
 
+#include "draw_cmd.h"
 #include "font.h"
 #include "internal.h"
 #include "renderer.h"
+#include "vmath.h"
 
-OWL_INTERNAL enum owl_code owl_fill_char_quad_(OwlU32 width, OwlU32 height,
+OWL_INTERNAL enum owl_code owl_fill_char_quad_(int width, int height,
                                                struct owl_font const *font,
-                                               OwlV2 const pos,
-                                               OwlV3 const color, char c,
+                                               owl_v2 const pos,
+                                               owl_v3 const color, char c,
                                                struct owl_draw_cmd *group) {
-  float uv_off;         /* texture offset in texture coords*/
-  OwlV2 screen_pos;     /* position taking into account the bearing in screen
+  float uv_off;          /* texture offset in texture coords*/
+  owl_v2 screen_pos;     /* position taking into account the bearing in screen
                           coords*/
-  OwlV2 glyph_scr_size; /* char size in screen coords */
-  OwlV2 glyph_tex_size; /* uv without the offset in texture coords*/
+  owl_v2 glyph_scr_size; /* char size in screen coords */
+  owl_v2 glyph_tex_size; /* uv without the offset in texture coords*/
 
   struct owl_draw_cmd_vertex *v;
   struct owl_glyph const *g = &font->glyphs[(int)c];
@@ -34,7 +36,7 @@ OWL_INTERNAL enum owl_code owl_fill_char_quad_(OwlU32 width, OwlU32 height,
   glyph_tex_size[1] = (float)g->size[1] / (float)font->atlas_height;
 
   group->type = OWL_DRAW_CMD_TYPE_QUAD;
-  group->storage.as_quad.img = &font->atlas;
+  group->storage.as_quad.texture = &font->atlas;
 
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.proj);
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.model);
@@ -78,8 +80,8 @@ OWL_INTERNAL enum owl_code owl_fill_char_quad_(OwlU32 width, OwlU32 height,
 enum owl_code owl_submit_text_cmd(struct owl_vk_renderer *renderer,
                                   struct owl_text_cmd const *cmd) {
   char const *c;
-  OwlV2 pos; /* move the position to a copy */
-  enum owl_code err = OWL_SUCCESS;
+  owl_v2 pos; /* move the position to a copy */
+  enum owl_code code = OWL_SUCCESS;
 
   OWL_COPY_V2(cmd->pos, pos);
 
@@ -87,10 +89,10 @@ enum owl_code owl_submit_text_cmd(struct owl_vk_renderer *renderer,
   for (c = cmd->text; '\0' != *c; ++c) {
     struct owl_draw_cmd group;
 
-    err = owl_fill_char_quad_(renderer->width, renderer->height, cmd->font, pos,
-                              cmd->color, *c, &group);
+    code = owl_fill_char_quad_(renderer->width, renderer->height, cmd->font,
+                               pos, cmd->color, *c, &group);
 
-    if (OWL_SUCCESS != err)
+    if (OWL_SUCCESS != code)
       goto end;
 
     owl_submit_draw_cmd(renderer, &group);
@@ -102,5 +104,5 @@ enum owl_code owl_submit_text_cmd(struct owl_vk_renderer *renderer,
   }
 
 end:
-  return err;
+  return code;
 }

@@ -11,7 +11,6 @@ layout (binding = 0) uniform UBO
 	mat4 proj;
 	mat4 view;
 	mat4 model;
-	vec4 instances[3];
 } ubo;
 
 layout (location = 0) out vec3 out_normal;

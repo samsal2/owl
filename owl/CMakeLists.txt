@@ -4,12 +4,12 @@ target_sources(${PROJECT_NAME} PRIVATE
   font.h
   frame.c
   frame.h
-  img.c
-  img.h
+  texture.c
+  texture.h
   internal.c
   internal.h
-  pipelines.c
-  pipelines.h
+  model.c
+  model.h
   renderer.c
   renderer.h
   text.c

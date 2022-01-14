@@ -3,11 +3,10 @@
 #include "internal.h"
 #include "renderer.h"
 
-#define OWL_VK_TIMEOUT (OwlU64) - 1
+#define OWL_VK_TIMEOUT (owl_u64) - 1
 
 enum owl_code owl_begin_frame(struct owl_vk_renderer *renderer) {
-  enum owl_code err = OWL_SUCCESS;
-  OwlU32 const active = renderer->dyn_active_buf;
+  int const active = renderer->dyn_active_buf;
 
   {
     VkResult const result = vkAcquireNextImageKHR(
@@ -15,20 +14,14 @@ enum owl_code owl_begin_frame(struct owl_vk_renderer *renderer) {
         renderer->frame_img_available[active], VK_NULL_HANDLE,
         &renderer->swapchain_active_img);
 
-    if (VK_ERROR_OUT_OF_DATE_KHR == result) {
-      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
-      goto end;
-    }
+    if (VK_ERROR_OUT_OF_DATE_KHR == result)
+      return OWL_ERROR_OUTDATED_SWAPCHAIN;
 
-    if (VK_SUBOPTIMAL_KHR == result) {
-      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
-      goto end;
-    }
+    if (VK_SUBOPTIMAL_KHR == result)
+      return OWL_ERROR_OUTDATED_SWAPCHAIN;
 
-    if (VK_ERROR_SURFACE_LOST_KHR == result) {
-      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
-      goto end;
-    }
+    if (VK_ERROR_SURFACE_LOST_KHR == result)
+      return OWL_ERROR_OUTDATED_SWAPCHAIN;
   }
 
   {
@@ -57,7 +50,7 @@ enum owl_code owl_begin_frame(struct owl_vk_renderer *renderer) {
 
   {
     VkRenderPassBeginInfo begin;
-    OwlU32 const img = renderer->swapchain_active_img;
+    owl_u32 const img = renderer->swapchain_active_img;
 
     begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     begin.pNext = NULL;
@@ -73,14 +66,12 @@ enum owl_code owl_begin_frame(struct owl_vk_renderer *renderer) {
                          VK_SUBPASS_CONTENTS_INLINE);
   }
 
-end:
-  return err;
+  return OWL_SUCCESS;
 }
 #undef OWL_VK_TIMEOUT
 
 enum owl_code owl_end_frame(struct owl_vk_renderer *renderer) {
-  enum owl_code err = OWL_SUCCESS;
-  OwlU32 const active = renderer->dyn_active_buf;
+  int const active = renderer->dyn_active_buf;
 
   {
     vkCmdEndRenderPass(renderer->frame_cmd_bufs[active]);
@@ -110,6 +101,7 @@ enum owl_code owl_end_frame(struct owl_vk_renderer *renderer) {
   {
     VkResult result;
     VkPresentInfoKHR present;
+    owl_u32 const img = (owl_u32)renderer->swapchain_active_img;
 
     present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     present.pNext = NULL;
@@ -117,35 +109,28 @@ enum owl_code owl_end_frame(struct owl_vk_renderer *renderer) {
     present.pWaitSemaphores = &renderer->frame_render_done[active];
     present.swapchainCount = 1;
     present.pSwapchains = &renderer->swapchain;
-    present.pImageIndices = &renderer->swapchain_active_img;
+    present.pImageIndices = &img;
     present.pResults = NULL;
 
     result = vkQueuePresentKHR(renderer->present_queue, &present);
 
-    if (VK_ERROR_OUT_OF_DATE_KHR == result) {
-      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
-      goto end;
-    }
+    if (VK_ERROR_OUT_OF_DATE_KHR == result)
+      return OWL_ERROR_OUTDATED_SWAPCHAIN;
 
-    if (VK_SUBOPTIMAL_KHR == result) {
-      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
-      goto end;
-    }
+    if (VK_SUBOPTIMAL_KHR == result)
+      return OWL_ERROR_OUTDATED_SWAPCHAIN;
 
-    if (VK_ERROR_SURFACE_LOST_KHR == result) {
-      err = OWL_ERROR_OUTDATED_SWAPCHAIN;
-      goto end;
-    }
+    if (VK_ERROR_SURFACE_LOST_KHR == result)
+      return OWL_ERROR_OUTDATED_SWAPCHAIN;
   }
 
   /* swap actives */
-  if (OWL_DYN_BUF_COUNT == ++renderer->dyn_active_buf)
+  if (OWL_RENDERER_DYNAMIC_BUFFER_COUNT == ++renderer->dyn_active_buf)
     renderer->dyn_active_buf = 0;
 
   /* reset offset */
   owl_flush_dyn_buf(renderer);
   owl_clear_dyn_buf_garbage(renderer);
 
-end:
-  return err;
+  return OWL_SUCCESS;
 }

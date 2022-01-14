@@ -10,9 +10,6 @@
     }                                                                        \
   } while (0)
 
-
-
-
 static struct owl_window *window;
 static struct owl_vk_renderer *renderer;
 

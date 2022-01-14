@@ -2,6 +2,7 @@
 
 #include "internal.h"
 #include "renderer.h"
+#include "vmath.h"
 
 /* clang-format off */
 #include <vulkan/vulkan.h>
@@ -173,11 +174,11 @@ void owl_deinit_window(struct owl_window *window) {
 #define OWL_MAX_EXTENSIONS 64
 enum owl_code owl_fill_vk_plataform(struct owl_window const *window,
                                     struct owl_vk_plataform *plataform) {
-  OwlU32 count;
+  owl_u32 count;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 
-  plataform->framebuffer_width = (OwlU32)window->framebuffer_width;
-  plataform->framebuffer_height = (OwlU32)window->framebuffer_height;
+  plataform->framebuffer_width = window->framebuffer_width;
+  plataform->framebuffer_height = window->framebuffer_height;
 
   plataform->surface_user_data = window;
   plataform->create_surface = owl_init_vk_surface_cb_;
@@ -190,7 +191,7 @@ enum owl_code owl_fill_vk_plataform(struct owl_window const *window,
   names[count++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 
   plataform->instance_extensions = names;
-  plataform->instance_extension_count = count;
+  plataform->instance_extension_count = (int)count;
 
   return OWL_SUCCESS;
 }
@@ -200,14 +201,14 @@ enum owl_code owl_fill_vk_plataform(struct owl_window const *window,
                                     struct owl_vk_plataform *config) {
   OwlU32 count;
 
-  config->framebuffer_width = (OwlU32)window->framebuffer_width;
-  config->framebuffer_height = (OwlU32)window->framebuffer_height;
+  config->framebuffer_width = window->framebuffer_width;
+  config->framebuffer_height = window->framebuffer_height;
 
   config->surface_user_data = window;
   config->create_surface = owl_init_vk_surface_cb_;
 
   config->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
-  config->instance_extension_count = count;
+  config->instance_extension_count = (int)count;
 
   return OWL_SUCCESS;
 }
@@ -226,17 +227,15 @@ void owl_poll_window_input(struct owl_window *window) {
 enum owl_code owl_create_window(struct owl_window_desc const *desc,
                                 struct owl_input_state **input,
                                 struct owl_window **window) {
-  enum owl_code err = OWL_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
 
   if (!(*window = OWL_MALLOC(sizeof(**window))))
     return OWL_ERROR_BAD_ALLOC;
 
-  err = owl_init_window(desc, input, *window);
-
-  if (OWL_SUCCESS != err)
+  if (OWL_SUCCESS != (code = owl_init_window(desc, input, *window)))
     OWL_FREE(*window);
 
-  return err;
+  return code;
 }
 
 void owl_destroy_window(struct owl_window *window) {

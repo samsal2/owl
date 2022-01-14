@@ -1,7 +1,9 @@
 #include "font.h"
 
+#include "draw_cmd.h"
 #include "internal.h"
 #include "renderer.h"
+#include "vmath.h"
 
 /* clang-format off */
 #include <ft2build.h>
@@ -16,7 +18,7 @@ OWL_INTERNAL void owl_calc_dims_(FT_Face face, int *width, int *height) {
   *width = 0;
   *height = 0;
 
-  for (i = OWL_FIRST_CHAR; i < OWL_GLYPH_COUNT; ++i) {
+  for (i = OWL_FIRST_CHAR; i < OWL_FONT_MAX_GLYPHS; ++i) {
     /* FIXME(samuel): lets close our eyes and pretend this can't fail! */
     FT_Load_Char(face, (unsigned)i, FT_LOAD_RENDER);
 
@@ -29,48 +31,50 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
                               char const *path, struct owl_font **font) {
   int i;
   int x;
-  OwlByte *data;
+  owl_byte *data;
   FT_Library ft;
   FT_Face face;
+  VkDeviceSize alloc_size;
   struct owl_dyn_buf_ref ref;
-  enum owl_code err = OWL_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
 
   /* TODO(samuel): chances are im only going to be creating one font,
      could do something analogous to owl_vk_texture_manager */
   if (!(*font = OWL_MALLOC(sizeof(**font)))) {
-    err = OWL_ERROR_BAD_ALLOC;
+    code = OWL_ERROR_BAD_ALLOC;
     goto end;
   }
 
   if (FT_Err_Ok != (FT_Init_FreeType(&ft))) {
-    err = OWL_ERROR_BAD_INIT;
+    code = OWL_ERROR_BAD_INIT;
     goto end_err_free_font;
   }
 
   if (FT_Err_Ok != (FT_New_Face(ft, path, 0, &face))) {
-    err = OWL_ERROR_BAD_INIT;
+    code = OWL_ERROR_BAD_INIT;
     goto end_err_done_ft;
   }
 
   if (FT_Err_Ok != FT_Set_Char_Size(face, 0, size << 6, 96, 96)) {
-    err = OWL_ERROR_UNKNOWN;
+    code = OWL_ERROR_UNKNOWN;
     goto end_err_done_face;
   }
 
   owl_calc_dims_(face, &(*font)->atlas_width, &(*font)->atlas_height);
 
-  if (!(data = owl_alloc_tmp_frame_mem(
-            renderer, (unsigned)((*font)->atlas_width * (*font)->atlas_height),
-            &ref))) {
-    err = OWL_ERROR_BAD_ALLOC;
+  alloc_size = (VkDeviceSize)((*font)->atlas_width * (*font)->atlas_height);
+  data = owl_dyn_buf_alloc(renderer, alloc_size, &ref);
+
+  if (!data) {
+    code = OWL_ERROR_BAD_ALLOC;
     goto end_err_done_face;
   }
 
   x = 0;
 
-  for (i = OWL_FIRST_CHAR; i < OWL_GLYPH_COUNT; ++i) {
+  for (i = OWL_FIRST_CHAR; i < OWL_FONT_MAX_GLYPHS; ++i) {
     if (FT_Err_Ok != FT_Load_Char(face, (unsigned)i, FT_LOAD_RENDER)) {
-      err = OWL_ERROR_UNKNOWN;
+      code = OWL_ERROR_UNKNOWN;
       goto end_err_done_face;
     }
 
@@ -107,7 +111,7 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
   (*font)->size = size;
 
   {
-    struct owl_img_desc desc;
+    struct owl_texture_desc desc;
     desc.width = (*font)->atlas_width;
     desc.height = (*font)->atlas_height;
     desc.format = OWL_PIXEL_FORMAT_R8_UNORM;
@@ -118,9 +122,9 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
     desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
     desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-    err = owl_init_vk_img_from_ref(renderer, &desc, &ref, &(*font)->atlas);
+    code = owl_init_vk_texture_from_ref(renderer, &desc, &ref, &(*font)->atlas);
 
-    if (OWL_SUCCESS != err)
+    if (OWL_SUCCESS != code)
       goto end_err_done_face;
   }
 
@@ -139,32 +143,32 @@ end_err_free_font:
   OWL_FREE(*font);
 
 end:
-  return err;
+  return code;
 }
 
 void owl_destroy_font(struct owl_vk_renderer *renderer, struct owl_font *font) {
-  owl_deinit_vk_img(renderer, &font->atlas);
+  owl_deinit_vk_texture(renderer, &font->atlas);
   OWL_FREE(font);
 }
 
-OWL_INTERNAL enum owl_code owl_fill_char_quad(OwlU32 width, OwlU32 height,
-                                              struct owl_font const *font,
-                                              OwlV2 const pos,
-                                              OwlV3 const color, char c,
-                                              struct owl_draw_cmd *group) {
-  float uv_off;         /* texture offset in texture coords*/
-  OwlV2 screen_pos;     /* position taking into account the bearing in screen
+OWL_INTERNAL enum owl_code owl_fill_char_quad_(int width, int height,
+                                               struct owl_font const *font,
+                                               owl_v2 const pos,
+                                               owl_v3 const color, char c,
+                                               struct owl_draw_cmd *group) {
+  float uv_off;          /* texture offset in texture coords*/
+  owl_v2 screen_pos;     /* position taking into account the bearing in screen
                           coords*/
-  OwlV2 glyph_scr_size; /* char size in screen coords */
-  OwlV2 glyph_tex_size; /* uv without the offset in texture coords*/
+  owl_v2 glyph_scr_size; /* char size in screen coords */
+  owl_v2 glyph_tex_size; /* uv without the offset in texture coords*/
 
   struct owl_draw_cmd_vertex *v;
   struct owl_glyph const *g = &font->glyphs[(int)c];
 
-  enum owl_code err = OWL_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
 
   if ((unsigned)c >= OWL_ARRAY_SIZE(font->glyphs)) {
-    err = OWL_ERROR_OUT_OF_BOUNDS;
+    code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
 
@@ -180,7 +184,7 @@ OWL_INTERNAL enum owl_code owl_fill_char_quad(OwlU32 width, OwlU32 height,
   glyph_tex_size[1] = (float)g->size[1] / (float)font->atlas_height;
 
   group->type = OWL_DRAW_CMD_TYPE_QUAD;
-  group->storage.as_quad.img = &font->atlas;
+  group->storage.as_quad.texture = &font->atlas;
 
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.proj);
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.model);
@@ -219,16 +223,16 @@ OWL_INTERNAL enum owl_code owl_fill_char_quad(OwlU32 width, OwlU32 height,
   v->uv[1] = glyph_tex_size[1];
 
 end:
-  return err;
+  return code;
 }
 
 enum owl_code owl_submit_text_group(struct owl_vk_renderer *renderer,
                                     struct owl_font const *font,
-                                    OwlV2 const pos, OwlV3 const color,
+                                    owl_v2 const pos, owl_v3 const color,
                                     char const *text) {
   char const *c;
-  OwlV2 cpos; /* move the position to a copy */
-  enum owl_code err = OWL_SUCCESS;
+  owl_v2 cpos; /* move the position to a copy */
+  enum owl_code code = OWL_SUCCESS;
 
   OWL_COPY_V2(pos, cpos);
 
@@ -236,10 +240,10 @@ enum owl_code owl_submit_text_group(struct owl_vk_renderer *renderer,
   for (c = text; '\0' != *c; ++c) {
     struct owl_draw_cmd group;
 
-    err = owl_fill_char_quad(renderer->width, renderer->height, font, cpos,
-                             color, *c, &group);
+    code = owl_fill_char_quad_(renderer->width, renderer->height, font, cpos,
+                               color, *c, &group);
 
-    if (OWL_SUCCESS != err)
+    if (OWL_SUCCESS != code)
       goto end;
 
     owl_submit_draw_cmd(renderer, &group);
@@ -251,5 +255,5 @@ enum owl_code owl_submit_text_group(struct owl_vk_renderer *renderer,
   }
 
 end:
-  return err;
+  return code;
 }

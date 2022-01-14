@@ -1,11 +1,11 @@
 #include <owl/owl.h>
 #include <stdio.h>
 
-void fill_quad(struct owl_draw_cmd *group, struct owl_img *img) {
+void fill_quad(struct owl_draw_cmd *group, struct owl_texture *texture) {
   struct owl_draw_cmd_vertex *v;
 
   group->type = OWL_DRAW_CMD_TYPE_QUAD;
-  group->storage.as_quad.img = img;
+  group->storage.as_quad.texture = texture;
 
   v = &group->storage.as_quad.vertices[0];
   OWL_SET_V3(-0.5F, -0.5F, 0.0F, v->pos);
@@ -35,15 +35,15 @@ void fill_quad(struct owl_draw_cmd *group, struct owl_img *img) {
 static struct owl_window_desc window_desc;
 static struct owl_window *window;
 static struct owl_vk_renderer *renderer;
-static struct owl_img_desc img_desc;
-static struct owl_img *img;
+static struct owl_texture_desc tex_desc;
+static struct owl_texture *texture;
 static struct owl_draw_cmd group;
 static struct owl_input_state *input;
 
-#define TEST(fn)                                                               \
-  do {                                                                         \
-    if (OWL_SUCCESS != (fn))                                                   \
-      printf("error at: %s\n", #fn);                                           \
+#define TEST(fn)                                                             \
+  do {                                                                       \
+    if (OWL_SUCCESS != (fn))                                                 \
+      printf("error at: %s\n", #fn);                                         \
   } while (0)
 
 #define TEXPATH "../../assets/Chaeyoung.jpeg"
@@ -56,16 +56,16 @@ int main(void) {
   TEST(owl_create_window(&window_desc, &input, &window));
   TEST(owl_create_renderer(window, &renderer));
 
-  img_desc.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-  img_desc.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-  img_desc.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-  img_desc.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  img_desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  img_desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  tex_desc.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
+  tex_desc.min_filter = OWL_SAMPLER_FILTER_LINEAR;
+  tex_desc.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
+  tex_desc.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  tex_desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  tex_desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-  TEST(owl_create_img_from_file(renderer, &img_desc, TEXPATH, &img));
+  TEST(owl_create_texture_from_file(renderer, &tex_desc, TEXPATH, &texture));
 
-  fill_quad(&group, img);
+  fill_quad(&group, texture);
 
   while (!owl_is_window_done(window)) {
 
@@ -87,7 +87,7 @@ int main(void) {
     owl_poll_window_input(window);
   }
 
-  owl_destroy_img(renderer, img);
+  owl_destroy_texture(renderer, texture);
   owl_destroy_renderer(renderer);
   owl_destroy_window(window);
 }

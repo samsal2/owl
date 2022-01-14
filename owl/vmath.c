@@ -9,9 +9,9 @@
 #define OWL_SINF sinf
 #endif
 
-void owl_cross_v3(OwlV3 const lhs, OwlV3 const rhs, OwlV3 out) {
-  OwlV3 lhs_tmp;
-  OwlV3 rhs_tmp;
+void owl_cross_v3(owl_v3 const lhs, owl_v3 const rhs, owl_v3 out) {
+  owl_v3 lhs_tmp;
+  owl_v3 rhs_tmp;
 
   OWL_COPY_V3(lhs, lhs_tmp);
   OWL_COPY_V3(rhs, rhs_tmp);
@@ -21,8 +21,8 @@ void owl_cross_v3(OwlV3 const lhs, OwlV3 const rhs, OwlV3 out) {
   out[2] = lhs_tmp[0] * rhs_tmp[1] - lhs_tmp[1] * rhs_tmp[0];
 }
 
-void owl_mul_m4_v4(OwlM4 const m, OwlV4 const v, OwlV4 out) {
-  OwlV4 tmp;
+void owl_mul_m4_v4(owl_m4 const m, owl_v4 const v, owl_v4 out) {
+  owl_v4 tmp;
   OWL_COPY_V4(v, tmp);
 
   out[0] =
@@ -35,19 +35,19 @@ void owl_mul_m4_v4(OwlM4 const m, OwlV4 const v, OwlV4 out) {
       m[0][3] * tmp[0] + m[1][3] * tmp[1] + m[2][3] * tmp[2] + m[3][3] * tmp[3];
 }
 
-float owl_mag_v2(OwlV2 const v) { return OWL_SQRTF(OWL_DOT_V2(v, v)); }
+float owl_mag_v2(owl_v2 const v) { return OWL_SQRTF(OWL_DOT_V2(v, v)); }
 
-float owl_mag_v3(OwlV3 const v) { return OWL_SQRTF(OWL_DOT_V3(v, v)); }
+float owl_mag_v3(owl_v3 const v) { return OWL_SQRTF(OWL_DOT_V3(v, v)); }
 
-void owl_norm_v3(OwlV3 const v, OwlV3 out) {
+void owl_norm_v3(owl_v3 const v, owl_v3 out) {
   float const mag = 1 / owl_mag_v3(v);
   OWL_SCALE_V3(v, mag, out);
 }
 
-void owl_make_rotate_m4(float angle, OwlV3 const axis, OwlM4 out) {
-  OwlV3 normalized_axis;
-  OwlV3 v;
-  OwlV3 vs;
+void owl_make_rotate_m4(float angle, owl_v3 const axis, owl_m4 out) {
+  owl_v3 normalized_axis;
+  owl_v3 v;
+  owl_v3 vs;
 
   float const cos_angle = OWL_COSF(angle);
   float const sin_angle = OWL_SINF(angle);
@@ -81,10 +81,10 @@ void owl_make_rotate_m4(float angle, OwlV3 const axis, OwlM4 out) {
   out[3][3] = 1.0F;
 }
 
-void owl_translate_m4(OwlV3 const v, OwlM4 in_out) {
-  OwlV4 v1;
-  OwlV4 v2;
-  OwlV4 v3;
+void owl_translate_m4(owl_v3 const v, owl_m4 in_out) {
+  owl_v4 v1;
+  owl_v4 v2;
+  owl_v4 v3;
 
   OWL_SCALE_V4(in_out[0], v[0], v1);
   OWL_SCALE_V4(in_out[1], v[1], v2);
@@ -96,7 +96,7 @@ void owl_translate_m4(OwlV3 const v, OwlM4 in_out) {
 }
 
 void owl_ortho_m4(float left, float right, float bottom, float top, float near,
-                  float far, OwlM4 out) {
+                  float far, owl_m4 out) {
   float const right_left = 2.0F / (right - left);
   float const tobottom = 2.0F / (top - bottom);
   float const far_near = 1.0F / (far - near);
@@ -123,7 +123,7 @@ void owl_ortho_m4(float left, float right, float bottom, float top, float near,
 }
 
 void owl_perspective_m4(float fov, float ratio, float near, float far,
-                        OwlM4 out) {
+                        owl_m4 out) {
   float const focal_length = 1.0F / tanf(fov * 0.5f);
   float const inv_diff_far_near = 1.0F / (far - near);
 
@@ -148,11 +148,11 @@ void owl_perspective_m4(float fov, float ratio, float near, float far,
   out[3][3] = 0.0F;
 }
 
-void owl_look_m4(OwlV3 const eye, OwlV3 const direction, OwlV3 const up,
-                 OwlM4 out) {
-  OwlV3 f;
-  OwlV3 s;
-  OwlV3 u;
+void owl_look_m4(owl_v3 const eye, owl_v3 const direction, owl_v3 const up,
+                 owl_m4 out) {
+  owl_v3 f;
+  owl_v3 s;
+  owl_v3 u;
 
   owl_norm_v3(direction, f);
   owl_cross_v3(up, f, s);
@@ -180,18 +180,18 @@ void owl_look_m4(OwlV3 const eye, OwlV3 const direction, OwlV3 const up,
   out[3][3] = 1.0F;
 }
 
-void owl_look_at_m4(OwlV3 const eye, OwlV3 const center, OwlV3 const up,
-                    OwlM4 out) {
-  OwlV3 direction;
+void owl_look_at_m4(owl_v3 const eye, owl_v3 const center, owl_v3 const up,
+                    owl_m4 out) {
+  owl_v3 direction;
   OWL_SUB_V3(eye, center, direction);
   owl_look_m4(eye, direction, up, out);
 }
 
-void owl_find_dir_v3(float pitch, float yaw, OwlV3 const up, OwlV3 out) {
-  OwlV4 direction;
-  OwlV4 side;
-  OwlM4 yaw_rotation;
-  OwlM4 pitch_rotation;
+void owl_find_dir_v3(float pitch, float yaw, owl_v3 const up, owl_v3 out) {
+  owl_v4 direction;
+  owl_v4 side;
+  owl_m4 yaw_rotation;
+  owl_m4 pitch_rotation;
 
   OWL_SET_V4(0.0F, 0.0F, -1.0F, 1.0F, direction); /* set direction */
   owl_cross_v3(direction, up, side);              /* find the side vector */
@@ -205,16 +205,16 @@ void owl_find_dir_v3(float pitch, float yaw, OwlV3 const up, OwlV3 out) {
   OWL_COPY_V3(direction, out); /* set out */
 }
 
-void owl_rotate_m4(OwlM4 const m, float angle, OwlV3 const axis, OwlM4 out) {
-  OwlM4 rotation;
+void owl_rotate_m4(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out) {
+  owl_m4 rotation;
   owl_make_rotate_m4(angle, axis, rotation);
   owl_mul_rot_m4(m, rotation, out);
 }
 
-void owl_mul_rot_m4(OwlM4 const lhs, OwlM4 const rhs, OwlM4 out) {
-  OwlM4 a;
-  OwlM3 b;
-  OwlV4 c;
+void owl_mul_rot_m4(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out) {
+  owl_m4 a;
+  owl_m3 b;
+  owl_v4 c;
 
   OWL_COPY_M4(lhs, a);
   OWL_COPY_M3(rhs, b);
@@ -241,14 +241,14 @@ void owl_mul_rot_m4(OwlM4 const lhs, OwlM4 const rhs, OwlM4 out) {
   out[3][3] = a[0][3] * c[0] + a[1][3] * c[1] + a[2][3] * c[2] + a[3][3] * c[3];
 }
 
-float owl_dist_v2(OwlV2 const from, OwlV2 const to) {
-  OwlV2 diff;
+float owl_dist_v2(owl_v2 const from, owl_v2 const to) {
+  owl_v2 diff;
   OWL_SUB_V2(from, to, diff);
   return owl_mag_v2(diff);
 }
 
-float owl_dist_v3(OwlV3 const from, OwlV3 const to) {
-  OwlV3 diff;
+float owl_dist_v3(owl_v3 const from, owl_v3 const to) {
+  owl_v3 diff;
   OWL_SUB_V3(from, to, diff);
   return owl_mag_v3(diff);
 }
@@ -257,15 +257,17 @@ float owl_dist_v3(OwlV3 const from, OwlV3 const to) {
 
 #include <stdio.h>
 
-void owl_print_v2(OwlV2 const v) { printf("%.4f %.4f", v[0], v[1]); }
+void owl_print_v2(owl_v2 const v) { printf("%.4f %.4f", v[0], v[1]); }
 
-void owl_print_v3(OwlV3 const v) { printf("%.4f %.4f %.4f", v[0], v[1], v[2]); }
+void owl_print_v3(owl_v3 const v) {
+  printf("%.4f %.4f %.4f", v[0], v[1], v[2]);
+}
 
-void owl_print_v4(OwlV4 const v) {
+void owl_print_v4(owl_v4 const v) {
   printf("%.4f %.4f %.4f %.4f", v[0], v[1], v[2], v[3]);
 }
 
-void owl_print_m4(OwlM4 const m) {
+void owl_print_m4(owl_m4 const m) {
   int i;
   for (i = 0; i < 4; ++i) {
     owl_print_v4(m[i]);
@@ -274,9 +276,9 @@ void owl_print_m4(OwlM4 const m) {
 
 #endif
 
-void owl_mul_complex(OwlV2 const lhs, OwlV2 const rhs, OwlV2 out) {
-  OwlV2 lhs_tmp;
-  OwlV2 rhs_tmp;
+void owl_mul_complex(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out) {
+  owl_v2 lhs_tmp;
+  owl_v2 rhs_tmp;
 
   OWL_COPY_V2(lhs, lhs_tmp);
   OWL_COPY_V2(rhs, rhs_tmp);

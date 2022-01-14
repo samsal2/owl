@@ -15,7 +15,7 @@ static void fill_group(OwlTexture texture, struct owl_render_group *group) {
   OwlV3 eye;
   OwlV3 center;
   OwlV3 up;
-  
+
   struct owl_vertex *v;
 
   group->type = OWL_RENDER_GROUP_LIGHT_TEST;
@@ -25,7 +25,7 @@ static void fill_group(OwlTexture texture, struct owl_render_group *group) {
   OWL_IDENTITY_M4(group->storage.as_light.pvm.view);
   OWL_IDENTITY_M4(group->storage.as_light.pvm.proj);
 
-  owl_perspective_m4(OWL_DEG_TO_RAD(90.0F), 1.0F, 0.01F, 10.0F, 
+  owl_perspective_m4(OWL_DEG_TO_RAD(90.0F), 1.0F, 0.01F, 10.0F,
                      group->storage.as_light.pvm.proj);
 
   OWL_SET_V3(0.0F, 0.0F, 2.0F, eye);
@@ -77,7 +77,7 @@ static struct owl_font *font;
 
 int main(void) {
   OwlSeconds frame;
-  OwlV2 fpspos; 
+  OwlV2 fpspos;
   OwlV3 fpscolor;
 
   TEST(owl_create_window(600, 600, "light", &window));
