@@ -29,8 +29,7 @@ struct cloth {
   struct particle particles[PARTICLE_COUNT];
 
   /* priv draw info */
-  struct owl_draw_cmd group;
-
+  struct owl_draw_cmd group_;
   owl_u32 indices_[IDXS_COUNT];
   struct owl_draw_cmd_vertex vertices_[PARTICLE_COUNT];
 };
@@ -54,8 +53,7 @@ static void init_cloth_(struct cloth *cloth) {
 
       OWL_SET_V3(w, h, 0.0F, cloth->vertices_[k].pos);
       OWL_SET_V3(1.0F, 1.0F, 1.0F, cloth->vertices_[k].color);
-      OWL_SET_V2((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F,
-                 cloth->vertices_[k].uv);
+      OWL_SET_V2((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F, cloth->vertices_[k].uv);
     }
   }
 
@@ -200,16 +198,16 @@ static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
 void init_cloth(struct cloth *cloth, struct owl_texture *texture) {
   init_cloth_(cloth);
 
-  cloth->group.type = OWL_DRAW_CMD_TYPE_BASIC;
-  cloth->group.storage.as_basic.texture = texture;
-  cloth->group.storage.as_basic.indices_count = IDXS_COUNT;
-  cloth->group.storage.as_basic.indices = cloth->indices_;
-  cloth->group.storage.as_basic.vertices_count = PARTICLE_COUNT;
-  cloth->group.storage.as_basic.vertices = cloth->vertices_;
+  cloth->group_.type = OWL_DRAW_CMD_TYPE_BASIC;
+  cloth->group_.storage.as_basic.texture = texture;
+  cloth->group_.storage.as_basic.indices_count = IDXS_COUNT;
+  cloth->group_.storage.as_basic.indices = cloth->indices_;
+  cloth->group_.storage.as_basic.vertices_count = PARTICLE_COUNT;
+  cloth->group_.storage.as_basic.vertices = cloth->vertices_;
 }
 
 struct owl_draw_cmd_ubo *get_cloth_pvm(struct cloth *cloth) {
-  return &cloth->group.storage.as_basic.ubo;
+  return &cloth->group_.storage.as_basic.ubo;
 }
 
 char const *fps_string(double time) {
@@ -218,13 +216,13 @@ char const *fps_string(double time) {
   return buf;
 }
 
-#define TEST(fn)                                                             \
-  do {                                                                       \
-    enum owl_code code = (fn);                                               \
-    if (OWL_SUCCESS != (code)) {                                             \
-      printf("something went wrong in call: %s, code %i\n", (#fn), code);    \
-      return 0;                                                              \
-    }                                                                        \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    enum owl_code code = (fn);                                                 \
+    if (OWL_SUCCESS != (code)) {                                               \
+      printf("something went wrong in call: %s, code %i\n", (#fn), code);      \
+      return 0;                                                                \
+    }                                                                          \
   } while (0)
 
 static struct owl_window_desc window_desc;
@@ -265,7 +263,8 @@ int main(void) {
   texture_desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
   texture_desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-  TEST(owl_create_texture_from_file(renderer, &texture_desc, TEXPATH, &texture));
+  TEST(
+      owl_create_texture_from_file(renderer, &texture_desc, TEXPATH, &texture));
   TEST(owl_create_font(renderer, 64, FONTPATH, &font));
 
   init_cloth(&cloth, texture);
@@ -320,7 +319,7 @@ int main(void) {
     }
 
     owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
-    owl_submit_draw_cmd(renderer, &cloth.group);
+    owl_submit_draw_cmd(renderer, &cloth.group_);
 
 #if 1
     owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);

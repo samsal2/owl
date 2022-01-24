@@ -198,17 +198,17 @@ enum owl_code owl_fill_vk_plataform(struct owl_window const *window,
 #undef OWL_MAX_EXTENSIONS
 #else
 enum owl_code owl_fill_vk_plataform(struct owl_window const *window,
-                                    struct owl_vk_plataform *config) {
-  OwlU32 count;
+                                    struct owl_vk_plataform *plataform) {
+  owl_u32 count;
 
-  config->framebuffer_width = window->framebuffer_width;
-  config->framebuffer_height = window->framebuffer_height;
+  plataform->framebuffer_width = window->framebuffer_width;
+  plataform->framebuffer_height = window->framebuffer_height;
 
-  config->surface_user_data = window;
-  config->create_surface = owl_init_vk_surface_cb_;
+  plataform->surface_user_data = window;
+  plataform->create_surface = owl_init_vk_surface_cb_;
 
-  config->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
-  config->instance_extension_count = (int)count;
+  plataform->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
+  plataform->instance_extension_count = (int)count;
 
   return OWL_SUCCESS;
 }

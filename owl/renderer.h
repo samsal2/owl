@@ -123,8 +123,7 @@ struct owl_vk_renderer {
   /* ====================================================================== */
   VkCommandPool frame_cmd_pools[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkCommandBuffer frame_cmd_bufs[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  /* ======================================================================
-   */
+  /* ====================================================================== */
 
   /* ====================================================================== */
   /* frame syncronization primitives */

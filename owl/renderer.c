@@ -124,7 +124,7 @@ owl_init_instance_(struct owl_vk_plataform const *plataform,
   instance.pApplicationInfo = &app;
   instance.enabledLayerCount = 0;
   instance.ppEnabledLayerNames = NULL;
-  instance.enabledExtensionCount = (OwlU32)plataform->instance_extension_count;
+  instance.enabledExtensionCount = (owl_u32)plataform->instance_extension_count;
   instance.ppEnabledExtensionNames = plataform->instance_extensions;
 
   OWL_VK_CHECK(vkCreateInstance(&instance, NULL, &renderer->instance));
