@@ -54,40 +54,41 @@ struct owl_texture_desc {
   enum owl_sampler_addr_mode wrap_w;
 };
 
-enum owl_code owl_init_texture_from_dyn_buffer_ref(
-    struct owl_vk_renderer *r, struct owl_texture_desc const *desc,
-    struct owl_dyn_buffer_ref const *ref, struct owl_texture *tex);
+enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
+                                        struct owl_texture_desc const *desc,
+                                        struct owl_dyn_buffer_ref const *ref,
+                                        struct owl_texture *tex);
 
-enum owl_code owl_init_texture_from_file(struct owl_vk_renderer *r,
+enum owl_code owl_texture_init_from_file(struct owl_vk_renderer *r,
                                          struct owl_texture_desc *desc,
                                          char const *path,
                                          struct owl_texture *tex);
 
-enum owl_code owl_init_texture_from_data(struct owl_vk_renderer *r,
+enum owl_code owl_texture_init_from_data(struct owl_vk_renderer *r,
                                          struct owl_texture_desc const *desc,
                                          owl_byte const *data,
                                          struct owl_texture *tex);
 
-void owl_deinit_texture(struct owl_vk_renderer const *r,
+void owl_texture_deinit(struct owl_vk_renderer const *r,
                         struct owl_texture *tex);
 
-enum owl_code owl_create_texture_from_file(struct owl_vk_renderer *r,
+enum owl_code owl_texture_create_from_file(struct owl_vk_renderer *r,
                                            struct owl_texture_desc *desc,
                                            char const *path,
                                            struct owl_texture **tex);
 
-enum owl_code owl_create_texture_from_data(struct owl_vk_renderer *r,
+enum owl_code owl_texture_create_from_data(struct owl_vk_renderer *r,
                                            struct owl_texture_desc const *desc,
                                            owl_byte const *data,
                                            struct owl_texture **tex);
 
-void owl_destroy_texture(struct owl_vk_renderer const *r,
+void owl_texture_destroy(struct owl_vk_renderer const *r,
                          struct owl_texture *tex);
 
-enum owl_code owl_alloc_and_record_cmd_buffer(struct owl_vk_renderer const *r,
-                                              VkCommandBuffer *cmd);
+enum owl_code owl_renderer_alloc_cmd_buffer(struct owl_vk_renderer const *r,
+                                            VkCommandBuffer *cmd);
 
-enum owl_code owl_free_and_submit_cmd_buffer(struct owl_vk_renderer const *r,
+enum owl_code owl_renderer_submit_cmd_buffer(struct owl_vk_renderer const *r,
                                              VkCommandBuffer cmd);
 
 struct owl_vk_image_transition_desc {
@@ -98,8 +99,8 @@ struct owl_vk_image_transition_desc {
 };
 
 enum owl_code
-owl_transition_vk_image_layout(VkCommandBuffer cmd,
-                               struct owl_vk_image_transition_desc const *desc);
+owl_vk_image_transition(VkCommandBuffer cmd,
+                        struct owl_vk_image_transition_desc const *desc);
 
 struct owl_vk_image_mip_desc {
   owl_i32 width;
@@ -109,7 +110,7 @@ struct owl_vk_image_mip_desc {
 };
 
 enum owl_code
-owl_generate_vk_image_mips(VkCommandBuffer cmd,
+owl_vk_image_generate_mips(VkCommandBuffer cmd,
                            struct owl_vk_image_mip_desc const *desc);
 
 #endif

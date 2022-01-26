@@ -27,7 +27,7 @@ OWL_INTERNAL void owl_calc_dims_(FT_Face face, int *width, int *height) {
   }
 }
 
-enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
+enum owl_code owl_font_create(struct owl_vk_renderer *renderer, int size,
                               char const *path, struct owl_font **font) {
   int i;
   int x;
@@ -63,7 +63,7 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
   owl_calc_dims_(face, &(*font)->atlas_width, &(*font)->atlas_height);
 
   alloc_size = (VkDeviceSize)((*font)->atlas_width * (*font)->atlas_height);
-  data = owl_dyn_buffer_alloc(renderer, alloc_size, &ref);
+  data = owl_renderer_dyn_alloc(renderer, alloc_size, &ref);
 
   if (!data) {
     code = OWL_ERROR_BAD_ALLOC;
@@ -122,7 +122,7 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
     desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
     desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-    code = owl_init_texture_from_dyn_buffer_ref(renderer, &desc, &ref,
+    code = owl_texture_init_from_ref(renderer, &desc, &ref,
                                                 &(*font)->atlas);
 
     if (OWL_SUCCESS != code)
@@ -147,8 +147,8 @@ end:
   return code;
 }
 
-void owl_destroy_font(struct owl_vk_renderer *renderer, struct owl_font *font) {
-  owl_deinit_texture(renderer, &font->atlas);
+void owl_font_destroy(struct owl_vk_renderer *renderer, struct owl_font *font) {
+  owl_texture_deinit(renderer, &font->atlas);
   OWL_FREE(font);
 }
 
@@ -247,7 +247,7 @@ enum owl_code owl_submit_text_group(struct owl_vk_renderer *renderer,
     if (OWL_SUCCESS != code)
       goto end;
 
-    owl_submit_draw_cmd(renderer, &group);
+    owl_draw_cmd_submit(renderer, &group);
 
     cpos[0] += font->glyphs[(int)*c].advance[0] / (float)renderer->width;
 

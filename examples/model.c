@@ -37,10 +37,10 @@ int main(void) {
   window_desc.width = 600;
   window_desc.title = "model";
 
-  TEST(owl_create_window(&window_desc, &input, &window));
-  TEST(owl_create_renderer(window, &renderer));
-  TEST(owl_create_font(renderer, 64, FONTPATH, &font));
-  TEST(owl_create_model_from_file(renderer, MODELPATH, &model));
+  TEST(owl_window_create(&window_desc, &input, &window));
+  TEST(owl_renderer_create(window, &renderer));
+  TEST(owl_font_create(renderer, 64, FONTPATH, &font));
+  TEST(owl_model_create_from_file(renderer, MODELPATH, &model));
 
   text.font = font;
   OWL_SET_V3(1.0F, 1.0F, 1.0F, text.color);
@@ -62,29 +62,29 @@ int main(void) {
   owl_translate_m4(pos, ubo.model);
 #endif
 
-  while (!owl_is_window_done(window)) {
-    if (OWL_SUCCESS != owl_begin_frame(renderer)) {
-      owl_recreate_swapchain(window, renderer);
+  while (!owl_window_is_done(window)) {
+    if (OWL_SUCCESS != owl_frame_begin(renderer)) {
+      owl_renderer_recreate_swapchain(window, renderer);
       continue;
     }
 
-    owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_PBR);
-    owl_submit_model(renderer, &ubo, model);
+    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_PBR);
+    owl_model_submit(renderer, &ubo, model);
 
-    owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
+    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
     text.text = fps_string(input->dt_time);
-    owl_submit_text_cmd(renderer, &text);
+    owl_text_cmd_submit(renderer, &text);
 
-    if (OWL_SUCCESS != owl_end_frame(renderer)) {
-      owl_recreate_swapchain(window, renderer);
+    if (OWL_SUCCESS != owl_frame_end(renderer)) {
+      owl_renderer_recreate_swapchain(window, renderer);
       continue;
     }
 
-    owl_poll_window_input(window);
+    owl_window_poll(window);
   }
 
-  owl_destroy_model(renderer, model);
-  owl_destroy_font(renderer, font);
-  owl_destroy_renderer(renderer);
-  owl_destroy_window(window);
+  owl_model_destroy(renderer, model);
+  owl_font_destroy(renderer, font);
+  owl_renderer_destroy(renderer);
+  owl_window_destroy(window);
 }

@@ -176,23 +176,24 @@ struct owl_window {
   struct owl_input_state input;
 };
 
-enum owl_code owl_init_window(struct owl_window_desc const *desc,
+enum owl_code owl_window_init(struct owl_window_desc const *desc,
                               struct owl_input_state **input,
                               struct owl_window *w);
 
-void owl_deinit_window(struct owl_window *w);
+void owl_window_deinit(struct owl_window *w);
 
-enum owl_code owl_fill_vk_renderer_desc(struct owl_window const *w,
-                                        struct owl_vk_renderer_desc *desc);
+enum owl_code
+owl_window_fill_vk_renderer_desc(struct owl_window const *w,
+                                 struct owl_vk_renderer_desc *desc);
 
-enum owl_code owl_create_window(struct owl_window_desc const *desc,
+enum owl_code owl_window_create(struct owl_window_desc const *desc,
                                 struct owl_input_state **input,
                                 struct owl_window **w);
 
-void owl_destroy_window(struct owl_window *w);
+void owl_window_destroy(struct owl_window *w);
 
-void owl_poll_window_input(struct owl_window *w);
+void owl_window_poll(struct owl_window *w);
 
-int owl_is_window_done(struct owl_window *w);
+int owl_window_is_done(struct owl_window *w);
 
 #endif

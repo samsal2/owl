@@ -9,7 +9,7 @@
 #include <GLFW/glfw3.h>
 /* clang-format on */
 
-OWL_INTERNAL enum owl_mouse_btn owl_to_mouse_btn_(int type) {
+OWL_INTERNAL enum owl_mouse_btn owl_as_mouse_btn_(int type) {
   switch (type) {
   case GLFW_MOUSE_BUTTON_LEFT:
     return OWL_MOUSE_BUTTON_LEFT;
@@ -25,7 +25,7 @@ OWL_INTERNAL enum owl_mouse_btn owl_to_mouse_btn_(int type) {
   }
 }
 
-OWL_INTERNAL enum owl_btn_state owl_to_mouse_state_(int state) {
+OWL_INTERNAL enum owl_btn_state owl_as_mouse_state_(int state) {
   switch (state) {
   case GLFW_PRESS:
     return OWL_BUTTON_STATE_PRESS;
@@ -71,11 +71,11 @@ OWL_INTERNAL void owl_cursor_pos_callback_(GLFWwindow *glfw, double x,
 OWL_INTERNAL void owl_mouse_callback_(GLFWwindow *glfw, int button, int action,
                                       int modifiers) {
   struct owl_window *w = glfwGetWindowUserPointer(glfw);
-  enum owl_mouse_btn b = owl_to_mouse_btn_(button);
+  enum owl_mouse_btn b = owl_as_mouse_btn_(button);
 
   OWL_UNUSED(modifiers);
 
-  w->input.mouse[b] = owl_to_mouse_state_(action);
+  w->input.mouse[b] = owl_as_mouse_state_(action);
 }
 
 OWL_INTERNAL void owl_keyboard_callback_(GLFWwindow *glfw, int key,
@@ -86,11 +86,11 @@ OWL_INTERNAL void owl_keyboard_callback_(GLFWwindow *glfw, int key,
   OWL_UNUSED(action);
   OWL_UNUSED(mods);
 
-  w->input.keyboard[key] = owl_to_mouse_state_(action);
+  w->input.keyboard[key] = owl_as_mouse_state_(action);
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_vk_surface_callback_(struct owl_vk_renderer const *r, void const *data,
+owl_vk_surface_init_callback_(struct owl_vk_renderer const *r, void const *data,
                               VkSurfaceKHR *out) {
   struct owl_window const *w = data;
   int err = glfwCreateWindowSurface(r->instance, w->data, NULL, out);
@@ -101,25 +101,25 @@ owl_init_vk_surface_callback_(struct owl_vk_renderer const *r, void const *data,
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_init_timer_(struct owl_window *w) {
+OWL_INTERNAL void owl_window_init_timer_(struct owl_window *w) {
   w->input.time = 0.0;
   w->input.past_time = 0.0;
   w->input.dt_time = 0.16667;
 }
 
-OWL_INTERNAL void owl_update_timer_(struct owl_window *w) {
+OWL_INTERNAL void owl_window_update_timer_(struct owl_window *w) {
   w->input.past_time = w->input.time;
   w->input.time = glfwGetTime();
   w->input.dt_time = w->input.time - w->input.past_time;
 }
 
-OWL_INTERNAL void owl_update_prev_cursor_(struct owl_window *w) {
+OWL_INTERNAL void owl_window_update_prev_cursor_(struct owl_window *w) {
   OWL_COPY_V2(w->input.cursor_position, w->input.prev_cursor_position);
 }
 
 OWL_GLOBAL int global_window_count = 0;
 
-OWL_INTERNAL enum owl_code owl_ensure_glfw_(void) {
+OWL_INTERNAL enum owl_code owl_window_ensure_glfw_(void) {
   if (!global_window_count)
     if (GLFW_FALSE == glfwInit())
       return OWL_ERROR_BAD_INIT;
@@ -127,13 +127,14 @@ OWL_INTERNAL enum owl_code owl_ensure_glfw_(void) {
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void *owl_create_handle_(struct owl_window_desc const *desc) {
+OWL_INTERNAL void *
+owl_window_create_handle_(struct owl_window_desc const *desc) {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   ++global_window_count;
   return glfwCreateWindow(desc->width, desc->height, desc->title, NULL, NULL);
 }
 
-OWL_INTERNAL void owl_set_input_callbacks_(struct owl_window *w) {
+OWL_INTERNAL void owl_window_set_callbacks_(struct owl_window *w) {
   glfwSetWindowSizeCallback(w->data, owl_window_callback_);
   glfwSetFramebufferSizeCallback(w->data, owl_framebuffer_callback_);
   glfwSetCursorPosCallback(w->data, owl_cursor_pos_callback_);
@@ -141,7 +142,7 @@ OWL_INTERNAL void owl_set_input_callbacks_(struct owl_window *w) {
   glfwSetKeyCallback(w->data, owl_keyboard_callback_);
 }
 
-OWL_INTERNAL void owl_init_input_(struct owl_window *w) {
+OWL_INTERNAL void owl_window_init_input_(struct owl_window *w) {
   OWL_ZERO_V2(w->input.prev_cursor_position);
   OWL_ZERO_V2(w->input.cursor_position);
 
@@ -155,24 +156,24 @@ OWL_INTERNAL void owl_init_input_(struct owl_window *w) {
   }
 }
 
-enum owl_code owl_init_window(struct owl_window_desc const *desc,
+enum owl_code owl_window_init(struct owl_window_desc const *desc,
                               struct owl_input_state **input,
                               struct owl_window *w) {
-  owl_ensure_glfw_();
+  owl_window_ensure_glfw_();
 
   if (!input)
     return OWL_ERROR_BAD_PTR;
 
-  w->data = owl_create_handle_(desc);
+  w->data = owl_window_create_handle_(desc);
 
   glfwSetWindowUserPointer(w->data, w);
   glfwGetWindowSize(w->data, &w->window_width, &w->window_height);
   glfwGetFramebufferSize(w->data, &w->framebuffer_width,
                          &w->framebuffer_height);
 
-  owl_set_input_callbacks_(w);
-  owl_init_input_(w);
-  owl_init_timer_(w);
+  owl_window_set_callbacks_(w);
+  owl_window_init_input_(w);
+  owl_window_init_timer_(w);
 
   *input = &w->input;
   w->title = desc->title;
@@ -180,7 +181,7 @@ enum owl_code owl_init_window(struct owl_window_desc const *desc,
   return OWL_SUCCESS;
 }
 
-void owl_deinit_window(struct owl_window *w) {
+void owl_window_deinit(struct owl_window *w) {
   glfwDestroyWindow(w->data);
 
   if (!--global_window_count)
@@ -189,8 +190,9 @@ void owl_deinit_window(struct owl_window *w) {
 
 #ifndef NDEBUG
 #define OWL_MAX_EXTENSIONS 64
-enum owl_code owl_fill_vk_renderer_desc(struct owl_window const *w,
-                                        struct owl_vk_renderer_desc *desc) {
+enum owl_code
+owl_window_fill_vk_renderer_desc(struct owl_window const *w,
+                                 struct owl_vk_renderer_desc *desc) {
   owl_u32 count;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 
@@ -198,7 +200,7 @@ enum owl_code owl_fill_vk_renderer_desc(struct owl_window const *w,
   desc->framebuffer_height = w->framebuffer_height;
 
   desc->surface_user_data = w;
-  desc->create_surface = owl_init_vk_surface_callback_;
+  desc->create_surface = owl_vk_surface_init_callback_;
   desc->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
 
   OWL_ASSERT(OWL_MAX_EXTENSIONS > count);
@@ -215,8 +217,8 @@ enum owl_code owl_fill_vk_renderer_desc(struct owl_window const *w,
 }
 #undef OWL_MAX_EXTENSIONS
 #else
-enum owl_code owl_fill_vk_plataform(struct owl_window const *w,
-                                    struct owl_vk_plataform *desc) {
+enum owl_code owl_window_fill_vk_renderer_desc(struct owl_window const *w,
+                                               struct owl_vk_plataform *desc) {
   owl_u32 count;
 
   desc->framebuffer_width = w->framebuffer_width;
@@ -234,17 +236,17 @@ enum owl_code owl_fill_vk_plataform(struct owl_window const *w,
 }
 #endif
 
-int owl_is_window_done(struct owl_window *w) {
+int owl_window_is_done(struct owl_window *w) {
   return glfwWindowShouldClose(w->data);
 }
 
-void owl_poll_window_input(struct owl_window *w) {
-  owl_update_prev_cursor_(w);
+void owl_window_poll(struct owl_window *w) {
+  owl_window_update_prev_cursor_(w);
   glfwPollEvents();
-  owl_update_timer_(w);
+  owl_window_update_timer_(w);
 }
 
-enum owl_code owl_create_window(struct owl_window_desc const *desc,
+enum owl_code owl_window_create(struct owl_window_desc const *desc,
                                 struct owl_input_state **input,
                                 struct owl_window **w) {
   enum owl_code code = OWL_SUCCESS;
@@ -252,13 +254,13 @@ enum owl_code owl_create_window(struct owl_window_desc const *desc,
   if (!(*w = OWL_MALLOC(sizeof(**w))))
     return OWL_ERROR_BAD_ALLOC;
 
-  if (OWL_SUCCESS != (code = owl_init_window(desc, input, *w)))
+  if (OWL_SUCCESS != (code = owl_window_init(desc, input, *w)))
     OWL_FREE(*w);
 
   return code;
 }
 
-void owl_destroy_window(struct owl_window *w) {
-  owl_deinit_window(w);
+void owl_window_destroy(struct owl_window *w) {
+  owl_window_deinit(w);
   OWL_FREE(w);
 }

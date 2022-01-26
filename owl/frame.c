@@ -64,7 +64,7 @@ OWL_INTERNAL void owl_start_recording_(struct owl_vk_renderer *r) {
   }
 }
 
-enum owl_code owl_begin_frame(struct owl_vk_renderer *r) {
+enum owl_code owl_frame_begin(struct owl_vk_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   if (OWL_SUCCESS != (code = owl_acquire_next_image_(r)))
@@ -135,7 +135,7 @@ OWL_INTERNAL void owl_swap_active_(struct owl_vk_renderer *r) {
     r->active = 0;
 }
 
-enum owl_code owl_end_frame(struct owl_vk_renderer *r) {
+enum owl_code owl_frame_end(struct owl_vk_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   owl_end_recording_(r);
@@ -146,8 +146,8 @@ enum owl_code owl_end_frame(struct owl_vk_renderer *r) {
 
   owl_swap_active_(r);
   /* reset offset */
-  owl_clear_dyn_buffer_offset(r);
-  owl_clear_dyn_buffer_garbage(r);
+  owl_renderer_clear_dyn_offset(r);
+  owl_renderer_clear_dyn_garbage(r);
 
 end:
   return OWL_SUCCESS;

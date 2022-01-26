@@ -5,7 +5,7 @@
 #include "texture.h"
 
 OWL_INTERNAL enum owl_code
-owl_submit_draw_cmd_basic_(struct owl_vk_renderer *r,
+owl_draw_cmd_submit_basic_(struct owl_vk_renderer *r,
                            struct owl_draw_cmd_basic const *basic) {
   {
     owl_byte *data;
@@ -13,7 +13,7 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *r,
     struct owl_dyn_buffer_ref ref;
 
     size = sizeof(*basic->vertices) * (VkDeviceSize)basic->vertices_count;
-    data = owl_dyn_buffer_alloc(r, size, &ref);
+    data = owl_renderer_dyn_alloc(r, size, &ref);
 
     OWL_MEMCPY(data, basic->vertices, size);
 
@@ -27,7 +27,7 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *r,
     struct owl_dyn_buffer_ref ref;
 
     size = sizeof(*basic->indices) * (VkDeviceSize)basic->indices_count;
-    data = owl_dyn_buffer_alloc(r, size, &ref);
+    data = owl_renderer_dyn_alloc(r, size, &ref);
 
     OWL_MEMCPY(data, basic->indices, size);
 
@@ -42,7 +42,7 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *r,
     struct owl_dyn_buffer_ref ref;
 
     size = sizeof(basic->ubo);
-    data = owl_dyn_buffer_alloc(r, size, &ref);
+    data = owl_renderer_dyn_alloc(r, size, &ref);
 
     OWL_MEMCPY(data, &basic->ubo, size);
 
@@ -62,7 +62,7 @@ owl_submit_draw_cmd_basic_(struct owl_vk_renderer *r,
 }
 
 OWL_INTERNAL enum owl_code
-owl_submit_draw_cmd_quad_(struct owl_vk_renderer *r,
+owl_draw_cmd_submit_quad_(struct owl_vk_renderer *r,
                           struct owl_draw_cmd_quad const *quad) {
   {
     owl_byte *data;
@@ -70,7 +70,7 @@ owl_submit_draw_cmd_quad_(struct owl_vk_renderer *r,
     struct owl_dyn_buffer_ref ref;
 
     size = sizeof(quad->vertices);
-    data = owl_dyn_buffer_alloc(r, size, &ref);
+    data = owl_renderer_dyn_alloc(r, size, &ref);
 
     OWL_MEMCPY(data, quad->vertices, size);
 
@@ -85,7 +85,7 @@ owl_submit_draw_cmd_quad_(struct owl_vk_renderer *r,
     owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
 
     size = sizeof(indices);
-    data = owl_dyn_buffer_alloc(r, size, &ref);
+    data = owl_renderer_dyn_alloc(r, size, &ref);
 
     OWL_MEMCPY(data, indices, size);
 
@@ -100,7 +100,7 @@ owl_submit_draw_cmd_quad_(struct owl_vk_renderer *r,
     struct owl_dyn_buffer_ref ref;
 
     size = sizeof(quad->ubo);
-    data = owl_dyn_buffer_alloc(r, size, &ref);
+    data = owl_renderer_dyn_alloc(r, size, &ref);
 
     OWL_MEMCPY(data, &quad->ubo, size);
 
@@ -118,13 +118,13 @@ owl_submit_draw_cmd_quad_(struct owl_vk_renderer *r,
   return OWL_SUCCESS;
 }
 
-enum owl_code owl_submit_draw_cmd(struct owl_vk_renderer *renderer,
+enum owl_code owl_draw_cmd_submit(struct owl_vk_renderer *r,
                                   struct owl_draw_cmd const *cmd) {
   switch (cmd->type) {
   case OWL_DRAW_CMD_TYPE_BASIC:
-    return owl_submit_draw_cmd_basic_(renderer, &cmd->storage.as_basic);
+    return owl_draw_cmd_submit_basic_(r, &cmd->storage.as_basic);
 
   case OWL_DRAW_CMD_TYPE_QUAD:
-    return owl_submit_draw_cmd_quad_(renderer, &cmd->storage.as_quad);
+    return owl_draw_cmd_submit_quad_(r, &cmd->storage.as_quad);
   }
 }

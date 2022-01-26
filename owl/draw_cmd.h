@@ -49,7 +49,7 @@ struct owl_draw_cmd {
   union owl_draw_cmd_storage storage;
 };
 
-enum owl_code owl_submit_draw_cmd(struct owl_vk_renderer *renderer,
+enum owl_code owl_draw_cmd_submit(struct owl_vk_renderer *r,
                                   struct owl_draw_cmd const *cmd);
 
 #endif

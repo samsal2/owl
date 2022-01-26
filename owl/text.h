@@ -12,7 +12,7 @@ struct owl_text_cmd {
   owl_v3 color;
 };
 
-enum owl_code owl_submit_text_cmd(struct owl_vk_renderer *renderer,
+enum owl_code owl_text_cmd_submit(struct owl_vk_renderer *renderer,
                                   struct owl_text_cmd const *cmd);
 
 #endif

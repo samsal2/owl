@@ -5,6 +5,9 @@
 
 #include <vulkan/vulkan.h>
 
+struct owl_window;
+struct owl_vk_renderer;
+
 #define OWL_VK_MEMORY_TYPE_NONE (owl_u32) - 1
 #define OWL_VK_RENDERER_MAX_SWAPCHAIN_IMAGES 8
 #define OWL_VK_RENDERER_DYN_BUFFER_COUNT 2
@@ -14,7 +17,7 @@
 #define OWL_VK_PIPELINE_TYPE_NONE OWL_PIPELINE_TYPE_COUNT
 
 enum owl_vk_memory_visibility {
-  OWL_VK_MEMORY_VISIBILITY_CPU_ONLY, /**/
+  OWL_VK_MEMORY_VISIBILITY_CPU_ONLY,
   OWL_VK_MEMORY_VISIBILITY_GPU_ONLY,
   OWL_VK_MEMORY_VISIBILITY_CPU_TO_GPU
 };
@@ -27,9 +30,6 @@ enum owl_pipeline_type {
   OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND,
   OWL_PIPELINE_TYPE_COUNT
 };
-
-struct owl_window;
-struct owl_vk_renderer;
 
 typedef enum owl_code (*owl_vk_surface_creator)(struct owl_vk_renderer const *,
                                                 void const *, VkSurfaceKHR *);
@@ -236,39 +236,40 @@ struct owl_vk_renderer {
   VkDescriptorSet dyn_garbage_pvm_sets[OWL_VK_RENDERER_MAX_DYN_GARBAGE_ITEMS];
   /* ====================================================================== */
 };
-
-enum owl_code owl_create_renderer(struct owl_window *w,
-                                  struct owl_vk_renderer **r);
-
-enum owl_code owl_recreate_swapchain(struct owl_window *w,
-                                     struct owl_vk_renderer *r);
-
-void owl_destroy_renderer(struct owl_vk_renderer *r);
-
-enum owl_code owl_init_renderer(struct owl_vk_renderer_desc const *desc,
+enum owl_code owl_renderer_init(struct owl_vk_renderer_desc const *desc,
                                 struct owl_vk_renderer *r);
 
-void owl_deinit_renderer(struct owl_vk_renderer *r);
+enum owl_code owl_renderer_create(struct owl_window *w,
+                                  struct owl_vk_renderer **r);
 
-enum owl_code owl_reinit_swapchain(struct owl_vk_renderer_desc const *desc,
-                                   struct owl_vk_renderer *r);
+enum owl_code
+owl_renderer_reinit_swapchain(struct owl_vk_renderer_desc const *desc,
+                              struct owl_vk_renderer *r);
 
-enum owl_code owl_reserve_dyn_buffer_memory(struct owl_vk_renderer *r,
-                                            VkDeviceSize size);
+enum owl_code owl_renderer_recreate_swapchain(struct owl_window *w,
+                                              struct owl_vk_renderer *r);
 
-int owl_is_dyn_buffer_clear(struct owl_vk_renderer *r);
+void owl_renderer_deinit(struct owl_vk_renderer *r);
 
-void owl_clear_dyn_buffer_offset(struct owl_vk_renderer *r);
+void owl_renderer_destroy(struct owl_vk_renderer *r);
 
-void owl_clear_dyn_buffer_garbage(struct owl_vk_renderer *r);
+enum owl_code owl_renderer_reserve_dyn_memory(struct owl_vk_renderer *r,
+                                              VkDeviceSize size);
 
-owl_u32 owl_find_vk_memory_type(struct owl_vk_renderer const *r, owl_u32 filter,
-                                enum owl_vk_memory_visibility vis);
+int owl_renderer_is_dyn_buffer_clear(struct owl_vk_renderer *r);
 
-void *owl_dyn_buffer_alloc(struct owl_vk_renderer *r, VkDeviceSize size,
-                           struct owl_dyn_buffer_ref *ref);
+void owl_renderer_clear_dyn_offset(struct owl_vk_renderer *r);
 
-enum owl_code owl_bind_pipeline(struct owl_vk_renderer *r,
-                                enum owl_pipeline_type type);
+void owl_renderer_clear_dyn_garbage(struct owl_vk_renderer *r);
+
+owl_u32 owl_renderer_find_memory_type(struct owl_vk_renderer const *r,
+                                      owl_u32 filter,
+                                      enum owl_vk_memory_visibility vis);
+
+void *owl_renderer_dyn_alloc(struct owl_vk_renderer *r, VkDeviceSize size,
+                             struct owl_dyn_buffer_ref *ref);
+
+enum owl_code owl_renderer_bind_pipeline(struct owl_vk_renderer *r,
+                                         enum owl_pipeline_type type);
 
 #endif

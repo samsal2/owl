@@ -77,7 +77,17 @@ OWL_INTERNAL enum owl_code owl_fill_char_quad_(int width, int height,
   return OWL_SUCCESS;
 }
 
-enum owl_code owl_submit_text_cmd(struct owl_vk_renderer *renderer,
+OWL_INTERNAL void owl_text_step_pos_(struct owl_font const *font,
+                                     char const c,
+                                     int framebuffer_width,
+                                     int framebuffer_height,
+                                     owl_v2 pos) {
+    pos[0] += font->glyphs[(int)c].advance[0] / (float)framebuffer_width;
+    /* FIXME(samuel): not sure if i should substract or add */
+    pos[1] += font->glyphs[(int)c].advance[1] / (float)framebuffer_height;
+}
+
+enum owl_code owl_text_cmd_submit(struct owl_vk_renderer *r,
                                   struct owl_text_cmd const *cmd) {
   char const *c;
   owl_v2 pos; /* move the position to a copy */
@@ -87,20 +97,16 @@ enum owl_code owl_submit_text_cmd(struct owl_vk_renderer *renderer,
 
   /* TODO(samuel): cleanup */
   for (c = cmd->text; '\0' != *c; ++c) {
-    struct owl_draw_cmd group;
+    struct owl_draw_cmd quad;
 
-    code = owl_fill_char_quad_(renderer->width, renderer->height, cmd->font,
-                               pos, cmd->color, *c, &group);
+    code = owl_fill_char_quad_(r->width, r->height, cmd->font,
+                               pos, cmd->color, *c, &quad);
 
     if (OWL_SUCCESS != code)
       goto end;
 
-    owl_submit_draw_cmd(renderer, &group);
-
-    pos[0] += cmd->font->glyphs[(int)*c].advance[0] / (float)renderer->width;
-
-    /* FIXME(samuel): not sure if i should substract or add */
-    pos[1] += cmd->font->glyphs[(int)*c].advance[1] / (float)renderer->height;
+    owl_draw_cmd_submit(r, &quad);
+    owl_text_step_pos_(cmd->font, *c, r->width, r->height, pos);
   }
 
 end:

@@ -237,7 +237,7 @@ static struct owl_font *font;
 static struct owl_text_cmd text;
 
 #define UNSELECTED (owl_u32) - 1
-#define TEXPATH "../../assets/cloth.jpeg"
+#define TPATH "../../assets/cloth.jpeg"
 #define FONTPATH "../../assets/SourceCodePro-Regular.ttf"
 
 int main(void) {
@@ -252,9 +252,9 @@ int main(void) {
   window_desc.height = 600;
   window_desc.width = 600;
   window_desc.title = "cloth-sim";
-  TEST(owl_create_window(&window_desc, &input, &window));
+  TEST(owl_window_create(&window_desc, &input, &window));
 
-  TEST(owl_create_renderer(window, &renderer));
+  TEST(owl_renderer_create(window, &renderer));
 
   texture_desc.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
   texture_desc.min_filter = OWL_SAMPLER_FILTER_LINEAR;
@@ -262,9 +262,9 @@ int main(void) {
   texture_desc.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
   texture_desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
   texture_desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  TEST(
-      owl_create_texture_from_file(renderer, &texture_desc, TEXPATH, &texture));
-  TEST(owl_create_font(renderer, 64, FONTPATH, &font));
+  TEST(owl_texture_create_from_file(renderer, &texture_desc, TPATH, &texture));
+
+  TEST(owl_font_create(renderer, 64, FONTPATH, &font));
 
   init_cloth(&cloth, texture);
 
@@ -294,7 +294,7 @@ int main(void) {
 
   owl_translate_m4(position, pvm->model);
 
-  while (!owl_is_window_done(window)) {
+  while (!owl_window_is_done(window)) {
 #if 1
 
     if (UNSELECTED == selected &&
@@ -312,31 +312,31 @@ int main(void) {
 
     update_cloth(1.0F / 60.0F, &cloth);
 
-    if (OWL_SUCCESS != owl_begin_frame(renderer)) {
-      owl_recreate_swapchain(window, renderer);
+    if (OWL_SUCCESS != owl_frame_begin(renderer)) {
+      owl_renderer_recreate_swapchain(window, renderer);
       continue;
     }
 
-    owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
-    owl_submit_draw_cmd(renderer, &cloth.group_);
+    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
+    owl_draw_cmd_submit(renderer, &cloth.group_);
 
 #if 1
-    owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
+    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
 #endif
 
     text.text = fps_string(input->dt_time);
-    owl_submit_text_cmd(renderer, &text);
+    owl_text_cmd_submit(renderer, &text);
 
-    if (OWL_SUCCESS != owl_end_frame(renderer)) {
-      owl_recreate_swapchain(window, renderer);
+    if (OWL_SUCCESS != owl_frame_end(renderer)) {
+      owl_renderer_recreate_swapchain(window, renderer);
       continue;
     }
 
-    owl_poll_window_input(window);
+    owl_window_poll(window);
   }
 
-  owl_destroy_font(renderer, font);
-  owl_destroy_texture(renderer, texture);
-  owl_destroy_renderer(renderer);
-  owl_destroy_window(window);
+  owl_font_destroy(renderer, font);
+  owl_texture_destroy(renderer, texture);
+  owl_renderer_destroy(renderer);
+  owl_window_destroy(window);
 }
