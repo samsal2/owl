@@ -227,17 +227,17 @@ char const *fps_string(double time) {
 
 static struct owl_window_desc window_desc;
 static struct owl_window *window;
+static struct owl_input_state *input;
 static struct owl_vk_renderer *renderer;
 static struct owl_texture_desc texture_desc;
 static struct owl_texture *texture;
 static struct owl_draw_cmd group;
 static struct cloth cloth;
 static struct owl_font *font;
-static struct owl_input_state *input;
 static struct owl_text_cmd text;
 
 #define UNSELECTED (owl_u32) - 1
-#define TEXPATH "../../assets/Chaeyoung.jpeg"
+#define TEXPATH "../../assets/cloth.jpeg"
 #define FONTPATH "../../assets/SourceCodePro-Regular.ttf"
 
 int main(void) {

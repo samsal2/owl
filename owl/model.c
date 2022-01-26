@@ -204,7 +204,6 @@ OWL_INTERNAL enum owl_code owl_process_primitive_(
 
     if (joint_data && weight_data) {
       switch (joint_type) {
-
       case cgltf_component_type_r_8: { /* BYTE */
         char const *data = (char const *)&joint_data[i * joint_stride];
         v->joint0[0] = data[0];
@@ -348,7 +347,7 @@ owl_process_mesh_(struct owl_vk_renderer const *renderer,
     VkDescriptorSetAllocateInfo set;
     set.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     set.pNext = NULL;
-    set.descriptorPool = renderer->set_pool;
+    set.descriptorPool = renderer->common_set_pool;
     set.descriptorSetCount = 1;
     set.pSetLayouts = &renderer->node_set_layout;
 
@@ -388,7 +387,8 @@ end:
 
 OWL_INTERNAL void owl_deinit_mesh_(struct owl_vk_renderer const *renderer,
                                    struct owl_model_mesh_data const *data) {
-  vkFreeDescriptorSets(renderer->device, renderer->set_pool, 1, &data->ubo_set);
+  vkFreeDescriptorSets(renderer->device, renderer->common_set_pool, 1,
+                       &data->ubo_set);
   vkFreeMemory(renderer->device, data->ubo_mem, NULL);
   vkDestroyBuffer(renderer->device, data->ubo_buf, NULL);
 }

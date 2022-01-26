@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-struct owl_vk_plataform;
+struct owl_vk_renderer_desc;
 
 enum owl_btn_state {
   OWL_BUTTON_STATE_NONE,
@@ -164,7 +164,9 @@ struct owl_window_desc {
 };
 
 struct owl_window {
-  void *handle;
+  char const *title;
+
+  void *data;
 
   int window_width;
   int window_height;
@@ -176,21 +178,21 @@ struct owl_window {
 
 enum owl_code owl_init_window(struct owl_window_desc const *desc,
                               struct owl_input_state **input,
-                              struct owl_window *window);
+                              struct owl_window *w);
 
-void owl_deinit_window(struct owl_window *window);
+void owl_deinit_window(struct owl_window *w);
 
-enum owl_code owl_fill_vk_plataform(struct owl_window const *window,
-                                    struct owl_vk_plataform *plataform);
+enum owl_code owl_fill_vk_renderer_desc(struct owl_window const *w,
+                                        struct owl_vk_renderer_desc *desc);
 
 enum owl_code owl_create_window(struct owl_window_desc const *desc,
                                 struct owl_input_state **input,
-                                struct owl_window **window);
+                                struct owl_window **w);
 
-void owl_destroy_window(struct owl_window *window);
+void owl_destroy_window(struct owl_window *w);
 
-void owl_poll_window_input(struct owl_window *window);
+void owl_poll_window_input(struct owl_window *w);
 
-int owl_is_window_done(struct owl_window *window);
+int owl_is_window_done(struct owl_window *w);
 
 #endif

@@ -4,20 +4,19 @@
 #include "model.h"
 #include "window.h"
 
-/* clang-format off */
-#define OWL_VK_DEVICE_EXTENSIONS { VK_KHR_SWAPCHAIN_EXTENSION_NAME }
-/* clang-format on */
+OWL_GLOBAL char const *const required_device_extensions[] = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 #ifndef NDEBUG
 
 #define OWL_VK_GET_INSTANCE_PROC_ADDR(i, fn)                                   \
   ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))
 
-OWL_GLOBAL char const *const g_validation_layers[] = {
+OWL_GLOBAL char const *const debug_validation_layers[] = {
     "VK_LAYER_KHRONOS_validation"};
 
 #include <stdio.h>
-static VKAPI_ATTR VKAPI_CALL VkBool32 owl_vk_debug_cb_(
+static VKAPI_ATTR VKAPI_CALL VkBool32 owl_vk_debug_callback_(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT type,
     VkDebugUtilsMessengerCallbackDataEXT const *data, void *user_data) {
@@ -29,14 +28,14 @@ static VKAPI_ATTR VKAPI_CALL VkBool32 owl_vk_debug_cb_(
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_instance_(struct owl_vk_plataform const *plataform,
-                   struct owl_vk_renderer *renderer) {
+owl_init_instance_(struct owl_vk_renderer_desc const *desc,
+                   struct owl_vk_renderer *r) {
   VkApplicationInfo app;
   VkInstanceCreateInfo instance;
 
   app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app.pNext = NULL;
-  app.pApplicationName = "OWL";
+  app.pApplicationName = desc->name;
   app.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app.pEngineName = "No Engine";
   app.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -46,12 +45,12 @@ owl_init_instance_(struct owl_vk_plataform const *plataform,
   instance.pNext = NULL;
   instance.flags = 0;
   instance.pApplicationInfo = &app;
-  instance.enabledLayerCount = OWL_ARRAY_SIZE(g_validation_layers);
-  instance.ppEnabledLayerNames = g_validation_layers;
-  instance.enabledExtensionCount = (owl_u32)plataform->instance_extension_count;
-  instance.ppEnabledExtensionNames = plataform->instance_extensions;
+  instance.enabledLayerCount = OWL_ARRAY_SIZE(debug_validation_layers);
+  instance.ppEnabledLayerNames = debug_validation_layers;
+  instance.enabledExtensionCount = (owl_u32)desc->instance_extension_count;
+  instance.ppEnabledExtensionNames = desc->instance_extensions;
 
-  OWL_VK_CHECK(vkCreateInstance(&instance, NULL, &renderer->instance));
+  OWL_VK_CHECK(vkCreateInstance(&instance, NULL, &r->instance));
 
   return OWL_SUCCESS;
 }
@@ -80,7 +79,7 @@ OWL_INTERNAL enum owl_code owl_init_debug_(struct owl_vk_renderer *renderer) {
   debug.flags = 0;
   debug.messageSeverity = OWL_DEBUG_SEVERITY_FLAGS;
   debug.messageType = OWL_DEBUG_TYPE_FLAGS;
-  debug.pfnUserCallback = owl_vk_debug_cb_;
+  debug.pfnUserCallback = owl_vk_debug_callback_;
   debug.pUserData = NULL;
 
 #undef OWL_DEBUG_SEVERITY_FLAGS
@@ -88,6 +87,7 @@ OWL_INTERNAL enum owl_code owl_init_debug_(struct owl_vk_renderer *renderer) {
 
   OWL_VK_CHECK(vkCreateDebugUtilsMessengerEXT(renderer->instance, &debug, NULL,
                                               &renderer->debug));
+
   return OWL_SUCCESS;
 }
 
@@ -105,14 +105,14 @@ OWL_INTERNAL void owl_deinit_debug_(struct owl_vk_renderer *renderer) {
 #else /* NDEBUG */
 
 OWL_INTERNAL enum owl_code
-owl_init_instance_(struct owl_vk_plataform const *plataform,
-                   struct owl_vk_renderer *renderer) {
+owl_init_instance_(struct owl_vk_plataform const *desc,
+                   struct owl_vk_renderer *r) {
   VkApplicationInfo app;
   VkInstanceCreateInfo instance;
 
   app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app.pNext = NULL;
-  app.pApplicationName = "Owl";
+  app.pApplicationName = desc->name;
   app.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app.pEngineName = "No Engine";
   app.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -124,50 +124,47 @@ owl_init_instance_(struct owl_vk_plataform const *plataform,
   instance.pApplicationInfo = &app;
   instance.enabledLayerCount = 0;
   instance.ppEnabledLayerNames = NULL;
-  instance.enabledExtensionCount = (owl_u32)plataform->instance_extension_count;
-  instance.ppEnabledExtensionNames = plataform->instance_extensions;
+  instance.enabledExtensionCount = (owl_u32)desc->instance_extension_count;
+  instance.ppEnabledExtensionNames = desc->instance_extensions;
 
-  OWL_VK_CHECK(vkCreateInstance(&instance, NULL, &renderer->instance));
+  OWL_VK_CHECK(vkCreateInstance(&instance, NULL, &r->instance));
 
   return OWL_SUCCESS;
 }
 
 #endif /* NDBUG */
 
-OWL_INTERNAL void owl_deinit_instance_(struct owl_vk_renderer *renderer) {
-  vkDestroyInstance(renderer->instance, NULL);
+OWL_INTERNAL void owl_deinit_instance_(struct owl_vk_renderer *r) {
+  vkDestroyInstance(r->instance, NULL);
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_surface_(struct owl_vk_plataform const *plataform,
-                  struct owl_vk_renderer *renderer) {
-  return plataform->create_surface(renderer, plataform->surface_user_data,
-                                   &renderer->surface);
+owl_init_surface_(struct owl_vk_renderer_desc const *desc,
+                  struct owl_vk_renderer *r) {
+  return desc->create_surface(r, desc->surface_user_data, &r->surface);
 }
 
-OWL_INTERNAL void owl_deinit_surface_(struct owl_vk_renderer *renderer) {
-  vkDestroySurfaceKHR(renderer->instance, renderer->surface, NULL);
+OWL_INTERNAL void owl_deinit_surface_(struct owl_vk_renderer *r) {
+  vkDestroySurfaceKHR(r->instance, r->surface, NULL);
 }
 
-OWL_INTERNAL enum owl_code
-owl_fill_device_options_(struct owl_vk_renderer *renderer) {
-  OWL_VK_CHECK(vkEnumeratePhysicalDevices(
-      renderer->instance, &renderer->device_options_count, NULL));
+OWL_INTERNAL enum owl_code owl_fill_device_options_(struct owl_vk_renderer *r) {
+  OWL_VK_CHECK(
+      vkEnumeratePhysicalDevices(r->instance, &r->device_options_count, NULL));
 
-  if (OWL_RENDERER_MAX_DEVICE_OPTIONS <= renderer->device_options_count)
+  if (OWL_RENDERER_MAX_DEVICE_OPTIONS <= r->device_options_count)
     return OWL_ERROR_OUT_OF_SPACE;
 
-  OWL_VK_CHECK(vkEnumeratePhysicalDevices(renderer->instance,
-                                          &renderer->device_options_count,
-                                          renderer->device_options));
+  OWL_VK_CHECK(vkEnumeratePhysicalDevices(r->instance, &r->device_options_count,
+                                          r->device_options));
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL int owl_vk_query_families(struct owl_vk_renderer const *renderer,
-                                       VkPhysicalDevice device,
-                                       owl_u32 *graphics_family,
-                                       owl_u32 *present_family) {
+OWL_INTERNAL int owl_vk_query_families_(struct owl_vk_renderer const *r,
+                                        VkPhysicalDevice device,
+                                        owl_u32 *graphics_family,
+                                        owl_u32 *present_family) {
 #define OWL_QUEUE_UNSELECTED (owl_u32) - 1
   int found;
   owl_u32 i, count;
@@ -184,7 +181,7 @@ OWL_INTERNAL int owl_vk_query_families(struct owl_vk_renderer const *renderer,
   *present_family = OWL_QUEUE_UNSELECTED;
 
   for (i = 0; i < count; ++i) {
-    VkBool32 surface;
+    VkBool32 has_surface;
 
     if (!props[i].queueCount)
       continue;
@@ -192,10 +189,10 @@ OWL_INTERNAL int owl_vk_query_families(struct owl_vk_renderer const *renderer,
     if (VK_QUEUE_GRAPHICS_BIT & props[i].queueFlags)
       *graphics_family = i;
 
-    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(
-        device, i, renderer->surface, &surface));
+    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(device, i, r->surface,
+                                                      &has_surface));
 
-    if (surface)
+    if (has_surface)
       *present_family = i;
 
     if (OWL_QUEUE_UNSELECTED == *graphics_family)
@@ -219,17 +216,16 @@ end_free_props:
 OWL_INTERNAL int
 owl_vk_validate_extensions(owl_u32 count,
                            VkExtensionProperties const *extensions) {
-  char const *validate[] = OWL_VK_DEVICE_EXTENSIONS;
-  owl_u32 i, j, found[OWL_ARRAY_SIZE(validate)];
+  owl_u32 i, j, found[OWL_ARRAY_SIZE(required_device_extensions)];
 
   OWL_MEMSET(found, 0, sizeof(found));
 
   for (i = 0; i < count; ++i)
-    for (j = 0; j < OWL_ARRAY_SIZE(validate); ++j)
-      if (!strcmp(validate[j], extensions[i].extensionName))
+    for (j = 0; j < OWL_ARRAY_SIZE(required_device_extensions); ++j)
+      if (!strcmp(required_device_extensions[j], extensions[i].extensionName))
         found[j] = 1;
 
-  for (i = 0; i < OWL_ARRAY_SIZE(validate); ++i)
+  for (i = 0; i < OWL_ARRAY_SIZE(required_device_extensions); ++i)
     if (!found[i])
       return 0;
 
@@ -237,45 +233,44 @@ owl_vk_validate_extensions(owl_u32 count,
 }
 
 OWL_INTERNAL enum owl_code
-owl_select_physical_device_(struct owl_vk_renderer *renderer) {
+owl_select_physical_device_(struct owl_vk_renderer *r) {
   owl_u32 i;
 
-  for (i = 0; i < renderer->device_options_count; ++i) {
-    owl_u32 formats, modes;
+  for (i = 0; i < r->device_options_count; ++i) {
+    owl_u32 has_formats;
+    owl_u32 has_modes;
     owl_u32 extension_count;
     VkExtensionProperties *extensions;
 
     OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
-        renderer->device_options[i], renderer->surface, &formats, NULL));
+        r->device_options[i], r->surface, &has_formats, NULL));
 
-    if (!formats)
+    if (!has_formats)
       continue;
 
     OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-        renderer->device_options[i], renderer->surface, &modes, NULL));
+        r->device_options[i], r->surface, &has_modes, NULL));
 
-    if (!modes)
+    if (!has_modes)
       continue;
 
-    if (!owl_vk_query_families(renderer, renderer->device_options[i],
-                               &renderer->graphics_family,
-                               &renderer->present_family))
+    if (!owl_vk_query_families_(r, r->device_options[i], &r->graphics_family,
+                                &r->present_family))
       continue;
 
-    vkGetPhysicalDeviceFeatures(renderer->device_options[i],
-                                &renderer->device_features);
+    vkGetPhysicalDeviceFeatures(r->device_options[i], &r->device_features);
 
-    if (!renderer->device_features.samplerAnisotropy)
+    if (!r->device_features.samplerAnisotropy)
       continue;
 
     OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(
-        renderer->device_options[i], NULL, &extension_count, NULL));
+        r->device_options[i], NULL, &extension_count, NULL));
 
     if (!(extensions = OWL_MALLOC(extension_count * sizeof(*extensions))))
       return OWL_ERROR_BAD_ALLOC;
 
     OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(
-        renderer->device_options[i], NULL, &extension_count, extensions));
+        r->device_options[i], NULL, &extension_count, extensions));
 
     if (!owl_vk_validate_extensions(extension_count, extensions)) {
       OWL_FREE(extensions);
@@ -284,13 +279,12 @@ owl_select_physical_device_(struct owl_vk_renderer *renderer) {
 
     OWL_FREE(extensions);
 
-    renderer->physical_device = renderer->device_options[i];
+    r->physical_device = r->device_options[i];
 
-    vkGetPhysicalDeviceProperties(renderer->physical_device,
-                                  &renderer->device_properties);
+    vkGetPhysicalDeviceProperties(r->physical_device, &r->device_properties);
 
-    vkGetPhysicalDeviceMemoryProperties(renderer->physical_device,
-                                        &renderer->device_mem_properties);
+    vkGetPhysicalDeviceMemoryProperties(r->physical_device,
+                                        &r->device_mem_properties);
 
     return OWL_SUCCESS;
   }
@@ -299,30 +293,31 @@ owl_select_physical_device_(struct owl_vk_renderer *renderer) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_select_surface_format_(struct owl_vk_renderer *renderer, VkFormat format,
+owl_select_surface_format_(struct owl_vk_renderer *r, VkFormat format,
                            VkColorSpaceKHR color_space) {
-  owl_u32 i, count;
+  owl_u32 i;
+  owl_u32 formats_count;
   VkSurfaceFormatKHR *formats;
   enum owl_code code = OWL_SUCCESS;
 
   OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
-      renderer->physical_device, renderer->surface, &count, NULL));
+      r->physical_device, r->surface, &formats_count, NULL));
 
-  if (!(formats = OWL_MALLOC(count * sizeof(*formats))))
+  if (!(formats = OWL_MALLOC(formats_count * sizeof(*formats))))
     return OWL_ERROR_BAD_ALLOC;
 
   OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
-      renderer->physical_device, renderer->surface, &count, formats));
+      r->physical_device, r->surface, &formats_count, formats));
 
-  for (i = 0; i < count; ++i) {
+  for (i = 0; i < formats_count; ++i) {
     if (format != formats[i].format)
       continue;
 
     if (color_space != formats[i].colorSpace)
       continue;
 
-    renderer->surface_format.format = format;
-    renderer->surface_format.colorSpace = color_space;
+    r->surface_format.format = format;
+    r->surface_format.colorSpace = color_space;
 
     code = OWL_SUCCESS;
     goto end_free_formats;
@@ -337,137 +332,127 @@ end_free_formats:
   return code;
 }
 
-OWL_INTERNAL enum owl_code
-owl_select_sample_count_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL enum owl_code owl_select_sample_count_(struct owl_vk_renderer *r) {
   VkSampleCountFlags const samples =
-      renderer->device_properties.limits.framebufferColorSampleCounts &
-      renderer->device_properties.limits.framebufferDepthSampleCounts;
+      r->device_properties.limits.framebufferColorSampleCounts &
+      r->device_properties.limits.framebufferDepthSampleCounts;
 
   if (VK_SAMPLE_COUNT_2_BIT & samples) {
-    renderer->samples = VK_SAMPLE_COUNT_2_BIT;
+    r->sample_count = VK_SAMPLE_COUNT_2_BIT;
   } else {
     OWL_ASSERT(0 && "disabling multisampling is not supported");
-    renderer->samples = VK_SAMPLE_COUNT_1_BIT;
+    r->sample_count = VK_SAMPLE_COUNT_1_BIT;
     return OWL_ERROR_UNKNOWN;
   }
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL owl_u32
-owl_vk_queue_count(struct owl_vk_renderer const *renderer) {
-  return renderer->graphics_family == renderer->present_family ? 1 : 2;
+OWL_INTERNAL owl_u32 owl_vk_queue_count(struct owl_vk_renderer const *r) {
+  return r->graphics_family == r->present_family ? 1 : 2;
 }
 
-OWL_INTERNAL enum owl_code owl_init_device_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL enum owl_code owl_init_device_(struct owl_vk_renderer *r) {
   VkDeviceCreateInfo device;
   VkDeviceQueueCreateInfo queues[2];
   float const prio = 1.0F;
-  char const *extensions[] = OWL_VK_DEVICE_EXTENSIONS;
   enum owl_code code = OWL_SUCCESS;
 
-  if (OWL_SUCCESS != (code = owl_fill_device_options_(renderer)))
+  if (OWL_SUCCESS != (code = owl_fill_device_options_(r)))
     goto end;
 
-  if (OWL_SUCCESS != (code = owl_select_physical_device_(renderer)))
+  if (OWL_SUCCESS != (code = owl_select_physical_device_(r)))
     goto end;
 
-  if (OWL_SUCCESS !=
-      (code = owl_select_surface_format_(renderer, VK_FORMAT_B8G8R8A8_SRGB,
-                                         VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)))
+  code = owl_select_surface_format_(r, VK_FORMAT_B8G8R8A8_SRGB,
+                                    VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+
+  if (OWL_SUCCESS != code)
     goto end;
 
-  if (OWL_SUCCESS != (code = owl_select_sample_count_(renderer)))
+  if (OWL_SUCCESS != (code = owl_select_sample_count_(r)))
     goto end;
 
   queues[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queues[0].pNext = NULL;
   queues[0].flags = 0;
-  queues[0].queueFamilyIndex = renderer->graphics_family;
+  queues[0].queueFamilyIndex = r->graphics_family;
   queues[0].queueCount = 1;
   queues[0].pQueuePriorities = &prio;
 
   queues[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queues[1].pNext = NULL;
   queues[1].flags = 0;
-  queues[1].queueFamilyIndex = renderer->present_family;
+  queues[1].queueFamilyIndex = r->present_family;
   queues[1].queueCount = 1;
   queues[1].pQueuePriorities = &prio;
 
   device.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   device.pNext = NULL;
   device.flags = 0;
-  device.queueCreateInfoCount = owl_vk_queue_count(renderer);
+  device.queueCreateInfoCount = owl_vk_queue_count(r);
   device.pQueueCreateInfos = queues;
   device.enabledLayerCount = 0;      /* deprecated */
   device.ppEnabledLayerNames = NULL; /* deprecated */
-  device.enabledExtensionCount = OWL_ARRAY_SIZE(extensions);
-  device.ppEnabledExtensionNames = extensions;
-  device.pEnabledFeatures = &renderer->device_features;
+  device.enabledExtensionCount = OWL_ARRAY_SIZE(required_device_extensions);
+  device.ppEnabledExtensionNames = required_device_extensions;
+  device.pEnabledFeatures = &r->device_features;
 
-  OWL_VK_CHECK(vkCreateDevice(renderer->physical_device, &device, NULL,
-                              &renderer->device));
+  OWL_VK_CHECK(vkCreateDevice(r->physical_device, &device, NULL, &r->device));
+  vkGetDeviceQueue(r->device, r->graphics_family, 0, &r->graphics_queue);
+  vkGetDeviceQueue(r->device, r->present_family, 0, &r->present_queue);
 
-  vkGetDeviceQueue(renderer->device, renderer->graphics_family, 0,
-                   &renderer->graphics_queue);
-
-  vkGetDeviceQueue(renderer->device, renderer->present_family, 0,
-                   &renderer->present_queue);
 end:
   return code;
 }
 
-OWL_INTERNAL void owl_deinit_device_(struct owl_vk_renderer *renderer) {
-  vkDestroyDevice(renderer->device, NULL);
+OWL_INTERNAL void owl_deinit_device_(struct owl_vk_renderer *r) {
+  vkDestroyDevice(r->device, NULL);
 }
 
-OWL_INTERNAL void
-owl_clamp_swapchain_extent_(owl_u32 width, owl_u32 height,
-                            struct owl_vk_renderer *renderer) {
+OWL_INTERNAL void owl_clamp_swapchain_extent_(owl_u32 width, owl_u32 height,
+                                              struct owl_vk_renderer *r) {
 #define OWL_VK_NO_RESTRICTIONS (owl_u32) - 1
-
   VkSurfaceCapabilitiesKHR capabilities;
 
   OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-      renderer->physical_device, renderer->surface, &capabilities));
+      r->physical_device, r->surface, &capabilities));
 
   if (OWL_VK_NO_RESTRICTIONS == capabilities.currentExtent.width) {
-    renderer->swapchain_extent = capabilities.currentExtent;
+    r->swapchain_extent = capabilities.currentExtent;
   } else {
     owl_u32 min_width = capabilities.minImageExtent.width;
     owl_u32 min_height = capabilities.minImageExtent.height;
     owl_u32 max_width = capabilities.maxImageExtent.width;
     owl_u32 max_height = capabilities.maxImageExtent.height;
 
-    renderer->swapchain_extent.width = OWL_CLAMP(width, min_width, max_width);
-    renderer->swapchain_extent.height =
-        OWL_CLAMP(height, min_height, max_height);
+    r->swapchain_extent.width = OWL_CLAMP(width, min_width, max_width);
+    r->swapchain_extent.height = OWL_CLAMP(height, min_height, max_height);
   }
 
 #undef OWL_VK_NO_RESTRICTIONS
 }
 
-OWL_INTERNAL enum owl_code
-owl_select_present_mode_(struct owl_vk_renderer *renderer,
-                         VkPresentModeKHR mode) {
+OWL_INTERNAL enum owl_code owl_select_present_mode_(struct owl_vk_renderer *r,
+                                                    VkPresentModeKHR mode) {
 #define OWL_MAX_PRESENT_MODES 16
   owl_u32 i, count;
   VkPresentModeKHR modes[OWL_MAX_PRESENT_MODES];
 
   OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-      renderer->physical_device, renderer->surface, &count, NULL));
+      r->physical_device, r->surface, &count, NULL));
 
   if (OWL_MAX_PRESENT_MODES <= count)
     return OWL_ERROR_OUT_OF_SPACE;
 
   OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-      renderer->physical_device, renderer->surface, &count, modes));
+      r->physical_device, r->surface, &count, modes));
 
   /* fifo is guaranteed */
-  renderer->swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+  r->swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
 
   for (i = 0; i < count; ++i)
-    if (mode == (renderer->swapchain_present_mode = modes[count - i - 1]))
+    if (mode == (r->swapchain_present_mode = modes[count - i - 1]))
       break;
 
   return OWL_SUCCESS;
@@ -475,130 +460,121 @@ owl_select_present_mode_(struct owl_vk_renderer *renderer,
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_swapchain_(struct owl_vk_plataform const *plataform,
-                    struct owl_vk_renderer *renderer) {
+owl_init_swapchain_(struct owl_vk_renderer_desc const *desc,
+                    struct owl_vk_renderer *r) {
+  owl_u32 i;
   owl_u32 families[2];
+  VkSurfaceCapabilitiesKHR capabilities;
+  VkSwapchainCreateInfoKHR swapchain;
   enum owl_code code = OWL_SUCCESS;
 
-  owl_clamp_swapchain_extent_((owl_u32)plataform->framebuffer_width,
-                              (owl_u32)plataform->framebuffer_height, renderer);
+  owl_clamp_swapchain_extent_((owl_u32)desc->framebuffer_width,
+                              (owl_u32)desc->framebuffer_height, r);
 
-  if (OWL_SUCCESS !=
-      (code = owl_select_present_mode_(renderer, VK_PRESENT_MODE_FIFO_KHR)))
+  code = owl_select_present_mode_(r, VK_PRESENT_MODE_FIFO_KHR);
+
+  if (OWL_SUCCESS != code)
     goto end;
 
-  {
-    VkSurfaceCapabilitiesKHR capabilities;
-    VkSwapchainCreateInfoKHR swapchain;
+  OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+      r->physical_device, r->surface, &capabilities));
 
-    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-        renderer->physical_device, renderer->surface, &capabilities));
+  swapchain.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+  swapchain.pNext = NULL;
+  swapchain.flags = 0;
+  swapchain.surface = r->surface;
+  swapchain.minImageCount = 2;
+  swapchain.imageFormat = r->surface_format.format;
+  swapchain.imageColorSpace = r->surface_format.colorSpace;
+  swapchain.imageExtent.width = r->swapchain_extent.width;
+  swapchain.imageExtent.height = r->swapchain_extent.height;
+  swapchain.imageArrayLayers = 1;
+  swapchain.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+  swapchain.preTransform = capabilities.currentTransform;
+  swapchain.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+  swapchain.presentMode = r->swapchain_present_mode;
+  swapchain.clipped = VK_TRUE;
+  swapchain.oldSwapchain = NULL;
 
-    swapchain.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapchain.pNext = NULL;
-    swapchain.flags = 0;
-    swapchain.surface = renderer->surface;
-    swapchain.minImageCount = 2;
-    swapchain.imageFormat = renderer->surface_format.format;
-    swapchain.imageColorSpace = renderer->surface_format.colorSpace;
-    swapchain.imageExtent.width = renderer->swapchain_extent.width;
-    swapchain.imageExtent.height = renderer->swapchain_extent.height;
-    swapchain.imageArrayLayers = 1;
-    swapchain.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    swapchain.preTransform = capabilities.currentTransform;
-    swapchain.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapchain.presentMode = renderer->swapchain_present_mode;
-    swapchain.clipped = VK_TRUE;
-    swapchain.oldSwapchain = NULL;
+  if (r->graphics_family == r->present_family) {
+    swapchain.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    swapchain.queueFamilyIndexCount = 0;
+    swapchain.pQueueFamilyIndices = NULL;
+  } else {
+    families[0] = r->graphics_family;
+    families[1] = r->present_family;
 
-    if (renderer->graphics_family == renderer->present_family) {
-      swapchain.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-      swapchain.queueFamilyIndexCount = 0;
-      swapchain.pQueueFamilyIndices = NULL;
-    } else {
-      families[0] = renderer->graphics_family;
-      families[1] = renderer->present_family;
-
-      swapchain.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-      swapchain.queueFamilyIndexCount = owl_vk_queue_count(renderer);
-      swapchain.pQueueFamilyIndices = families;
-    }
-
-    OWL_VK_CHECK(vkCreateSwapchainKHR(renderer->device, &swapchain, NULL,
-                                      &renderer->swapchain));
+    swapchain.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    swapchain.queueFamilyIndexCount = owl_vk_queue_count(r);
+    swapchain.pQueueFamilyIndices = families;
   }
 
-  {
-    OWL_VK_CHECK(vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
-                                         &renderer->swapchain_imgs_count,
-                                         NULL));
+  OWL_VK_CHECK(
+      vkCreateSwapchainKHR(r->device, &swapchain, NULL, &r->swapchain));
 
-    OWL_ASSERT(OWL_RENDERER_MAX_SWAPCHAIN_IMAGES >
-               renderer->swapchain_imgs_count);
+  OWL_VK_CHECK(vkGetSwapchainImagesKHR(r->device, r->swapchain,
+                                       &r->swapchain_images_count, NULL));
 
-    OWL_VK_CHECK(vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
-                                         &renderer->swapchain_imgs_count,
-                                         renderer->swapchain_imgs));
+  OWL_ASSERT(OWL_RENDERER_MAX_SWAPCHAIN_IMAGES > r->swapchain_images_count);
+
+  OWL_VK_CHECK(vkGetSwapchainImagesKHR(r->device, r->swapchain,
+                                       &r->swapchain_images_count,
+                                       r->swapchain_images));
+
+  for (i = 0; i < r->swapchain_images_count; ++i) {
+    VkImageViewCreateInfo view;
+
+    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    view.pNext = NULL;
+    view.flags = 0;
+    view.image = r->swapchain_images[i];
+    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    view.format = r->surface_format.format;
+    view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    view.subresourceRange.baseMipLevel = 0;
+    view.subresourceRange.levelCount = 1;
+    view.subresourceRange.baseArrayLayer = 0;
+    view.subresourceRange.layerCount = 1;
+
+    OWL_VK_CHECK(
+        vkCreateImageView(r->device, &view, NULL, &r->swapchain_views[i]));
   }
 
-  {
-    owl_u32 i;
-    for (i = 0; i < renderer->swapchain_imgs_count; ++i) {
-      VkImageViewCreateInfo view;
-
-      view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-      view.pNext = NULL;
-      view.flags = 0;
-      view.image = renderer->swapchain_imgs[i];
-      view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-      view.format = renderer->surface_format.format;
-      view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-      view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-      view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-      view.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-      view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      view.subresourceRange.baseMipLevel = 0;
-      view.subresourceRange.levelCount = 1;
-      view.subresourceRange.baseArrayLayer = 0;
-      view.subresourceRange.layerCount = 1;
-
-      OWL_VK_CHECK(vkCreateImageView(renderer->device, &view, NULL,
-                                     &renderer->swapchain_views[i]));
-    }
-  }
-
-  renderer->swapchain_clear_vals[0].color.float32[0] = 0.0F;
-  renderer->swapchain_clear_vals[0].color.float32[1] = 0.0F;
-  renderer->swapchain_clear_vals[0].color.float32[2] = 0.0F;
-  renderer->swapchain_clear_vals[0].color.float32[3] = 1.0F;
-  renderer->swapchain_clear_vals[1].depthStencil.depth = 1.0F;
-  renderer->swapchain_clear_vals[1].depthStencil.stencil = 0.0F;
+  r->swapchain_clear_values[0].color.float32[0] = 0.0F;
+  r->swapchain_clear_values[0].color.float32[1] = 0.0F;
+  r->swapchain_clear_values[0].color.float32[2] = 0.0F;
+  r->swapchain_clear_values[0].color.float32[3] = 1.0F;
+  r->swapchain_clear_values[1].depthStencil.depth = 1.0F;
+  r->swapchain_clear_values[1].depthStencil.stencil = 0.0F;
 
 end:
   return code;
 }
 
-OWL_INTERNAL void owl_deinit_swapchain_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL void owl_deinit_swapchain_(struct owl_vk_renderer *r) {
   owl_u32 i;
 
-  for (i = 0; i < renderer->swapchain_imgs_count; ++i)
-    vkDestroyImageView(renderer->device, renderer->swapchain_views[i], NULL);
+  for (i = 0; i < r->swapchain_images_count; ++i)
+    vkDestroyImageView(r->device, r->swapchain_views[i], NULL);
 
-  vkDestroySwapchainKHR(renderer->device, renderer->swapchain, NULL);
+  vkDestroySwapchainKHR(r->device, r->swapchain, NULL);
 }
 
-OWL_INTERNAL enum owl_code
-owl_init_general_pools_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL enum owl_code owl_init_common_pools_(struct owl_vk_renderer *r) {
   {
     VkCommandPoolCreateInfo pool;
 
     pool.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     pool.pNext = NULL;
     pool.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    pool.queueFamilyIndex = renderer->graphics_family;
+    pool.queueFamilyIndex = r->graphics_family;
 
-    OWL_VK_CHECK(vkCreateCommandPool(renderer->device, &pool, NULL,
-                                     &renderer->transient_cmd_pool));
+    OWL_VK_CHECK(
+        vkCreateCommandPool(r->device, &pool, NULL, &r->transient_cmd_pool));
   }
 
   {
@@ -610,6 +586,7 @@ owl_init_general_pools_(struct owl_vk_renderer *renderer) {
 
     sizes[0].descriptorCount = OWL_MAX_UNIFORM_SETS;
     sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+
     sizes[1].descriptorCount = OWL_MAX_SAMPLER_SETS;
     sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
@@ -620,8 +597,8 @@ owl_init_general_pools_(struct owl_vk_renderer *renderer) {
     pool.poolSizeCount = OWL_ARRAY_SIZE(sizes);
     pool.pPoolSizes = sizes;
 
-    OWL_VK_CHECK(vkCreateDescriptorPool(renderer->device, &pool, NULL,
-                                        &renderer->set_pool));
+    OWL_VK_CHECK(
+        vkCreateDescriptorPool(r->device, &pool, NULL, &r->common_set_pool));
 #undef OWL_MAX_SETS
 #undef OWL_MAX_SAMPLER_SETS
 #undef OWL_MAX_UNIFORM_SETS
@@ -630,13 +607,12 @@ owl_init_general_pools_(struct owl_vk_renderer *renderer) {
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_deinit_general_pools_(struct owl_vk_renderer *renderer) {
-  vkDestroyDescriptorPool(renderer->device, renderer->set_pool, NULL);
-  vkDestroyCommandPool(renderer->device, renderer->transient_cmd_pool, NULL);
+OWL_INTERNAL void owl_deinit_common_pools_(struct owl_vk_renderer *r) {
+  vkDestroyDescriptorPool(r->device, r->common_set_pool, NULL);
+  vkDestroyCommandPool(r->device, r->transient_cmd_pool, NULL);
 }
 
-OWL_INTERNAL enum owl_code
-owl_init_frame_cmds_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL enum owl_code owl_init_frame_cmds_(struct owl_vk_renderer *r) {
   {
     owl_u32 i;
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i) {
@@ -645,10 +621,10 @@ owl_init_frame_cmds_(struct owl_vk_renderer *renderer) {
       pool.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
       pool.pNext = NULL;
       pool.flags = 0;
-      pool.queueFamilyIndex = renderer->graphics_family;
+      pool.queueFamilyIndex = r->graphics_family;
 
-      OWL_VK_CHECK(vkCreateCommandPool(renderer->device, &pool, NULL,
-                                       &renderer->frame_cmd_pools[i]));
+      OWL_VK_CHECK(
+          vkCreateCommandPool(r->device, &pool, NULL, &r->frame_cmd_pools[i]));
     }
   }
 
@@ -659,31 +635,30 @@ owl_init_frame_cmds_(struct owl_vk_renderer *renderer) {
 
       buf.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
       buf.pNext = NULL;
-      buf.commandPool = renderer->frame_cmd_pools[i];
+      buf.commandPool = r->frame_cmd_pools[i];
       buf.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       buf.commandBufferCount = 1;
 
-      OWL_VK_CHECK(vkAllocateCommandBuffers(renderer->device, &buf,
-                                            &renderer->frame_cmd_bufs[i]));
+      OWL_VK_CHECK(
+          vkAllocateCommandBuffers(r->device, &buf, &r->frame_cmd_bufs[i]));
     }
   }
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_deinit_frame_cmds_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL void owl_deinit_frame_cmds_(struct owl_vk_renderer *r) {
   owl_u32 i;
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkFreeCommandBuffers(renderer->device, renderer->frame_cmd_pools[i], 1,
-                         &renderer->frame_cmd_bufs[i]);
+    vkFreeCommandBuffers(r->device, r->frame_cmd_pools[i], 1,
+                         &r->frame_cmd_bufs[i]);
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkDestroyCommandPool(renderer->device, renderer->frame_cmd_pools[i], NULL);
+    vkDestroyCommandPool(r->device, r->frame_cmd_pools[i], NULL);
 }
 
-OWL_INTERNAL enum owl_code
-owl_init_frame_sync_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL enum owl_code owl_init_frame_sync_(struct owl_vk_renderer *r) {
   {
     owl_u32 i;
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i) {
@@ -691,8 +666,8 @@ owl_init_frame_sync_(struct owl_vk_renderer *renderer) {
       semaphore.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
       semaphore.pNext = NULL;
       semaphore.flags = 0;
-      OWL_VK_CHECK(vkCreateSemaphore(renderer->device, &semaphore, NULL,
-                                     &renderer->frame_img_available[i]));
+      OWL_VK_CHECK(vkCreateSemaphore(r->device, &semaphore, NULL,
+                                     &r->frame_image_available[i]));
     }
   }
 
@@ -703,8 +678,8 @@ owl_init_frame_sync_(struct owl_vk_renderer *renderer) {
       semaphore.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
       semaphore.pNext = NULL;
       semaphore.flags = 0;
-      OWL_VK_CHECK(vkCreateSemaphore(renderer->device, &semaphore, NULL,
-                                     &renderer->frame_render_done[i]));
+      OWL_VK_CHECK(vkCreateSemaphore(r->device, &semaphore, NULL,
+                                     &r->frame_render_done[i]));
     }
   }
 
@@ -715,30 +690,29 @@ owl_init_frame_sync_(struct owl_vk_renderer *renderer) {
       fence.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
       fence.pNext = NULL;
       fence.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-      OWL_VK_CHECK(vkCreateFence(renderer->device, &fence, NULL,
-                                 &renderer->frame_in_flight[i]));
+      OWL_VK_CHECK(
+          vkCreateFence(r->device, &fence, NULL, &r->frame_in_flight[i]));
     }
   }
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_deinit_frame_sync_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL void owl_deinit_frame_sync_(struct owl_vk_renderer *r) {
   owl_u32 i;
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkDestroySemaphore(renderer->device, renderer->frame_img_available[i],
-                       NULL);
+    vkDestroySemaphore(r->device, r->frame_image_available[i], NULL);
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkDestroySemaphore(renderer->device, renderer->frame_render_done[i], NULL);
+    vkDestroySemaphore(r->device, r->frame_render_done[i], NULL);
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkDestroyFence(renderer->device, renderer->frame_in_flight[i], NULL);
+    vkDestroyFence(r->device, r->frame_in_flight[i], NULL);
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_main_render_pass_(struct owl_vk_renderer *renderer) {
+owl_init_main_render_pass_(struct owl_vk_renderer *r) {
   VkAttachmentReference refs[3];
   VkAttachmentDescription atts[3];
   VkSubpassDescription subpass;
@@ -756,8 +730,8 @@ owl_init_main_render_pass_(struct owl_vk_renderer *renderer) {
 
   /* color */
   atts[0].flags = 0;
-  atts[0].format = renderer->surface_format.format;
-  atts[0].samples = renderer->samples;
+  atts[0].format = r->surface_format.format;
+  atts[0].samples = r->sample_count;
   atts[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   atts[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
   atts[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -768,7 +742,7 @@ owl_init_main_render_pass_(struct owl_vk_renderer *renderer) {
   /* depth */
   atts[1].flags = 0;
   atts[1].format = VK_FORMAT_D32_SFLOAT;
-  atts[1].samples = renderer->samples;
+  atts[1].samples = r->sample_count;
   atts[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   atts[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
   atts[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -778,7 +752,7 @@ owl_init_main_render_pass_(struct owl_vk_renderer *renderer) {
 
   /* color resolve */
   atts[2].flags = 0;
-  atts[2].format = renderer->surface_format.format;
+  atts[2].format = r->surface_format.format;
   atts[2].samples = VK_SAMPLE_COUNT_1_BIT;
   atts[2].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   atts[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -832,62 +806,58 @@ owl_init_main_render_pass_(struct owl_vk_renderer *renderer) {
   pass.dependencyCount = 1;
   pass.pDependencies = &deps;
 
-  OWL_VK_CHECK(vkCreateRenderPass(renderer->device, &pass, NULL,
-                                  &renderer->main_render_pass));
+  OWL_VK_CHECK(
+      vkCreateRenderPass(r->device, &pass, NULL, &r->main_render_pass));
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void
-owl_deinit_main_render_pass_(struct owl_vk_renderer *renderer) {
-  vkDestroyRenderPass(renderer->device, renderer->main_render_pass, NULL);
+OWL_INTERNAL void owl_deinit_main_render_pass_(struct owl_vk_renderer *r) {
+  vkDestroyRenderPass(r->device, r->main_render_pass, NULL);
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_main_attachments_(struct owl_vk_renderer *renderer) {
+owl_init_main_attachments_(struct owl_vk_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   {
-    VkImageCreateInfo img;
-    img.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    img.pNext = NULL;
-    img.flags = 0;
-    img.imageType = VK_IMAGE_TYPE_2D;
-    img.format = renderer->surface_format.format;
-    img.extent.width = renderer->swapchain_extent.width;
-    img.extent.height = renderer->swapchain_extent.height;
-    img.extent.depth = 1;
-    img.mipLevels = 1;
-    img.arrayLayers = 1;
-    img.samples = renderer->samples;
-    img.tiling = VK_IMAGE_TILING_OPTIMAL;
-    img.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    img.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    img.queueFamilyIndexCount = 0;
-    img.pQueueFamilyIndices = NULL;
-    img.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    VkImageCreateInfo image;
+    image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image.pNext = NULL;
+    image.flags = 0;
+    image.imageType = VK_IMAGE_TYPE_2D;
+    image.format = r->surface_format.format;
+    image.extent.width = r->swapchain_extent.width;
+    image.extent.height = r->swapchain_extent.height;
+    image.extent.depth = 1;
+    image.mipLevels = 1;
+    image.arrayLayers = 1;
+    image.samples = r->sample_count;
+    image.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image.queueFamilyIndexCount = 0;
+    image.pQueueFamilyIndices = NULL;
+    image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    OWL_VK_CHECK(
-        vkCreateImage(renderer->device, &img, NULL, &renderer->color_img));
+    OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &r->color_image));
   }
 
   {
     VkMemoryRequirements req;
     VkMemoryAllocateInfo mem;
-    vkGetImageMemoryRequirements(renderer->device, renderer->color_img, &req);
+    vkGetImageMemoryRequirements(r->device, r->color_image, &req);
 
     mem.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     mem.pNext = NULL;
     mem.allocationSize = req.size;
-    mem.memoryTypeIndex = owl_find_vk_mem_type(renderer, req.memoryTypeBits,
-                                               OWL_VK_MEMORY_VIS_GPU_ONLY);
+    mem.memoryTypeIndex =
+        owl_find_vk_mem_type(r, req.memoryTypeBits, OWL_VK_MEMORY_VIS_GPU_ONLY);
 
-    OWL_VK_CHECK(
-        vkAllocateMemory(renderer->device, &mem, NULL, &renderer->color_mem));
+    OWL_VK_CHECK(vkAllocateMemory(r->device, &mem, NULL, &r->color_mem));
 
-    OWL_VK_CHECK(vkBindImageMemory(renderer->device, renderer->color_img,
-                                   renderer->color_mem, 0));
+    OWL_VK_CHECK(vkBindImageMemory(r->device, r->color_image, r->color_mem, 0));
   }
 
   {
@@ -895,9 +865,9 @@ owl_init_main_attachments_(struct owl_vk_renderer *renderer) {
     view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view.pNext = NULL;
     view.flags = 0;
-    view.image = renderer->color_img;
+    view.image = r->color_image;
     view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = renderer->surface_format.format;
+    view.format = r->surface_format.format;
     view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
     view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -908,8 +878,7 @@ owl_init_main_attachments_(struct owl_vk_renderer *renderer) {
     view.subresourceRange.baseArrayLayer = 0;
     view.subresourceRange.layerCount = 1;
 
-    OWL_VK_CHECK(vkCreateImageView(renderer->device, &view, NULL,
-                                   &renderer->color_view));
+    OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &r->color_view));
   }
 
   {
@@ -919,12 +888,12 @@ owl_init_main_attachments_(struct owl_vk_renderer *renderer) {
     img.flags = 0;
     img.imageType = VK_IMAGE_TYPE_2D;
     img.format = VK_FORMAT_D32_SFLOAT;
-    img.extent.width = renderer->swapchain_extent.width;
-    img.extent.height = renderer->swapchain_extent.height;
+    img.extent.width = r->swapchain_extent.width;
+    img.extent.height = r->swapchain_extent.height;
     img.extent.depth = 1;
     img.mipLevels = 1;
     img.arrayLayers = 1;
-    img.samples = renderer->samples;
+    img.samples = r->sample_count;
     img.tiling = VK_IMAGE_TILING_OPTIMAL;
     img.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     img.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -932,26 +901,23 @@ owl_init_main_attachments_(struct owl_vk_renderer *renderer) {
     img.pQueueFamilyIndices = NULL;
     img.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    OWL_VK_CHECK(
-        vkCreateImage(renderer->device, &img, NULL, &renderer->depth_img));
+    OWL_VK_CHECK(vkCreateImage(r->device, &img, NULL, &r->depth_image));
   }
 
   {
     VkMemoryRequirements req;
     VkMemoryAllocateInfo mem;
-    vkGetImageMemoryRequirements(renderer->device, renderer->depth_img, &req);
+    vkGetImageMemoryRequirements(r->device, r->depth_image, &req);
 
     mem.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     mem.pNext = NULL;
     mem.allocationSize = req.size;
-    mem.memoryTypeIndex = owl_find_vk_mem_type(renderer, req.memoryTypeBits,
-                                               OWL_VK_MEMORY_VIS_GPU_ONLY);
+    mem.memoryTypeIndex =
+        owl_find_vk_mem_type(r, req.memoryTypeBits, OWL_VK_MEMORY_VIS_GPU_ONLY);
 
-    OWL_VK_CHECK(
-        vkAllocateMemory(renderer->device, &mem, NULL, &renderer->depth_mem));
+    OWL_VK_CHECK(vkAllocateMemory(r->device, &mem, NULL, &r->depth_mem));
 
-    OWL_VK_CHECK(vkBindImageMemory(renderer->device, renderer->depth_img,
-                                   renderer->depth_mem, 0));
+    OWL_VK_CHECK(vkBindImageMemory(r->device, r->depth_image, r->depth_mem, 0));
   }
 
   {
@@ -959,7 +925,7 @@ owl_init_main_attachments_(struct owl_vk_renderer *renderer) {
     view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view.pNext = NULL;
     view.flags = 0;
-    view.image = renderer->depth_img;
+    view.image = r->depth_image;
     view.viewType = VK_IMAGE_VIEW_TYPE_2D;
     view.format = VK_FORMAT_D32_SFLOAT;
     view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -972,62 +938,59 @@ owl_init_main_attachments_(struct owl_vk_renderer *renderer) {
     view.subresourceRange.baseArrayLayer = 0;
     view.subresourceRange.layerCount = 1;
 
-    OWL_VK_CHECK(vkCreateImageView(renderer->device, &view, NULL,
-                                   &renderer->depth_view));
+    OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &r->depth_view));
   }
 
   return code;
 }
 
-OWL_INTERNAL void
-owl_deinit_main_attachments_(struct owl_vk_renderer *renderer) {
-  vkDestroyImageView(renderer->device, renderer->depth_view, NULL);
-  vkFreeMemory(renderer->device, renderer->depth_mem, NULL);
-  vkDestroyImage(renderer->device, renderer->depth_img, NULL);
+OWL_INTERNAL void owl_deinit_main_attachments_(struct owl_vk_renderer *r) {
+  vkDestroyImageView(r->device, r->depth_view, NULL);
+  vkFreeMemory(r->device, r->depth_mem, NULL);
+  vkDestroyImage(r->device, r->depth_image, NULL);
 
-  vkDestroyImageView(renderer->device, renderer->color_view, NULL);
-  vkFreeMemory(renderer->device, renderer->color_mem, NULL);
-  vkDestroyImage(renderer->device, renderer->color_img, NULL);
+  vkDestroyImageView(r->device, r->color_view, NULL);
+  vkFreeMemory(r->device, r->color_mem, NULL);
+  vkDestroyImage(r->device, r->color_image, NULL);
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_main_framebuffers_(struct owl_vk_renderer *renderer) {
+owl_init_main_framebuffers_(struct owl_vk_renderer *r) {
   owl_u32 i;
-  for (i = 0; i < renderer->swapchain_imgs_count; ++i) {
+  for (i = 0; i < r->swapchain_images_count; ++i) {
     VkImageView atts[3];
     VkFramebufferCreateInfo framebuffer;
 
-    atts[0] = renderer->color_view;
-    atts[1] = renderer->depth_view;
-    atts[2] = renderer->swapchain_views[i];
+    atts[0] = r->color_view;
+    atts[1] = r->depth_view;
+    atts[2] = r->swapchain_views[i];
 
     framebuffer.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer.pNext = NULL;
     framebuffer.flags = 0;
-    framebuffer.renderPass = renderer->main_render_pass;
+    framebuffer.renderPass = r->main_render_pass;
     framebuffer.attachmentCount = OWL_ARRAY_SIZE(atts);
     framebuffer.pAttachments = atts;
-    framebuffer.width = renderer->swapchain_extent.width;
-    framebuffer.height = renderer->swapchain_extent.height;
+    framebuffer.width = r->swapchain_extent.width;
+    framebuffer.height = r->swapchain_extent.height;
     framebuffer.layers = 1;
 
-    OWL_VK_CHECK(vkCreateFramebuffer(renderer->device, &framebuffer, NULL,
-                                     &renderer->framebuffers[i]));
+    OWL_VK_CHECK(vkCreateFramebuffer(r->device, &framebuffer, NULL,
+                                     &r->framebuffers[i]));
   }
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void
-owl_deinit_main_framebuffers_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL void owl_deinit_main_framebuffers_(struct owl_vk_renderer *r) {
   owl_u32 i;
 
-  for (i = 0; i < renderer->swapchain_imgs_count; ++i)
-    vkDestroyFramebuffer(renderer->device, renderer->framebuffers[i], NULL);
+  for (i = 0; i < r->swapchain_images_count; ++i)
+    vkDestroyFramebuffer(r->device, r->framebuffers[i], NULL);
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_main_set_layouts_(struct owl_vk_renderer *renderer) {
+owl_init_main_set_layouts_(struct owl_vk_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   {
@@ -1046,8 +1009,8 @@ owl_init_main_set_layouts_(struct owl_vk_renderer *renderer) {
     layout.bindingCount = 1;
     layout.pBindings = &binding;
 
-    OWL_VK_CHECK(vkCreateDescriptorSetLayout(renderer->device, &layout, NULL,
-                                             &renderer->pvm_set_layout));
+    OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
+                                             &r->pvm_set_layout));
   }
 
   {
@@ -1066,8 +1029,8 @@ owl_init_main_set_layouts_(struct owl_vk_renderer *renderer) {
     layout.bindingCount = 1;
     layout.pBindings = &binding;
 
-    OWL_VK_CHECK(vkCreateDescriptorSetLayout(renderer->device, &layout, NULL,
-                                             &renderer->tex_set_layout));
+    OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
+                                             &r->texture_set_layout));
   }
 
   {
@@ -1111,8 +1074,8 @@ owl_init_main_set_layouts_(struct owl_vk_renderer *renderer) {
     layout.bindingCount = OWL_ARRAY_SIZE(bindings);
     layout.pBindings = bindings;
 
-    OWL_VK_CHECK(vkCreateDescriptorSetLayout(renderer->device, &layout, NULL,
-                                             &renderer->scene_set_layout));
+    OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
+                                             &r->scene_set_layout));
   }
 
   {
@@ -1155,8 +1118,8 @@ owl_init_main_set_layouts_(struct owl_vk_renderer *renderer) {
     layout.bindingCount = OWL_ARRAY_SIZE(bindings);
     layout.pBindings = bindings;
 
-    OWL_VK_CHECK(vkCreateDescriptorSetLayout(renderer->device, &layout, NULL,
-                                             &renderer->material_set_layout));
+    OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
+                                             &r->material_set_layout));
   }
 
   {
@@ -1175,35 +1138,29 @@ owl_init_main_set_layouts_(struct owl_vk_renderer *renderer) {
     layout.bindingCount = 1;
     layout.pBindings = &binding;
 
-    OWL_VK_CHECK(vkCreateDescriptorSetLayout(renderer->device, &layout, NULL,
-                                             &renderer->node_set_layout));
+    OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
+                                             &r->node_set_layout));
   }
 
   return code;
 }
 
-OWL_INTERNAL void
-owl_deinit_main_set_layouts_(struct owl_vk_renderer *renderer) {
-  vkDestroyDescriptorSetLayout(renderer->device, renderer->node_set_layout,
-                               NULL);
-  vkDestroyDescriptorSetLayout(renderer->device, renderer->material_set_layout,
-                               NULL);
-  vkDestroyDescriptorSetLayout(renderer->device, renderer->scene_set_layout,
-                               NULL);
-  vkDestroyDescriptorSetLayout(renderer->device, renderer->tex_set_layout,
-                               NULL);
-  vkDestroyDescriptorSetLayout(renderer->device, renderer->pvm_set_layout,
-                               NULL);
+OWL_INTERNAL void owl_deinit_main_set_layouts_(struct owl_vk_renderer *r) {
+  vkDestroyDescriptorSetLayout(r->device, r->node_set_layout, NULL);
+  vkDestroyDescriptorSetLayout(r->device, r->material_set_layout, NULL);
+  vkDestroyDescriptorSetLayout(r->device, r->scene_set_layout, NULL);
+  vkDestroyDescriptorSetLayout(r->device, r->texture_set_layout, NULL);
+  vkDestroyDescriptorSetLayout(r->device, r->pvm_set_layout, NULL);
 }
 
 OWL_INTERNAL enum owl_code
-owl_init_main_pipeline_layouts_(struct owl_vk_renderer *renderer) {
+owl_init_main_pipeline_layouts_(struct owl_vk_renderer *r) {
   {
     VkDescriptorSetLayout sets[2];
     VkPipelineLayoutCreateInfo layout;
 
-    sets[0] = renderer->pvm_set_layout;
-    sets[1] = renderer->tex_set_layout;
+    sets[0] = r->pvm_set_layout;
+    sets[1] = r->texture_set_layout;
 
     layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layout.pNext = NULL;
@@ -1213,8 +1170,8 @@ owl_init_main_pipeline_layouts_(struct owl_vk_renderer *renderer) {
     layout.pushConstantRangeCount = 0;
     layout.pPushConstantRanges = NULL;
 
-    OWL_VK_CHECK(vkCreatePipelineLayout(renderer->device, &layout, NULL,
-                                        &renderer->main_pipeline_layout));
+    OWL_VK_CHECK(vkCreatePipelineLayout(r->device, &layout, NULL,
+                                        &r->common_pipeline_layout));
   }
 
   {
@@ -1226,9 +1183,9 @@ owl_init_main_pipeline_layouts_(struct owl_vk_renderer *renderer) {
     range.offset = 0;
     range.size = sizeof(struct owl_material_push_constant);
 
-    sets[0] = renderer->scene_set_layout;
-    sets[1] = renderer->material_set_layout;
-    sets[2] = renderer->node_set_layout;
+    sets[0] = r->scene_set_layout;
+    sets[1] = r->material_set_layout;
+    sets[2] = r->node_set_layout;
 
     layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layout.pNext = NULL;
@@ -1238,23 +1195,19 @@ owl_init_main_pipeline_layouts_(struct owl_vk_renderer *renderer) {
     layout.pushConstantRangeCount = 1;
     layout.pPushConstantRanges = &range;
 
-    OWL_VK_CHECK(vkCreatePipelineLayout(renderer->device, &layout, NULL,
-                                        &renderer->pbr_pipeline_layout));
+    OWL_VK_CHECK(vkCreatePipelineLayout(r->device, &layout, NULL,
+                                        &r->pbr_pipeline_layout));
   }
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void
-owl_deinit_main_pipeline_layouts_(struct owl_vk_renderer *renderer) {
-  vkDestroyPipelineLayout(renderer->device, renderer->pbr_pipeline_layout,
-                          NULL);
-  vkDestroyPipelineLayout(renderer->device, renderer->main_pipeline_layout,
-                          NULL);
+OWL_INTERNAL void owl_deinit_main_pipeline_layouts_(struct owl_vk_renderer *r) {
+  vkDestroyPipelineLayout(r->device, r->pbr_pipeline_layout, NULL);
+  vkDestroyPipelineLayout(r->device, r->common_pipeline_layout, NULL);
 }
 
-OWL_INTERNAL enum owl_code
-owl_init_main_shaders_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL enum owl_code owl_init_main_shaders_(struct owl_vk_renderer *r) {
   {
     VkShaderModuleCreateInfo shader;
 
@@ -1269,8 +1222,8 @@ owl_init_main_shaders_(struct owl_vk_renderer *renderer) {
     shader.codeSize = sizeof(code);
     shader.pCode = code;
 
-    OWL_VK_CHECK(vkCreateShaderModule(renderer->device, &shader, NULL,
-                                      &renderer->basic_vert_shader));
+    OWL_VK_CHECK(
+        vkCreateShaderModule(r->device, &shader, NULL, &r->basic_vert_shader));
   }
 
   {
@@ -1286,8 +1239,8 @@ owl_init_main_shaders_(struct owl_vk_renderer *renderer) {
     shader.codeSize = sizeof(code);
     shader.pCode = code;
 
-    OWL_VK_CHECK(vkCreateShaderModule(renderer->device, &shader, NULL,
-                                      &renderer->basic_frag_shader));
+    OWL_VK_CHECK(
+        vkCreateShaderModule(r->device, &shader, NULL, &r->basic_frag_shader));
   }
 
   {
@@ -1303,8 +1256,8 @@ owl_init_main_shaders_(struct owl_vk_renderer *renderer) {
     shader.codeSize = sizeof(code);
     shader.pCode = code;
 
-    OWL_VK_CHECK(vkCreateShaderModule(renderer->device, &shader, NULL,
-                                      &renderer->font_frag_shader));
+    OWL_VK_CHECK(
+        vkCreateShaderModule(r->device, &shader, NULL, &r->font_frag_shader));
   }
 
   {
@@ -1320,8 +1273,8 @@ owl_init_main_shaders_(struct owl_vk_renderer *renderer) {
     shader.codeSize = sizeof(code);
     shader.pCode = code;
 
-    OWL_VK_CHECK(vkCreateShaderModule(renderer->device, &shader, NULL,
-                                      &renderer->pbr_vert_shader));
+    OWL_VK_CHECK(
+        vkCreateShaderModule(r->device, &shader, NULL, &r->pbr_vert_shader));
   }
 
   {
@@ -1337,23 +1290,22 @@ owl_init_main_shaders_(struct owl_vk_renderer *renderer) {
     shader.codeSize = sizeof(code);
     shader.pCode = code;
 
-    OWL_VK_CHECK(vkCreateShaderModule(renderer->device, &shader, NULL,
-                                      &renderer->pbr_frag_shader));
+    OWL_VK_CHECK(
+        vkCreateShaderModule(r->device, &shader, NULL, &r->pbr_frag_shader));
   }
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_deinit_main_shaders_(struct owl_vk_renderer *renderer) {
-  vkDestroyShaderModule(renderer->device, renderer->pbr_frag_shader, NULL);
-  vkDestroyShaderModule(renderer->device, renderer->pbr_vert_shader, NULL);
-  vkDestroyShaderModule(renderer->device, renderer->font_frag_shader, NULL);
-  vkDestroyShaderModule(renderer->device, renderer->basic_frag_shader, NULL);
-  vkDestroyShaderModule(renderer->device, renderer->basic_vert_shader, NULL);
+OWL_INTERNAL void owl_deinit_main_shaders_(struct owl_vk_renderer *r) {
+  vkDestroyShaderModule(r->device, r->pbr_frag_shader, NULL);
+  vkDestroyShaderModule(r->device, r->pbr_vert_shader, NULL);
+  vkDestroyShaderModule(r->device, r->font_frag_shader, NULL);
+  vkDestroyShaderModule(r->device, r->basic_frag_shader, NULL);
+  vkDestroyShaderModule(r->device, r->basic_vert_shader, NULL);
 }
 
-OWL_INTERNAL enum owl_code
-owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL enum owl_code owl_init_main_pipelines_(struct owl_vk_renderer *r) {
   /* basic */
   {
     VkVertexInputBindingDescription vtx_binding;
@@ -1405,14 +1357,14 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
 
     viewport.x = 0.0F;
     viewport.y = 0.0F;
-    viewport.width = renderer->swapchain_extent.width;
-    viewport.height = renderer->swapchain_extent.height;
+    viewport.width = r->swapchain_extent.width;
+    viewport.height = r->swapchain_extent.height;
     viewport.minDepth = 0.0F;
     viewport.maxDepth = 1.0F;
 
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    scissor.extent = renderer->swapchain_extent;
+    scissor.extent = r->swapchain_extent;
 
     viewport_state.sType =
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -1442,7 +1394,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = renderer->samples;
+    multisample.rasterizationSamples = r->sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -1495,7 +1447,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = renderer->basic_vert_shader;
+    stages[0].module = r->basic_vert_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -1503,7 +1455,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = renderer->basic_frag_shader;
+    stages[1].module = r->basic_frag_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
@@ -1521,18 +1473,17 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     pipeline.pDepthStencilState = &depth;
     pipeline.pColorBlendState = &color;
     pipeline.pDynamicState = NULL;
-    pipeline.layout = renderer->main_pipeline_layout;
-    pipeline.renderPass = renderer->main_render_pass;
+    pipeline.layout = r->common_pipeline_layout;
+    pipeline.renderPass = r->main_render_pass;
     pipeline.subpass = 0;
     pipeline.basePipelineHandle = NULL;
     pipeline.basePipelineIndex = -1;
 
-    OWL_VK_CHECK(vkCreateGraphicsPipelines(
-        renderer->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-        &renderer->pipelines[OWL_PIPELINE_TYPE_MAIN]));
+    OWL_VK_CHECK(
+        vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
+                                  &r->pipelines[OWL_PIPELINE_TYPE_MAIN]));
 
-    renderer->pipeline_layouts[OWL_PIPELINE_TYPE_MAIN] =
-        renderer->main_pipeline_layout;
+    r->pipeline_layouts[OWL_PIPELINE_TYPE_MAIN] = r->common_pipeline_layout;
   }
 
   /* wires */
@@ -1586,14 +1537,14 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
 
     viewport.x = 0.0F;
     viewport.y = 0.0F;
-    viewport.width = renderer->swapchain_extent.width;
-    viewport.height = renderer->swapchain_extent.height;
+    viewport.width = r->swapchain_extent.width;
+    viewport.height = r->swapchain_extent.height;
     viewport.minDepth = 0.0F;
     viewport.maxDepth = 1.0F;
 
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    scissor.extent = renderer->swapchain_extent;
+    scissor.extent = r->swapchain_extent;
 
     viewport_state.sType =
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -1623,7 +1574,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = renderer->samples;
+    multisample.rasterizationSamples = r->sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -1676,7 +1627,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = renderer->basic_vert_shader;
+    stages[0].module = r->basic_vert_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -1684,7 +1635,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = renderer->basic_frag_shader;
+    stages[1].module = r->basic_frag_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
@@ -1702,18 +1653,17 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     pipeline.pDepthStencilState = &depth;
     pipeline.pColorBlendState = &color;
     pipeline.pDynamicState = NULL;
-    pipeline.layout = renderer->main_pipeline_layout;
-    pipeline.renderPass = renderer->main_render_pass;
+    pipeline.layout = r->common_pipeline_layout;
+    pipeline.renderPass = r->main_render_pass;
     pipeline.subpass = 0;
     pipeline.basePipelineHandle = NULL;
     pipeline.basePipelineIndex = -1;
 
-    OWL_VK_CHECK(vkCreateGraphicsPipelines(
-        renderer->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-        &renderer->pipelines[OWL_PIPELINE_TYPE_WIRES]));
+    OWL_VK_CHECK(
+        vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
+                                  &r->pipelines[OWL_PIPELINE_TYPE_WIRES]));
 
-    renderer->pipeline_layouts[OWL_PIPELINE_TYPE_WIRES] =
-        renderer->main_pipeline_layout;
+    r->pipeline_layouts[OWL_PIPELINE_TYPE_WIRES] = r->common_pipeline_layout;
   }
 
   /* font */
@@ -1767,14 +1717,14 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
 
     viewport.x = 0.0F;
     viewport.y = 0.0F;
-    viewport.width = renderer->swapchain_extent.width;
-    viewport.height = renderer->swapchain_extent.height;
+    viewport.width = r->swapchain_extent.width;
+    viewport.height = r->swapchain_extent.height;
     viewport.minDepth = 0.0F;
     viewport.maxDepth = 1.0F;
 
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    scissor.extent = renderer->swapchain_extent;
+    scissor.extent = r->swapchain_extent;
 
     viewport_state.sType =
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -1804,7 +1754,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = renderer->samples;
+    multisample.rasterizationSamples = r->sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -1857,7 +1807,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = renderer->basic_vert_shader;
+    stages[0].module = r->basic_vert_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -1865,7 +1815,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = renderer->font_frag_shader;
+    stages[1].module = r->font_frag_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
@@ -1883,18 +1833,17 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     pipeline.pDepthStencilState = &depth;
     pipeline.pColorBlendState = &color;
     pipeline.pDynamicState = NULL;
-    pipeline.layout = renderer->main_pipeline_layout;
-    pipeline.renderPass = renderer->main_render_pass;
+    pipeline.layout = r->common_pipeline_layout;
+    pipeline.renderPass = r->main_render_pass;
     pipeline.subpass = 0;
     pipeline.basePipelineHandle = NULL;
     pipeline.basePipelineIndex = -1;
 
-    OWL_VK_CHECK(vkCreateGraphicsPipelines(
-        renderer->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-        &renderer->pipelines[OWL_PIPELINE_TYPE_FONT]));
+    OWL_VK_CHECK(
+        vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
+                                  &r->pipelines[OWL_PIPELINE_TYPE_FONT]));
 
-    renderer->pipeline_layouts[OWL_PIPELINE_TYPE_FONT] =
-        renderer->main_pipeline_layout;
+    r->pipeline_layouts[OWL_PIPELINE_TYPE_FONT] = r->common_pipeline_layout;
   }
 
   /* pbr */
@@ -1960,14 +1909,14 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
 
     viewport.x = 0.0F;
     viewport.y = 0.0F;
-    viewport.width = renderer->swapchain_extent.width;
-    viewport.height = renderer->swapchain_extent.height;
+    viewport.width = r->swapchain_extent.width;
+    viewport.height = r->swapchain_extent.height;
     viewport.minDepth = 0.0F;
     viewport.maxDepth = 1.0F;
 
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    scissor.extent = renderer->swapchain_extent;
+    scissor.extent = r->swapchain_extent;
 
     viewport_state.sType =
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -1997,7 +1946,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = renderer->samples;
+    multisample.rasterizationSamples = r->sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -2050,7 +1999,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = renderer->pbr_vert_shader;
+    stages[0].module = r->pbr_vert_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -2058,7 +2007,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = renderer->pbr_frag_shader;
+    stages[1].module = r->pbr_frag_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
@@ -2076,18 +2025,17 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     pipeline.pDepthStencilState = &depth;
     pipeline.pColorBlendState = &color;
     pipeline.pDynamicState = NULL;
-    pipeline.layout = renderer->pbr_pipeline_layout;
-    pipeline.renderPass = renderer->main_render_pass;
+    pipeline.layout = r->pbr_pipeline_layout;
+    pipeline.renderPass = r->main_render_pass;
     pipeline.subpass = 0;
     pipeline.basePipelineHandle = NULL;
     pipeline.basePipelineIndex = -1;
 
-    OWL_VK_CHECK(vkCreateGraphicsPipelines(
-        renderer->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-        &renderer->pipelines[OWL_PIPELINE_TYPE_PBR]));
+    OWL_VK_CHECK(
+        vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
+                                  &r->pipelines[OWL_PIPELINE_TYPE_PBR]));
 
-    renderer->pipeline_layouts[OWL_PIPELINE_TYPE_PBR] =
-        renderer->pbr_pipeline_layout;
+    r->pipeline_layouts[OWL_PIPELINE_TYPE_PBR] = r->pbr_pipeline_layout;
   }
 
   /* pbr alpha blend */
@@ -2153,14 +2101,14 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
 
     viewport.x = 0.0F;
     viewport.y = 0.0F;
-    viewport.width = renderer->swapchain_extent.width;
-    viewport.height = renderer->swapchain_extent.height;
+    viewport.width = r->swapchain_extent.width;
+    viewport.height = r->swapchain_extent.height;
     viewport.minDepth = 0.0F;
     viewport.maxDepth = 1.0F;
 
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    scissor.extent = renderer->swapchain_extent;
+    scissor.extent = r->swapchain_extent;
 
     viewport_state.sType =
         VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -2190,7 +2138,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = renderer->samples;
+    multisample.rasterizationSamples = r->sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -2243,7 +2191,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = renderer->pbr_vert_shader;
+    stages[0].module = r->pbr_vert_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -2251,7 +2199,7 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = renderer->pbr_frag_shader;
+    stages[1].module = r->pbr_frag_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
@@ -2269,43 +2217,38 @@ owl_init_main_pipelines_(struct owl_vk_renderer *renderer) {
     pipeline.pDepthStencilState = &depth;
     pipeline.pColorBlendState = &color;
     pipeline.pDynamicState = NULL;
-    pipeline.layout = renderer->pbr_pipeline_layout;
-    pipeline.renderPass = renderer->main_render_pass;
+    pipeline.layout = r->pbr_pipeline_layout;
+    pipeline.renderPass = r->main_render_pass;
     pipeline.subpass = 0;
     pipeline.basePipelineHandle = NULL;
     pipeline.basePipelineIndex = -1;
 
     OWL_VK_CHECK(vkCreateGraphicsPipelines(
-        renderer->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-        &renderer->pipelines[OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND]));
+        r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
+        &r->pipelines[OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND]));
 
-    renderer->pipeline_layouts[OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND] =
-        renderer->pbr_pipeline_layout;
+    r->pipeline_layouts[OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND] =
+        r->pbr_pipeline_layout;
   }
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_deinit_main_pipelines_(struct owl_vk_renderer *renderer) {
-  vkDestroyPipeline(renderer->device,
-                    renderer->pipelines[OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND],
+OWL_INTERNAL void owl_deinit_main_pipelines_(struct owl_vk_renderer *r) {
+  vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND],
                     NULL);
-  vkDestroyPipeline(renderer->device,
-                    renderer->pipelines[OWL_PIPELINE_TYPE_PBR], NULL);
-  vkDestroyPipeline(renderer->device,
-                    renderer->pipelines[OWL_PIPELINE_TYPE_FONT], NULL);
-  vkDestroyPipeline(renderer->device,
-                    renderer->pipelines[OWL_PIPELINE_TYPE_WIRES], NULL);
-  vkDestroyPipeline(renderer->device,
-                    renderer->pipelines[OWL_PIPELINE_TYPE_MAIN], NULL);
+  vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_PBR], NULL);
+  vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_FONT], NULL);
+  vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_WIRES], NULL);
+  vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_MAIN], NULL);
 }
 
-OWL_INTERNAL enum owl_code owl_init_dyn_buf_(struct owl_vk_renderer *renderer,
+OWL_INTERNAL enum owl_code owl_init_dyn_buf_(struct owl_vk_renderer *r,
                                              VkDeviceSize size) {
   enum owl_code code = OWL_SUCCESS;
 
-  renderer->dyn_active_buf = 0;
-  renderer->dyn_buf_size = size;
+  r->dyn_active_buf = 0;
+  r->dyn_buf_size = size;
 
   /* init buffers */
   {
@@ -2325,8 +2268,7 @@ OWL_INTERNAL enum owl_code owl_init_dyn_buf_(struct owl_vk_renderer *renderer,
     buf.pQueueFamilyIndices = NULL;
 
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-      OWL_VK_CHECK(
-          vkCreateBuffer(renderer->device, &buf, NULL, &renderer->dyn_bufs[i]));
+      OWL_VK_CHECK(vkCreateBuffer(r->device, &buf, NULL, &r->dyn_bufs[i]));
 
 #undef OWL_DOUBLE_BUFFER_USAGE
   }
@@ -2336,41 +2278,38 @@ OWL_INTERNAL enum owl_code owl_init_dyn_buf_(struct owl_vk_renderer *renderer,
     VkMemoryRequirements req;
     VkMemoryAllocateInfo mem;
 
-    vkGetBufferMemoryRequirements(renderer->device, renderer->dyn_bufs[0],
-                                  &req);
+    vkGetBufferMemoryRequirements(r->device, r->dyn_bufs[0], &req);
 
-    renderer->dyn_alignment = req.alignment;
-    renderer->dyn_aligned_size = OWL_ALIGN(size, req.alignment);
+    r->dyn_alignment = req.alignment;
+    r->dyn_aligned_size = OWL_ALIGN2(size, req.alignment);
 
     mem.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     mem.pNext = NULL;
     mem.allocationSize =
-        renderer->dyn_aligned_size * OWL_RENDERER_DYNAMIC_BUFFER_COUNT;
-    mem.memoryTypeIndex = owl_find_vk_mem_type(renderer, req.memoryTypeBits,
-                                               OWL_VK_MEMORY_VIS_CPU_ONLY);
+        r->dyn_aligned_size * OWL_RENDERER_DYNAMIC_BUFFER_COUNT;
+    mem.memoryTypeIndex =
+        owl_find_vk_mem_type(r, req.memoryTypeBits, OWL_VK_MEMORY_VIS_CPU_ONLY);
 
-    OWL_VK_CHECK(
-        vkAllocateMemory(renderer->device, &mem, NULL, &renderer->dyn_mem));
+    OWL_VK_CHECK(vkAllocateMemory(r->device, &mem, NULL, &r->dyn_mem));
   }
 
   /* bind buffers to memory */
   {
     owl_u32 i;
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-      OWL_VK_CHECK(vkBindBufferMemory(renderer->device, renderer->dyn_bufs[i],
-                                      renderer->dyn_mem,
-                                      i * renderer->dyn_aligned_size));
+      OWL_VK_CHECK(vkBindBufferMemory(r->device, r->dyn_bufs[i], r->dyn_mem,
+                                      i * r->dyn_aligned_size));
   }
 
   /* map memory */
   {
     owl_u32 i;
     void *data;
-    OWL_VK_CHECK(vkMapMemory(renderer->device, renderer->dyn_mem, 0,
-                             VK_WHOLE_SIZE, 0, &data));
+    OWL_VK_CHECK(
+        vkMapMemory(r->device, r->dyn_mem, 0, VK_WHOLE_SIZE, 0, &data));
 
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-      renderer->dyn_data[i] = (owl_byte *)data + i * renderer->dyn_aligned_size;
+      r->dyn_data[i] = (owl_byte *)data + i * r->dyn_aligned_size;
   }
 
   /* init pvm descriptor sets */
@@ -2380,16 +2319,15 @@ OWL_INTERNAL enum owl_code owl_init_dyn_buf_(struct owl_vk_renderer *renderer,
     VkDescriptorSetLayout layouts[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
 
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-      layouts[i] = renderer->pvm_set_layout;
+      layouts[i] = r->pvm_set_layout;
 
     sets.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     sets.pNext = NULL;
-    sets.descriptorPool = renderer->set_pool;
+    sets.descriptorPool = r->common_set_pool;
     sets.descriptorSetCount = OWL_ARRAY_SIZE(layouts);
     sets.pSetLayouts = layouts;
 
-    OWL_VK_CHECK(vkAllocateDescriptorSets(renderer->device, &sets,
-                                          renderer->dyn_pvm_sets));
+    OWL_VK_CHECK(vkAllocateDescriptorSets(r->device, &sets, r->dyn_pvm_sets));
   }
 
   /* write the pvm descriptor sets */
@@ -2399,13 +2337,13 @@ OWL_INTERNAL enum owl_code owl_init_dyn_buf_(struct owl_vk_renderer *renderer,
       VkWriteDescriptorSet write;
       VkDescriptorBufferInfo buf;
 
-      buf.buffer = renderer->dyn_bufs[i];
+      buf.buffer = r->dyn_bufs[i];
       buf.offset = 0;
       buf.range = sizeof(struct owl_draw_cmd_ubo);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
-      write.dstSet = renderer->dyn_pvm_sets[i];
+      write.dstSet = r->dyn_pvm_sets[i];
       write.dstBinding = 0;
       write.dstArrayElement = 0;
       write.descriptorCount = 1;
@@ -2414,7 +2352,7 @@ OWL_INTERNAL enum owl_code owl_init_dyn_buf_(struct owl_vk_renderer *renderer,
       write.pBufferInfo = &buf;
       write.pTexelBufferView = NULL;
 
-      vkUpdateDescriptorSets(renderer->device, 1, &write, 0, NULL);
+      vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);
     }
   }
 
@@ -2422,72 +2360,68 @@ OWL_INTERNAL enum owl_code owl_init_dyn_buf_(struct owl_vk_renderer *renderer,
   {
     owl_u32 i;
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-      renderer->dyn_offsets[i] = 0;
+      r->dyn_offsets[i] = 0;
   }
 
   return code;
 }
 
-OWL_INTERNAL void owl_deinit_dyn_buf_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL void owl_deinit_dyn_buf_(struct owl_vk_renderer *r) {
   owl_u32 i;
 
-  vkFreeDescriptorSets(renderer->device, renderer->set_pool,
-                       OWL_ARRAY_SIZE(renderer->dyn_pvm_sets),
-                       renderer->dyn_pvm_sets);
+  vkFreeDescriptorSets(r->device, r->common_set_pool,
+                       OWL_ARRAY_SIZE(r->dyn_pvm_sets), r->dyn_pvm_sets);
 
-  vkFreeMemory(renderer->device, renderer->dyn_mem, NULL);
+  vkFreeMemory(r->device, r->dyn_mem, NULL);
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkDestroyBuffer(renderer->device, renderer->dyn_bufs[i], NULL);
+    vkDestroyBuffer(r->device, r->dyn_bufs[i], NULL);
 }
 
-OWL_INTERNAL enum owl_code
-owl_init_dyn_garbage_(struct owl_vk_renderer *renderer) {
-  renderer->dyn_garbage_bufs_count = 0;
-  renderer->dyn_garbage_mems_count = 0;
-  renderer->dyn_garbage_pvm_sets_count = 0;
+OWL_INTERNAL enum owl_code owl_init_dyn_garbage_(struct owl_vk_renderer *r) {
+  r->dyn_garbage_bufs_count = 0;
+  r->dyn_garbage_mems_count = 0;
+  r->dyn_garbage_pvm_sets_count = 0;
 
-  OWL_MEMSET(renderer->dyn_garbage_bufs, 0, sizeof(renderer->dyn_garbage_bufs));
+  OWL_MEMSET(r->dyn_garbage_bufs, 0, sizeof(r->dyn_garbage_bufs));
 
-  OWL_MEMSET(renderer->dyn_garbage_mems, 0, sizeof(renderer->dyn_garbage_mems));
+  OWL_MEMSET(r->dyn_garbage_mems, 0, sizeof(r->dyn_garbage_mems));
 
-  OWL_MEMSET(renderer->dyn_garbage_pvm_sets, 0,
-             sizeof(renderer->dyn_garbage_pvm_sets));
+  OWL_MEMSET(r->dyn_garbage_pvm_sets, 0, sizeof(r->dyn_garbage_pvm_sets));
 
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_deinit_dyn_garbage_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL void owl_deinit_dyn_garbage_(struct owl_vk_renderer *r) {
   int i;
 
-  for (i = 0; i < renderer->dyn_garbage_pvm_sets_count; ++i)
-    vkFreeDescriptorSets(renderer->device, renderer->set_pool, 1,
-                         &renderer->dyn_garbage_pvm_sets[i]);
+  for (i = 0; i < r->dyn_garbage_pvm_sets_count; ++i)
+    vkFreeDescriptorSets(r->device, r->common_set_pool, 1,
+                         &r->dyn_garbage_pvm_sets[i]);
 
-  renderer->dyn_garbage_pvm_sets_count = 0;
+  r->dyn_garbage_pvm_sets_count = 0;
 
-  for (i = 0; i < renderer->dyn_garbage_mems_count; ++i)
-    vkFreeMemory(renderer->device, renderer->dyn_garbage_mems[i], NULL);
+  for (i = 0; i < r->dyn_garbage_mems_count; ++i)
+    vkFreeMemory(r->device, r->dyn_garbage_mems[i], NULL);
 
-  renderer->dyn_garbage_mems_count = 0;
+  r->dyn_garbage_mems_count = 0;
 
-  for (i = 0; i < renderer->dyn_garbage_bufs_count; ++i)
-    vkDestroyBuffer(renderer->device, renderer->dyn_garbage_bufs[i], NULL);
+  for (i = 0; i < r->dyn_garbage_bufs_count; ++i)
+    vkDestroyBuffer(r->device, r->dyn_garbage_bufs[i], NULL);
 
-  renderer->dyn_garbage_bufs_count = 0;
+  r->dyn_garbage_bufs_count = 0;
 }
 
-OWL_INTERNAL enum owl_code
-owl_move_dyn_to_garbage_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL enum owl_code owl_move_dyn_to_garbage_(struct owl_vk_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   {
     int i;
     /* previous count */
-    int prev_count = renderer->dyn_garbage_bufs_count;
+    int prev_count = r->dyn_garbage_bufs_count;
     /* new count */
     int new_count =
-        renderer->dyn_garbage_bufs_count + OWL_RENDERER_DYNAMIC_BUFFER_COUNT;
+        r->dyn_garbage_bufs_count + OWL_RENDERER_DYNAMIC_BUFFER_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS <= new_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -2495,18 +2429,18 @@ owl_move_dyn_to_garbage_(struct owl_vk_renderer *renderer) {
     }
 
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-      renderer->dyn_garbage_bufs[prev_count + i] = renderer->dyn_bufs[i];
+      r->dyn_garbage_bufs[prev_count + i] = r->dyn_bufs[i];
 
-    renderer->dyn_garbage_bufs_count = new_count;
+    r->dyn_garbage_bufs_count = new_count;
   }
 
   {
     int i;
     /* previous count */
-    int prev_count = renderer->dyn_garbage_pvm_sets_count;
+    int prev_count = r->dyn_garbage_pvm_sets_count;
     /* new count */
-    int new_count = renderer->dyn_garbage_pvm_sets_count +
-                    OWL_RENDERER_DYNAMIC_BUFFER_COUNT;
+    int new_count =
+        r->dyn_garbage_pvm_sets_count + OWL_RENDERER_DYNAMIC_BUFFER_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS <= new_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -2514,181 +2448,180 @@ owl_move_dyn_to_garbage_(struct owl_vk_renderer *renderer) {
     }
 
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-      renderer->dyn_garbage_pvm_sets[prev_count + i] =
-          renderer->dyn_pvm_sets[i];
+      r->dyn_garbage_pvm_sets[prev_count + i] = r->dyn_pvm_sets[i];
 
-    renderer->dyn_garbage_pvm_sets_count = new_count;
+    r->dyn_garbage_pvm_sets_count = new_count;
   }
 
   {
     /* previous count */
-    int prev_count = renderer->dyn_garbage_mems_count;
+    int prev_count = r->dyn_garbage_mems_count;
     /* new count */
-    int new_count = renderer->dyn_garbage_mems_count + 1;
+    int new_count = r->dyn_garbage_mems_count + 1;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS <= new_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 
-    renderer->dyn_garbage_mems[prev_count + 0] = renderer->dyn_mem;
-    renderer->dyn_garbage_mems_count = new_count;
+    r->dyn_garbage_mems[prev_count + 0] = r->dyn_mem;
+    r->dyn_garbage_mems_count = new_count;
   }
 
 end:
   return code;
 }
 
-enum owl_code owl_init_vk_renderer(struct owl_vk_plataform const *plataform,
-                                   struct owl_vk_renderer *renderer) {
+enum owl_code owl_init_vk_renderer(struct owl_vk_renderer_desc const *desc,
+                                   struct owl_vk_renderer *r) {
   enum owl_code code;
 
-  renderer->width = plataform->framebuffer_width;
-  renderer->height = plataform->framebuffer_height;
+  r->width = desc->framebuffer_width;
+  r->height = desc->framebuffer_height;
 
-  if (OWL_SUCCESS != (code = owl_init_instance_(plataform, renderer)))
+  if (OWL_SUCCESS != (code = owl_init_instance_(desc, r)))
     goto end;
 
 #ifndef NDEBUG
-  if (OWL_SUCCESS != (code = owl_init_debug_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_debug_(r)))
     goto end;
 #endif
 
-  if (OWL_SUCCESS != (code = owl_init_surface_(plataform, renderer)))
+  if (OWL_SUCCESS != (code = owl_init_surface_(desc, r)))
     goto end_deinit_instance;
 
-  if (OWL_SUCCESS != (code = owl_init_device_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_device_(r)))
     goto end_deinit_surface;
 
-  if (OWL_SUCCESS != (code = owl_init_swapchain_(plataform, renderer)))
+  if (OWL_SUCCESS != (code = owl_init_swapchain_(desc, r)))
     goto end_deinit_device;
 
-  if (OWL_SUCCESS != (code = owl_init_general_pools_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_common_pools_(r)))
     goto end_deinit_swapchain;
 
-  if (OWL_SUCCESS != (code = owl_init_frame_cmds_(renderer)))
-    goto end_deinit_general_pools;
+  if (OWL_SUCCESS != (code = owl_init_frame_cmds_(r)))
+    goto end_deinit_common_pools;
 
-  if (OWL_SUCCESS != (code = owl_init_frame_sync_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_frame_sync_(r)))
     goto end_deinit_frame_cmds;
 
-  if (OWL_SUCCESS != (code = owl_init_main_render_pass_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_render_pass_(r)))
     goto end_deinit_frame_sync;
 
-  if (OWL_SUCCESS != (code = owl_init_main_attachments_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_attachments_(r)))
     goto end_deinit_main_render_pass;
 
-  if (OWL_SUCCESS != (code = owl_init_main_framebuffers_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_framebuffers_(r)))
     goto end_deinit_main_attachments;
 
-  if (OWL_SUCCESS != (code = owl_init_main_set_layouts_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_set_layouts_(r)))
     goto end_deinit_main_framebuffers;
 
-  if (OWL_SUCCESS != (code = owl_init_main_pipeline_layouts_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_pipeline_layouts_(r)))
     goto end_deinit_main_set_layouts;
 
-  if (OWL_SUCCESS != (code = owl_init_main_shaders_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_shaders_(r)))
     goto end_deinit_main_pipeline_layout;
 
-  if (OWL_SUCCESS != (code = owl_init_main_pipelines_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_pipelines_(r)))
     goto end_deinit_main_shaders;
 
-  if (OWL_SUCCESS != (code = owl_init_dyn_buf_(renderer, 1024 * 1024)))
+  if (OWL_SUCCESS != (code = owl_init_dyn_buf_(r, 1024 * 1024)))
     goto end_deinit_main_pipelines;
 
-  if (OWL_SUCCESS != (code = owl_init_dyn_garbage_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_dyn_garbage_(r)))
     goto end_deinit_dyn_buf;
 
   goto end;
 
 end_deinit_dyn_buf:
-  owl_deinit_dyn_buf_(renderer);
+  owl_deinit_dyn_buf_(r);
 
 end_deinit_main_pipelines:
-  owl_deinit_main_pipelines_(renderer);
+  owl_deinit_main_pipelines_(r);
 
 end_deinit_main_shaders:
-  owl_deinit_main_shaders_(renderer);
+  owl_deinit_main_shaders_(r);
 
 end_deinit_main_pipeline_layout:
-  owl_deinit_main_pipeline_layouts_(renderer);
+  owl_deinit_main_pipeline_layouts_(r);
 
 end_deinit_main_set_layouts:
-  owl_deinit_main_set_layouts_(renderer);
+  owl_deinit_main_set_layouts_(r);
 
 end_deinit_main_framebuffers:
-  owl_deinit_main_framebuffers_(renderer);
+  owl_deinit_main_framebuffers_(r);
 
 end_deinit_main_attachments:
-  owl_deinit_main_attachments_(renderer);
+  owl_deinit_main_attachments_(r);
 
 end_deinit_main_render_pass:
-  owl_deinit_main_render_pass_(renderer);
+  owl_deinit_main_render_pass_(r);
 
 end_deinit_frame_sync:
-  owl_deinit_frame_sync_(renderer);
+  owl_deinit_frame_sync_(r);
 
 end_deinit_frame_cmds:
-  owl_deinit_frame_cmds_(renderer);
+  owl_deinit_frame_cmds_(r);
 
-end_deinit_general_pools:
-  owl_deinit_general_pools_(renderer);
+end_deinit_common_pools:
+  owl_deinit_common_pools_(r);
 
 end_deinit_swapchain:
-  owl_deinit_swapchain_(renderer);
+  owl_deinit_swapchain_(r);
 
 end_deinit_device:
-  owl_deinit_device_(renderer);
+  owl_deinit_device_(r);
 
 end_deinit_surface:
-  owl_deinit_surface_(renderer);
+  owl_deinit_surface_(r);
 
 end_deinit_instance:
-  owl_deinit_instance_(renderer);
+  owl_deinit_instance_(r);
 
 end:
   return code;
 }
 
-void owl_deinit_vk_renderer(struct owl_vk_renderer *renderer) {
-  OWL_VK_CHECK(vkDeviceWaitIdle(renderer->device));
+void owl_deinit_vk_renderer(struct owl_vk_renderer *r) {
+  OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
-  owl_deinit_dyn_garbage_(renderer);
-  owl_deinit_dyn_buf_(renderer);
-  owl_deinit_main_pipelines_(renderer);
-  owl_deinit_main_shaders_(renderer);
-  owl_deinit_main_pipeline_layouts_(renderer);
-  owl_deinit_main_set_layouts_(renderer);
-  owl_deinit_main_framebuffers_(renderer);
-  owl_deinit_main_attachments_(renderer);
-  owl_deinit_main_render_pass_(renderer);
-  owl_deinit_frame_sync_(renderer);
-  owl_deinit_frame_cmds_(renderer);
-  owl_deinit_general_pools_(renderer);
-  owl_deinit_swapchain_(renderer);
-  owl_deinit_device_(renderer);
-  owl_deinit_surface_(renderer);
+  owl_deinit_dyn_garbage_(r);
+  owl_deinit_dyn_buf_(r);
+  owl_deinit_main_pipelines_(r);
+  owl_deinit_main_shaders_(r);
+  owl_deinit_main_pipeline_layouts_(r);
+  owl_deinit_main_set_layouts_(r);
+  owl_deinit_main_framebuffers_(r);
+  owl_deinit_main_attachments_(r);
+  owl_deinit_main_render_pass_(r);
+  owl_deinit_frame_sync_(r);
+  owl_deinit_frame_cmds_(r);
+  owl_deinit_common_pools_(r);
+  owl_deinit_swapchain_(r);
+  owl_deinit_device_(r);
+  owl_deinit_surface_(r);
 
 #ifndef NDEBUG
-  owl_deinit_debug_(renderer);
+  owl_deinit_debug_(r);
 #endif
 
-  owl_deinit_instance_(renderer);
+  owl_deinit_instance_(r);
 }
 
-enum owl_code owl_reserve_dyn_buf_mem(struct owl_vk_renderer *renderer,
+enum owl_code owl_reserve_dyn_buf_mem(struct owl_vk_renderer *r,
                                       VkDeviceSize size) {
   enum owl_code code = OWL_SUCCESS;
-  int const active = renderer->dyn_active_buf;
-  VkDeviceSize required = renderer->dyn_offsets[active] + size;
+  int const active = r->dyn_active_buf;
+  VkDeviceSize required = r->dyn_offsets[active] + size;
 
-  if (required > renderer->dyn_buf_size) {
-    vkUnmapMemory(renderer->device, renderer->dyn_mem);
+  if (required > r->dyn_buf_size) {
+    vkUnmapMemory(r->device, r->dyn_mem);
 
-    if (OWL_SUCCESS != (code = owl_move_dyn_to_garbage_(renderer)))
+    if (OWL_SUCCESS != (code = owl_move_dyn_to_garbage_(r)))
       goto end;
 
-    if (OWL_SUCCESS != (code = owl_init_dyn_buf_(renderer, 2 * required)))
+    if (OWL_SUCCESS != (code = owl_init_dyn_buf_(r, 2 * required)))
       goto end;
   }
 
@@ -2696,120 +2629,119 @@ end:
   return code;
 }
 
-void owl_clear_dyn_garbage(struct owl_vk_renderer *renderer) {
-  owl_deinit_dyn_garbage_(renderer);
+void owl_clear_dyn_garbage(struct owl_vk_renderer *r) {
+  owl_deinit_dyn_garbage_(r);
 }
 
-enum owl_code owl_reinit_vk_swapchain(struct owl_vk_plataform const *plataform,
-                                      struct owl_vk_renderer *renderer) {
+enum owl_code owl_reinit_vk_swapchain(struct owl_vk_renderer_desc const *desc,
+                                      struct owl_vk_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_VK_CHECK(vkDeviceWaitIdle(renderer->device));
+  OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
-  owl_deinit_main_pipelines_(renderer);
-  owl_deinit_main_framebuffers_(renderer);
-  owl_deinit_main_attachments_(renderer);
-  owl_deinit_main_render_pass_(renderer);
-  owl_deinit_frame_sync_(renderer);
-  owl_deinit_swapchain_(renderer);
+  owl_deinit_main_pipelines_(r);
+  owl_deinit_main_framebuffers_(r);
+  owl_deinit_main_attachments_(r);
+  owl_deinit_main_render_pass_(r);
+  owl_deinit_frame_sync_(r);
+  owl_deinit_swapchain_(r);
 
-  if (OWL_SUCCESS != (code = owl_init_swapchain_(plataform, renderer)))
+  if (OWL_SUCCESS != (code = owl_init_swapchain_(desc, r)))
     goto end;
 
-  if (OWL_SUCCESS != (code = owl_init_frame_sync_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_frame_sync_(r)))
     goto end_deinit_swapchain;
 
-  if (OWL_SUCCESS != (code = owl_init_main_render_pass_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_render_pass_(r)))
     goto end_deinit_frame_sync;
 
-  if (OWL_SUCCESS != (code = owl_init_main_attachments_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_attachments_(r)))
     goto end_deinit_main_render_pass;
 
-  if (OWL_SUCCESS != (code = owl_init_main_framebuffers_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_framebuffers_(r)))
     goto end_deinit_main_attachments;
 
-  if (OWL_SUCCESS != (code = owl_init_main_pipelines_(renderer)))
+  if (OWL_SUCCESS != (code = owl_init_main_pipelines_(r)))
     goto end_deinit_main_framebuffers;
 
   goto end;
 
 end_deinit_main_framebuffers:
-  owl_deinit_main_framebuffers_(renderer);
+  owl_deinit_main_framebuffers_(r);
 
 end_deinit_main_attachments:
-  owl_deinit_main_attachments_(renderer);
+  owl_deinit_main_attachments_(r);
 
 end_deinit_main_render_pass:
-  owl_deinit_main_render_pass_(renderer);
+  owl_deinit_main_render_pass_(r);
 
 end_deinit_frame_sync:
-  owl_deinit_frame_sync_(renderer);
+  owl_deinit_frame_sync_(r);
 
 end_deinit_swapchain:
-  owl_deinit_swapchain_(renderer);
+  owl_deinit_swapchain_(r);
 
 end:
   return code;
 }
 
-int owl_is_dyn_buf_flushed(struct owl_vk_renderer *renderer) {
-  return 0 == renderer->dyn_offsets[renderer->dyn_active_buf];
+int owl_is_dyn_buf_flushed(struct owl_vk_renderer *r) {
+  return 0 == r->dyn_offsets[r->dyn_active_buf];
 }
 
-void owl_flush_dyn_buf(struct owl_vk_renderer *renderer) {
-  renderer->dyn_offsets[renderer->dyn_active_buf] = 0;
+void owl_flush_dyn_buf(struct owl_vk_renderer *r) {
+  r->dyn_offsets[r->dyn_active_buf] = 0;
 }
 
-void owl_clear_dyn_buf_garbage(struct owl_vk_renderer *renderer) {
-  owl_deinit_dyn_garbage_(renderer);
+void owl_clear_dyn_buf_garbage(struct owl_vk_renderer *r) {
+  owl_deinit_dyn_garbage_(r);
 }
 
-enum owl_code owl_create_renderer(struct owl_window *window,
-                                  struct owl_vk_renderer **renderer) {
-  struct owl_vk_plataform plataform;
+enum owl_code owl_create_renderer(struct owl_window *w,
+                                  struct owl_vk_renderer **r) {
+  struct owl_vk_renderer_desc desc;
   enum owl_code code = OWL_SUCCESS;
 
-  if (!(*renderer = OWL_MALLOC(sizeof(**renderer))))
+  if (!(*r = OWL_MALLOC(sizeof(**r))))
     return OWL_ERROR_BAD_ALLOC;
 
-  owl_fill_vk_plataform(window, &plataform);
-  code = owl_init_vk_renderer(&plataform, *renderer);
+  owl_fill_vk_renderer_desc(w, &desc);
 
-  if (OWL_SUCCESS != code)
-    OWL_FREE(*renderer);
+  if (OWL_SUCCESS != (code = owl_init_vk_renderer(&desc, *r)))
+    OWL_FREE(*r);
 
   return code;
 }
 
-enum owl_code owl_recreate_swapchain(struct owl_window *window,
-                                     struct owl_vk_renderer *renderer) {
-  struct owl_vk_plataform plataform;
-  owl_fill_vk_plataform(window, &plataform);
-  return owl_reinit_vk_swapchain(&plataform, renderer);
+enum owl_code owl_recreate_swapchain(struct owl_window *w,
+                                     struct owl_vk_renderer *r) {
+  struct owl_vk_renderer_desc desc;
+  owl_fill_vk_renderer_desc(w, &desc);
+  return owl_reinit_vk_swapchain(&desc, r);
 }
 
-void owl_destroy_renderer(struct owl_vk_renderer *renderer) {
-  owl_deinit_vk_renderer(renderer);
-  OWL_FREE(renderer);
+void owl_destroy_renderer(struct owl_vk_renderer *r) {
+  owl_deinit_vk_renderer(r);
+  OWL_FREE(r);
 }
 
-void *owl_dyn_buf_alloc(struct owl_vk_renderer *renderer, VkDeviceSize size,
+void *owl_dyn_buf_alloc(struct owl_vk_renderer *r, VkDeviceSize size,
                         struct owl_dyn_buf_ref *ref) {
   owl_byte *data;
-  int const active = renderer->dyn_active_buf;
+  int const active = r->dyn_active_buf;
 
-  if (OWL_SUCCESS != owl_reserve_dyn_buf_mem(renderer, size))
+  if (OWL_SUCCESS != owl_reserve_dyn_buf_mem(r, size))
     return NULL;
 
-  ref->offset32 = (owl_u32)renderer->dyn_offsets[active];
-  ref->offset = renderer->dyn_offsets[active];
-  ref->buf = renderer->dyn_bufs[active];
-  ref->pvm_set = renderer->dyn_pvm_sets[active];
+  ref->offset32 = (owl_u32)r->dyn_offsets[active];
+  ref->offset = r->dyn_offsets[active];
+  ref->buf = r->dyn_bufs[active];
+  ref->pvm_set = r->dyn_pvm_sets[active];
 
-  data = renderer->dyn_data[active] + renderer->dyn_offsets[active];
+  data = r->dyn_data[active] + r->dyn_offsets[active];
 
-  renderer->dyn_offsets[active] =
-      OWL_ALIGN(renderer->dyn_offsets[active] + size, renderer->dyn_alignment);
+  r->dyn_offsets[active] =
+      OWL_ALIGN2(r->dyn_offsets[active] + size, r->dyn_alignment);
 
   return data;
 }
@@ -2826,13 +2758,13 @@ owl_vk_as_property_flags(enum owl_vk_mem_vis vis) {
   }
 }
 
-owl_u32 owl_find_vk_mem_type(struct owl_vk_renderer const *renderer,
-                             owl_u32 filter, enum owl_vk_mem_vis vis) {
+owl_u32 owl_find_vk_mem_type(struct owl_vk_renderer const *r, owl_u32 filter,
+                             enum owl_vk_mem_vis vis) {
   owl_u32 i;
   VkMemoryPropertyFlags props = owl_vk_as_property_flags(vis);
 
-  for (i = 0; i < renderer->device_mem_properties.memoryTypeCount; ++i) {
-    owl_u32 f = renderer->device_mem_properties.memoryTypes[i].propertyFlags;
+  for (i = 0; i < r->device_mem_properties.memoryTypeCount; ++i) {
+    owl_u32 f = r->device_mem_properties.memoryTypes[i].propertyFlags;
 
     if ((f & props) && (filter & (1U << i)))
       return i;
@@ -2841,17 +2773,17 @@ owl_u32 owl_find_vk_mem_type(struct owl_vk_renderer const *renderer,
   return OWL_VK_MEMORY_TYPE_NONE;
 }
 
-enum owl_code owl_bind_pipeline(struct owl_vk_renderer *renderer,
+enum owl_code owl_bind_pipeline(struct owl_vk_renderer *r,
                                 enum owl_pipeline_type type) {
-  int const active = renderer->dyn_active_buf;
+  int const active = r->dyn_active_buf;
 
-  renderer->bound_pipeline = type;
+  r->bound_pipeline = type;
 
   if (OWL_PIPELINE_TYPE_NONE == type)
     return OWL_SUCCESS;
 
-  vkCmdBindPipeline(renderer->frame_cmd_bufs[active],
-                    VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pipelines[type]);
+  vkCmdBindPipeline(r->frame_cmd_bufs[active], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    r->pipelines[type]);
 
   return OWL_SUCCESS;
 }

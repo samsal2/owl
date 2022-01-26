@@ -13,7 +13,7 @@ struct owl_texture {
   owl_u32 height;
   owl_u32 mips;
   owl_u32 layer_count;
-  VkImage img;
+  VkImage image;
   VkDeviceMemory mem;
   VkImageView view;
   VkDescriptorSet set;
@@ -54,65 +54,63 @@ struct owl_texture_desc {
   enum owl_sampler_addr_mode wrap_w;
 };
 
-enum owl_code owl_init_vk_texture_from_ref(struct owl_vk_renderer *renderer,
+enum owl_code owl_init_vk_texture_from_ref(struct owl_vk_renderer *r,
                                            struct owl_texture_desc const *desc,
                                            struct owl_dyn_buf_ref const *ref,
-                                           struct owl_texture *texture);
+                                           struct owl_texture *tex);
 
-enum owl_code owl_init_vk_texture_from_file(struct owl_vk_renderer *renderer,
+enum owl_code owl_init_vk_texture_from_file(struct owl_vk_renderer *r,
                                             struct owl_texture_desc *desc,
                                             char const *path,
-                                            struct owl_texture *texture);
+                                            struct owl_texture *tex);
 
-enum owl_code owl_init_vk_texture_from_data(struct owl_vk_renderer *renderer,
+enum owl_code owl_init_vk_texture_from_data(struct owl_vk_renderer *r,
                                             struct owl_texture_desc const *desc,
                                             owl_byte const *data,
-                                            struct owl_texture *texture);
+                                            struct owl_texture *tex);
 
-void owl_deinit_vk_texture(struct owl_vk_renderer const *renderer,
-                           struct owl_texture *texture);
+void owl_deinit_vk_texture(struct owl_vk_renderer const *r,
+                           struct owl_texture *tex);
 
-enum owl_code owl_create_texture_from_file(struct owl_vk_renderer *renderer,
+enum owl_code owl_create_texture_from_file(struct owl_vk_renderer *r,
                                            struct owl_texture_desc *desc,
                                            char const *path,
-                                           struct owl_texture **texture);
+                                           struct owl_texture **tex);
 
-enum owl_code owl_create_texture_from_data(struct owl_vk_renderer *renderer,
+enum owl_code owl_create_texture_from_data(struct owl_vk_renderer *r,
                                            struct owl_texture_desc const *desc,
                                            owl_byte const *data,
-                                           struct owl_texture **texture);
+                                           struct owl_texture **tex);
 
-void owl_destroy_texture(struct owl_vk_renderer const *renderer,
-                         struct owl_texture *texture);
+void owl_destroy_texture(struct owl_vk_renderer const *r,
+                         struct owl_texture *tex);
 
-enum owl_code
-owl_alloc_and_record_cmd_buf(struct owl_vk_renderer const *renderer,
-                             VkCommandBuffer *cmd);
+enum owl_code owl_alloc_and_record_cmd_buf(struct owl_vk_renderer const *r,
+                                           VkCommandBuffer *cmd);
 
-enum owl_code
-owl_free_and_submit_cmd_buf(struct owl_vk_renderer const *renderer,
-                            VkCommandBuffer cmd);
+enum owl_code owl_free_and_submit_cmd_buf(struct owl_vk_renderer const *r,
+                                          VkCommandBuffer cmd);
 
-struct owl_vk_image_transition_desc {
+struct owl_vk_image_trans_desc {
   owl_u32 mips;
   VkImageLayout from;
   VkImageLayout to;
-  VkImage img;
+  VkImage image;
 };
 
 enum owl_code
 owl_transition_vk_image_layout(VkCommandBuffer cmd,
-                               struct owl_vk_image_transition_desc const *desc);
+                               struct owl_vk_image_trans_desc const *desc);
 
-struct owl_vk_image_mip_generation_desc {
+struct owl_vk_mip_gen_desc {
   owl_i32 width;
   owl_i32 height;
   owl_u32 mips;
-  VkImage img;
+  VkImage image;
 };
 
 enum owl_code
 owl_generate_vk_image_mips(VkCommandBuffer cmd,
-                           struct owl_vk_image_mip_generation_desc const *desc);
+                           struct owl_vk_mip_gen_desc const *desc);
 
 #endif
