@@ -1,6 +1,6 @@
 #version 450
 
-layout (location = 0) in vec3 in_pos;
+layout (location = 0) in vec3 in_position;
 layout (location = 1) in vec3 in_normal;
 layout (location = 2) in vec2 in_uv0;
 layout (location = 3) in vec2 in_uv1;
@@ -44,10 +44,10 @@ void main()
 			in_weight0.z * node.joints[int(in_joint0.z)] +
 			in_weight0.w * node.joints[int(in_joint0.w)];
 
-		loc_pos = ubo.model * node.matrix * skin_matrix * vec4(in_pos, 1.0);
+		loc_pos = ubo.model * node.matrix * skin_matrix * vec4(in_position, 1.0);
 		out_normal = normalize(transpose(inverse(mat3(ubo.model * node.matrix * skin_matrix))) * in_normal);
 	} else {
-		loc_pos = ubo.model * node.matrix * vec4(in_pos, 1.0);
+		loc_pos = ubo.model * node.matrix * vec4(in_position, 1.0);
 		out_normal = normalize(transpose(inverse(mat3(ubo.model * node.matrix))) * in_normal);
 	}
 	loc_pos.y = -loc_pos.y;

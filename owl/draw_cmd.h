@@ -6,13 +6,13 @@
 struct owl_vk_renderer;
 
 struct owl_draw_cmd_vertex {
-  owl_v3 pos;
+  owl_v3 position;
   owl_v3 color;
   owl_v2 uv;
 };
 
 struct owl_draw_cmd_ubo {
-  owl_m4 proj;
+  owl_m4 projection;
   owl_m4 view;
   owl_m4 model;
 };

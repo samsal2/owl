@@ -38,38 +38,38 @@ OWL_INTERNAL enum owl_code owl_fill_char_quad_(int width, int height,
   group->type = OWL_DRAW_CMD_TYPE_QUAD;
   group->storage.as_quad.texture = &font->atlas;
 
-  OWL_IDENTITY_M4(group->storage.as_quad.ubo.proj);
+  OWL_IDENTITY_M4(group->storage.as_quad.ubo.projection);
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.model);
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.view);
 
   v = &group->storage.as_quad.vertices[0];
-  v->pos[0] = screen_pos[0];
-  v->pos[1] = screen_pos[1];
-  v->pos[2] = 0.0F;
+  v->position[0] = screen_pos[0];
+  v->position[1] = screen_pos[1];
+  v->position[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
   v->uv[0] = uv_off;
   v->uv[1] = 0.0F;
 
   v = &group->storage.as_quad.vertices[1];
-  v->pos[0] = screen_pos[0] + glyph_scr_size[0];
-  v->pos[1] = screen_pos[1];
-  v->pos[2] = 0.0F;
+  v->position[0] = screen_pos[0] + glyph_scr_size[0];
+  v->position[1] = screen_pos[1];
+  v->position[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
   v->uv[0] = uv_off + glyph_tex_size[0];
   v->uv[1] = 0.0F;
 
   v = &group->storage.as_quad.vertices[2];
-  v->pos[0] = screen_pos[0];
-  v->pos[1] = screen_pos[1] + glyph_scr_size[1];
-  v->pos[2] = 0.0F;
+  v->position[0] = screen_pos[0];
+  v->position[1] = screen_pos[1] + glyph_scr_size[1];
+  v->position[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
   v->uv[0] = uv_off;
   v->uv[1] = glyph_tex_size[1];
 
   v = &group->storage.as_quad.vertices[3];
-  v->pos[0] = screen_pos[0] + glyph_scr_size[0];
-  v->pos[1] = screen_pos[1] + glyph_scr_size[1];
-  v->pos[2] = 0.0F;
+  v->position[0] = screen_pos[0] + glyph_scr_size[0];
+  v->position[1] = screen_pos[1] + glyph_scr_size[1];
+  v->position[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
   v->uv[0] = uv_off + glyph_tex_size[0];
   v->uv[1] = glyph_tex_size[1];

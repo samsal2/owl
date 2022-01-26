@@ -61,10 +61,10 @@ OWL_INTERNAL void owl_cursor_pos_callback_(GLFWwindow *glfw, double x,
                                            double y) {
   struct owl_window *w = glfwGetWindowUserPointer(glfw);
 
-  w->input.cur_cursor_pos[0] =
+  w->input.cursor_position[0] =
       2.0F * ((float)x / (float)w->window_width) - 1.0F;
 
-  w->input.cur_cursor_pos[1] =
+  w->input.cursor_position[1] =
       2.0F * ((float)y / (float)w->window_height) - 1.0F;
 }
 
@@ -102,19 +102,19 @@ owl_init_vk_surface_callback_(struct owl_vk_renderer const *r, void const *data,
 }
 
 OWL_INTERNAL void owl_init_timer_(struct owl_window *w) {
-  w->input.cur_time = 0.0;
+  w->input.time = 0.0;
   w->input.past_time = 0.0;
   w->input.dt_time = 0.16667;
 }
 
 OWL_INTERNAL void owl_update_timer_(struct owl_window *w) {
-  w->input.past_time = w->input.cur_time;
-  w->input.cur_time = glfwGetTime();
-  w->input.dt_time = w->input.cur_time - w->input.past_time;
+  w->input.past_time = w->input.time;
+  w->input.time = glfwGetTime();
+  w->input.dt_time = w->input.time - w->input.past_time;
 }
 
 OWL_INTERNAL void owl_update_prev_cursor_(struct owl_window *w) {
-  OWL_COPY_V2(w->input.cur_cursor_pos, w->input.prev_cursor_pos);
+  OWL_COPY_V2(w->input.cursor_position, w->input.prev_cursor_position);
 }
 
 OWL_GLOBAL int global_window_count = 0;
@@ -142,8 +142,8 @@ OWL_INTERNAL void owl_set_input_callbacks_(struct owl_window *w) {
 }
 
 OWL_INTERNAL void owl_init_input_(struct owl_window *w) {
-  OWL_ZERO_V2(w->input.prev_cursor_pos);
-  OWL_ZERO_V2(w->input.cur_cursor_pos);
+  OWL_ZERO_V2(w->input.prev_cursor_position);
+  OWL_ZERO_V2(w->input.cursor_position);
 
   {
     int i;

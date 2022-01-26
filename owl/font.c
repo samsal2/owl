@@ -35,7 +35,7 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
   FT_Library ft;
   FT_Face face;
   VkDeviceSize alloc_size;
-  struct owl_dyn_buf_ref ref;
+  struct owl_dyn_buffer_ref ref;
   enum owl_code code = OWL_SUCCESS;
 
   /* TODO(samuel): chances are im only going to be creating one font,
@@ -63,7 +63,7 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
   owl_calc_dims_(face, &(*font)->atlas_width, &(*font)->atlas_height);
 
   alloc_size = (VkDeviceSize)((*font)->atlas_width * (*font)->atlas_height);
-  data = owl_dyn_buf_alloc(renderer, alloc_size, &ref);
+  data = owl_dyn_buffer_alloc(renderer, alloc_size, &ref);
 
   if (!data) {
     code = OWL_ERROR_BAD_ALLOC;
@@ -122,7 +122,8 @@ enum owl_code owl_create_font(struct owl_vk_renderer *renderer, int size,
     desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
     desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-    code = owl_init_vk_texture_from_ref(renderer, &desc, &ref, &(*font)->atlas);
+    code = owl_init_texture_from_dyn_buffer_ref(renderer, &desc, &ref,
+                                                &(*font)->atlas);
 
     if (OWL_SUCCESS != code)
       goto end_err_done_face;
@@ -147,7 +148,7 @@ end:
 }
 
 void owl_destroy_font(struct owl_vk_renderer *renderer, struct owl_font *font) {
-  owl_deinit_vk_texture(renderer, &font->atlas);
+  owl_deinit_texture(renderer, &font->atlas);
   OWL_FREE(font);
 }
 
@@ -186,38 +187,38 @@ OWL_INTERNAL enum owl_code owl_fill_char_quad_(int width, int height,
   group->type = OWL_DRAW_CMD_TYPE_QUAD;
   group->storage.as_quad.texture = &font->atlas;
 
-  OWL_IDENTITY_M4(group->storage.as_quad.ubo.proj);
+  OWL_IDENTITY_M4(group->storage.as_quad.ubo.projection);
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.model);
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.view);
 
   v = &group->storage.as_quad.vertices[0];
-  v->pos[0] = screen_pos[0];
-  v->pos[1] = screen_pos[1];
-  v->pos[2] = 0.0F;
+  v->position[0] = screen_pos[0];
+  v->position[1] = screen_pos[1];
+  v->position[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
   v->uv[0] = uv_off;
   v->uv[1] = 0.0F;
 
   v = &group->storage.as_quad.vertices[1];
-  v->pos[0] = screen_pos[0] + glyph_scr_size[0];
-  v->pos[1] = screen_pos[1];
-  v->pos[2] = 0.0F;
+  v->position[0] = screen_pos[0] + glyph_scr_size[0];
+  v->position[1] = screen_pos[1];
+  v->position[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
   v->uv[0] = uv_off + glyph_tex_size[0];
   v->uv[1] = 0.0F;
 
   v = &group->storage.as_quad.vertices[2];
-  v->pos[0] = screen_pos[0];
-  v->pos[1] = screen_pos[1] + glyph_scr_size[1];
-  v->pos[2] = 0.0F;
+  v->position[0] = screen_pos[0];
+  v->position[1] = screen_pos[1] + glyph_scr_size[1];
+  v->position[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
   v->uv[0] = uv_off;
   v->uv[1] = glyph_tex_size[1];
 
   v = &group->storage.as_quad.vertices[3];
-  v->pos[0] = screen_pos[0] + glyph_scr_size[0];
-  v->pos[1] = screen_pos[1] + glyph_scr_size[1];
-  v->pos[2] = 0.0F;
+  v->position[0] = screen_pos[0] + glyph_scr_size[0];
+  v->position[1] = screen_pos[1] + glyph_scr_size[1];
+  v->position[2] = 0.0F;
   OWL_COPY_V3(color, v->color);
   v->uv[0] = uv_off + glyph_tex_size[0];
   v->uv[1] = glyph_tex_size[1];

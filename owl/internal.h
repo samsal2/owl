@@ -6,11 +6,11 @@
 #define OWL_LOCAL_PERSIST static
 
 #include <assert.h>
-#define OWL_ASSERT assert
+#define OWL_ASSERT(e) assert(e)
 
 #include <string.h>
-#define OWL_MEMSET memset
-#define OWL_MEMCPY memcpy
+#define OWL_MEMSET(dst, c, s) memset(dst, c, s)
+#define OWL_MEMCPY(dst, src, s) memcpy(dst, src, s)
 
 #ifndef NDEBUG
 

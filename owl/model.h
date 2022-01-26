@@ -47,7 +47,7 @@ struct owl_model_mesh {
 };
 
 struct owl_model_vertex {
-  owl_v3 pos;
+  owl_v3 position;
   owl_v3 normal;
   owl_v2 uv0;
   owl_v2 uv1;
@@ -56,7 +56,7 @@ struct owl_model_vertex {
 };
 
 struct owl_model_uniform {
-  owl_m4 proj;
+  owl_m4 projection;
   owl_m4 view;
   owl_m4 model;
   owl_v3 cam;
@@ -121,7 +121,7 @@ struct owl_model_mesh_data {
 
   void *ubo_data;
   VkBuffer ubo_buf;
-  VkDeviceMemory ubo_mem;
+  VkDeviceMemory ubo_memory;
   VkDescriptorSet ubo_set;
 
   int primitives_count;
@@ -138,11 +138,11 @@ struct owl_model_node_data {
 };
 
 struct owl_model {
-  VkBuffer vtx_buf;
-  VkDeviceMemory vtx_mem;
+  VkBuffer vertex_buffer;
+  VkDeviceMemory vertex_memory;
 
-  VkBuffer idx_buf;
-  VkDeviceMemory idx_mem;
+  VkBuffer index_buffer;
+  VkDeviceMemory index_memory;
 
   int roots_count;
   struct owl_model_node roots[OWL_MODEL_MAX_NODES];
@@ -160,20 +160,19 @@ struct owl_model {
   struct owl_model_mesh_data meshes[OWL_MODEL_MAX_MESHES];
 };
 
-enum owl_code owl_init_model_from_file(struct owl_vk_renderer *renderer,
+enum owl_code owl_init_model_from_file(struct owl_vk_renderer *r,
                                        char const *path,
                                        struct owl_model *model);
 
-void owl_denit_model(struct owl_vk_renderer *renderer, struct owl_model *model);
+void owl_denit_model(struct owl_vk_renderer *r, struct owl_model *model);
 
-enum owl_code owl_create_model_from_file(struct owl_vk_renderer *renderer,
+enum owl_code owl_create_model_from_file(struct owl_vk_renderer *r,
                                          char const *path,
                                          struct owl_model **model);
 
-void owl_destroy_model(struct owl_vk_renderer *renderer,
-                       struct owl_model *model);
+void owl_destroy_model(struct owl_vk_renderer *r, struct owl_model *model);
 
-enum owl_code owl_submit_model(struct owl_vk_renderer *renderer,
+enum owl_code owl_submit_model(struct owl_vk_renderer *r,
                                struct owl_draw_cmd_ubo const *ubo,
                                struct owl_model const *model);
 

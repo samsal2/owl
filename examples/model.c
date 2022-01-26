@@ -48,10 +48,10 @@ int main(void) {
 
   OWL_IDENTITY_M4(ubo.model);
   OWL_IDENTITY_M4(ubo.view);
-  OWL_IDENTITY_M4(ubo.proj);
+  OWL_IDENTITY_M4(ubo.projection);
 
 #if 1
-  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 100.0F, ubo.proj);
+  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 100.0F, ubo.projection);
 
   OWL_SET_V3(0.0F, 0.0F, 5.0F, eye);
   OWL_SET_V3(0.0F, 0.0F, 0.0F, center);

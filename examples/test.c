@@ -8,26 +8,26 @@ void fill_quad(struct owl_draw_cmd *group, struct owl_texture *texture) {
   group->storage.as_quad.texture = texture;
 
   v = &group->storage.as_quad.vertices[0];
-  OWL_SET_V3(-0.5F, -0.5F, 0.0F, v->pos);
+  OWL_SET_V3(-0.5F, -0.5F, 0.0F, v->position);
   OWL_SET_V3(1.0F, 1.0F, 1.0F, v->color);
   OWL_SET_V2(0.0F, 0.0F, v->uv);
 
   v = &group->storage.as_quad.vertices[1];
-  OWL_SET_V3(0.5F, -0.5F, 0.0F, v->pos);
+  OWL_SET_V3(0.5F, -0.5F, 0.0F, v->position);
   OWL_SET_V3(1.0F, 1.0F, 1.0F, v->color);
   OWL_SET_V2(1.0F, 0.0F, v->uv);
 
   v = &group->storage.as_quad.vertices[2];
-  OWL_SET_V3(-0.5F, 0.5F, 0.0F, v->pos);
+  OWL_SET_V3(-0.5F, 0.5F, 0.0F, v->position);
   OWL_SET_V3(1.0F, 1.0F, 1.0F, v->color);
   OWL_SET_V2(0.0F, 1.0F, v->uv);
 
   v = &group->storage.as_quad.vertices[3];
-  OWL_SET_V3(0.5F, 0.5F, 0.0F, v->pos);
+  OWL_SET_V3(0.5F, 0.5F, 0.0F, v->position);
   OWL_SET_V3(1.0F, 1.0F, 1.0F, v->color);
   OWL_SET_V2(1.0F, 1.0F, v->uv);
 
-  OWL_IDENTITY_M4(group->storage.as_quad.ubo.proj);
+  OWL_IDENTITY_M4(group->storage.as_quad.ubo.projection);
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.view);
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.model);
 }

@@ -1,6 +1,6 @@
 #version 450
 
-layout (location = 0) in vec4 in_pos;
+layout (location = 0) in vec4 in_position;
 layout (location = 1) in vec3 in_color;
 layout (location = 2) in vec2 in_uv;
 layout (location = 3) in vec3 in_normal;
@@ -8,7 +8,7 @@ layout (location = 4) in vec3 in_tangent;
 
 layout (binding = 0) uniform UBO 
 {
-	mat4 proj;
+	mat4 projection;
 	mat4 view;
 	mat4 model;
 } ubo;
@@ -20,7 +20,7 @@ layout (location = 3) out vec3 out_world_pos;
 layout (location = 4) out vec3 out_tangent;
 
 void main() {
-  vec4 tmp = in_pos + ubo.instances[gl_InstanceIndex];
+  vec4 tmp = in_position + ubo.instances[gl_InstanceIndex];
 
   gl_Position = ubo.projection * ubo.view * ubo.model * tmp;
 

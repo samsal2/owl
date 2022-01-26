@@ -17,7 +17,7 @@
 
 struct particle {
   int movable;
-  owl_v3 pos;
+  owl_v3 position;
   owl_v3 velocity;
   owl_v3 acceleration;
   owl_v3 previous_position;
@@ -46,12 +46,12 @@ static void init_cloth_(struct cloth *cloth) {
 
       p->movable = 1;
 
-      OWL_SET_V3(w, h, 0.0F, p->pos);
+      OWL_SET_V3(w, h, 0.0F, p->position);
       OWL_SET_V3(0.0F, 0.0F, 0.0F, p->velocity);
       OWL_SET_V3(0.0F, GRAVITY, 0.8F, p->acceleration);
       OWL_SET_V3(w, h, 0.0F, p->previous_position);
 
-      OWL_SET_V3(w, h, 0.0F, cloth->vertices_[k].pos);
+      OWL_SET_V3(w, h, 0.0F, cloth->vertices_[k].position);
       OWL_SET_V3(1.0F, 1.0F, 1.0F, cloth->vertices_[k].color);
       OWL_SET_V2((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F, cloth->vertices_[k].uv);
     }
@@ -65,7 +65,7 @@ static void init_cloth_(struct cloth *cloth) {
       if (j) {
         owl_u32 link = CLOTH_COORD(i, j - 1);
         p->links[0] = &cloth->particles[link];
-        p->rest_distances[0] = owl_dist_v3(p->pos, p->links[0]->pos);
+        p->rest_distances[0] = owl_dist_v3(p->position, p->links[0]->position);
       } else {
         p->links[0] = NULL;
         p->rest_distances[0] = 0.0F;
@@ -74,7 +74,7 @@ static void init_cloth_(struct cloth *cloth) {
       if (i) {
         owl_u32 link = CLOTH_COORD(i - 1, j);
         p->links[1] = &cloth->particles[link];
-        p->rest_distances[1] = owl_dist_v3(p->pos, p->links[1]->pos);
+        p->rest_distances[1] = owl_dist_v3(p->position, p->links[1]->position);
       } else {
         p->links[1] = NULL;
         p->rest_distances[1] = 0.0F;
@@ -83,7 +83,7 @@ static void init_cloth_(struct cloth *cloth) {
       if (j < CLOTH_H - 1) {
         owl_u32 link = CLOTH_COORD(i, j + 1);
         p->links[2] = &cloth->particles[link];
-        p->rest_distances[2] = owl_dist_v3(p->pos, p->links[2]->pos);
+        p->rest_distances[2] = owl_dist_v3(p->position, p->links[2]->position);
       } else {
         p->links[2] = NULL;
         p->rest_distances[2] = 0.0F;
@@ -92,7 +92,7 @@ static void init_cloth_(struct cloth *cloth) {
       if (i < CLOTH_W - 1) {
         owl_u32 link = CLOTH_COORD(i + 1, j);
         p->links[3] = &cloth->particles[link];
-        p->rest_distances[3] = owl_dist_v3(p->pos, p->links[3]->pos);
+        p->rest_distances[3] = owl_dist_v3(p->position, p->links[3]->position);
       } else {
         p->links[3] = NULL;
         p->rest_distances[3] = 0.0F;
@@ -130,12 +130,12 @@ static void update_cloth(float dt, struct cloth *cloth) {
 
     p->acceleration[1] += GRAVITY;
 
-    OWL_SUB_V3(p->pos, p->previous_position, p->velocity);
+    OWL_SUB_V3(p->position, p->previous_position, p->velocity);
     OWL_SCALE_V3(p->velocity, 1.0F - DAMPING, p->velocity);
     OWL_SCALE_V3(p->acceleration, dt, tmp);
     OWL_ADD_V3(tmp, p->velocity, tmp);
-    OWL_COPY_V3(p->pos, p->previous_position);
-    OWL_ADD_V3(p->pos, tmp, p->pos);
+    OWL_COPY_V3(p->position, p->previous_position);
+    OWL_ADD_V3(p->position, tmp, p->position);
     OWL_ZERO_V3(p->acceleration);
 
     /* constraint */
@@ -150,23 +150,23 @@ static void update_cloth(float dt, struct cloth *cloth) {
         if (!link)
           continue;
 
-        OWL_SUB_V3(link->pos, p->pos, delta);
+        OWL_SUB_V3(link->position, p->position, delta);
         factor = 1 - (p->rest_distances[k] / owl_mag_v3(delta));
         OWL_SCALE_V3(delta, factor, correction);
         OWL_SCALE_V3(correction, 0.5F, correction);
-        OWL_ADD_V3(p->pos, correction, p->pos);
+        OWL_ADD_V3(p->position, correction, p->position);
 
         if (!link->movable)
           continue;
 
         OWL_NEGATE_V3(correction, correction);
-        OWL_ADD_V3(link->pos, correction, link->pos);
+        OWL_ADD_V3(link->position, correction, link->position);
       }
     }
   }
 
   for (i = 0; i < PARTICLE_COUNT; ++i)
-    OWL_COPY_V3(cloth->particles[i].pos, cloth->vertices_[i].pos);
+    OWL_COPY_V3(cloth->particles[i].position, cloth->vertices_[i].position);
 }
 
 static void change_particle_position(owl_u32 id, owl_v2 const position,
@@ -174,17 +174,17 @@ static void change_particle_position(owl_u32 id, owl_v2 const position,
   struct particle *p = &cloth->particles[id];
 
   if (p->movable)
-    OWL_COPY_V2(position, p->pos);
+    OWL_COPY_V2(position, p->position);
 }
 
 static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
   owl_u32 i;
   owl_u32 current = 0;
-  float min_dist = owl_dist_v2(pos, cloth->particles[current].pos);
+  float min_dist = owl_dist_v2(pos, cloth->particles[current].position);
 
   for (i = 1; i < PARTICLE_COUNT; ++i) {
     struct particle *p = &cloth->particles[i];
-    float const new_dist = owl_dist_v2(pos, p->pos);
+    float const new_dist = owl_dist_v2(pos, p->position);
 
     if (new_dist < min_dist) {
       current = i;
@@ -252,8 +252,8 @@ int main(void) {
   window_desc.height = 600;
   window_desc.width = 600;
   window_desc.title = "cloth-sim";
-
   TEST(owl_create_window(&window_desc, &input, &window));
+
   TEST(owl_create_renderer(window, &renderer));
 
   texture_desc.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
@@ -262,7 +262,6 @@ int main(void) {
   texture_desc.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
   texture_desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
   texture_desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
-
   TEST(
       owl_create_texture_from_file(renderer, &texture_desc, TEXPATH, &texture));
   TEST(owl_create_font(renderer, 64, FONTPATH, &font));
@@ -277,12 +276,12 @@ int main(void) {
 
   OWL_IDENTITY_M4(pvm->model);
   OWL_IDENTITY_M4(pvm->view);
-  OWL_IDENTITY_M4(pvm->proj);
+  OWL_IDENTITY_M4(pvm->projection);
 
 #if 0
   owl_ortho_m4(-2.0F, 2.0F, -2.0F, 2.0F, 0.1F, 10.0F, pvm->proj);
 #else
-  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F, pvm->proj);
+  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F, pvm->projection);
 #endif
 
   OWL_SET_V3(0.0F, 0.0F, 2.0F, eye);
@@ -300,10 +299,10 @@ int main(void) {
 
     if (UNSELECTED == selected &&
         OWL_BUTTON_STATE_PRESS == input->mouse[OWL_MOUSE_BUTTON_LEFT])
-      selected = select_particle_at(input->cur_cursor_pos, &cloth);
+      selected = select_particle_at(input->cursor_position, &cloth);
 
     if (UNSELECTED != selected)
-      change_particle_position(selected, input->cur_cursor_pos, &cloth);
+      change_particle_position(selected, input->cursor_position, &cloth);
 
     if (UNSELECTED != selected &&
         OWL_BUTTON_STATE_RELEASE == input->mouse[OWL_MOUSE_BUTTON_LEFT])
