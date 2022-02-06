@@ -9,7 +9,7 @@
 #include <GLFW/glfw3.h>
 /* clang-format on */
 
-OWL_INTERNAL enum owl_mouse_btn owl_as_mouse_btn_(int type) {
+OWL_INTERNAL enum owl_mouse_button owl_as_mouse_button_(int type) {
   switch (type) {
   case GLFW_MOUSE_BUTTON_LEFT:
     return OWL_MOUSE_BUTTON_LEFT;
@@ -25,7 +25,7 @@ OWL_INTERNAL enum owl_mouse_btn owl_as_mouse_btn_(int type) {
   }
 }
 
-OWL_INTERNAL enum owl_btn_state owl_as_mouse_state_(int state) {
+OWL_INTERNAL enum owl_button_state owl_as_mouse_state_(int state) {
   switch (state) {
   case GLFW_PRESS:
     return OWL_BUTTON_STATE_PRESS;
@@ -71,7 +71,7 @@ OWL_INTERNAL void owl_cursor_pos_callback_(GLFWwindow *glfw, double x,
 OWL_INTERNAL void owl_mouse_callback_(GLFWwindow *glfw, int button, int action,
                                       int modifiers) {
   struct owl_window *w = glfwGetWindowUserPointer(glfw);
-  enum owl_mouse_btn b = owl_as_mouse_btn_(button);
+  enum owl_mouse_button b = owl_as_mouse_button_(button);
 
   OWL_UNUSED(modifiers);
 
@@ -135,6 +135,12 @@ owl_window_create_handle_(struct owl_window_desc const *desc) {
 }
 
 OWL_INTERNAL void owl_window_set_callbacks_(struct owl_window *w) {
+  /* FIXME: not exactly setting up callbacks */
+  glfwSetWindowUserPointer(w->data, w);
+  glfwGetWindowSize(w->data, &w->window_width, &w->window_height);
+  glfwGetFramebufferSize(w->data, &w->framebuffer_width,
+                         &w->framebuffer_height);
+
   glfwSetWindowSizeCallback(w->data, owl_window_callback_);
   glfwSetFramebufferSizeCallback(w->data, owl_framebuffer_callback_);
   glfwSetCursorPosCallback(w->data, owl_cursor_pos_callback_);
@@ -165,11 +171,6 @@ enum owl_code owl_window_init(struct owl_window_desc const *desc,
     return OWL_ERROR_BAD_PTR;
 
   w->data = owl_window_create_handle_(desc);
-
-  glfwSetWindowUserPointer(w->data, w);
-  glfwGetWindowSize(w->data, &w->window_width, &w->window_height);
-  glfwGetFramebufferSize(w->data, &w->framebuffer_width,
-                         &w->framebuffer_height);
 
   owl_window_set_callbacks_(w);
   owl_window_init_input_(w);

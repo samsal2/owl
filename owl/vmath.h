@@ -279,6 +279,25 @@ float owl_dist_v3(owl_v3 const from, owl_v3 const to);
 void owl_mul_complex(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out);
 
 #ifndef NDEBUG
+#define OWL_MATH_V2_FORMAT "%.2f %.2f"
+#define OWL_MATH_V2_FORMAT_ARGS(v) v[0], v[1]
+
+#define OWL_MATH_V3_FORMAT "%.2f %.2f %.2f"
+#define OWL_MATH_V3_FORMAT_ARGS(v) v[0], v[1], v[2]
+
+#define OWL_MATH_V4_FORMAT "%.2f %.2f %.2f %.2f"
+#define OWL_MATH_V4_FORMAT_ARGS(v) v[0], v[1], v[2], v[3]
+
+#define OWL_MATH_M4_FORMAT                                                     \
+  "%.2f %.2f %.2f %.2f\n"                                                      \
+  "%.2f %.2f %.2f %.2f\n"                                                      \
+  "%.2f %.2f %.2f %.2f\n"                                                      \
+  "%.2f %.2f %.2f %.2f"
+
+#define OWL_MATH_M4_FORMAT_ARGS(v)                                             \
+  v[0][0], v[0][1], v[0][2], v[0][3], v[1][0], v[1][1], v[1][2], v[1][3],      \
+      v[2][0], v[2][1], v[2][2], v[3][3], v[3][0], v[3][1], v[3][2], v[3][3]
+
 void owl_print_v2(owl_v2 const v);
 void owl_print_v3(owl_v3 const v);
 void owl_print_v4(owl_v4 const v);

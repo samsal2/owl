@@ -38,8 +38,6 @@ enum owl_code owl_font_create(struct owl_vk_renderer *renderer, int size,
   struct owl_dyn_buffer_ref ref;
   enum owl_code code = OWL_SUCCESS;
 
-  /* TODO(samuel): chances are im only going to be creating one font,
-     could do something analogous to owl_vk_texture_manager */
   if (!(*font = OWL_MALLOC(sizeof(**font)))) {
     code = OWL_ERROR_BAD_ALLOC;
     goto end;
@@ -122,8 +120,7 @@ enum owl_code owl_font_create(struct owl_vk_renderer *renderer, int size,
     desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
     desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-    code = owl_texture_init_from_ref(renderer, &desc, &ref,
-                                                &(*font)->atlas);
+    code = owl_texture_init_from_ref(renderer, &desc, &ref, &(*font)->atlas);
 
     if (OWL_SUCCESS != code)
       goto end_err_done_face;

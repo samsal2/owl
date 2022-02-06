@@ -5,14 +5,14 @@
 
 struct owl_vk_renderer_desc;
 
-enum owl_btn_state {
+enum owl_button_state {
   OWL_BUTTON_STATE_NONE,
   OWL_BUTTON_STATE_PRESS,
   OWL_BUTTON_STATE_RELEASE,
   OWL_BUTTON_STATE_REPEAT
 };
 
-enum owl_mouse_btn {
+enum owl_mouse_button {
   OWL_MOUSE_BUTTON_LEFT,
   OWL_MOUSE_BUTTON_MIDDLE,
   OWL_MOUSE_BUTTON_RIGHT,
@@ -153,8 +153,8 @@ struct owl_input_state {
   double time;
   owl_v2 cursor_position;
   owl_v2 prev_cursor_position;
-  enum owl_btn_state mouse[OWL_MOUSE_BUTTON_COUNT];
-  enum owl_btn_state keyboard[OWL_KEYBOARD_KEY_LAST];
+  enum owl_button_state mouse[OWL_MOUSE_BUTTON_COUNT];
+  enum owl_button_state keyboard[OWL_KEYBOARD_KEY_LAST];
 };
 
 struct owl_window_desc {

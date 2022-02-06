@@ -6,9 +6,9 @@
 #include <stdio.h>
 
 static char const *fps_string(OwlSeconds time) {
-  static char buf[256];
-  snprintf(buf, 256, "fps: %.2f\n", 1 / time);
-  return buf;
+  static char buffer[256];
+  snprintf(buffer, 256, "fps: %.2f\n", 1 / time);
+  return buffer;
 }
 
 static void fill_group(OwlTexture texture, struct owl_render_group *group) {

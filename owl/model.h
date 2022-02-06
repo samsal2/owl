@@ -55,16 +55,26 @@ struct owl_model_vertex {
   owl_v4 weight0;
 };
 
-struct owl_model_uniform {
+struct owl_model_ubo {
   owl_m4 projection;
   owl_m4 view;
   owl_m4 model;
-  owl_v3 cam;
+  owl_v3 camera_position;
 };
 
 struct owl_model_texture_data {
-  char const *uri;
-  struct owl_texture texture;
+  char uri[256];
+
+  owl_u32 width;
+  owl_u32 height;
+  owl_u32 mips;
+  owl_u32 layer_count;
+
+  VkDeviceMemory memory;
+  VkImage image;
+  VkImageLayout image_layout;
+  VkImageView view;
+  VkSampler sampler;
 };
 
 enum owl_model_material_alpha_mode {
@@ -96,6 +106,8 @@ struct owl_model_material_data {
 
   owl_v4 base_color_factor;
   owl_v4 emissive_factor;
+
+  VkDescriptorSet set;
 };
 
 struct owl_model_primitive {
@@ -110,17 +122,17 @@ struct owl_model_primitive {
 
 #define OWL_MODEL_MAX_JOINTS 8
 
-struct owl_model_mesh_uniform_block {
+struct owl_model_mesh_uniform {
   int joint_count;
   owl_m4 matrix;
   owl_m4 joints[OWL_MODEL_MAX_JOINTS];
 };
 
 struct owl_model_mesh_data {
-  struct owl_model_mesh_uniform_block uniform;
+  struct owl_model_mesh_uniform uniform;
 
   void *ubo_data;
-  VkBuffer ubo_buf;
+  VkBuffer ubo_buffer;
   VkDeviceMemory ubo_memory;
   VkDescriptorSet ubo_set;
 

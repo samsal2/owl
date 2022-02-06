@@ -9,7 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Add library
-add_library(${PROJECT_NAME})
+add_library(owl)
 
 # Find libraries
 find_package(Vulkan REQUIRED)
@@ -33,18 +33,15 @@ if (OWL_BUILD_EXAMPLES)
 endif (OWL_BUILD_EXAMPLES)
 
 # link libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw) 
-target_link_libraries(${PROJECT_NAME} PRIVATE stb)
-target_link_libraries(${PROJECT_NAME} PRIVATE cgltf)
-target_link_libraries(${PROJECT_NAME} PRIVATE freetype)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
+target_link_libraries(owl PRIVATE glfw) 
+target_link_libraries(owl PRIVATE stb)
+target_link_libraries(owl PRIVATE cgltf)
+target_link_libraries(owl PRIVATE freetype)
+target_link_libraries(owl PUBLIC ${Vulkan_LIBRARIES})
 
 # include directories
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
-target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR})
-
-# standard
-target_compile_features(${PROJECT_NAME} PRIVATE c_std_90)
+target_include_directories(owl PUBLIC ${PROJECT_SOURCE_DIR})
+target_include_directories(owl PUBLIC ${Vulkan_INCLUDE_DIR})
 
 set(OWL_C_CLANG_BASE_COMPILE_FLAGS 
 		-Wall
@@ -99,11 +96,13 @@ set(OWL_C_CLANG_DEBUG_LINK_FLAGS
 		-fsanitize=address
 		-fsanitize=undefined
 		-fsanitize=bounds)
-		
-target_compile_options(${PROJECT_NAME} PRIVATE
+	
+target_compile_features(owl PRIVATE c_std_90)
+
+target_compile_options(owl PRIVATE
 	"$<$<C_COMPILER_ID:Clang,AppleClang>:${OWL_C_CLANG_BASE_COMPILE_FLAGS}>"
 	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Debug>>:${OWL_C_CLANG_DEBUG_COMPILE_FLAGS}>"
 	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Release>>:${OWL_C_CLANG_RELEASE_COMPILE_FLAGS}>")
 
-target_link_options(${PROJECT_NAME} PUBLIC
+target_link_options(owl PUBLIC
 	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Debug>>:${OWL_C_CLANG_DEBUG_LINK_FLAGS}>")

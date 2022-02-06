@@ -10,16 +10,19 @@
 #include <stb/stb_image.h>
 #include <stdio.h>
 
-struct owl_model_load_state {
-  int cur_idx;
-  owl_u32 *idxs;
+#define OWL_MODEL_MESH_HANDLE_NONE -1
+#define OWL_MODEL_TEXTURE_HANDLE_NONE -1
 
-  int cur_vtx;
-  struct owl_model_vertex *vtxs;
+struct owl_model_load_state {
+  int cur_index;
+  owl_u32 *indices;
+
+  int cur_vertex;
+  struct owl_model_vertex *vertices;
 };
 
-OWL_INTERNAL enum owl_code owl_request_node_(struct owl_model *model,
-                                             struct owl_model_node *node) {
+OWL_INTERNAL enum owl_code
+owl_model_request_node_(struct owl_model *model, struct owl_model_node *node) {
   int const handle = model->nodes_count++;
 
   if (OWL_MODEL_MAX_NODES <= model->nodes_count)
@@ -30,8 +33,8 @@ OWL_INTERNAL enum owl_code owl_request_node_(struct owl_model *model,
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL enum owl_code owl_request_mesh_(struct owl_model *model,
-                                             struct owl_model_mesh *mesh) {
+OWL_INTERNAL enum owl_code
+owl_model_request_mesh_(struct owl_model *model, struct owl_model_mesh *mesh) {
   int const handle = model->meshes_count++;
 
   if (OWL_MODEL_MAX_MESHES <= model->meshes_count)
@@ -87,8 +90,8 @@ OWL_INTERNAL int owl_get_type_size_(cgltf_type type) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_get_material_(struct owl_model const *model, char const *name,
-                  struct owl_model_material *material) {
+owl_model_get_material_(struct owl_model const *model, char const *name,
+                        struct owl_model_material *material) {
   int i;
 
   for (i = 0; i < model->materials_count; ++i) {
@@ -101,7 +104,7 @@ owl_get_material_(struct owl_model const *model, char const *name,
   return OWL_ERROR_UNKNOWN;
 }
 
-OWL_INTERNAL enum owl_code owl_process_primitive_(
+OWL_INTERNAL enum owl_code owl_model_process_primitive_(
     cgltf_primitive const *prim, struct owl_model const *model,
     struct owl_model_load_state *state, struct owl_model_primitive *out) {
   int i;
@@ -128,7 +131,7 @@ OWL_INTERNAL enum owl_code owl_process_primitive_(
 
   enum owl_code code = OWL_SUCCESS;
 
-  out->first_index = (owl_u32)state->cur_idx;
+  out->first_index = (owl_u32)state->cur_index;
   out->indices_count = (owl_u32)prim->indices->count;
 
   /* position */
@@ -168,7 +171,7 @@ OWL_INTERNAL enum owl_code owl_process_primitive_(
 
   /* vertices */
   for (i = 0; i < (int)out->vertex_count; ++i) {
-    struct owl_model_vertex *v = &state->vtxs[state->cur_vtx + i];
+    struct owl_model_vertex *v = &state->vertices[state->cur_vertex + i];
     {
       float const *data = (float const *)&pos_data[i * pos_stride];
       v->position[0] = data[0];
@@ -241,7 +244,7 @@ OWL_INTERNAL enum owl_code owl_process_primitive_(
     }
   }
 
-  state->cur_vtx += (int)out->vertex_count;
+  state->cur_vertex += (int)out->vertex_count;
 
   /* indices */
   {
@@ -252,17 +255,17 @@ OWL_INTERNAL enum owl_code owl_process_primitive_(
     switch (prim->indices->component_type) {
     case cgltf_component_type_r_8u: { /* UNSIGNED_BYTE */
       for (i = 0; i < (int)prim->indices->count; ++i) {
-        state->idxs[state->cur_idx + i] = ((owl_u8 const *)idx_data)[i];
+        state->indices[state->cur_index + i] = ((owl_u8 const *)idx_data)[i];
       }
     } break;
     case cgltf_component_type_r_16u: { /* UNSIGNED_SHORT */
       for (i = 0; i < (int)prim->indices->count; ++i) {
-        state->idxs[state->cur_idx + i] = ((owl_u16 const *)idx_data)[i];
+        state->indices[state->cur_index + i] = ((owl_u16 const *)idx_data)[i];
       }
     } break;
     case cgltf_component_type_r_32u: { /* UNSIGNED_INT */
       for (i = 0; i < (int)prim->indices->count; ++i) {
-        state->idxs[state->cur_idx + i] = ((owl_u32 const *)idx_data)[i];
+        state->indices[state->cur_index + i] = ((owl_u32 const *)idx_data)[i];
       }
     } break;
       /* not supported by spec */
@@ -275,9 +278,9 @@ OWL_INTERNAL enum owl_code owl_process_primitive_(
     }
   }
 
-  state->cur_idx += (int)prim->indices->count;
+  state->cur_index += (int)prim->indices->count;
 
-  code = owl_get_material_(model, prim->material->name, &out->material);
+  code = owl_model_get_material_(model, prim->material->name, &out->material);
 
   if (OWL_SUCCESS != code)
     return code;
@@ -285,17 +288,17 @@ OWL_INTERNAL enum owl_code owl_process_primitive_(
   return code;
 }
 
-OWL_INTERNAL enum owl_code owl_process_mesh_(struct owl_vk_renderer const *r,
-                                             cgltf_mesh const *mesh,
-                                             struct owl_model_node const *node,
-                                             struct owl_model_load_state *state,
-                                             struct owl_model *model) {
+OWL_INTERNAL enum owl_code
+owl_model_process_mesh_(struct owl_vk_renderer const *r, cgltf_mesh const *mesh,
+                        struct owl_model_node const *node,
+                        struct owl_model_load_state *state,
+                        struct owl_model *model) {
   int i;
   enum owl_code code;
   struct owl_model_mesh_data *mesh_data;
   struct owl_model_node_data *node_data = &model->nodes[node->handle];
 
-  code = owl_request_mesh_(model, &node_data->mesh);
+  code = owl_model_request_mesh_(model, &node_data->mesh);
 
   if (OWL_SUCCESS != code)
     goto end;
@@ -314,29 +317,31 @@ OWL_INTERNAL enum owl_code owl_process_mesh_(struct owl_vk_renderer const *r,
     buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer.pNext = NULL;
     buffer.flags = 0;
-    buffer.size = sizeof(struct owl_model_mesh_uniform_block);
+    buffer.size = sizeof(struct owl_model_mesh_uniform);
     buffer.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     buffer.queueFamilyIndexCount = 0;
     buffer.pQueueFamilyIndices = NULL;
 
-    OWL_VK_CHECK(vkCreateBuffer(r->device, &buffer, NULL, &mesh_data->ubo_buf));
+    OWL_VK_CHECK(
+        vkCreateBuffer(r->device, &buffer, NULL, &mesh_data->ubo_buffer));
   }
 
   {
-    VkMemoryAllocateInfo mem;
-    VkMemoryRequirements req;
+    VkMemoryAllocateInfo memory;
+    VkMemoryRequirements requirements;
 
-    vkGetBufferMemoryRequirements(r->device, mesh_data->ubo_buf, &req);
+    vkGetBufferMemoryRequirements(r->device, mesh_data->ubo_buffer,
+                                  &requirements);
 
-    mem.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    mem.pNext = NULL;
-    mem.allocationSize = req.size;
-    mem.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, req.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_CPU_ONLY);
+    memory.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory.pNext = NULL;
+    memory.allocationSize = requirements.size;
+    memory.memoryTypeIndex = owl_renderer_find_memory_type(
+        r, requirements.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_CPU_ONLY);
 
     OWL_VK_CHECK(
-        vkAllocateMemory(r->device, &mem, NULL, &mesh_data->ubo_memory));
+        vkAllocateMemory(r->device, &memory, NULL, &mesh_data->ubo_memory));
 
     OWL_VK_CHECK(vkMapMemory(r->device, mesh_data->ubo_memory, 0, VK_WHOLE_SIZE,
                              0, &mesh_data->ubo_data));
@@ -356,11 +361,11 @@ OWL_INTERNAL enum owl_code owl_process_mesh_(struct owl_vk_renderer const *r,
 
   {
     VkWriteDescriptorSet write;
-    VkDescriptorBufferInfo buf;
+    VkDescriptorBufferInfo buffer;
 
-    buf.buffer = mesh_data->ubo_buf;
-    buf.offset = 0;
-    buf.range = sizeof(struct owl_model_mesh_uniform_block);
+    buffer.buffer = mesh_data->ubo_buffer;
+    buffer.offset = 0;
+    buffer.range = sizeof(struct owl_model_mesh_uniform);
 
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.pNext = NULL;
@@ -370,52 +375,55 @@ OWL_INTERNAL enum owl_code owl_process_mesh_(struct owl_vk_renderer const *r,
     write.descriptorCount = 1;
     write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     write.pImageInfo = NULL;
-    write.pBufferInfo = &buf;
+    write.pBufferInfo = &buffer;
     write.pTexelBufferView = NULL;
 
     vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);
   }
 
   for (i = 0; i < mesh_data->primitives_count; ++i)
-    owl_process_primitive_(&mesh->primitives[i], model, state,
-                           &mesh_data->primitives[i]);
+    owl_model_process_primitive_(&mesh->primitives[i], model, state,
+                                 &mesh_data->primitives[i]);
 
 end:
   return code;
 }
 
-OWL_INTERNAL void owl_deinit_mesh_(struct owl_vk_renderer const *r,
-                                   struct owl_model_mesh_data const *data) {
+OWL_INTERNAL void
+owl_model_deinit_mesh_(struct owl_vk_renderer const *r,
+                       struct owl_model_mesh_data const *data) {
   vkFreeDescriptorSets(r->device, r->common_set_pool, 1, &data->ubo_set);
   vkFreeMemory(r->device, data->ubo_memory, NULL);
-  vkDestroyBuffer(r->device, data->ubo_buf, NULL);
+  vkDestroyBuffer(r->device, data->ubo_buffer, NULL);
 }
 
 OWL_INTERNAL enum owl_code
-owl_process_node_(struct owl_vk_renderer const *r, cgltf_node const *node,
-                  struct owl_model_node const *parent,
-                  struct owl_model_load_state *state, struct owl_model *model) {
+owl_model_process_node_(struct owl_vk_renderer const *r, cgltf_node const *node,
+                        struct owl_model_node const *parent,
+                        struct owl_model_load_state *state,
+                        struct owl_model *model) {
   int i;
   enum owl_code code = OWL_SUCCESS;
   struct owl_model_node new_node;
   struct owl_model_node_data *new_node_data;
 
-  if (OWL_SUCCESS != (code = owl_request_node_(model, &new_node)))
+  if (OWL_SUCCESS != (code = owl_model_request_node_(model, &new_node)))
     goto end;
 
   new_node_data = &model->nodes[new_node.handle];
 
   if (node->mesh) {
-    code = owl_process_mesh_(r, node->mesh, &new_node, state, model);
+    code = owl_model_process_mesh_(r, node->mesh, &new_node, state, model);
 
     if (OWL_SUCCESS != code)
       goto end;
   } else {
-    new_node_data->mesh.handle = -1;
+    new_node_data->mesh.handle = OWL_MODEL_MESH_HANDLE_NONE;
   }
 
   for (i = 0; i < (int)node->children_count; ++i) {
-    code = owl_process_node_(r, node->children[i], &new_node, state, model);
+    code =
+        owl_model_process_node_(r, node->children[i], &new_node, state, model);
 
     if (OWL_SUCCESS != code)
       goto end;
@@ -446,44 +454,44 @@ end:
   return code;
 }
 
-OWL_INTERNAL enum owl_sampler_addr_mode owl_get_wrap_mode_(int mode) {
+OWL_INTERNAL VkSamplerAddressMode owl_as_vk_sampler_addr_mode_(int mode) {
   switch (mode) {
   case 10497:
-    return OWL_SAMPLER_ADDR_MODE_REPEAT;
+    return VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
   case 33071:
-    return OWL_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
+    return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
   case 33648:
-    return OWL_SAMPLER_ADDR_MODE_MIRRORED_REPEAT;
+    return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
 
   default:
-    return OWL_SAMPLER_ADDR_MODE_REPEAT;
+    return VK_SAMPLER_ADDRESS_MODE_REPEAT;
   }
 }
 
-OWL_INTERNAL enum owl_sampler_filter owl_get_filter_mode_(int type) {
+OWL_INTERNAL VkFilter owl_as_vk_filter_(int type) {
   switch (type) {
   case 9728:
-    return OWL_SAMPLER_FILTER_NEAREST;
+    return VK_FILTER_NEAREST;
 
   case 9729:
-    return OWL_SAMPLER_FILTER_LINEAR;
+    return VK_FILTER_LINEAR;
 
   case 9984:
-    return OWL_SAMPLER_FILTER_NEAREST;
+    return VK_FILTER_NEAREST;
 
   case 9985:
-    return OWL_SAMPLER_FILTER_NEAREST;
+    return VK_FILTER_NEAREST;
 
   case 9986:
-    return OWL_SAMPLER_FILTER_LINEAR;
+    return VK_FILTER_LINEAR;
 
   case 9987:
-    return OWL_SAMPLER_FILTER_LINEAR;
+    return VK_FILTER_LINEAR;
 
   default:
-    return OWL_SAMPLER_FILTER_LINEAR;
+    return VK_FILTER_LINEAR;
   }
 }
 
@@ -501,9 +509,197 @@ enum owl_model_material_alpha_mode owl_get_alpha_mode_(cgltf_alpha_mode mode) {
 }
 
 char const *owl_fix_uri_(char const *uri) {
-  OWL_LOCAL_PERSIST char buf[256];
-  snprintf(buf, sizeof(buf), "../../assets/%s", uri);
-  return buf;
+  OWL_LOCAL_PERSIST char buffer[256];
+  snprintf(buffer, sizeof(buffer), "../../assets/%s", uri);
+  return buffer;
+}
+
+struct owl_model_texture_sampler_desc {
+  int mag_filter;
+  int min_filter;
+  int wrap_u;
+  int wrap_v;
+};
+
+OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
+    struct owl_vk_renderer *r, char const *path,
+    struct owl_model_texture_sampler_desc const *sampler_desc,
+    struct owl_model_texture_data *tex) {
+  owl_byte *data;
+  struct owl_texture_desc desc;
+  enum owl_code code = OWL_SUCCESS;
+
+  strncpy(tex->uri, path, sizeof(tex->uri));
+
+  if (!(data = owl_texture_data_from_file(path, &desc)))
+    return OWL_ERROR_BAD_ALLOC;
+
+  tex->mips = owl_calc_mips((owl_u32)desc.width, (owl_u32)desc.height);
+
+  {
+#define OWL_IMAGE_USAGE                                                        \
+  VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |          \
+      VK_IMAGE_USAGE_SAMPLED_BIT;
+
+    VkImageCreateInfo image;
+    image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image.pNext = NULL;
+    image.flags = 0;
+    image.imageType = VK_IMAGE_TYPE_2D;
+    image.format = owl_as_vk_format_(desc.format);
+    image.extent.width = (owl_u32)desc.width;
+    image.extent.height = (owl_u32)desc.height;
+    image.extent.depth = 1;
+    image.mipLevels = (owl_u32)tex->mips;
+    image.arrayLayers = 1;
+    image.samples = VK_SAMPLE_COUNT_1_BIT;
+    image.usage = OWL_IMAGE_USAGE;
+    image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image.queueFamilyIndexCount = 0;
+    image.pQueueFamilyIndices = NULL;
+    image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &tex->image));
+
+#undef OWL_IMAGE_USAGE
+  }
+
+  {
+    VkMemoryAllocateInfo memory;
+    VkMemoryRequirements requirements;
+
+    vkGetImageMemoryRequirements(r->device, tex->image, &requirements);
+
+    memory.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory.pNext = NULL;
+    memory.allocationSize = requirements.size;
+    memory.memoryTypeIndex = owl_renderer_find_memory_type(
+        r, requirements.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_GPU_ONLY);
+
+    OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &tex->memory));
+    OWL_VK_CHECK(vkBindImageMemory(r->device, tex->image, tex->memory, 0));
+  }
+
+  {
+    VkImageViewCreateInfo view;
+    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    view.pNext = NULL;
+    view.flags = 0;
+    view.image = tex->image;
+    view.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    view.format = owl_as_vk_format_(desc.format);
+    view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    view.subresourceRange.baseMipLevel = 0;
+    view.subresourceRange.levelCount = tex->mips;
+    view.subresourceRange.baseArrayLayer = 0;
+    view.subresourceRange.layerCount = 1;
+
+    OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &tex->view));
+  }
+
+  {
+    VkCommandBuffer cmd;
+    VkDeviceSize size;
+    owl_byte *stage;
+    struct owl_dyn_buffer_ref ref;
+
+    size = owl_desc_required_size_(&desc);
+
+    if (!(stage = owl_renderer_dyn_alloc(r, size, &ref)))
+      return OWL_ERROR_BAD_ALLOC;
+
+    owl_renderer_alloc_cmd_buffer(r, &cmd);
+
+    {
+      struct owl_vk_image_transition_desc transition_desc;
+      transition_desc.mips = tex->mips;
+      transition_desc.from = VK_IMAGE_LAYOUT_UNDEFINED;
+      transition_desc.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      transition_desc.image = tex->image;
+
+      owl_vk_image_transition(cmd, &transition_desc);
+    }
+
+    {
+
+      VkBufferImageCopy copy;
+
+      copy.bufferOffset = ref.offset;
+      copy.bufferRowLength = 0;
+      copy.bufferImageHeight = 0;
+      copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      copy.imageSubresource.mipLevel = 0;
+      copy.imageSubresource.baseArrayLayer = 0;
+      copy.imageSubresource.layerCount = 1;
+      copy.imageOffset.x = 0;
+      copy.imageOffset.y = 0;
+      copy.imageOffset.z = 0;
+      copy.imageExtent.width = (owl_u32)desc.width;
+      copy.imageExtent.height = (owl_u32)desc.height;
+      copy.imageExtent.depth = 1;
+
+      vkCmdCopyBufferToImage(cmd, ref.buffer, tex->image,
+                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+    }
+    {
+      struct owl_vk_image_mip_desc mip_desc;
+
+      mip_desc.width = desc.width;
+      mip_desc.height = desc.height;
+      mip_desc.mips = tex->mips;
+      mip_desc.image = tex->image;
+
+      owl_vk_image_generate_mips(cmd, &mip_desc);
+    }
+
+    owl_renderer_submit_cmd_buffer(r, cmd);
+  }
+
+  {
+#define OWL_MAX_ANISOTROPY 16
+
+    VkSamplerCreateInfo sampler;
+    sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler.pNext = NULL;
+    sampler.flags = 0;
+    sampler.magFilter = owl_as_vk_filter_(sampler_desc->mag_filter);
+    sampler.minFilter = owl_as_vk_filter_(sampler_desc->min_filter);
+    /* FIXME(samuel): correct mipmap mode */
+    sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    sampler.addressModeU = owl_as_vk_sampler_addr_mode_(sampler_desc->wrap_u);
+    sampler.addressModeV = owl_as_vk_sampler_addr_mode_(sampler_desc->wrap_v);
+    sampler.addressModeW = owl_as_vk_sampler_addr_mode_(sampler_desc->wrap_v);
+    sampler.mipLodBias = 0.0F;
+    sampler.anisotropyEnable = VK_TRUE;
+    sampler.maxAnisotropy = OWL_MAX_ANISOTROPY;
+    sampler.compareEnable = VK_FALSE;
+    sampler.compareOp = VK_COMPARE_OP_ALWAYS;
+    sampler.minLod = 0.0F;
+    sampler.maxLod = tex->mips; /* VK_LOD_CLAMP_NONE */
+    sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    sampler.unnormalizedCoordinates = VK_FALSE;
+
+    OWL_VK_CHECK(vkCreateSampler(r->device, &sampler, NULL, &tex->sampler));
+
+#undef OWL_MAX_ANISOTROPY
+  }
+
+  owl_texture_free_data_from_file(data);
+
+  return code;
+}
+
+OWL_INTERNAL void
+owl_model_deinit_texture_data_(struct owl_vk_renderer *r,
+                               struct owl_model_texture_data *tex) {
+  vkDestroyImage(r->device, tex->image, NULL);
+  vkFreeMemory(r->device, tex->memory, NULL);
+  vkDestroyImageView(r->device, tex->view, NULL);
+  vkDestroySampler(r->device, tex->sampler, NULL);
 }
 
 enum owl_code owl_process_textures_(struct owl_vk_renderer *r,
@@ -518,23 +714,16 @@ enum owl_code owl_process_textures_(struct owl_vk_renderer *r,
   model->textures_count = (int)data->textures_count;
 
   for (i = 0; i < model->textures_count; ++i) {
-    struct owl_texture_desc desc;
+    struct owl_model_texture_sampler_desc sampler;
     cgltf_texture const *texture = &data->textures[i];
     struct owl_model_texture_data *texture_data = &model->textures[i];
 
-    desc.mag_filter = owl_get_filter_mode_(texture->sampler->mag_filter);
-    desc.min_filter = owl_get_filter_mode_(texture->sampler->min_filter);
-    desc.wrap_u = owl_get_wrap_mode_(texture->sampler->wrap_s);
-    desc.wrap_w = owl_get_wrap_mode_(texture->sampler->wrap_t);
-    desc.wrap_v = owl_get_wrap_mode_(texture->sampler->wrap_t);
+    sampler.mag_filter = texture->sampler->mag_filter;
+    sampler.min_filter = texture->sampler->min_filter;
+    sampler.wrap_u = texture->sampler->wrap_s;
+    sampler.wrap_v = texture->sampler->wrap_t;
 
-    code = owl_texture_init_from_file(
-        r, &desc, owl_fix_uri_(texture->image->uri), &texture_data->texture);
-
-    texture_data->uri = texture->image->uri;
-
-    if (OWL_SUCCESS != code)
-      return OWL_ERROR_BAD_INIT;
+    owl_model_init_texture_data_(r, texture_data->uri, &sampler, texture_data);
   }
 
   return code;
@@ -555,9 +744,9 @@ OWL_INTERNAL enum owl_code owl_get_texture_(struct owl_model const *model,
   return OWL_ERROR_UNKNOWN;
 }
 
-OWL_INTERNAL enum owl_code owl_process_materials_(struct owl_vk_renderer *r,
-                                                  cgltf_data const *data,
-                                                  struct owl_model *model) {
+OWL_INTERNAL enum owl_code
+owl_model_process_materials_(struct owl_vk_renderer *r, cgltf_data const *data,
+                             struct owl_model *model) {
   int i;
   enum owl_code code;
 
@@ -584,7 +773,7 @@ OWL_INTERNAL enum owl_code owl_process_materials_(struct owl_vk_renderer *r,
       material_data->base_color_texcoord =
           material->pbr_metallic_roughness.base_color_texture.texcoord;
     } else {
-      material_data->base_color_texture.handle = -1;
+      material_data->base_color_texture.handle = OWL_MODEL_TEXTURE_HANDLE_NONE;
     }
 
     if (material->pbr_metallic_roughness.metallic_roughness_texture.texture) {
@@ -600,7 +789,8 @@ OWL_INTERNAL enum owl_code owl_process_materials_(struct owl_vk_renderer *r,
       material_data->metallic_roughness_texcoord =
           material->pbr_metallic_roughness.metallic_roughness_texture.texcoord;
     } else {
-      material_data->metallic_rougness_texture.handle = -1;
+      material_data->metallic_rougness_texture.handle =
+          OWL_MODEL_TEXTURE_HANDLE_NONE;
     }
 
     if (material->normal_texture.texture) {
@@ -613,7 +803,7 @@ OWL_INTERNAL enum owl_code owl_process_materials_(struct owl_vk_renderer *r,
 
       material_data->normal_texcoord = material->normal_texture.texcoord;
     } else {
-      material_data->normal_texture.handle = -1;
+      material_data->normal_texture.handle = OWL_MODEL_TEXTURE_HANDLE_NONE;
     }
 
     if (material->emissive_texture.texture) {
@@ -626,7 +816,7 @@ OWL_INTERNAL enum owl_code owl_process_materials_(struct owl_vk_renderer *r,
 
       material_data->emissive_texcoord = material->emissive_texture.texcoord;
     } else {
-      material_data->emissive_texture.handle = -1;
+      material_data->emissive_texture.handle = OWL_MODEL_TEXTURE_HANDLE_NONE;
     }
 
     if (material->occlusion_texture.texture) {
@@ -727,7 +917,7 @@ enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
   if (OWL_SUCCESS != (code = owl_process_textures_(r, data, model)))
     goto end;
 
-  if (OWL_SUCCESS != (code = owl_process_materials_(r, data, model)))
+  if (OWL_SUCCESS != (code = owl_model_process_materials_(r, data, model)))
     goto end;
 
   vertices_count = 0;
@@ -736,31 +926,34 @@ enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
     owl_add_vertices_and_indices_count_(&data->nodes[i], &vertices_count,
                                         &indices_count);
 
-  state.cur_vtx = 0;
-  state.vtxs = owl_renderer_dyn_alloc(
+  state.cur_vertex = 0;
+  state.vertices = owl_renderer_dyn_alloc(
       r, (VkDeviceSize)vertices_count * sizeof(struct owl_model_vertex),
       &vertices_ref);
 
-  state.cur_idx = 0;
-  state.idxs = owl_renderer_dyn_alloc(
+  state.cur_index = 0;
+  state.indices = owl_renderer_dyn_alloc(
       r, (VkDeviceSize)indices_count * sizeof(owl_u32), &indices_ref);
 
   for (i = 0; i < (int)data->nodes_count; ++i)
-    owl_process_node_(r, &data->nodes[i], NULL, &state, model);
+    owl_model_process_node_(r, &data->nodes[i], NULL, &state, model);
 
   {
-    VkBufferCreateInfo buf;
-    buf.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buf.pNext = NULL;
-    buf.flags = 0;
-    buf.size = (VkDeviceSize)vertices_count * sizeof(struct owl_model_vertex);
-    buf.usage =
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    buf.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    buf.queueFamilyIndexCount = 0;
-    buf.pQueueFamilyIndices = NULL;
+    VkBufferCreateInfo buffer;
 
-    OWL_VK_CHECK(vkCreateBuffer(r->device, &buf, NULL, &model->vertex_buffer));
+    buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer.pNext = NULL;
+    buffer.flags = 0;
+    buffer.size =
+        (VkDeviceSize)vertices_count * sizeof(struct owl_model_vertex);
+    buffer.usage =
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    buffer.queueFamilyIndexCount = 0;
+    buffer.pQueueFamilyIndices = NULL;
+
+    OWL_VK_CHECK(
+        vkCreateBuffer(r->device, &buffer, NULL, &model->vertex_buffer));
   }
 
   {
@@ -784,18 +977,20 @@ enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
   }
 
   {
-    VkBufferCreateInfo buf;
-    buf.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buf.pNext = NULL;
-    buf.flags = 0;
-    buf.size = (VkDeviceSize)indices_count * sizeof(owl_u32);
-    buf.usage =
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    buf.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    buf.queueFamilyIndexCount = 0;
-    buf.pQueueFamilyIndices = NULL;
+    VkBufferCreateInfo buffer;
 
-    OWL_VK_CHECK(vkCreateBuffer(r->device, &buf, NULL, &model->index_buffer));
+    buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer.pNext = NULL;
+    buffer.flags = 0;
+    buffer.size = (VkDeviceSize)indices_count * sizeof(owl_u32);
+    buffer.usage =
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    buffer.queueFamilyIndexCount = 0;
+    buffer.pQueueFamilyIndices = NULL;
+
+    OWL_VK_CHECK(
+        vkCreateBuffer(r->device, &buffer, NULL, &model->index_buffer));
   }
 
   {
@@ -861,7 +1056,7 @@ enum owl_code owl_model_create_from_file(struct owl_vk_renderer *r,
   return owl_model_init_from_file(r, path, *model);
 }
 
-void owl_deinit_model(struct owl_vk_renderer *r, struct owl_model *model) {
+void owl_model_deinit(struct owl_vk_renderer *r, struct owl_model *model) {
   int i;
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
@@ -871,30 +1066,58 @@ void owl_deinit_model(struct owl_vk_renderer *r, struct owl_model *model) {
   vkDestroyBuffer(r->device, model->vertex_buffer, NULL);
 
   for (i = 0; i < model->textures_count; ++i)
-    owl_texture_deinit(r, &model->textures[i].texture);
+    owl_model_deinit_texture_data_(r, &model->textures[i]);
 
   for (i = 0; i < model->meshes_count; ++i)
-    owl_deinit_mesh_(r, &model->meshes[i]);
+    owl_model_deinit_mesh_(r, &model->meshes[i]);
 }
 
 void owl_model_destroy(struct owl_vk_renderer *r, struct owl_model *model) {
-  owl_deinit_model(r, model);
+  owl_model_deinit(r, model);
   OWL_FREE(model);
 }
+
+OWL_INTERNAL void
+owl_model_bind_vertex_and_index_buffers_(struct owl_vk_renderer *r,
+                                         struct owl_model const *model) {
+  VkDeviceSize const offset[] = {0};
+  vkCmdBindVertexBuffers(r->frame_cmd_buffers[r->active], 0, 1,
+                         &model->vertex_buffer, offset);
+
+  vkCmdBindIndexBuffer(r->frame_cmd_buffers[r->active], model->index_buffer, 0,
+                       VK_INDEX_TYPE_UINT32);
+}
+
+#if 0
+
+OWL_INTERNAL void
+owl_model_submit_primitives_(struct owl_vk_renderer *r,
+                             struct owl_model const *model,
+                             struct owl_model_mesh const *mesh) {
+  int i;
+  struct owl_model_mesh_data const *mesh_data;
+
+  if (OWL_MODEL_MESH_HANDLE_NONE == mesh->handle)
+    return;
+
+  mesh_data = &model->meshes[mesh->handle];
+
+  for (i = 0; i < mesh_data->primitives_count; ++i) {
+    struct owl_model_material const *material =
+        &mesh_data->primitives[i].material;
+    struct owl_model_material_data const *material_data =
+        &model->materials[material->handle];
+  }
+}
+
+#endif
 
 enum owl_code owl_model_submit(struct owl_vk_renderer *r,
                                struct owl_draw_cmd_ubo const *ubo,
                                struct owl_model const *model) {
   int i;
 
-  {
-    VkDeviceSize const offset = 0;
-    vkCmdBindVertexBuffers(r->frame_cmd_buffers[r->active], 0, 1,
-                           &model->vertex_buffer, &offset);
-
-    vkCmdBindIndexBuffer(r->frame_cmd_buffers[r->active], model->index_buffer,
-                         0, VK_INDEX_TYPE_UINT32);
-  }
+  owl_model_bind_vertex_and_index_buffers_(r, model);
 
   {
     VkDeviceSize size;
@@ -908,7 +1131,7 @@ enum owl_code owl_model_submit(struct owl_vk_renderer *r,
     OWL_MEMCPY(data, ubo, size);
 
     sets[0] = ref.pvm_set;
-    sets[1] = model->textures[1].texture.set;
+    sets[1] = model->materials[1].set;
 
     vkCmdBindDescriptorSets(r->frame_cmd_buffers[r->active],
                             VK_PIPELINE_BIND_POINT_GRAPHICS,

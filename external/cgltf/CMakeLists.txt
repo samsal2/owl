@@ -6,6 +6,6 @@ add_library(cgltf)
 
 add_subdirectory(cgltf)
 
-target_compile_options(cgltf PRIVATE -O3)
-target_compile_features(cgltf PRIVATE c_std_99)
+target_compile_features(${PROJECT_NAME} PRIVATE c_std_99)
 target_include_directories(cgltf PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+

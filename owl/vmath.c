@@ -257,21 +257,20 @@ float owl_dist_v3(owl_v3 const from, owl_v3 const to) {
 
 #include <stdio.h>
 
-void owl_print_v2(owl_v2 const v) { printf("%.4f %.4f", v[0], v[1]); }
+void owl_print_v2(owl_v2 const v) {
+  printf(OWL_MATH_V2_FORMAT, OWL_MATH_V2_FORMAT_ARGS(v));
+}
 
 void owl_print_v3(owl_v3 const v) {
-  printf("%.4f %.4f %.4f", v[0], v[1], v[2]);
+  printf(OWL_MATH_V3_FORMAT, OWL_MATH_V3_FORMAT_ARGS(v));
 }
 
 void owl_print_v4(owl_v4 const v) {
-  printf("%.4f %.4f %.4f %.4f", v[0], v[1], v[2], v[3]);
+  printf(OWL_MATH_V4_FORMAT, OWL_MATH_V4_FORMAT_ARGS(v));
 }
 
 void owl_print_m4(owl_m4 const m) {
-  int i;
-  for (i = 0; i < 4; ++i) {
-    owl_print_v4(m[i]);
-  }
+  printf(OWL_MATH_M4_FORMAT, OWL_MATH_M4_FORMAT_ARGS(m));
 }
 
 #endif

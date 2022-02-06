@@ -1,8 +1,8 @@
 #include "frame.h"
 
 #include "internal.h"
-#include "types.h"
 #include "renderer.h"
+#include "types.h"
 
 #define OWL_VK_TIMEOUT (owl_u64) - 1
 
@@ -25,11 +25,10 @@ OWL_INTERNAL enum owl_code owl_acquire_next_image_(struct owl_vk_renderer *r) {
 }
 
 OWL_INTERNAL void owl_prepare_frame_(struct owl_vk_renderer *r) {
-  OWL_VK_CHECK(vkWaitForFences(
-      r->device, 1, &r->in_flight_fences[r->active], VK_TRUE, OWL_VK_TIMEOUT));
+  OWL_VK_CHECK(vkWaitForFences(r->device, 1, &r->in_flight_fences[r->active],
+                               VK_TRUE, OWL_VK_TIMEOUT));
 
-  OWL_VK_CHECK(vkResetFences(
-      r->device, 1, &r->in_flight_fences[r->active]));
+  OWL_VK_CHECK(vkResetFences(r->device, 1, &r->in_flight_fences[r->active]));
 
   OWL_VK_CHECK(vkResetCommandPool(r->device, r->frame_cmd_pools[r->active], 0));
 }
@@ -150,5 +149,5 @@ enum owl_code owl_frame_end(struct owl_vk_renderer *r) {
   owl_renderer_clear_dyn_garbage(r);
 
 end:
-  return OWL_SUCCESS;
+  return code;
 }

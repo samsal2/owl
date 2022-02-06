@@ -16,9 +16,9 @@
   } while (0)
 
 char const *fps_string(double time) {
-  static char buf[256];
-  snprintf(buf, 256, "fps: %.2f\n", 1 / time);
-  return buf;
+  static char buffer[256];
+  snprintf(buffer, 256, "fps: %.2f\n", 1 / time);
+  return buffer;
 }
 
 static struct owl_window_desc window_desc;

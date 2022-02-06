@@ -31,8 +31,8 @@ enum owl_pipeline_type {
   OWL_PIPELINE_TYPE_COUNT
 };
 
-typedef enum owl_code (*owl_vk_surface_creator)(struct owl_vk_renderer const *,
-                                                void const *, VkSurfaceKHR *);
+typedef enum owl_code (*owl_vk_surface_callback)(struct owl_vk_renderer const *,
+                                                 void const *, VkSurfaceKHR *);
 
 struct owl_vk_renderer_desc {
   char const *name;
@@ -44,7 +44,7 @@ struct owl_vk_renderer_desc {
   char const *const *instance_extensions;
 
   void const *surface_user_data;
-  owl_vk_surface_creator create_surface;
+  owl_vk_surface_callback create_surface;
 };
 
 struct owl_dyn_buffer_ref {
@@ -94,10 +94,10 @@ struct owl_vk_renderer {
   VkDevice device;
   VkPhysicalDevice physical_device;
 
-  owl_u32 graphics_family;
+  owl_u32 graphics_family_index;
   VkQueue graphics_queue;
 
-  owl_u32 present_family;
+  owl_u32 present_family_index;
   VkQueue present_queue;
 
   owl_u32 device_options_count;
@@ -236,6 +236,7 @@ struct owl_vk_renderer {
   VkDescriptorSet dyn_garbage_pvm_sets[OWL_VK_RENDERER_MAX_DYN_GARBAGE_ITEMS];
   /* ====================================================================== */
 };
+
 enum owl_code owl_renderer_init(struct owl_vk_renderer_desc const *desc,
                                 struct owl_vk_renderer *r);
 

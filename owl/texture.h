@@ -7,6 +7,7 @@
 
 struct owl_vk_renderer;
 struct owl_dyn_buffer_ref;
+struct owl_model_texture_data;
 
 struct owl_texture {
   owl_u32 width;
@@ -53,6 +54,13 @@ struct owl_texture_desc {
   enum owl_sampler_addr_mode wrap_v;
   enum owl_sampler_addr_mode wrap_w;
 };
+
+owl_u32 owl_calc_mips(owl_u32 width, owl_u32 height);
+
+owl_byte *owl_texture_data_from_file(char const *path,
+                                     struct owl_texture_desc *desc);
+
+void owl_texture_free_data_from_file(owl_byte *data);
 
 enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
                                         struct owl_texture_desc const *desc,
@@ -112,5 +120,9 @@ struct owl_vk_image_mip_desc {
 enum owl_code
 owl_vk_image_generate_mips(VkCommandBuffer cmd,
                            struct owl_vk_image_mip_desc const *desc);
+
+VkFormat owl_as_vk_format_(enum owl_pixel_format format);
+
+VkDeviceSize owl_desc_required_size_(struct owl_texture_desc const *desc);
 
 #endif

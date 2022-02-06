@@ -211,9 +211,9 @@ struct owl_draw_cmd_ubo *get_cloth_pvm(struct cloth *cloth) {
 }
 
 char const *fps_string(double time) {
-  static char buf[256];
-  snprintf(buf, 256, "fps: %.2f\n", 1 / time);
-  return buf;
+  static char buffer[256];
+  snprintf(buffer, 256, "fps: %.2f\n", 1 / time);
+  return buffer;
 }
 
 #define TEST(fn)                                                               \
@@ -238,7 +238,7 @@ static struct owl_text_cmd text;
 
 #define UNSELECTED (owl_u32) - 1
 #define TPATH "../../assets/cloth.jpeg"
-#define FONTPATH "../../assets/SourceCodePro-Regular.ttf"
+#define FONTPATH "../../assets/Inconsolata-Regular.ttf"
 
 int main(void) {
   owl_v3 eye;
