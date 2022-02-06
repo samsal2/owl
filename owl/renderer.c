@@ -168,6 +168,7 @@ OWL_INTERNAL int owl_renderer_query_families_(struct owl_vk_renderer const *r,
                                               owl_u32 *graphics_family_index,
                                               owl_u32 *present_family_index) {
 #define OWL_QUEUE_UNSELECTED (owl_u32) - 1
+
   int found;
   owl_u32 i, count;
   VkQueueFamilyProperties *properties;

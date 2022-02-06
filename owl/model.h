@@ -99,7 +99,7 @@ struct owl_model_material_data {
   int occlusion_texcoord;
 
   struct owl_model_texture base_color_texture;
-  struct owl_model_texture metallic_rougness_texture;
+  struct owl_model_texture metallic_roughness_texture;
   struct owl_model_texture normal_texture;
   struct owl_model_texture occlusion_texture;
   struct owl_model_texture emissive_texture;

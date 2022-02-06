@@ -702,9 +702,9 @@ owl_model_deinit_texture_data_(struct owl_vk_renderer *r,
   vkDestroySampler(r->device, tex->sampler, NULL);
 }
 
-enum owl_code owl_process_textures_(struct owl_vk_renderer *r,
-                                    cgltf_data const *data,
-                                    struct owl_model *model) {
+enum owl_code owl_model_process_textures_(struct owl_vk_renderer *r,
+                                          cgltf_data const *data,
+                                          struct owl_model *model) {
   int i;
   enum owl_code code = OWL_SUCCESS;
 
@@ -781,7 +781,7 @@ owl_model_process_materials_(struct owl_vk_renderer *r, cgltf_data const *data,
           owl_get_texture_(model,
                            material->pbr_metallic_roughness
                                .metallic_roughness_texture.texture->image->uri,
-                           &material_data->metallic_rougness_texture);
+                           &material_data->metallic_roughness_texture);
 
       if (OWL_SUCCESS != code)
         return code;
@@ -789,14 +789,14 @@ owl_model_process_materials_(struct owl_vk_renderer *r, cgltf_data const *data,
       material_data->metallic_roughness_texcoord =
           material->pbr_metallic_roughness.metallic_roughness_texture.texcoord;
     } else {
-      material_data->metallic_rougness_texture.handle =
+      material_data->metallic_roughness_texture.handle =
           OWL_MODEL_TEXTURE_HANDLE_NONE;
     }
 
     if (material->normal_texture.texture) {
       code =
           owl_get_texture_(model, material->normal_texture.texture->image->uri,
-                           &material_data->metallic_rougness_texture);
+                           &material_data->metallic_roughness_texture);
 
       if (OWL_SUCCESS != code)
         return code;
@@ -847,6 +847,74 @@ owl_model_process_materials_(struct owl_vk_renderer *r, cgltf_data const *data,
     OWL_COPY_V3(material->emissive_factor, material_data->emissive_factor);
 
     material_data->name = material->name;
+
+#if 0
+    {
+      VkDescriptorSetAllocateInfo set;
+      VkDescriptorSetLayout layouts[1];
+
+      layouts[0] = r->material_set_layout;
+
+      set.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+      set.pNext = NULL;
+      set.descriptorPool = r->common_set_pool;
+      set.descriptorSetCount = OWL_ARRAY_SIZE(layouts);
+      set.pSetLayouts = layouts;
+
+      OWL_VK_CHECK(
+          vkAllocateDescriptorSets(r->device, &set, &material_data->set));
+    }
+#endif
+
+#if 0
+    {
+      int handle;
+      owl_u32 j;
+      VkWriteDescriptorSet writes[5];
+      VkDescriptorImageInfo images[5];
+
+      /* FIXME(samuel): check for invalid textures */
+      handle = material_data->base_color_texture.handle;
+      images[0].sampler = model->textures[handle].sampler;
+      images[0].imageView = model->textures[handle].view;
+      images[0].imageLayout = model->textures[handle].image_layout;
+
+      handle = material_data->metallic_roughness_texture.handle;
+      images[1].sampler = model->textures[handle].sampler;
+      images[1].imageView = model->textures[handle].view;
+      images[1].imageLayout = model->textures[handle].image_layout;
+
+      handle = material_data->normal_texture.handle;
+      images[2].sampler = model->textures[handle].sampler;
+      images[2].imageView = model->textures[handle].view;
+      images[2].imageLayout = model->textures[handle].image_layout;
+
+      handle = material_data->occlusion_texture.handle;
+      images[3].sampler = model->textures[handle].sampler;
+      images[3].imageView = model->textures[handle].view;
+      images[3].imageLayout = model->textures[handle].image_layout;
+
+      handle = material_data->emissive_texture.handle;
+      images[4].sampler = model->textures[handle].sampler;
+      images[4].imageView = model->textures[handle].view;
+      images[4].imageLayout = model->textures[handle].image_layout;
+
+      for (j = 0; j < OWL_ARRAY_SIZE(writes); ++j) {
+        writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writes[j].pNext = NULL;
+        writes[j].dstSet = material_data->set;
+        writes[j].dstBinding = j;
+        writes[j].dstArrayElement = 0;
+        writes[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        writes[j].pImageInfo = &images[j];
+        writes[j].pBufferInfo = NULL;
+        writes[j].pTexelBufferView = NULL;
+      }
+
+      vkUpdateDescriptorSets(r->device, OWL_ARRAY_SIZE(writes), writes, 0,
+                             NULL);
+    }
+#endif
   }
 
   return OWL_SUCCESS;
@@ -914,7 +982,7 @@ enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
   if (cgltf_result_success != (cgltf_load_buffers(&options, data, path)))
     return OWL_ERROR_UNKNOWN;
 
-  if (OWL_SUCCESS != (code = owl_process_textures_(r, data, model)))
+  if (OWL_SUCCESS != (code = owl_model_process_textures_(r, data, model)))
     goto end;
 
   if (OWL_SUCCESS != (code = owl_model_process_materials_(r, data, model)))
