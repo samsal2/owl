@@ -660,6 +660,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
   }
 
   {
+    /* FIXME(samuel): correct mipmap mode */
 #define OWL_MAX_ANISOTROPY 16
 
     VkSamplerCreateInfo sampler;
@@ -668,7 +669,6 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
     sampler.flags = 0;
     sampler.magFilter = owl_as_vk_filter_(sampler_desc->mag_filter);
     sampler.minFilter = owl_as_vk_filter_(sampler_desc->min_filter);
-    /* FIXME(samuel): correct mipmap mode */
     sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     sampler.addressModeU = owl_as_vk_sampler_addr_mode_(sampler_desc->wrap_u);
     sampler.addressModeV = owl_as_vk_sampler_addr_mode_(sampler_desc->wrap_v);
@@ -965,10 +965,12 @@ enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
                                        struct owl_model *model) {
   cgltf_options options;
   cgltf_data *data = NULL;
-  int i, vertices_count, indices_count;
+  int i;
   struct owl_model_load_state state;
   struct owl_dyn_buffer_ref vertices_ref;
   struct owl_dyn_buffer_ref indices_ref;
+  int vertices_count = 0;
+  int indices_count = 0;
   enum owl_code code = OWL_SUCCESS;
 
   OWL_ASSERT(owl_renderer_is_dyn_buffer_clear(r));
@@ -988,8 +990,6 @@ enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
   if (OWL_SUCCESS != (code = owl_model_process_materials_(r, data, model)))
     goto end;
 
-  vertices_count = 0;
-  indices_count = 0;
   for (i = 0; i < (int)data->nodes_count; ++i)
     owl_add_vertices_and_indices_count_(&data->nodes[i], &vertices_count,
                                         &indices_count);
