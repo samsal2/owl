@@ -1,8 +1,20 @@
+# LSP
 .cache
-.DS_Store
-build/
-format.sh
-env/
+
+# vscode
 .vscode
-macos
+
+# personal scripts
+format.sh
+
+# ctags
 tags
+
+# macos
+.DS_Store
+
+# build
+build/
+
+# python
+env/
