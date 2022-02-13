@@ -238,7 +238,7 @@ static struct owl_text_cmd text;
 
 #define UNSELECTED (owl_u32) - 1
 #define TPATH "../../assets/cloth.jpeg"
-#define FONTPATH "../../assets/Inconsolata-Regular.ttf"
+#define FONTPATH "../../assets/Terminus.ttf"
 
 int main(void) {
   owl_v3 eye;
@@ -312,12 +312,16 @@ int main(void) {
 
     update_cloth(1.0F / 60.0F, &cloth);
 
-    if (OWL_SUCCESS != owl_frame_begin(renderer)) {
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_frame_begin(renderer)) {
       owl_renderer_recreate_swapchain(window, renderer);
       continue;
     }
 
+#if 1
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
+#else
+    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_WIRES);
+#endif
     owl_draw_cmd_submit(renderer, &cloth.group_);
 
 #if 1
@@ -327,7 +331,7 @@ int main(void) {
     text.text = fps_string(input->dt_time);
     owl_text_cmd_submit(renderer, &text);
 
-    if (OWL_SUCCESS != owl_frame_end(renderer)) {
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_frame_end(renderer)) {
       owl_renderer_recreate_swapchain(window, renderer);
       continue;
     }

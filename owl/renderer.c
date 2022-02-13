@@ -9,23 +9,10 @@ OWL_GLOBAL char const *const required_device_extensions[] = {
 
 #ifndef NDEBUG
 
-#define OWL_VK_GET_INSTANCE_PROC_ADDR(i, fn)                                   \
-  ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))
-
 OWL_GLOBAL char const *const debug_validation_layers[] = {
     "VK_LAYER_KHRONOS_validation"};
 
-#include <stdio.h>
-static VKAPI_ATTR VKAPI_CALL VkBool32 owl_vk_debug_callback_(
-    VkDebugUtilsMessageSeverityFlagBitsEXT severity,
-    VkDebugUtilsMessageTypeFlagsEXT type,
-    VkDebugUtilsMessengerCallbackDataEXT const *data, void *user_data) {
-  OWL_UNUSED(severity);
-  OWL_UNUSED(type);
-  OWL_UNUSED(user_data);
-  fprintf(stderr, "%s\n", data->pMessage);
-  return VK_FALSE;
-}
+#endif
 
 OWL_INTERNAL enum owl_code
 owl_renderer_init_instance_(struct owl_vk_renderer_desc const *desc,
@@ -45,8 +32,13 @@ owl_renderer_init_instance_(struct owl_vk_renderer_desc const *desc,
   instance.pNext = NULL;
   instance.flags = 0;
   instance.pApplicationInfo = &app;
+#ifndef NDEBUG
   instance.enabledLayerCount = OWL_ARRAY_SIZE(debug_validation_layers);
   instance.ppEnabledLayerNames = debug_validation_layers;
+#else
+  instance.enabledLayerCount = 0;
+  instance.ppEnabledLayerNames = NULL;
+#endif
   instance.enabledExtensionCount = (owl_u32)desc->instance_extension_count;
   instance.ppEnabledExtensionNames = desc->instance_extensions;
 
@@ -55,13 +47,38 @@ owl_renderer_init_instance_(struct owl_vk_renderer_desc const *desc,
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL enum owl_code
-owl_renderer_init_debug_(struct owl_vk_renderer *renderer) {
+OWL_INTERNAL void owl_renderer_deinit_instance_(struct owl_vk_renderer *r) {
+  vkDestroyInstance(r->instance, NULL);
+}
+
+#ifndef NDEBUG
+
+#define OWL_VK_GET_INSTANCE_PROC_ADDR(i, fn)                                   \
+  ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))
+
+#include <stdio.h>
+static VKAPI_ATTR VKAPI_CALL VkBool32 owl_vk_debug_callback_(
+    VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+    VkDebugUtilsMessageTypeFlagsEXT type,
+    VkDebugUtilsMessengerCallbackDataEXT const *data, void *user_data) {
+  OWL_UNUSED(severity);
+  OWL_UNUSED(type);
+  OWL_UNUSED(user_data);
+
+  if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+    fprintf(stderr, "%s\n", data->pMessage);
+  else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+    fprintf(stderr, "%s\n", data->pMessage);
+
+  return VK_FALSE;
+}
+
+OWL_INTERNAL enum owl_code owl_renderer_init_debug_(struct owl_vk_renderer *r) {
   VkDebugUtilsMessengerCreateInfoEXT debug;
   PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
 
   vkCreateDebugUtilsMessengerEXT = OWL_VK_GET_INSTANCE_PROC_ADDR(
-      renderer->instance, vkCreateDebugUtilsMessengerEXT);
+      r->instance, vkCreateDebugUtilsMessengerEXT);
 
   OWL_ASSERT(vkCreateDebugUtilsMessengerEXT);
 
@@ -81,13 +98,13 @@ owl_renderer_init_debug_(struct owl_vk_renderer *renderer) {
   debug.messageSeverity = OWL_DEBUG_SEVERITY_FLAGS;
   debug.messageType = OWL_DEBUG_TYPE_FLAGS;
   debug.pfnUserCallback = owl_vk_debug_callback_;
-  debug.pUserData = NULL;
+  debug.pUserData = r;
 
 #undef OWL_DEBUG_SEVERITY_FLAGS
 #undef OWL_DEBUG_TYPE_FLAGS
 
-  OWL_VK_CHECK(vkCreateDebugUtilsMessengerEXT(renderer->instance, &debug, NULL,
-                                              &renderer->debug));
+  OWL_VK_CHECK(
+      vkCreateDebugUtilsMessengerEXT(r->instance, &debug, NULL, &r->debug));
 
   return OWL_SUCCESS;
 }
@@ -103,41 +120,7 @@ OWL_INTERNAL void owl_renderer_deinit_debug_(struct owl_vk_renderer *r) {
   vkDestroyDebugUtilsMessenger(r->instance, r->debug, NULL);
 }
 
-#else /* NDEBUG */
-
-OWL_INTERNAL enum owl_code
-owl_renderer_init_instance_(struct owl_vk_plataform const *desc,
-                            struct owl_vk_renderer *r) {
-  VkApplicationInfo app;
-  VkInstanceCreateInfo instance;
-
-  app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  app.pNext = NULL;
-  app.pApplicationName = desc->name;
-  app.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  app.pEngineName = "No Engine";
-  app.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  app.apiVersion = VK_MAKE_VERSION(1, 0, 0);
-
-  instance.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-  instance.pNext = NULL;
-  instance.flags = 0;
-  instance.pApplicationInfo = &app;
-  instance.enabledLayerCount = 0;
-  instance.ppEnabledLayerNames = NULL;
-  instance.enabledExtensionCount = (owl_u32)desc->instance_extension_count;
-  instance.ppEnabledExtensionNames = desc->instance_extensions;
-
-  OWL_VK_CHECK(vkCreateInstance(&instance, NULL, &r->instance));
-
-  return OWL_SUCCESS;
-}
-
-#endif /* NDBUG */
-
-OWL_INTERNAL void owl_renderer_deinit_instance_(struct owl_vk_renderer *r) {
-  vkDestroyInstance(r->instance, NULL);
-}
+#endif /* NDEBUG */
 
 OWL_INTERNAL enum owl_code
 owl_renderer_init_surface_(struct owl_vk_renderer_desc const *desc,
@@ -2274,6 +2257,7 @@ owl_renderer_init_dyn_buffer_(struct owl_vk_renderer *r, VkDeviceSize size) {
    VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
 
     VkBufferCreateInfo buffer;
+
     buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer.pNext = NULL;
     buffer.flags = 0;

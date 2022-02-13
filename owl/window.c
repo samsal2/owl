@@ -57,8 +57,8 @@ OWL_INTERNAL void owl_framebuffer_callback_(GLFWwindow *glfw, int width,
   w->framebuffer_height = height;
 }
 
-OWL_INTERNAL void owl_cursor_pos_callback_(GLFWwindow *glfw, double x,
-                                           double y) {
+OWL_INTERNAL void owl_cursor_position_callback_(GLFWwindow *glfw, double x,
+                                                double y) {
   struct owl_window *w = glfwGetWindowUserPointer(glfw);
 
   w->input.cursor_position[0] =
@@ -143,23 +143,22 @@ OWL_INTERNAL void owl_window_set_callbacks_(struct owl_window *w) {
 
   glfwSetWindowSizeCallback(w->data, owl_window_callback_);
   glfwSetFramebufferSizeCallback(w->data, owl_framebuffer_callback_);
-  glfwSetCursorPosCallback(w->data, owl_cursor_pos_callback_);
+  glfwSetCursorPosCallback(w->data, owl_cursor_position_callback_);
   glfwSetMouseButtonCallback(w->data, owl_mouse_callback_);
   glfwSetKeyCallback(w->data, owl_keyboard_callback_);
 }
 
 OWL_INTERNAL void owl_window_init_input_(struct owl_window *w) {
+  int i;
+
   OWL_ZERO_V2(w->input.prev_cursor_position);
   OWL_ZERO_V2(w->input.cursor_position);
 
-  {
-    int i;
-    for (i = 0; i < OWL_MOUSE_BUTTON_COUNT; ++i)
-      w->input.mouse[i] = OWL_BUTTON_STATE_NONE;
+  for (i = 0; i < OWL_MOUSE_BUTTON_COUNT; ++i)
+    w->input.mouse[i] = OWL_BUTTON_STATE_NONE;
 
-    for (i = 0; i < OWL_KEYBOARD_KEY_LAST; ++i)
-      w->input.keyboard[i] = OWL_BUTTON_STATE_NONE;
-  }
+  for (i = 0; i < OWL_KEYBOARD_KEY_LAST; ++i)
+    w->input.keyboard[i] = OWL_BUTTON_STATE_NONE;
 }
 
 enum owl_code owl_window_init(struct owl_window_desc const *desc,
@@ -191,51 +190,47 @@ void owl_window_deinit(struct owl_window *w) {
 
 #ifndef NDEBUG
 #define OWL_MAX_EXTENSIONS 64
+
+OWL_INTERNAL char const * const *
+owl_get_dbg_instance_extensions_(owl_u32 *count) {
+  char const * const *extensions;
+  OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
+
+  extensions = glfwGetRequiredInstanceExtensions(count);
+
+  OWL_ASSERT(OWL_MAX_EXTENSIONS > *count);
+
+  OWL_MEMCPY(names, extensions, *count * sizeof(char const *));
+
+  names[(*count)++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+
+  return names;
+}
+
+#undef OWL_MAX_EXTENSIONS
+#endif
+
 enum owl_code
 owl_window_fill_vk_renderer_desc(struct owl_window const *w,
                                  struct owl_vk_renderer_desc *desc) {
   owl_u32 count;
-  OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 
   desc->framebuffer_width = w->framebuffer_width;
   desc->framebuffer_height = w->framebuffer_height;
-
   desc->surface_user_data = w;
   desc->create_surface = owl_vk_surface_init_callback_;
-  desc->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
 
-  OWL_ASSERT(OWL_MAX_EXTENSIONS > count);
-
-  OWL_MEMCPY(names, desc->instance_extensions, count * sizeof(char const *));
-  names[count++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-
-  desc->instance_extensions = names;
-  desc->instance_extension_count = (int)count;
-
-  desc->name = w->title;
-
-  return OWL_SUCCESS;
-}
-#undef OWL_MAX_EXTENSIONS
+#ifndef NDEBUG
+  desc->instance_extensions = owl_get_dbg_instance_extensions_(&count);
 #else
-enum owl_code owl_window_fill_vk_renderer_desc(struct owl_window const *w,
-                                               struct owl_vk_plataform *desc) {
-  owl_u32 count;
+  desc->instance_extensions = glfwGetRequiredInstanceExtensions(count);
+#endif
 
-  desc->framebuffer_width = w->framebuffer_width;
-  desc->framebuffer_height = w->framebuffer_height;
-
-  desc->surface_user_data = w;
-  desc->create_surface = owl_init_vk_surface_cb_;
-
-  desc->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
   desc->instance_extension_count = (int)count;
-
   desc->name = w->title;
 
   return OWL_SUCCESS;
 }
-#endif
 
 int owl_window_is_done(struct owl_window *w) {
   return glfwWindowShouldClose(w->data);

@@ -14,6 +14,8 @@
 
 #ifndef NDEBUG
 
+#include <stdio.h>
+
 #define OWL_MALLOC(s) owl_dbg_malloc_(s, __FILE__, __LINE__)
 void *owl_dbg_malloc_(size_t s, char const *f, int l);
 
@@ -46,18 +48,16 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 #define OWL_MIN(a, b) ((a) > (b) ? (b) : (a))
 #define OWL_UNUSED(e) ((void)e)
 #define OWL_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-#define OWL_ALIGNU2(v, a) (v + a - 1) & ~(a - 1)
+#define OWL_ALIGNU2(v, a) ((v) + (a) - 1) & ~((a) - 1)
 #define OWL_SIZEOF(v) ((long)sizeof(v))
 
 #ifndef NDEBUG
-
-#include <stdio.h>
 
 #define OWL_VK_CHECK(e)                                                        \
   do {                                                                         \
     VkResult const result_ = e;                                                \
     if (VK_SUCCESS != result_)                                                 \
-      OWL_DBG_LOG("OWL_VK_CHECK: error with code %i\n", result_);              \
+      OWL_DBG_LOG("OWL_VK_CHECK(%i)\n", result_);                              \
     OWL_ASSERT(VK_SUCCESS == result_);                                         \
   } while (0)
 
