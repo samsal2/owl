@@ -472,7 +472,7 @@ owl_renderer_select_present_mode_(struct owl_vk_renderer *r,
       break;
 
 end:
-  return OWL_SUCCESS;
+  return code;
 
 #undef OWL_MAX_PRESENT_MODES
 }
@@ -3126,6 +3126,7 @@ enum owl_code
 owl_renderer_free_single_use_cmd_buffer(struct owl_vk_renderer const *r,
                                         VkCommandBuffer cmd) {
   VkSubmitInfo submit;
+  enum owl_code code = OWL_SUCCESS;
 
   OWL_VK_CHECK(vkEndCommandBuffer(cmd));
 
@@ -3144,5 +3145,5 @@ owl_renderer_free_single_use_cmd_buffer(struct owl_vk_renderer const *r,
 
   vkFreeCommandBuffers(r->device, r->transient_cmd_pool, 1, &cmd);
 
-  return OWL_SUCCESS;
+  return code;
 }
