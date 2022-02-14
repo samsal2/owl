@@ -2,8 +2,8 @@
 
 #include "internal.h"
 #include "renderer.h"
-#include "texture.h"
 #include "skybox.h"
+#include "texture.h"
 #include "vector_math.h"
 
 OWL_INTERNAL enum owl_code
@@ -126,71 +126,70 @@ owl_draw_cmd_submit_quad_(struct owl_vk_renderer *r,
 
 OWL_INTERNAL enum owl_code
 owl_draw_cmd_submit_skybox_(struct owl_vk_renderer *r,
-                          struct owl_draw_cmd_skybox const *skybox) {
+                            struct owl_draw_cmd_skybox const *skybox) {
   enum owl_code code = OWL_SUCCESS;
 
   OWL_LOCAL_PERSIST owl_v3 const vertices[] = {
 #if 1
-    {-1.0f,  1.0f, -1.0f},
+    {-1.0f, 1.0f, -1.0f},
     {-1.0f, -1.0f, -1.0f},
-    { 1.0f, -1.0f, -1.0f},
+    {1.0f, -1.0f, -1.0f},
 
-    { 1.0f, -1.0f, -1.0f},
-    { 1.0f,  1.0f, -1.0f},
-    {-1.0f,  1.0f, -1.0f},
+    {1.0f, -1.0f, -1.0f},
+    {1.0f, 1.0f, -1.0f},
+    {-1.0f, 1.0f, -1.0f},
 #endif
 
 #if 1
-    {-1.0f, -1.0f,  1.0f},
+    {-1.0f, -1.0f, 1.0f},
     {-1.0f, -1.0f, -1.0f},
-    {-1.0f,  1.0f, -1.0f},
+    {-1.0f, 1.0f, -1.0f},
 
-    {-1.0f,  1.0f, -1.0f},
-    {-1.0f,  1.0f,  1.0f},
-    {-1.0f, -1.0f,  1.0f},
+    {-1.0f, 1.0f, -1.0f},
+    {-1.0f, 1.0f, 1.0f},
+    {-1.0f, -1.0f, 1.0f},
 #endif
 
 #if 1
-    { 1.0f, -1.0f, -1.0f},
-    { 1.0f, -1.0f,  1.0f},
-    { 1.0f,  1.0f,  1.0f},
+    {1.0f, -1.0f, -1.0f},
+    {1.0f, -1.0f, 1.0f},
+    {1.0f, 1.0f, 1.0f},
 
-    { 1.0f,  1.0f,  1.0f},
-    { 1.0f,  1.0f, -1.0f},
-    { 1.0f, -1.0f, -1.0f},
-#endif
-
-#if 1
-    {-1.0f, -1.0f,  -1.0f},
-    {-1.0f,  1.0f,  -1.0f},
-    { 1.0f,  1.0f,  -1.0f},
-
-    { 1.0f,  1.0f,  -1.0f},
-    { 1.0f, -1.0f,  -1.0f},
-    {-1.0f, -1.0f,  -1.0f},
-#endif
-
-#if 1
-    {-1.0f,  1.0f, -1.0f},
-    { 1.0f,  1.0f, -1.0f},
-    { 1.0f,  1.0f,  1.0f},
-
-    { 1.0f,  1.0f,  1.0f},
-    {-1.0f,  1.0f,  1.0f},
-    {-1.0f,  1.0f, -1.0f},
+    {1.0f, 1.0f, 1.0f},
+    {1.0f, 1.0f, -1.0f},
+    {1.0f, -1.0f, -1.0f},
 #endif
 
 #if 1
     {-1.0f, -1.0f, -1.0f},
-    {-1.0f, -1.0f,  1.0f},
-    { 1.0f, -1.0f, -1.0f},
+    {-1.0f, 1.0f, -1.0f},
+    {1.0f, 1.0f, -1.0f},
 
-    { 1.0f, -1.0f, -1.0f},
-    {-1.0f, -1.0f,  1.0f},
-    { 1.0f, -1.0f,  1.0f}
+    {1.0f, 1.0f, -1.0f},
+    {1.0f, -1.0f, -1.0f},
+    {-1.0f, -1.0f, -1.0f},
+#endif
+
+#if 1
+    {-1.0f, 1.0f, -1.0f},
+    {1.0f, 1.0f, -1.0f},
+    {1.0f, 1.0f, 1.0f},
+
+    {1.0f, 1.0f, 1.0f},
+    {-1.0f, 1.0f, 1.0f},
+    {-1.0f, 1.0f, -1.0f},
+#endif
+
+#if 1
+    {-1.0f, -1.0f, -1.0f},
+    {-1.0f, -1.0f, 1.0f},
+    {1.0f, -1.0f, -1.0f},
+
+    {1.0f, -1.0f, -1.0f},
+    {-1.0f, -1.0f, 1.0f},
+    {1.0f, -1.0f, 1.0f}
 #endif
   };
-
 
   {
     owl_byte *data;
@@ -257,7 +256,6 @@ owl_draw_cmd_submit_skybox_(struct owl_vk_renderer *r,
                             OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
   }
 
-  
 #if 0
   vkCmdDrawIndexed(r->frame_cmd_buffers[r->active], 6, 1, 0, 0, 0);
 #else

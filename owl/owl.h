@@ -7,11 +7,11 @@
 #include "internal.h"
 #include "model.h"
 #include "renderer.h"
+#include "skybox.h"
 #include "text.h"
 #include "texture.h"
 #include "types.h"
 #include "vector_math.h"
 #include "window.h"
-#include "skybox.h"
 
 #endif

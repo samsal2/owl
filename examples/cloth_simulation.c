@@ -46,12 +46,12 @@ static void init_cloth_(struct cloth *cloth) {
 
       p->movable = 1;
 
-      OWL_SET_V3(w, h, 1.0F, p->position);
+      OWL_SET_V3(w, h, 0.0F, p->position);
       OWL_SET_V3(0.0F, 0.0F, 0.0F, p->velocity);
       OWL_SET_V3(0.0F, GRAVITY, 0.8F, p->acceleration);
       OWL_SET_V3(w, h, 0.0F, p->previous_position);
 
-      OWL_SET_V3(w, h, 1.0F, cloth->vertices_[k].position);
+      OWL_SET_V3(w, h, 0.0F, cloth->vertices_[k].position);
       OWL_SET_V3(1.0F, 1.0F, 1.0F, cloth->vertices_[k].color);
       OWL_SET_V2((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F, cloth->vertices_[k].uv);
     }
@@ -290,10 +290,10 @@ int main(void) {
   OWL_IDENTITY_M4(pvm->view);
   OWL_IDENTITY_M4(pvm->projection);
 
-#if 1
+#if 0
   owl_ortho_m4(-2.0F, 2.0F, -2.0F, 2.0F, 0.1F, 10.0F, pvm->projection);
 #else
-  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.0001F, 10.0F, pvm->projection);
+  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F, pvm->projection);
 #endif
 
   OWL_SET_V3(0.0F, 0.0F, 2.0F, eye);
@@ -336,7 +336,7 @@ int main(void) {
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_SKYBOX);
     owl_draw_cmd_submit(renderer, &skybox_draw_cmd);
 
-#if 0
+#if 1
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
 #else
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_WIRES);
