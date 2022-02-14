@@ -48,7 +48,7 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 #define OWL_MIN(a, b) ((a) > (b) ? (b) : (a))
 #define OWL_UNUSED(e) ((void)e)
 #define OWL_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-#define OWL_ALIGNU2(v, a) ((v) + (a) - 1) & ~((a) - 1)
+#define OWL_ALIGNU2(v, a) ((v) + (a)-1) & ~((a)-1)
 #define OWL_SIZEOF(v) ((long)sizeof(v))
 
 #ifndef NDEBUG

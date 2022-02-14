@@ -191,9 +191,9 @@ void owl_window_deinit(struct owl_window *w) {
 #ifndef NDEBUG
 #define OWL_MAX_EXTENSIONS 64
 
-OWL_INTERNAL char const * const *
+OWL_INTERNAL char const *const *
 owl_get_dbg_instance_extensions_(owl_u32 *count) {
-  char const * const *extensions;
+  char const *const *extensions;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 
   extensions = glfwGetRequiredInstanceExtensions(count);
