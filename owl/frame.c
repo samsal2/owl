@@ -7,21 +7,21 @@
 #define OWL_VK_TIMEOUT (owl_u64) - 1
 
 OWL_INTERNAL enum owl_code owl_acquire_next_image_(struct owl_vk_renderer *r) {
+  enum owl_code code = OWL_SUCCESS;
+
   VkResult const result =
       vkAcquireNextImageKHR(r->device, r->swapchain, OWL_VK_TIMEOUT,
                             r->image_available_semaphores[r->active],
                             VK_NULL_HANDLE, &r->swapchain_active_image);
 
   if (VK_ERROR_OUT_OF_DATE_KHR == result)
-    return OWL_ERROR_OUTDATED_SWAPCHAIN;
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+  else if (VK_SUBOPTIMAL_KHR == result)
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+  else if (VK_ERROR_SURFACE_LOST_KHR == result)
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
 
-  if (VK_SUBOPTIMAL_KHR == result)
-    return OWL_ERROR_OUTDATED_SWAPCHAIN;
-
-  if (VK_ERROR_SURFACE_LOST_KHR == result)
-    return OWL_ERROR_OUTDATED_SWAPCHAIN;
-
-  return OWL_SUCCESS;
+  return code;
 }
 
 OWL_INTERNAL void owl_prepare_frame_(struct owl_vk_renderer *r) {
@@ -105,6 +105,7 @@ OWL_INTERNAL void owl_submit_graphics_(struct owl_vk_renderer *r) {
 OWL_INTERNAL enum owl_code owl_present_swapchain_(struct owl_vk_renderer *r) {
   VkResult result;
   VkPresentInfoKHR present;
+  enum owl_code code = OWL_SUCCESS;
 
   present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   present.pNext = NULL;
@@ -118,19 +119,17 @@ OWL_INTERNAL enum owl_code owl_present_swapchain_(struct owl_vk_renderer *r) {
   result = vkQueuePresentKHR(r->present_queue, &present);
 
   if (VK_ERROR_OUT_OF_DATE_KHR == result)
-    return OWL_ERROR_OUTDATED_SWAPCHAIN;
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+  else if (VK_SUBOPTIMAL_KHR == result)
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+  else if (VK_ERROR_SURFACE_LOST_KHR == result)
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
 
-  if (VK_SUBOPTIMAL_KHR == result)
-    return OWL_ERROR_OUTDATED_SWAPCHAIN;
-
-  if (VK_ERROR_SURFACE_LOST_KHR == result)
-    return OWL_ERROR_OUTDATED_SWAPCHAIN;
-
-  return OWL_SUCCESS;
+  return code;
 }
 
 OWL_INTERNAL void owl_renderer_swap_active_(struct owl_vk_renderer *r) {
-  if (OWL_VK_RENDERER_DYN_BUFFER_COUNT == ++r->active)
+  if (OWL_VK_RENDERER_DYNAMIC_BUFFER_COUNT == ++r->active)
     r->active = 0;
 }
 
@@ -145,8 +144,8 @@ enum owl_code owl_frame_end(struct owl_vk_renderer *r) {
 
   owl_renderer_swap_active_(r);
   /* reset dyn buffer */
-  owl_renderer_clear_dyn_offset(r);
-  owl_renderer_clear_dyn_garbage(r);
+  owl_renderer_clear_dynamic_offset(r);
+  owl_renderer_clear_garbage(r);
 
 end:
   return code;

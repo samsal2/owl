@@ -19,7 +19,8 @@ struct owl_draw_cmd_ubo {
 
 enum owl_draw_cmd_type {
   OWL_DRAW_CMD_TYPE_BASIC, /**/
-  OWL_DRAW_CMD_TYPE_QUAD
+  OWL_DRAW_CMD_TYPE_QUAD,
+  OWL_DRAW_CMD_TYPE_SKYBOX
 };
 
 struct owl_draw_cmd_basic {
@@ -39,9 +40,15 @@ struct owl_draw_cmd_quad {
   struct owl_draw_cmd_vertex vertices[4];
 };
 
+struct owl_draw_cmd_skybox {
+  struct owl_draw_cmd_ubo ubo;
+  struct owl_skybox const *skybox;
+};
+
 union owl_draw_cmd_storage {
   struct owl_draw_cmd_basic as_basic;
   struct owl_draw_cmd_quad as_quad;
+  struct owl_draw_cmd_skybox as_skybox;
 };
 
 struct owl_draw_cmd {

@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.h>
 
 struct owl_vk_renderer;
-struct owl_dyn_buffer_ref;
+struct owl_dynamic_buffer_reference;
 struct owl_model_texture_data;
 
 struct owl_texture {
@@ -62,10 +62,9 @@ owl_byte *owl_texture_data_from_file(char const *path,
 
 void owl_texture_free_data_from_file(owl_byte *data);
 
-enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
-                                        struct owl_texture_info const *info,
-                                        struct owl_dyn_buffer_ref const *ref,
-                                        struct owl_texture *tex);
+enum owl_code owl_texture_init_from_ref(
+    struct owl_vk_renderer *r, struct owl_texture_info const *info,
+    struct owl_dynamic_buffer_reference const *ref, struct owl_texture *tex);
 
 enum owl_code owl_texture_init_from_file(struct owl_vk_renderer *r,
                                          struct owl_texture_info *info,
@@ -95,6 +94,7 @@ void owl_texture_destroy(struct owl_vk_renderer const *r,
 
 struct owl_vk_image_transition_info {
   owl_u32 mips;
+  owl_u32 layers;
   VkImageLayout from;
   VkImageLayout to;
   VkImage image;

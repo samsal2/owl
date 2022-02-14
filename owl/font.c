@@ -35,7 +35,7 @@ enum owl_code owl_font_create(struct owl_vk_renderer *renderer, int size,
   FT_Library ft;
   FT_Face face;
   VkDeviceSize alloc_size;
-  struct owl_dyn_buffer_ref ref;
+  struct owl_dynamic_buffer_reference ref;
   enum owl_code code = OWL_SUCCESS;
 
   if (!(*font = OWL_MALLOC(sizeof(**font)))) {
@@ -61,7 +61,7 @@ enum owl_code owl_font_create(struct owl_vk_renderer *renderer, int size,
   owl_calc_dims_(face, &(*font)->atlas_width, &(*font)->atlas_height);
 
   alloc_size = (VkDeviceSize)((*font)->atlas_width * (*font)->atlas_height);
-  data = owl_renderer_dyn_alloc(renderer, alloc_size, &ref);
+  data = owl_renderer_dynamic_buffer_alloc(renderer, alloc_size, &ref);
 
   if (!data) {
     code = OWL_ERROR_BAD_ALLOC;

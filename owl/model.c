@@ -605,23 +605,25 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
     VkCommandBuffer cmd;
     VkDeviceSize size;
     owl_byte *stage;
-    struct owl_dyn_buffer_ref ref;
+    struct owl_dynamic_buffer_reference ref;
 
     size = owl_info_required_size_(&info);
 
-    if (!(stage = owl_renderer_dyn_alloc(r, size, &ref)))
+    if (!(stage = owl_renderer_dynamic_buffer_alloc(r, size, &ref)))
       return OWL_ERROR_BAD_ALLOC;
 
     owl_renderer_alloc_single_use_cmd_buffer(r, &cmd);
 
     {
-      struct owl_vk_image_transition_info transition_info;
-      transition_info.mips = tex->mips;
-      transition_info.from = VK_IMAGE_LAYOUT_UNDEFINED;
-      transition_info.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-      transition_info.image = tex->image;
+      struct owl_vk_image_transition_info transition;
 
-      owl_vk_image_transition(cmd, &transition_info);
+      transition.mips = tex->mips;
+      transition.layers = 1;
+      transition.from = VK_IMAGE_LAYOUT_UNDEFINED;
+      transition.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      transition.image = tex->image;
+
+      owl_vk_image_transition(cmd, &transition);
     }
 
     {
@@ -646,14 +648,14 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
     }
     {
-      struct owl_vk_image_mip_info mip_info;
+      struct owl_vk_image_mip_info mip;
 
-      mip_info.width = info.width;
-      mip_info.height = info.height;
-      mip_info.mips = tex->mips;
-      mip_info.image = tex->image;
+      mip.width = info.width;
+      mip.height = info.height;
+      mip.mips = tex->mips;
+      mip.image = tex->image;
 
-      owl_vk_image_generate_mips(cmd, &mip_info);
+      owl_vk_image_generate_mips(cmd, &mip);
     }
 
     owl_renderer_free_single_use_cmd_buffer(r, cmd);
@@ -960,10 +962,12 @@ OWL_INTERNAL enum owl_code owl_submit_node_(struct owl_vk_renderer *r,
   return OWL_SUCCESS;
 }
 
-enum owl_code owl_model_alloc_buffers_(
-    struct owl_vk_renderer *r, int vertices_count, int indices_count,
-    struct owl_dyn_buffer_ref const *vertices,
-    struct owl_dyn_buffer_ref const *indices, struct owl_model *model) {
+enum owl_code
+owl_model_alloc_buffers_(struct owl_vk_renderer *r, int vertices_count,
+                         int indices_count,
+                         struct owl_dynamic_buffer_reference const *vertices,
+                         struct owl_dynamic_buffer_reference const *indices,
+                         struct owl_model *model) {
   {
     VkBufferCreateInfo buffer;
 
@@ -1075,13 +1079,13 @@ enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
   cgltf_data *data = NULL;
   int i;
   struct owl_model_load_state state;
-  struct owl_dyn_buffer_ref vertices_ref;
-  struct owl_dyn_buffer_ref indices_ref;
+  struct owl_dynamic_buffer_reference vertices_ref;
+  struct owl_dynamic_buffer_reference indices_ref;
   int vertices_count = 0;
   int indices_count = 0;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dyn_buffer_clear(r));
+  OWL_ASSERT(owl_renderer_is_dynamic_buffer_clear(r));
 
   OWL_MEMSET(&options, 0, sizeof(options));
   OWL_MEMSET(model, 0, sizeof(*model));
@@ -1103,12 +1107,12 @@ enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
                                         &indices_count);
 
   state.cur_vertex = 0;
-  state.vertices = owl_renderer_dyn_alloc(
+  state.vertices = owl_renderer_dynamic_buffer_alloc(
       r, (VkDeviceSize)vertices_count * sizeof(struct owl_model_vertex),
       &vertices_ref);
 
   state.cur_index = 0;
-  state.indices = owl_renderer_dyn_alloc(
+  state.indices = owl_renderer_dynamic_buffer_alloc(
       r, (VkDeviceSize)indices_count * sizeof(owl_u32), &indices_ref);
 
   for (i = 0; i < (int)data->nodes_count; ++i)
@@ -1119,7 +1123,7 @@ enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
                                        &vertices_ref, &indices_ref, model)))
     goto end;
 
-  owl_renderer_clear_dyn_offset(r);
+  owl_renderer_clear_dynamic_offset(r);
 
   cgltf_free(data);
 
@@ -1201,10 +1205,10 @@ enum owl_code owl_model_submit(struct owl_vk_renderer *r,
     VkDeviceSize size;
     owl_byte *data;
     VkDescriptorSet sets[2];
-    struct owl_dyn_buffer_ref ref;
+    struct owl_dynamic_buffer_reference ref;
 
     size = sizeof(*ubo);
-    data = owl_renderer_dyn_alloc(r, size, &ref);
+    data = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
 
     OWL_MEMCPY(data, ubo, size);
 

@@ -12,5 +12,6 @@
 #include "types.h"
 #include "vector_math.h"
 #include "window.h"
+#include "skybox.h"
 
 #endif

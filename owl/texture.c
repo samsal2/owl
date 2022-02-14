@@ -36,6 +36,7 @@ owl_vk_image_transition(VkCommandBuffer cmd,
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst = VK_PIPELINE_STAGE_NONE_KHR;
+  enum owl_code code = OWL_SUCCESS;
 
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
   barrier.pNext = NULL;
@@ -49,7 +50,7 @@ owl_vk_image_transition(VkCommandBuffer cmd,
   barrier.subresourceRange.baseMipLevel = 0;
   barrier.subresourceRange.levelCount = info->mips;
   barrier.subresourceRange.baseArrayLayer = 0;
-  barrier.subresourceRange.layerCount = 1;
+  barrier.subresourceRange.layerCount = info->layers;
 
   if (VK_IMAGE_LAYOUT_UNDEFINED == info->from &&
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == info->to) {
@@ -75,19 +76,26 @@ owl_vk_image_transition(VkCommandBuffer cmd,
     dst = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   } else {
     OWL_ASSERT(0 && "Invalid arguments");
+    code = OWL_ERROR_UNKNOWN;
+    goto end;
   }
 
   if (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == info->to) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
   } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == info->to) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  } else if (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == info->to) {
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   } else {
     OWL_ASSERT(0 && "Invalid arguments");
+    code = OWL_ERROR_UNKNOWN;
+    goto end;
   }
 
   vkCmdPipelineBarrier(cmd, src, dst, 0, 0, NULL, 0, NULL, 1, &barrier);
 
-  return OWL_SUCCESS;
+end:
+  return code;
 }
 
 enum owl_code
@@ -97,9 +105,10 @@ owl_vk_image_generate_mips(VkCommandBuffer cmd,
   owl_i32 width;
   owl_i32 height;
   VkImageMemoryBarrier barrier;
+  enum owl_code code = OWL_SUCCESS;
 
   if (1 == info->mips || 0 == info->mips)
-    return OWL_SUCCESS;
+    goto end;
 
   width = info->width;
   height = info->height;
@@ -175,8 +184,8 @@ owl_vk_image_generate_mips(VkCommandBuffer cmd,
   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0,
                        NULL, 1, &barrier);
-
-  return OWL_SUCCESS;
+end:
+  return code;
 }
 
 OWL_INTERNAL VkFilter owl_as_vk_filter_(enum owl_sampler_filter filter) {
@@ -222,10 +231,9 @@ VkDeviceSize owl_info_required_size_(struct owl_texture_info const *info) {
   return owl_sizeof_format_(info->format) * p;
 }
 
-enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
-                                        struct owl_texture_info const *info,
-                                        struct owl_dyn_buffer_ref const *ref,
-                                        struct owl_texture *tex) {
+enum owl_code owl_texture_init_from_ref(
+    struct owl_vk_renderer *r, struct owl_texture_info const *info,
+    struct owl_dynamic_buffer_reference const *ref, struct owl_texture *tex) {
   enum owl_code code = OWL_SUCCESS;
   owl_u32 mips = owl_calc_mips((owl_u32)info->width, (owl_u32)info->height);
 
@@ -318,13 +326,15 @@ enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
     owl_renderer_alloc_single_use_cmd_buffer(r, &cmd);
 
     {
-      struct owl_vk_image_transition_info transition_info;
-      transition_info.mips = mips;
-      transition_info.from = VK_IMAGE_LAYOUT_UNDEFINED;
-      transition_info.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-      transition_info.image = tex->image;
+      struct owl_vk_image_transition_info transition;
 
-      owl_vk_image_transition(cmd, &transition_info);
+      transition.mips = mips;
+      transition.layers = 1;
+      transition.from = VK_IMAGE_LAYOUT_UNDEFINED;
+      transition.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      transition.image = tex->image;
+
+      owl_vk_image_transition(cmd, &transition);
     }
 
     {
@@ -347,13 +357,14 @@ enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
     }
 
     {
-      struct owl_vk_image_mip_info mip_info;
-      mip_info.width = info->width;
-      mip_info.height = info->height;
-      mip_info.mips = mips;
-      mip_info.image = tex->image;
+      struct owl_vk_image_mip_info mip;
 
-      owl_vk_image_generate_mips(cmd, &mip_info);
+      mip.width = info->width;
+      mip.height = info->height;
+      mip.mips = mips;
+      mip.image = tex->image;
+
+      owl_vk_image_generate_mips(cmd, &mip);
     }
 
     owl_renderer_free_single_use_cmd_buffer(r, cmd);
@@ -391,9 +402,9 @@ enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
     VkDescriptorImageInfo image;
     VkWriteDescriptorSet write;
 
-    image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    image.imageView = tex->view;
     image.sampler = tex->sampler;
+    image.imageView = tex->view;
+    image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.pNext = NULL;
@@ -409,7 +420,7 @@ enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
     vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);
   }
 
-  owl_renderer_clear_dyn_offset(r);
+  owl_renderer_clear_dynamic_offset(r);
 
   return code;
 }
@@ -420,34 +431,43 @@ enum owl_code owl_texture_init_from_data(struct owl_vk_renderer *r,
                                          struct owl_texture *tex) {
   owl_byte *stage;
   VkDeviceSize size;
-  struct owl_dyn_buffer_ref ref;
+  struct owl_dynamic_buffer_reference ref;
+  enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dyn_buffer_clear(r));
+  OWL_ASSERT(owl_renderer_is_dynamic_buffer_clear(r));
 
   size = owl_info_required_size_(info);
 
-  if (!(stage = owl_renderer_dyn_alloc(r, size, &ref)))
-    return OWL_ERROR_BAD_ALLOC;
+  if (!(stage = owl_renderer_dynamic_buffer_alloc(r, size, &ref))) {
+    code = OWL_ERROR_BAD_ALLOC;
+    goto end;
+  }
 
   OWL_MEMCPY(stage, data, size);
 
-  return owl_texture_init_from_ref(r, info, &ref, tex);
+  code = owl_texture_init_from_ref(r, info, &ref, tex);
+
+end:
+  return code;
 }
 
 enum owl_code owl_texture_init_from_file(struct owl_vk_renderer *r,
                                          struct owl_texture_info *info,
                                          char const *path,
                                          struct owl_texture *tex) {
-  enum owl_code code;
   owl_byte *data;
+  enum owl_code code = OWL_SUCCESS;
 
-  if (!(data = owl_texture_data_from_file(path, info)))
-    return OWL_ERROR_BAD_ALLOC;
+  if (!(data = owl_texture_data_from_file(path, info))) {
+    code = OWL_ERROR_BAD_ALLOC;
+    goto end;
+  }
 
   code = owl_texture_init_from_data(r, info, data, tex);
 
   stbi_image_free(data);
 
+end:
   return code;
 }
 
@@ -468,14 +488,17 @@ enum owl_code owl_texture_create_from_data(struct owl_vk_renderer *r,
                                            struct owl_texture **tex) {
   enum owl_code code = OWL_SUCCESS;
 
-  if (!(*tex = OWL_MALLOC(sizeof(**tex))))
-    return OWL_ERROR_BAD_ALLOC;
+  if (!(*tex = OWL_MALLOC(sizeof(**tex)))) {
+    code = OWL_ERROR_BAD_ALLOC;
+    goto end;
+  }
 
   code = owl_texture_init_from_data(r, info, data, *tex);
 
   if (OWL_SUCCESS != code)
     OWL_FREE(*tex);
 
+end:
   return code;
 }
 
@@ -485,14 +508,17 @@ enum owl_code owl_texture_create_from_file(struct owl_vk_renderer *r,
                                            struct owl_texture **tex) {
   enum owl_code code = OWL_SUCCESS;
 
-  if (!(*tex = OWL_MALLOC(sizeof(**tex))))
-    return OWL_ERROR_BAD_ALLOC;
+  if (!(*tex = OWL_MALLOC(sizeof(**tex)))) {
+    code = OWL_ERROR_BAD_ALLOC;
+    goto end;
+  }
 
   code = owl_texture_init_from_file(r, info, path, *tex);
 
   if (OWL_SUCCESS != code)
     OWL_FREE(*tex);
 
+end:
   return code;
 }
 

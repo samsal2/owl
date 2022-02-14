@@ -23,26 +23,27 @@ struct owl_skybox_loading_info {
 OWL_INTERNAL void
 owl_skybox_copy_to_image_(VkCommandBuffer cmd, owl_u32 base_width,
                           owl_u32 base_height, owl_u32 face, owl_u32 level,
-                          struct owl_dyn_buffer_ref const *ref,
+                          struct owl_dynamic_buffer_reference const *ref,
                           struct owl_skybox const *box) {
 
-  VkBufferImageCopy region;
+  VkBufferImageCopy copy;
 
-  region.bufferOffset = ref->offset;
-  region.bufferRowLength = 0;
-  region.bufferImageHeight = 0;
-  region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  region.imageSubresource.baseArrayLayer = face;
-  region.imageSubresource.layerCount = 1;
-  region.imageOffset.x = 0;
-  region.imageOffset.y = 0;
-  region.imageOffset.z = 0;
-  region.imageExtent.width = base_width >> level;
-  region.imageExtent.height = base_height >> level;
-  region.imageExtent.depth = 1;
+  copy.bufferOffset = ref->offset;
+  copy.bufferRowLength = 0;
+  copy.bufferImageHeight = 0;
+  copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  copy.imageSubresource.mipLevel = level;
+  copy.imageSubresource.baseArrayLayer = face;
+  copy.imageSubresource.layerCount = 1;
+  copy.imageOffset.x = 0;
+  copy.imageOffset.y = 0;
+  copy.imageOffset.z = 0;
+  copy.imageExtent.width = base_width >> level;
+  copy.imageExtent.height = base_height >> level;
+  copy.imageExtent.depth = 1;
 
   vkCmdCopyBufferToImage(cmd, ref->buffer, box->image,
-                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 }
 
 OWL_INTERNAL enum owl_code
@@ -50,6 +51,7 @@ owl_skybox_init_loading_info_(struct owl_skybox_info const *info,
                               struct owl_skybox_loading_info *loading_info) {
 
   struct owl_texture_info texture_info;
+  enum owl_code code = OWL_SUCCESS;
 
   loading_info->right = owl_texture_data_from_file(info->right, &texture_info);
 
@@ -131,7 +133,12 @@ owl_skybox_init_loading_info_(struct owl_skybox_info const *info,
   if (loading_info->format != (owl_u32)texture_info.format)
     goto end_free_front;
 
+#if 0
   loading_info->mips = owl_calc_mips(loading_info->width, loading_info->height);
+#else
+  /* FIXME(samuel): mip generation is broken */
+  loading_info->mips = 1;
+#endif
 
   goto end;
 
@@ -154,10 +161,10 @@ end_free_right:
   owl_texture_free_data_from_file(loading_info->right);
 
 end_error:
-  return OWL_ERROR_UNKNOWN;
+  code = OWL_ERROR_UNKNOWN;
 
 end:
-  return OWL_SUCCESS;
+  return code;
 }
 
 OWL_INTERNAL void
@@ -177,8 +184,9 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   VkCommandBuffer cmd;
   VkDeviceSize size;
   struct owl_vk_image_transition_info transition;
+  enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dyn_buffer_clear(r));
+  OWL_ASSERT(owl_renderer_is_dynamic_buffer_clear(r));
 
   {
     struct owl_texture_info texture_info;
@@ -189,6 +197,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   }
 
   transition.mips = info->mips;
+  transition.layers = OWL_SKYBOX_FACE_COUNT;
   transition.from = VK_IMAGE_LAYOUT_UNDEFINED;
   transition.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   transition.image = box->image;
@@ -197,8 +206,8 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   owl_vk_image_transition(cmd, &transition);
 
   {
-    struct owl_dyn_buffer_ref ref;
-    owl_byte *staging = owl_renderer_dyn_alloc(r, size, &ref);
+    struct owl_dynamic_buffer_reference ref;
+    owl_byte *staging = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
 
     OWL_MEMCPY(staging, info->right, size);
 
@@ -208,8 +217,8 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   }
 
   {
-    struct owl_dyn_buffer_ref ref;
-    owl_byte *staging = owl_renderer_dyn_alloc(r, size, &ref);
+    struct owl_dynamic_buffer_reference ref;
+    owl_byte *staging = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
 
     OWL_MEMCPY(staging, info->left, size);
 
@@ -219,8 +228,8 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   }
 
   {
-    struct owl_dyn_buffer_ref ref;
-    owl_byte *staging = owl_renderer_dyn_alloc(r, size, &ref);
+    struct owl_dynamic_buffer_reference ref;
+    owl_byte *staging = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
 
     OWL_MEMCPY(staging, info->bottom, size);
 
@@ -230,8 +239,8 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   }
 
   {
-    struct owl_dyn_buffer_ref ref;
-    owl_byte *staging = owl_renderer_dyn_alloc(r, size, &ref);
+    struct owl_dynamic_buffer_reference ref;
+    owl_byte *staging = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
 
     OWL_MEMCPY(staging, info->top, size);
 
@@ -241,8 +250,8 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   }
 
   {
-    struct owl_dyn_buffer_ref ref;
-    owl_byte *staging = owl_renderer_dyn_alloc(r, size, &ref);
+    struct owl_dynamic_buffer_reference ref;
+    owl_byte *staging = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
 
     OWL_MEMCPY(staging, info->back, size);
 
@@ -252,8 +261,8 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   }
 
   {
-    struct owl_dyn_buffer_ref ref;
-    owl_byte *staging = owl_renderer_dyn_alloc(r, size, &ref);
+    struct owl_dynamic_buffer_reference ref;
+    owl_byte *staging = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
 
     OWL_MEMCPY(staging, info->front, size);
 
@@ -268,9 +277,9 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   owl_vk_image_transition(cmd, &transition);
   owl_renderer_free_single_use_cmd_buffer(r, cmd);
 
-  owl_renderer_clear_dyn_offset(r);
+  owl_renderer_clear_dynamic_offset(r);
 
-  return OWL_SUCCESS;
+  return code;
 }
 
 enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
@@ -281,7 +290,7 @@ enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
 
   code = owl_skybox_init_loading_info_(info, &loading_info);
 
-  if (OWL_SUCCESS == code)
+  if (OWL_SUCCESS != code)
     goto end;
 
   {
@@ -293,7 +302,7 @@ enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
 
     image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     image.pNext = NULL;
-    image.flags = 0;
+    image.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     image.imageType = VK_IMAGE_TYPE_2D;
     image.format = owl_as_vk_format_(loading_info.format);
     image.extent.width = (owl_u32)loading_info.width;
@@ -382,19 +391,78 @@ enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
     OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &box->view));
   }
 
+  {
+    VkDescriptorSetLayout layout;
+    VkDescriptorSetAllocateInfo set;
+
+    layout = r->texture_set_layout;
+
+    set.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    set.pNext = NULL;
+    set.descriptorPool = r->common_set_pool;
+    set.descriptorSetCount = 1;
+    set.pSetLayouts = &layout;
+
+    OWL_VK_CHECK(vkAllocateDescriptorSets(r->device, &set, &box->set));
+  }
+
+  {
+    VkDescriptorImageInfo image;
+    VkWriteDescriptorSet write;
+
+    image.sampler = box->sampler;
+    image.imageView = box->view;
+    image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = NULL;
+    write.dstSet = box->set;
+    write.dstBinding = 0;
+    write.dstArrayElement = 0;
+    write.descriptorCount = 1;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write.pImageInfo = &image;
+    write.pBufferInfo = NULL;
+    write.pTexelBufferView = NULL;
+
+    vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);
+  }
+
   owl_skybox_deinit_loading_info_(&loading_info);
 
 end:
   return code;
 }
 
-enum owl_code owl_skybox_deinit(struct owl_vk_renderer *r,
-                                struct owl_skybox *box) {
+void owl_skybox_deinit(struct owl_vk_renderer *r, struct owl_skybox *box) {
+  OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
+  vkFreeDescriptorSets(r->device, r->common_set_pool, 1, &box->set);
   vkDestroySampler(r->device, box->sampler, NULL);
   vkDestroyImageView(r->device, box->view, NULL);
   vkFreeMemory(r->device, box->memory, NULL);
   vkDestroyImage(r->device, box->image, NULL);
+}
+enum owl_code owl_skybox_create(struct owl_vk_renderer *r,
+                                struct owl_skybox_info const *info,
+                                struct owl_skybox **box) {
+  enum owl_code code = OWL_SUCCESS;
 
-  return OWL_SUCCESS;
+  if (!(*box = OWL_MALLOC(sizeof(**box)))) {
+    code = OWL_ERROR_BAD_ALLOC;
+    goto end;
+  }
+
+  code = owl_skybox_init(r, info, *box);
+
+  if (OWL_SUCCESS != code)
+    OWL_FREE(*box);
+
+end:
+  return code;
+}
+
+void owl_skybox_destroy(struct owl_vk_renderer *r, struct owl_skybox *box) {
+  owl_skybox_deinit(r, box);
+  OWL_FREE(box);
 }

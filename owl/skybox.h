@@ -15,6 +15,7 @@ struct owl_skybox_vertex {
 
 struct owl_skybox_uniform {
   owl_m4 projection;
+  owl_m4 view;
   owl_m4 model;
 };
 
@@ -33,13 +34,19 @@ struct owl_skybox {
   VkImageView view;
   VkDeviceMemory memory;
   VkSampler sampler;
+  VkDescriptorSet set;
 };
 
 enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
                               struct owl_skybox_info const *info,
                               struct owl_skybox *box);
 
-enum owl_code owl_skybox_deinit(struct owl_vk_renderer *r,
-                                struct owl_skybox *box);
+void owl_skybox_deinit(struct owl_vk_renderer *r, struct owl_skybox *box);
+
+enum owl_code owl_skybox_create(struct owl_vk_renderer *r,
+                                struct owl_skybox_info const *info,
+                                struct owl_skybox **box);
+
+void owl_skybox_destroy(struct owl_vk_renderer *r, struct owl_skybox *box);
 
 #endif
