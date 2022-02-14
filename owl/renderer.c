@@ -3044,3 +3044,58 @@ enum owl_code owl_renderer_bind_pipeline(struct owl_vk_renderer *r,
 
   return OWL_SUCCESS;
 }
+
+enum owl_code
+owl_renderer_alloc_single_use_cmd_buffer(struct owl_vk_renderer const *r,
+                                         VkCommandBuffer *cmd) {
+  {
+    VkCommandBufferAllocateInfo buf;
+
+    buf.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    buf.pNext = NULL;
+    buf.commandPool = r->transient_cmd_pool;
+    buf.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    buf.commandBufferCount = 1;
+
+    OWL_VK_CHECK(vkAllocateCommandBuffers(r->device, &buf, cmd));
+  }
+
+  {
+    VkCommandBufferBeginInfo begin;
+
+    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin.pNext = NULL;
+    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    begin.pInheritanceInfo = NULL;
+
+    OWL_VK_CHECK(vkBeginCommandBuffer(*cmd, &begin));
+  }
+
+  return OWL_SUCCESS;
+}
+
+enum owl_code
+owl_renderer_free_single_use_cmd_buffer(struct owl_vk_renderer const *r,
+                                        VkCommandBuffer cmd) {
+  VkSubmitInfo submit;
+
+  OWL_VK_CHECK(vkEndCommandBuffer(cmd));
+
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.pNext = NULL;
+  submit.waitSemaphoreCount = 0;
+  submit.pWaitSemaphores = NULL;
+  submit.pWaitDstStageMask = NULL;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &cmd;
+  submit.signalSemaphoreCount = 0;
+  submit.pSignalSemaphores = NULL;
+
+  OWL_VK_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit, NULL));
+  OWL_VK_CHECK(vkQueueWaitIdle(r->graphics_queue));
+
+  vkFreeCommandBuffers(r->device, r->transient_cmd_pool, 1, &cmd);
+
+  return OWL_SUCCESS;
+}
+

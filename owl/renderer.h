@@ -283,4 +283,13 @@ void *owl_renderer_dyn_alloc(struct owl_vk_renderer *r, VkDeviceSize size,
 enum owl_code owl_renderer_bind_pipeline(struct owl_vk_renderer *r,
                                          enum owl_pipeline_type type);
 
+
+enum owl_code
+owl_renderer_alloc_single_use_cmd_buffer(struct owl_vk_renderer const *r,
+                                         VkCommandBuffer *cmd);
+
+enum owl_code
+owl_renderer_free_single_use_cmd_buffer(struct owl_vk_renderer const *r,
+                                        VkCommandBuffer cmd);
+
 #endif

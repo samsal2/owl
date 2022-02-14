@@ -93,14 +93,6 @@ enum owl_code owl_texture_create_from_data(struct owl_vk_renderer *r,
 void owl_texture_destroy(struct owl_vk_renderer const *r,
                          struct owl_texture *tex);
 
-enum owl_code
-owl_renderer_alloc_single_use_cmd_buffer(struct owl_vk_renderer const *r,
-                                         VkCommandBuffer *cmd);
-
-enum owl_code
-owl_renderer_free_single_use_cmd_buffer(struct owl_vk_renderer const *r,
-                                        VkCommandBuffer cmd);
-
 struct owl_vk_image_transition_info {
   owl_u32 mips;
   VkImageLayout from;
