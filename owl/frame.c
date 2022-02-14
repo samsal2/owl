@@ -134,10 +134,6 @@ OWL_INTERNAL void owl_renderer_swap_active_(struct owl_vk_renderer *r) {
     r->active = 0;
 }
 
-OWL_INTERNAL void owl_renderer_clear_dyn_offset_(struct owl_vk_renderer *r) {
-  r->dyn_offsets[r->active] = 0;
-}
-
 enum owl_code owl_frame_end(struct owl_vk_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
@@ -149,7 +145,7 @@ enum owl_code owl_frame_end(struct owl_vk_renderer *r) {
 
   owl_renderer_swap_active_(r);
   /* reset dyn buffer */
-  owl_renderer_clear_dyn_offset_(r);
+  owl_renderer_clear_dyn_offset(r);
   owl_renderer_clear_dyn_garbage(r);
 
 end:

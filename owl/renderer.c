@@ -2692,6 +2692,10 @@ void owl_renderer_clear_dyn_garbage(struct owl_vk_renderer *r) {
 #endif
 }
 
+void owl_renderer_clear_dyn_offset(struct owl_vk_renderer *r) {
+  r->dyn_offsets[r->active] = 0;
+}
+
 enum owl_code owl_renderer_create(struct owl_window *w,
                                   struct owl_vk_renderer **r) {
   struct owl_vk_renderer_desc desc;
