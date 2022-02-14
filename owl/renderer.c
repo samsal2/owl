@@ -1201,7 +1201,7 @@ owl_renderer_init_shaders_(struct owl_vk_renderer *r) {
 
     /* TODO(samuel): Properly load code at runtime */
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/basic_vert.spv.u32"
+#include "../shaders/basic_vertex.spv.u32"
     };
 
     shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1211,14 +1211,14 @@ owl_renderer_init_shaders_(struct owl_vk_renderer *r) {
     shader.pCode = code;
 
     OWL_VK_CHECK(
-        vkCreateShaderModule(r->device, &shader, NULL, &r->basic_vert_shader));
+        vkCreateShaderModule(r->device, &shader, NULL, &r->basic_vertex_shader));
   }
 
   {
     VkShaderModuleCreateInfo shader;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/basic_frag.spv.u32"
+#include "../shaders/basic_fragment.spv.u32"
     };
 
     shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1228,14 +1228,14 @@ owl_renderer_init_shaders_(struct owl_vk_renderer *r) {
     shader.pCode = code;
 
     OWL_VK_CHECK(
-        vkCreateShaderModule(r->device, &shader, NULL, &r->basic_frag_shader));
+        vkCreateShaderModule(r->device, &shader, NULL, &r->basic_fragment_shader));
   }
 
   {
     VkShaderModuleCreateInfo shader;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/font_frag.spv.u32"
+#include "../shaders/font_fragment.spv.u32"
     };
 
     shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1245,14 +1245,14 @@ owl_renderer_init_shaders_(struct owl_vk_renderer *r) {
     shader.pCode = code;
 
     OWL_VK_CHECK(
-        vkCreateShaderModule(r->device, &shader, NULL, &r->font_frag_shader));
+        vkCreateShaderModule(r->device, &shader, NULL, &r->font_fragment_shader));
   }
 
   {
     VkShaderModuleCreateInfo shader;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/skybox_vert.spv.u32"
+#include "../shaders/skybox_vertex.spv.u32"
     };
 
     shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1262,14 +1262,14 @@ owl_renderer_init_shaders_(struct owl_vk_renderer *r) {
     shader.pCode = code;
 
     OWL_VK_CHECK(
-        vkCreateShaderModule(r->device, &shader, NULL, &r->skybox_vert_shader));
+        vkCreateShaderModule(r->device, &shader, NULL, &r->skybox_vertex_shader));
   }
 
   {
     VkShaderModuleCreateInfo shader;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/skybox_frag.spv.u32"
+#include "../shaders/skybox_fragment.spv.u32"
     };
 
     shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1279,14 +1279,14 @@ owl_renderer_init_shaders_(struct owl_vk_renderer *r) {
     shader.pCode = code;
 
     OWL_VK_CHECK(
-        vkCreateShaderModule(r->device, &shader, NULL, &r->skybox_frag_shader));
+        vkCreateShaderModule(r->device, &shader, NULL, &r->skybox_fragment_shader));
   }
 
   {
     VkShaderModuleCreateInfo shader;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/pbr_vert.spv.u32"
+#include "../shaders/pbr_vertex.spv.u32"
     };
 
     shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1296,14 +1296,14 @@ owl_renderer_init_shaders_(struct owl_vk_renderer *r) {
     shader.pCode = code;
 
     OWL_VK_CHECK(
-        vkCreateShaderModule(r->device, &shader, NULL, &r->pbr_vert_shader));
+        vkCreateShaderModule(r->device, &shader, NULL, &r->pbr_vertex_shader));
   }
 
   {
     VkShaderModuleCreateInfo shader;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/pbr_frag.spv.u32"
+#include "../shaders/pbr_fragment.spv.u32"
     };
 
     shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1313,20 +1313,20 @@ owl_renderer_init_shaders_(struct owl_vk_renderer *r) {
     shader.pCode = code;
 
     OWL_VK_CHECK(
-        vkCreateShaderModule(r->device, &shader, NULL, &r->pbr_frag_shader));
+        vkCreateShaderModule(r->device, &shader, NULL, &r->pbr_fragment_shader));
   }
 
   return code;
 }
 
 OWL_INTERNAL void owl_renderer_deinit_shaders_(struct owl_vk_renderer *r) {
-  vkDestroyShaderModule(r->device, r->pbr_frag_shader, NULL);
-  vkDestroyShaderModule(r->device, r->pbr_vert_shader, NULL);
-  vkDestroyShaderModule(r->device, r->skybox_frag_shader, NULL);
-  vkDestroyShaderModule(r->device, r->skybox_vert_shader, NULL);
-  vkDestroyShaderModule(r->device, r->font_frag_shader, NULL);
-  vkDestroyShaderModule(r->device, r->basic_frag_shader, NULL);
-  vkDestroyShaderModule(r->device, r->basic_vert_shader, NULL);
+  vkDestroyShaderModule(r->device, r->pbr_fragment_shader, NULL);
+  vkDestroyShaderModule(r->device, r->pbr_vertex_shader, NULL);
+  vkDestroyShaderModule(r->device, r->skybox_fragment_shader, NULL);
+  vkDestroyShaderModule(r->device, r->skybox_vertex_shader, NULL);
+  vkDestroyShaderModule(r->device, r->font_fragment_shader, NULL);
+  vkDestroyShaderModule(r->device, r->basic_fragment_shader, NULL);
+  vkDestroyShaderModule(r->device, r->basic_vertex_shader, NULL);
 }
 
 OWL_INTERNAL enum owl_code
@@ -1474,7 +1474,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->basic_vert_shader;
+    stages[0].module = r->basic_vertex_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -1482,7 +1482,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->basic_frag_shader;
+    stages[1].module = r->basic_fragment_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
@@ -1654,7 +1654,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->basic_vert_shader;
+    stages[0].module = r->basic_vertex_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -1662,7 +1662,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->basic_frag_shader;
+    stages[1].module = r->basic_fragment_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
@@ -1834,7 +1834,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->basic_vert_shader;
+    stages[0].module = r->basic_vertex_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -1842,7 +1842,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->font_frag_shader;
+    stages[1].module = r->font_fragment_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
@@ -2005,7 +2005,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->skybox_vert_shader;
+    stages[0].module = r->skybox_vertex_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -2013,7 +2013,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->skybox_frag_shader;
+    stages[1].module = r->skybox_fragment_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
@@ -2197,7 +2197,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->pbr_vert_shader;
+    stages[0].module = r->pbr_vertex_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -2205,7 +2205,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->pbr_frag_shader;
+    stages[1].module = r->pbr_fragment_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
@@ -2389,7 +2389,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[0].pNext = NULL;
     stages[0].flags = 0;
     stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->pbr_vert_shader;
+    stages[0].module = r->pbr_vertex_shader;
     stages[0].pName = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -2397,7 +2397,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
     stages[1].pNext = NULL;
     stages[1].flags = 0;
     stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->pbr_frag_shader;
+    stages[1].module = r->pbr_fragment_shader;
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 

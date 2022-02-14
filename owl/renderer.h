@@ -186,13 +186,13 @@ struct owl_vk_renderer {
   /* ====================================================================== */
   /* shaders */
   /* ====================================================================== */
-  VkShaderModule basic_vert_shader;
-  VkShaderModule basic_frag_shader;
-  VkShaderModule font_frag_shader;
-  VkShaderModule skybox_vert_shader;
-  VkShaderModule skybox_frag_shader;
-  VkShaderModule pbr_vert_shader;
-  VkShaderModule pbr_frag_shader;
+  VkShaderModule basic_vertex_shader;
+  VkShaderModule basic_fragment_shader;
+  VkShaderModule font_fragment_shader;
+  VkShaderModule skybox_vertex_shader;
+  VkShaderModule skybox_fragment_shader;
+  VkShaderModule pbr_vertex_shader;
+  VkShaderModule pbr_fragment_shader;
   /* ====================================================================== */
 
   /* ====================================================================== */
