@@ -5,7 +5,7 @@
 #include "font.h"
 #include "internal.h"
 #include "renderer.h"
-#include "vmath.h"
+#include "vector_math.h"
 
 OWL_INTERNAL enum owl_code owl_fill_char_quad_(int width, int height,
                                                struct owl_font const *font,

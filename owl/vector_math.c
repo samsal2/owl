@@ -1,4 +1,4 @@
-#include "vmath.h"
+#include "vector_math.h"
 
 #include <math.h>
 

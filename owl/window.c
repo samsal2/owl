@@ -2,7 +2,7 @@
 
 #include "internal.h"
 #include "renderer.h"
-#include "vmath.h"
+#include "vector_math.h"
 
 /* clang-format off */
 #include <vulkan/vulkan.h>

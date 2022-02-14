@@ -3,7 +3,7 @@
 #include "draw_cmd.h"
 #include "internal.h"
 #include "renderer.h"
-#include "vmath.h"
+#include "vector_math.h"
 
 /* clang-format off */
 #include <ft2build.h>

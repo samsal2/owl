@@ -14,8 +14,8 @@ target_sources(${PROJECT_NAME} PRIVATE
   renderer.h
   text.c
   text.h
-  vmath.c
-  vmath.h
+  vector_math.c
+  vector_math.h
   window.c
   window.h
   draw_cmd.c

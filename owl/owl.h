@@ -10,7 +10,7 @@
 #include "text.h"
 #include "texture.h"
 #include "types.h"
-#include "vmath.h"
+#include "vector_math.h"
 #include "window.h"
 
 #endif
