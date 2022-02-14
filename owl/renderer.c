@@ -2683,10 +2683,6 @@ int owl_renderer_is_dyn_buffer_clear(struct owl_vk_renderer *r) {
   return 0 == r->dyn_offsets[r->active];
 }
 
-void owl_renderer_clear_dyn_offset(struct owl_vk_renderer *r) {
-  r->dyn_offsets[r->active] = 0;
-}
-
 void owl_renderer_clear_dyn_garbage(struct owl_vk_renderer *r) {
   owl_renderer_deinit_dyn_garbage_(r);
 

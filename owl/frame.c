@@ -129,9 +129,13 @@ OWL_INTERNAL enum owl_code owl_present_swapchain_(struct owl_vk_renderer *r) {
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL void owl_swap_active_(struct owl_vk_renderer *r) {
+OWL_INTERNAL void owl_renderer_swap_active_(struct owl_vk_renderer *r) {
   if (OWL_VK_RENDERER_DYN_BUFFER_COUNT == ++r->active)
     r->active = 0;
+}
+
+OWL_INTERNAL void owl_renderer_clear_dyn_offset_(struct owl_vk_renderer *r) {
+  r->dyn_offsets[r->active] = 0;
 }
 
 enum owl_code owl_frame_end(struct owl_vk_renderer *r) {
@@ -143,9 +147,9 @@ enum owl_code owl_frame_end(struct owl_vk_renderer *r) {
   if (OWL_SUCCESS != (code = owl_present_swapchain_(r)))
     goto end;
 
-  owl_swap_active_(r);
+  owl_renderer_swap_active_(r);
   /* reset dyn buffer */
-  owl_renderer_clear_dyn_offset(r);
+  owl_renderer_clear_dyn_offset_(r);
   owl_renderer_clear_dyn_garbage(r);
 
 end:
