@@ -26,6 +26,7 @@ enum owl_pipeline_type {
   OWL_PIPELINE_TYPE_MAIN,
   OWL_PIPELINE_TYPE_WIRES,
   OWL_PIPELINE_TYPE_FONT,
+  OWL_PIPELINE_TYPE_SKYBOX,
   OWL_PIPELINE_TYPE_PBR,
   OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND,
   OWL_PIPELINE_TYPE_COUNT
@@ -34,7 +35,7 @@ enum owl_pipeline_type {
 typedef enum owl_code (*owl_vk_surface_callback)(struct owl_vk_renderer const *,
                                                  void const *, VkSurfaceKHR *);
 
-struct owl_vk_renderer_desc {
+struct owl_vk_renderer_info {
   char const *name;
 
   int framebuffer_width;
@@ -161,8 +162,14 @@ struct owl_vk_renderer {
   /* ====================================================================== */
   /* sets layouts */
   /* ====================================================================== */
+  /* common */
   VkDescriptorSetLayout pvm_set_layout;
   VkDescriptorSetLayout texture_set_layout;
+
+  /* skybox */
+  VkDescriptorSetLayout skybox_set_layout;
+
+  /* pbr */
   VkDescriptorSetLayout scene_set_layout;
   VkDescriptorSetLayout material_set_layout;
   VkDescriptorSetLayout node_set_layout;
@@ -172,6 +179,7 @@ struct owl_vk_renderer {
   /* main pipeline layouts */
   /* ====================================================================== */
   VkPipelineLayout common_pipeline_layout;
+  VkPipelineLayout skybox_pipeline_layout;
   VkPipelineLayout pbr_pipeline_layout;
   /* ====================================================================== */
 
@@ -181,6 +189,8 @@ struct owl_vk_renderer {
   VkShaderModule basic_vert_shader;
   VkShaderModule basic_frag_shader;
   VkShaderModule font_frag_shader;
+  VkShaderModule skybox_vert_shader;
+  VkShaderModule skybox_frag_shader;
   VkShaderModule pbr_vert_shader;
   VkShaderModule pbr_frag_shader;
   /* ====================================================================== */
@@ -237,14 +247,14 @@ struct owl_vk_renderer {
   /* ====================================================================== */
 };
 
-enum owl_code owl_renderer_init(struct owl_vk_renderer_desc const *desc,
+enum owl_code owl_renderer_init(struct owl_vk_renderer_info const *info,
                                 struct owl_vk_renderer *r);
 
 enum owl_code owl_renderer_create(struct owl_window *w,
                                   struct owl_vk_renderer **r);
 
 enum owl_code
-owl_renderer_reinit_swapchain(struct owl_vk_renderer_desc const *desc,
+owl_renderer_reinit_swapchain(struct owl_vk_renderer_info const *info,
                               struct owl_vk_renderer *r);
 
 enum owl_code owl_renderer_recreate_swapchain(struct owl_window *w,

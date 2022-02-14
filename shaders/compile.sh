@@ -3,3 +3,5 @@ glslangValidator -V -x -o basic_frag.spv.u32 basic.frag
 glslangValidator -V -x -o font_frag.spv.u32 font.frag
 glslangValidator -V -x -o pbr_vert.spv.u32 pbr.vert
 glslangValidator -V -x -o pbr_frag.spv.u32 pbr.frag
+glslangValidator -V -x -o skybox_vert.spv.u32 skybox.vert
+glslangValidator -V -x -o skybox_frag.spv.u32 skybox.frag

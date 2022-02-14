@@ -225,11 +225,11 @@ char const *fps_string(double time) {
     }                                                                          \
   } while (0)
 
-static struct owl_window_desc window_desc;
+static struct owl_window_info window_info;
 static struct owl_window *window;
 static struct owl_input_state *input;
 static struct owl_vk_renderer *renderer;
-static struct owl_texture_desc texture_desc;
+static struct owl_texture_info texture_info;
 static struct owl_texture *texture;
 static struct owl_draw_cmd group;
 static struct cloth cloth;
@@ -249,20 +249,20 @@ int main(void) {
   struct owl_draw_cmd_ubo *pvm;
   owl_u32 selected = UNSELECTED;
 
-  window_desc.height = 600;
-  window_desc.width = 600;
-  window_desc.title = "cloth-sim";
-  TEST(owl_window_create(&window_desc, &input, &window));
+  window_info.height = 600;
+  window_info.width = 600;
+  window_info.title = "cloth-sim";
+  TEST(owl_window_create(&window_info, &input, &window));
 
   TEST(owl_renderer_create(window, &renderer));
 
-  texture_desc.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-  texture_desc.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-  texture_desc.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-  texture_desc.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  texture_desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  texture_desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  TEST(owl_texture_create_from_file(renderer, &texture_desc, TPATH, &texture));
+  texture_info.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
+  texture_info.min_filter = OWL_SAMPLER_FILTER_LINEAR;
+  texture_info.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
+  texture_info.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  texture_info.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  texture_info.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  TEST(owl_texture_create_from_file(renderer, &texture_info, TPATH, &texture));
 
   TEST(owl_font_create(renderer, 64, FONTPATH, &font));
 

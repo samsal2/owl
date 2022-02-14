@@ -21,7 +21,7 @@ char const *fps_string(double time) {
   return buffer;
 }
 
-static struct owl_window_desc window_desc;
+static struct owl_window_info window_info;
 static struct owl_window *window;
 static struct owl_vk_renderer *renderer;
 static struct owl_font *font;
@@ -33,11 +33,11 @@ static struct owl_draw_cmd_ubo ubo;
 int main(void) {
   owl_v3 eye, center, up, pos;
 
-  window_desc.height = 600;
-  window_desc.width = 600;
-  window_desc.title = "model";
+  window_info.height = 600;
+  window_info.width = 600;
+  window_info.title = "model";
 
-  TEST(owl_window_create(&window_desc, &input, &window));
+  TEST(owl_window_create(&window_info, &input, &window));
   TEST(owl_renderer_create(window, &renderer));
   TEST(owl_font_create(renderer, 64, FONTPATH, &font));
   TEST(owl_model_create_from_file(renderer, MODELPATH, &model));

@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-struct owl_vk_renderer_desc;
+struct owl_vk_renderer_info;
 
 enum owl_button_state {
   OWL_BUTTON_STATE_NONE,
@@ -157,7 +157,7 @@ struct owl_input_state {
   enum owl_button_state keyboard[OWL_KEYBOARD_KEY_LAST];
 };
 
-struct owl_window_desc {
+struct owl_window_info {
   int width;
   int height;
   char const *title;
@@ -176,17 +176,17 @@ struct owl_window {
   struct owl_input_state input;
 };
 
-enum owl_code owl_window_init(struct owl_window_desc const *desc,
+enum owl_code owl_window_init(struct owl_window_info const *info,
                               struct owl_input_state **input,
                               struct owl_window *w);
 
 void owl_window_deinit(struct owl_window *w);
 
 enum owl_code
-owl_window_fill_vk_renderer_desc(struct owl_window const *w,
-                                 struct owl_vk_renderer_desc *desc);
+owl_window_fill_vk_renderer_info(struct owl_window const *w,
+                                 struct owl_vk_renderer_info *info);
 
-enum owl_code owl_window_create(struct owl_window_desc const *desc,
+enum owl_code owl_window_create(struct owl_window_info const *info,
                                 struct owl_input_state **input,
                                 struct owl_window **w);
 

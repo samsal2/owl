@@ -6,8 +6,9 @@
 #include <math.h>
 #include <stb/stb_image.h>
 
-enum owl_code owl_renderer_alloc_cmd_buffer(struct owl_vk_renderer const *r,
-                                            VkCommandBuffer *cmd) {
+enum owl_code
+owl_renderer_alloc_single_use_cmd_buffer(struct owl_vk_renderer const *r,
+                                         VkCommandBuffer *cmd) {
   {
     VkCommandBufferAllocateInfo buf;
 
@@ -34,8 +35,9 @@ enum owl_code owl_renderer_alloc_cmd_buffer(struct owl_vk_renderer const *r,
   return OWL_SUCCESS;
 }
 
-enum owl_code owl_renderer_submit_cmd_buffer(struct owl_vk_renderer const *r,
-                                             VkCommandBuffer cmd) {
+enum owl_code
+owl_renderer_free_single_use_cmd_buffer(struct owl_vk_renderer const *r,
+                                        VkCommandBuffer cmd) {
   VkSubmitInfo submit;
 
   OWL_VK_CHECK(vkEndCommandBuffer(cmd));
@@ -84,7 +86,7 @@ OWL_INTERNAL VkDeviceSize owl_sizeof_format_(enum owl_pixel_format format) {
 
 enum owl_code
 owl_vk_image_transition(VkCommandBuffer cmd,
-                        struct owl_vk_image_transition_desc const *desc) {
+                        struct owl_vk_image_transition_info const *info) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst = VK_PIPELINE_STAGE_NONE_KHR;
@@ -93,32 +95,32 @@ owl_vk_image_transition(VkCommandBuffer cmd,
   barrier.pNext = NULL;
   /* image_memory_barrier.srcAccessMask = Defined later */
   /* image_memory_barrier.dstAccessMask = Defined later */
-  barrier.oldLayout = desc->from;
-  barrier.newLayout = desc->to;
+  barrier.oldLayout = info->from;
+  barrier.newLayout = info->to;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = desc->image;
+  barrier.image = info->image;
   barrier.subresourceRange.baseMipLevel = 0;
-  barrier.subresourceRange.levelCount = desc->mips;
+  barrier.subresourceRange.levelCount = info->mips;
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount = 1;
 
-  if (VK_IMAGE_LAYOUT_UNDEFINED == desc->from &&
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == desc->to) {
+  if (VK_IMAGE_LAYOUT_UNDEFINED == info->from &&
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == info->to) {
     barrier.srcAccessMask = VK_ACCESS_NONE_KHR;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
     src = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
-  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == desc->from &&
-             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == desc->to) {
+  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == info->from &&
+             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == info->to) {
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
     src = VK_PIPELINE_STAGE_TRANSFER_BIT;
     dst = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-  } else if (VK_IMAGE_LAYOUT_UNDEFINED == desc->from &&
-             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == desc->to) {
+  } else if (VK_IMAGE_LAYOUT_UNDEFINED == info->from &&
+             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == info->to) {
     barrier.srcAccessMask = VK_ACCESS_NONE_KHR;
     barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
@@ -129,9 +131,9 @@ owl_vk_image_transition(VkCommandBuffer cmd,
     OWL_ASSERT(0 && "Invalid arguments");
   }
 
-  if (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == desc->to) {
+  if (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == info->to) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == desc->to) {
+  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == info->to) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   } else {
     OWL_ASSERT(0 && "Invalid arguments");
@@ -144,17 +146,17 @@ owl_vk_image_transition(VkCommandBuffer cmd,
 
 enum owl_code
 owl_vk_image_generate_mips(VkCommandBuffer cmd,
-                           struct owl_vk_image_mip_desc const *desc) {
+                           struct owl_vk_image_mip_info const *info) {
   owl_u32 i;
   owl_i32 width;
   owl_i32 height;
   VkImageMemoryBarrier barrier;
 
-  if (1 == desc->mips || 0 == desc->mips)
+  if (1 == info->mips || 0 == info->mips)
     return OWL_SUCCESS;
 
-  width = desc->width;
-  height = desc->height;
+  width = info->width;
+  height = info->height;
 
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
   barrier.pNext = NULL;
@@ -164,13 +166,13 @@ owl_vk_image_generate_mips(VkCommandBuffer cmd,
   /* image_memory_barrier.newLayout =  later */
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = desc->image;
+  barrier.image = info->image;
   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount = 1;
   barrier.subresourceRange.levelCount = 1;
 
-  for (i = 0; i < (desc->mips - 1); ++i) {
+  for (i = 0; i < (info->mips - 1); ++i) {
     barrier.subresourceRange.baseMipLevel = i;
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
@@ -203,8 +205,8 @@ owl_vk_image_generate_mips(VkCommandBuffer cmd,
       blit.dstSubresource.baseArrayLayer = 0;
       blit.dstSubresource.layerCount = 1;
 
-      vkCmdBlitImage(cmd, desc->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                     desc->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+      vkCmdBlitImage(cmd, info->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                     info->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                      &blit, VK_FILTER_LINEAR);
     }
 
@@ -218,7 +220,7 @@ owl_vk_image_generate_mips(VkCommandBuffer cmd,
                          NULL, 1, &barrier);
   }
 
-  barrier.subresourceRange.baseMipLevel = desc->mips - 1;
+  barrier.subresourceRange.baseMipLevel = info->mips - 1;
   barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
   barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
   barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -269,20 +271,20 @@ owl_as_vk_addr_mode_(enum owl_sampler_addr_mode mode) {
   }
 }
 
-VkDeviceSize owl_desc_required_size_(struct owl_texture_desc const *desc) {
-  VkDeviceSize p = (VkDeviceSize)desc->width * (VkDeviceSize)desc->height;
-  return owl_sizeof_format_(desc->format) * p;
+VkDeviceSize owl_info_required_size_(struct owl_texture_info const *info) {
+  VkDeviceSize p = (VkDeviceSize)info->width * (VkDeviceSize)info->height;
+  return owl_sizeof_format_(info->format) * p;
 }
 
 enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
-                                        struct owl_texture_desc const *desc,
+                                        struct owl_texture_info const *info,
                                         struct owl_dyn_buffer_ref const *ref,
                                         struct owl_texture *tex) {
   enum owl_code code = OWL_SUCCESS;
-  owl_u32 mips = owl_calc_mips((owl_u32)desc->width, (owl_u32)desc->height);
+  owl_u32 mips = owl_calc_mips((owl_u32)info->width, (owl_u32)info->height);
 
-  tex->width = (owl_u32)desc->width;
-  tex->height = (owl_u32)desc->height;
+  tex->width = (owl_u32)info->width;
+  tex->height = (owl_u32)info->height;
 
   {
 #define OWL_IMAGE_USAGE                                                        \
@@ -294,9 +296,9 @@ enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
     image.pNext = NULL;
     image.flags = 0;
     image.imageType = VK_IMAGE_TYPE_2D;
-    image.format = owl_as_vk_format_(desc->format);
-    image.extent.width = (owl_u32)desc->width;
-    image.extent.height = (owl_u32)desc->height;
+    image.format = owl_as_vk_format_(info->format);
+    image.extent.width = (owl_u32)info->width;
+    image.extent.height = (owl_u32)info->height;
     image.extent.depth = 1;
     image.mipLevels = mips;
     image.arrayLayers = 1;
@@ -337,7 +339,7 @@ enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
     view.flags = 0;
     view.image = tex->image;
     view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = owl_as_vk_format_(desc->format);
+    view.format = owl_as_vk_format_(info->format);
     view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
     view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -367,16 +369,16 @@ enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
   /* stage, mips and layout */
   {
     VkCommandBuffer cmd;
-    owl_renderer_alloc_cmd_buffer(r, &cmd);
+    owl_renderer_alloc_single_use_cmd_buffer(r, &cmd);
 
     {
-      struct owl_vk_image_transition_desc transition_desc;
-      transition_desc.mips = mips;
-      transition_desc.from = VK_IMAGE_LAYOUT_UNDEFINED;
-      transition_desc.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-      transition_desc.image = tex->image;
+      struct owl_vk_image_transition_info transition_info;
+      transition_info.mips = mips;
+      transition_info.from = VK_IMAGE_LAYOUT_UNDEFINED;
+      transition_info.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      transition_info.image = tex->image;
 
-      owl_vk_image_transition(cmd, &transition_desc);
+      owl_vk_image_transition(cmd, &transition_info);
     }
 
     {
@@ -391,24 +393,24 @@ enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
       copy.imageOffset.x = 0;
       copy.imageOffset.y = 0;
       copy.imageOffset.z = 0;
-      copy.imageExtent.width = (owl_u32)desc->width;
-      copy.imageExtent.height = (owl_u32)desc->height;
+      copy.imageExtent.width = (owl_u32)info->width;
+      copy.imageExtent.height = (owl_u32)info->height;
       copy.imageExtent.depth = 1;
       vkCmdCopyBufferToImage(cmd, ref->buffer, tex->image,
                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
     }
 
     {
-      struct owl_vk_image_mip_desc mip_desc;
-      mip_desc.width = desc->width;
-      mip_desc.height = desc->height;
-      mip_desc.mips = mips;
-      mip_desc.image = tex->image;
+      struct owl_vk_image_mip_info mip_info;
+      mip_info.width = info->width;
+      mip_info.height = info->height;
+      mip_info.mips = mips;
+      mip_info.image = tex->image;
 
-      owl_vk_image_generate_mips(cmd, &mip_desc);
+      owl_vk_image_generate_mips(cmd, &mip_info);
     }
 
-    owl_renderer_submit_cmd_buffer(r, cmd);
+    owl_renderer_free_single_use_cmd_buffer(r, cmd);
   }
 
   {
@@ -418,12 +420,12 @@ enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
     sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     sampler.pNext = NULL;
     sampler.flags = 0;
-    sampler.magFilter = owl_as_vk_filter_(desc->mag_filter);
-    sampler.minFilter = owl_as_vk_filter_(desc->min_filter);
-    sampler.mipmapMode = owl_as_vk_mipmap_mode_(desc->mip_mode);
-    sampler.addressModeU = owl_as_vk_addr_mode_(desc->wrap_u);
-    sampler.addressModeV = owl_as_vk_addr_mode_(desc->wrap_v);
-    sampler.addressModeW = owl_as_vk_addr_mode_(desc->wrap_w);
+    sampler.magFilter = owl_as_vk_filter_(info->mag_filter);
+    sampler.minFilter = owl_as_vk_filter_(info->min_filter);
+    sampler.mipmapMode = owl_as_vk_mipmap_mode_(info->mip_mode);
+    sampler.addressModeU = owl_as_vk_addr_mode_(info->wrap_u);
+    sampler.addressModeV = owl_as_vk_addr_mode_(info->wrap_v);
+    sampler.addressModeW = owl_as_vk_addr_mode_(info->wrap_w);
     sampler.mipLodBias = 0.0F;
     sampler.anisotropyEnable = VK_TRUE;
     sampler.maxAnisotropy = OWL_MAX_ANISOTROPY;
@@ -467,7 +469,7 @@ enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
 }
 
 enum owl_code owl_texture_init_from_data(struct owl_vk_renderer *r,
-                                         struct owl_texture_desc const *desc,
+                                         struct owl_texture_info const *info,
                                          owl_byte const *data,
                                          struct owl_texture *tex) {
   owl_byte *stage;
@@ -476,27 +478,27 @@ enum owl_code owl_texture_init_from_data(struct owl_vk_renderer *r,
 
   OWL_ASSERT(owl_renderer_is_dyn_buffer_clear(r));
 
-  size = owl_desc_required_size_(desc);
+  size = owl_info_required_size_(info);
 
   if (!(stage = owl_renderer_dyn_alloc(r, size, &ref)))
     return OWL_ERROR_BAD_ALLOC;
 
   OWL_MEMCPY(stage, data, size);
 
-  return owl_texture_init_from_ref(r, desc, &ref, tex);
+  return owl_texture_init_from_ref(r, info, &ref, tex);
 }
 
 enum owl_code owl_texture_init_from_file(struct owl_vk_renderer *r,
-                                         struct owl_texture_desc *desc,
+                                         struct owl_texture_info *info,
                                          char const *path,
                                          struct owl_texture *tex) {
   enum owl_code code;
   owl_byte *data;
 
-  if (!(data = owl_texture_data_from_file(path, desc)))
+  if (!(data = owl_texture_data_from_file(path, info)))
     return OWL_ERROR_BAD_ALLOC;
 
-  code = owl_texture_init_from_data(r, desc, data, tex);
+  code = owl_texture_init_from_data(r, info, data, tex);
 
   stbi_image_free(data);
 
@@ -515,7 +517,7 @@ void owl_texture_deinit(struct owl_vk_renderer const *r,
 }
 
 enum owl_code owl_texture_create_from_data(struct owl_vk_renderer *r,
-                                           struct owl_texture_desc const *desc,
+                                           struct owl_texture_info const *info,
                                            owl_byte const *data,
                                            struct owl_texture **tex) {
   enum owl_code code = OWL_SUCCESS;
@@ -523,7 +525,7 @@ enum owl_code owl_texture_create_from_data(struct owl_vk_renderer *r,
   if (!(*tex = OWL_MALLOC(sizeof(**tex))))
     return OWL_ERROR_BAD_ALLOC;
 
-  code = owl_texture_init_from_data(r, desc, data, *tex);
+  code = owl_texture_init_from_data(r, info, data, *tex);
 
   if (OWL_SUCCESS != code)
     OWL_FREE(*tex);
@@ -532,7 +534,7 @@ enum owl_code owl_texture_create_from_data(struct owl_vk_renderer *r,
 }
 
 enum owl_code owl_texture_create_from_file(struct owl_vk_renderer *r,
-                                           struct owl_texture_desc *desc,
+                                           struct owl_texture_info *info,
                                            char const *path,
                                            struct owl_texture **tex) {
   enum owl_code code = OWL_SUCCESS;
@@ -540,7 +542,7 @@ enum owl_code owl_texture_create_from_file(struct owl_vk_renderer *r,
   if (!(*tex = OWL_MALLOC(sizeof(**tex))))
     return OWL_ERROR_BAD_ALLOC;
 
-  code = owl_texture_init_from_file(r, desc, path, *tex);
+  code = owl_texture_init_from_file(r, info, path, *tex);
 
   if (OWL_SUCCESS != code)
     OWL_FREE(*tex);
@@ -555,11 +557,11 @@ void owl_texture_destroy(struct owl_vk_renderer const *r,
 }
 
 owl_byte *owl_texture_data_from_file(char const *path,
-                                     struct owl_texture_desc *desc) {
+                                     struct owl_texture_info *info) {
 
   int channels;
-  desc->format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
-  return stbi_load(path, &desc->width, &desc->height, &channels,
+  info->format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
+  return stbi_load(path, &info->width, &info->height, &channels,
                    STBI_rgb_alpha);
 }
 

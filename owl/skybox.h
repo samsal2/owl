@@ -1,0 +1,45 @@
+#ifndef OWL_SKYBOX_H_
+#define OWL_SKYBOX_H_
+
+#include "types.h"
+
+#include <vulkan/vulkan.h>
+
+#define OWL_SKYBOX_FACE_COUNT 6
+
+struct owl_vk_renderer;
+
+struct owl_skybox_vertex {
+  owl_v3 position;
+};
+
+struct owl_skybox_uniform {
+  owl_m4 projection;
+  owl_m4 model;
+};
+
+struct owl_skybox_info {
+  char const *right;
+  char const *left;
+  char const *top;
+  char const *bottom;
+  char const *back;
+  char const *front;
+};
+
+struct owl_skybox {
+  owl_u32 mips;
+  VkImage image;
+  VkImageView view;
+  VkDeviceMemory memory;
+  VkSampler sampler;
+};
+
+enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
+                              struct owl_skybox_info const *info,
+                              struct owl_skybox *box);
+
+enum owl_code owl_skybox_deinit(struct owl_vk_renderer *r,
+                                struct owl_skybox *box);
+
+#endif

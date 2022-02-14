@@ -19,4 +19,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   window.c
   window.h
   draw_cmd.c
-  draw_cmd.h)
+  draw_cmd.h
+  skybox.c
+  skybox.h)

@@ -43,7 +43,7 @@ enum owl_sampler_addr_mode {
   OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER
 };
 
-struct owl_texture_desc {
+struct owl_texture_info {
   int width;
   int height;
   enum owl_pixel_format format;
@@ -58,22 +58,22 @@ struct owl_texture_desc {
 owl_u32 owl_calc_mips(owl_u32 width, owl_u32 height);
 
 owl_byte *owl_texture_data_from_file(char const *path,
-                                     struct owl_texture_desc *desc);
+                                     struct owl_texture_info *info);
 
 void owl_texture_free_data_from_file(owl_byte *data);
 
 enum owl_code owl_texture_init_from_ref(struct owl_vk_renderer *r,
-                                        struct owl_texture_desc const *desc,
+                                        struct owl_texture_info const *info,
                                         struct owl_dyn_buffer_ref const *ref,
                                         struct owl_texture *tex);
 
 enum owl_code owl_texture_init_from_file(struct owl_vk_renderer *r,
-                                         struct owl_texture_desc *desc,
+                                         struct owl_texture_info *info,
                                          char const *path,
                                          struct owl_texture *tex);
 
 enum owl_code owl_texture_init_from_data(struct owl_vk_renderer *r,
-                                         struct owl_texture_desc const *desc,
+                                         struct owl_texture_info const *info,
                                          owl_byte const *data,
                                          struct owl_texture *tex);
 
@@ -81,25 +81,27 @@ void owl_texture_deinit(struct owl_vk_renderer const *r,
                         struct owl_texture *tex);
 
 enum owl_code owl_texture_create_from_file(struct owl_vk_renderer *r,
-                                           struct owl_texture_desc *desc,
+                                           struct owl_texture_info *info,
                                            char const *path,
                                            struct owl_texture **tex);
 
 enum owl_code owl_texture_create_from_data(struct owl_vk_renderer *r,
-                                           struct owl_texture_desc const *desc,
+                                           struct owl_texture_info const *info,
                                            owl_byte const *data,
                                            struct owl_texture **tex);
 
 void owl_texture_destroy(struct owl_vk_renderer const *r,
                          struct owl_texture *tex);
 
-enum owl_code owl_renderer_alloc_cmd_buffer(struct owl_vk_renderer const *r,
-                                            VkCommandBuffer *cmd);
+enum owl_code
+owl_renderer_alloc_single_use_cmd_buffer(struct owl_vk_renderer const *r,
+                                         VkCommandBuffer *cmd);
 
-enum owl_code owl_renderer_submit_cmd_buffer(struct owl_vk_renderer const *r,
-                                             VkCommandBuffer cmd);
+enum owl_code
+owl_renderer_free_single_use_cmd_buffer(struct owl_vk_renderer const *r,
+                                        VkCommandBuffer cmd);
 
-struct owl_vk_image_transition_desc {
+struct owl_vk_image_transition_info {
   owl_u32 mips;
   VkImageLayout from;
   VkImageLayout to;
@@ -108,9 +110,9 @@ struct owl_vk_image_transition_desc {
 
 enum owl_code
 owl_vk_image_transition(VkCommandBuffer cmd,
-                        struct owl_vk_image_transition_desc const *desc);
+                        struct owl_vk_image_transition_info const *info);
 
-struct owl_vk_image_mip_desc {
+struct owl_vk_image_mip_info {
   owl_i32 width;
   owl_i32 height;
   owl_u32 mips;
@@ -119,10 +121,10 @@ struct owl_vk_image_mip_desc {
 
 enum owl_code
 owl_vk_image_generate_mips(VkCommandBuffer cmd,
-                           struct owl_vk_image_mip_desc const *desc);
+                           struct owl_vk_image_mip_info const *info);
 
 VkFormat owl_as_vk_format_(enum owl_pixel_format format);
 
-VkDeviceSize owl_desc_required_size_(struct owl_texture_desc const *desc);
+VkDeviceSize owl_info_required_size_(struct owl_texture_info const *info);
 
 #endif

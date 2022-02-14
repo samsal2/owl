@@ -32,10 +32,10 @@ void fill_quad(struct owl_draw_cmd *group, struct owl_texture *texture) {
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.model);
 }
 
-static struct owl_window_desc window_desc;
+static struct owl_window_info window_info;
 static struct owl_window *window;
 static struct owl_vk_renderer *renderer;
-static struct owl_texture_desc tex_desc;
+static struct owl_texture_info tex_info;
 static struct owl_texture *texture;
 static struct owl_draw_cmd group;
 static struct owl_input_state *input;
@@ -49,21 +49,21 @@ static struct owl_input_state *input;
 #define TEXPATH "../../assets/Chaeyoung.jpeg"
 
 int main(void) {
-  window_desc.height = 600;
-  window_desc.width = 600;
-  window_desc.title = "test";
+  window_info.height = 600;
+  window_info.width = 600;
+  window_info.title = "test";
 
-  TEST(owl_window_create(&window_desc, &input, &window));
+  TEST(owl_window_create(&window_info, &input, &window));
   TEST(owl_renderer_create(window, &renderer));
 
-  tex_desc.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-  tex_desc.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-  tex_desc.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-  tex_desc.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  tex_desc.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  tex_desc.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  tex_info.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
+  tex_info.min_filter = OWL_SAMPLER_FILTER_LINEAR;
+  tex_info.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
+  tex_info.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  tex_info.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  tex_info.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
 
-  TEST(owl_texture_create_from_file(renderer, &tex_desc, TEXPATH, &texture));
+  TEST(owl_texture_create_from_file(renderer, &tex_info, TEXPATH, &texture));
 
   fill_quad(&group, texture);
 
