@@ -18,3 +18,7 @@ build/
 
 # python
 env/
+
+# js
+package_json/
+

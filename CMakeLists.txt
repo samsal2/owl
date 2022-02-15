@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.17.3)
 
+
 project(owl)
 
 option(OWL_BUILD_EXAMPLES "Build examples" ON)

@@ -63,7 +63,6 @@ static VKAPI_ATTR VKAPI_CALL VkBool32 owl_vk_debug_callback_(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT type,
     VkDebugUtilsMessengerCallbackDataEXT const *data, void *user_data) {
-  OWL_UNUSED(severity);
   OWL_UNUSED(type);
   OWL_UNUSED(user_data);
 
@@ -289,7 +288,6 @@ owl_renderer_select_physical_device_(struct owl_vk_renderer *r) {
     goto end;
   }
 
-  /* end_no_suitable_device: */
   code = OWL_ERROR_NO_SUITABLE_DEVICE;
 
 end:
@@ -2738,95 +2736,95 @@ enum owl_code owl_renderer_init(struct owl_vk_renderer_info const *info,
 #endif
 
   if (OWL_SUCCESS != (code = owl_renderer_init_surface_(info, r)))
-    goto end_deinit_instance;
+    goto end_err_deinit_instance;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_device_(r)))
-    goto end_deinit_surface;
+    goto end_err_deinit_surface;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_(info, r)))
-    goto end_deinit_device;
+    goto end_err_deinit_device;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_common_pools_(r)))
-    goto end_deinit_swapchain;
+    goto end_err_deinit_swapchain;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_main_render_pass_(r)))
-    goto end_deinit_common_pools;
+    goto end_err_deinit_common_pools;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_attachments_(r)))
-    goto end_deinit_main_render_pass;
+    goto end_err_deinit_main_render_pass;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_framebuffers_(r)))
-    goto end_deinit_attachments;
+    goto end_err_deinit_attachments;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_set_layouts_(r)))
-    goto end_deinit_framebuffers;
+    goto end_err_deinit_framebuffers;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_pipelines_layouts_(r)))
-    goto end_deinit_set_layouts;
+    goto end_err_deinit_set_layouts;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_shaders_(r)))
-    goto end_deinit_pipeline_layouts;
+    goto end_err_deinit_pipeline_layouts;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_pipelines_(r)))
-    goto end_deinit_shaders;
+    goto end_err_deinit_shaders;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_frame_cmds_(r)))
-    goto end_deinit_pipelines;
+    goto end_err_deinit_pipelines;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_frame_sync_(r)))
-    goto end_deinit_frame_cmds;
+    goto end_err_deinit_frame_cmds;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_dynamic_buffer_(r, 1024 * 1024)))
-    goto end_deinit_frame_sync;
+    goto end_err_deinit_frame_sync;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_garbage_(r)))
-    goto end_deinit_dynamic_buffer;
+    goto end_err_deinit_dynamic_buffer;
 
   goto end;
 
-end_deinit_dynamic_buffer:
+end_err_deinit_dynamic_buffer:
   owl_renderer_deinit_dynamic_buffer_(r);
 
-end_deinit_frame_sync:
+end_err_deinit_frame_sync:
   owl_renderer_deinit_frame_sync_(r);
 
-end_deinit_frame_cmds:
+end_err_deinit_frame_cmds:
   owl_renderer_deinit_frame_cmds_(r);
 
-end_deinit_pipelines:
+end_err_deinit_pipelines:
   owl_renderer_deinit_pipelines(r);
 
-end_deinit_shaders:
+end_err_deinit_shaders:
   owl_renderer_deinit_shaders_(r);
 
-end_deinit_pipeline_layouts:
+end_err_deinit_pipeline_layouts:
   owl_renderer_deinit_pipeline_layouts_(r);
 
-end_deinit_set_layouts:
+end_err_deinit_set_layouts:
   owl_renderer_deinit_set_layouts_(r);
 
-end_deinit_framebuffers:
+end_err_deinit_framebuffers:
   owl_renderer_deinit_framebuffers_(r);
 
-end_deinit_attachments:
+end_err_deinit_attachments:
   owl_renderer_deinit_attachments_(r);
 
-end_deinit_main_render_pass:
+end_err_deinit_main_render_pass:
   owl_renderer_deinit_main_render_pass_(r);
 
-end_deinit_common_pools:
+end_err_deinit_common_pools:
   owl_renderer_deinit_common_pools_(r);
 
-end_deinit_swapchain:
+end_err_deinit_swapchain:
   owl_renderer_deinit_swapchain_(r);
 
-end_deinit_device:
+end_err_deinit_device:
   owl_renderer_deinit_device_(r);
 
-end_deinit_surface:
+end_err_deinit_surface:
   owl_renderer_deinit_surface_(r);
 
-end_deinit_instance:
+end_err_deinit_instance:
   owl_renderer_deinit_instance_(r);
 
 end:
@@ -2897,35 +2895,35 @@ owl_renderer_reinit_swapchain(struct owl_vk_renderer_info const *info,
     goto end;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_frame_sync_(r)))
-    goto end_deinit_swapchain;
+    goto end_err_deinit_swapchain;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_main_render_pass_(r)))
-    goto end_deinit_frame_sync;
+    goto end_err_deinit_frame_sync;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_attachments_(r)))
-    goto end_deinit_main_render_pass;
+    goto end_err_deinit_main_render_pass;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_framebuffers_(r)))
-    goto end_deinit_main_attachments;
+    goto end_err_deinit_main_attachments;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_pipelines_(r)))
-    goto end_deinit_main_framebuffers;
+    goto end_err_deinit_main_framebuffers;
 
   goto end;
 
-end_deinit_main_framebuffers:
+end_err_deinit_main_framebuffers:
   owl_renderer_deinit_framebuffers_(r);
 
-end_deinit_main_attachments:
+end_err_deinit_main_attachments:
   owl_renderer_deinit_attachments_(r);
 
-end_deinit_main_render_pass:
+end_err_deinit_main_render_pass:
   owl_renderer_deinit_main_render_pass_(r);
 
-end_deinit_frame_sync:
+end_err_deinit_frame_sync:
   owl_renderer_deinit_frame_sync_(r);
 
-end_deinit_swapchain:
+end_err_deinit_swapchain:
   owl_renderer_deinit_swapchain_(r);
 
 end:
@@ -3107,3 +3105,5 @@ owl_renderer_free_single_use_cmd_buffer(struct owl_vk_renderer const *r,
 
   return code;
 }
+
+

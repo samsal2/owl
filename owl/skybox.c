@@ -56,7 +56,7 @@ owl_skybox_init_loading_info_(struct owl_skybox_info const *info,
   loading_info->right = owl_texture_data_from_file(info->right, &texture_info);
 
   if (!info->right)
-    goto end_error;
+    goto end_err;
 
   loading_info->width = (owl_u32)texture_info.width;
   loading_info->height = (owl_u32)texture_info.height;
@@ -65,102 +65,97 @@ owl_skybox_init_loading_info_(struct owl_skybox_info const *info,
   loading_info->left = owl_texture_data_from_file(info->left, &texture_info);
 
   if (!loading_info->left)
-    goto end_free_right;
+    goto end_err_free_right;
 
   if (loading_info->width != (owl_u32)texture_info.width)
-    goto end_free_left;
+    goto end_err_free_left;
 
   if (loading_info->height != (owl_u32)texture_info.height)
-    goto end_free_left;
+    goto end_err_free_left;
 
   if (loading_info->format != (owl_u32)texture_info.format)
-    goto end_free_left;
+    goto end_err_free_left;
 
   loading_info->top = owl_texture_data_from_file(info->top, &texture_info);
 
   if (!loading_info->top)
-    goto end_free_left;
+    goto end_err_free_left;
 
   if (loading_info->width != (owl_u32)texture_info.width)
-    goto end_free_top;
+    goto end_err_free_top;
 
   if (loading_info->height != (owl_u32)texture_info.height)
-    goto end_free_top;
+    goto end_err_free_top;
 
   if (loading_info->format != (owl_u32)texture_info.format)
-    goto end_free_top;
+    goto end_err_free_top;
 
   loading_info->bottom =
       owl_texture_data_from_file(info->bottom, &texture_info);
 
   if (!loading_info->bottom)
-    goto end_free_top;
+    goto end_err_free_top;
 
   if (loading_info->width != (owl_u32)texture_info.width)
-    goto end_free_bottom;
+    goto end_err_free_bottom;
 
   if (loading_info->height != (owl_u32)texture_info.height)
-    goto end_free_bottom;
+    goto end_err_free_bottom;
 
   if (loading_info->format != (owl_u32)texture_info.format)
-    goto end_free_bottom;
+    goto end_err_free_bottom;
 
   loading_info->back = owl_texture_data_from_file(info->back, &texture_info);
 
   if (!loading_info->back)
-    goto end_free_bottom;
+    goto end_err_free_bottom;
 
   if (loading_info->width != (owl_u32)texture_info.width)
-    goto end_free_back;
+    goto end_err_free_back;
 
   if (loading_info->height != (owl_u32)texture_info.height)
-    goto end_free_back;
+    goto end_err_free_back;
 
   if (loading_info->format != (owl_u32)texture_info.format)
-    goto end_free_back;
+    goto end_err_free_back;
 
   loading_info->front = owl_texture_data_from_file(info->front, &texture_info);
 
   if (!loading_info->front)
-    goto end_free_back;
+    goto end_err_free_back;
 
   if (loading_info->width != (owl_u32)texture_info.width)
-    goto end_free_front;
+    goto end_err_free_front;
 
   if (loading_info->height != (owl_u32)texture_info.height)
-    goto end_free_front;
+    goto end_err_free_front;
 
   if (loading_info->format != (owl_u32)texture_info.format)
-    goto end_free_front;
+    goto end_err_free_front;
 
-#if 0
   loading_info->mips = owl_calc_mips(loading_info->width, loading_info->height);
-#else
-  /* FIXME(samuel): mip generation is broken */
-  loading_info->mips = 1;
-#endif
 
   goto end;
 
-end_free_front:
+end_err_free_front:
   owl_texture_free_data_from_file(loading_info->front);
 
-end_free_back:
+end_err_free_back:
   owl_texture_free_data_from_file(loading_info->back);
 
-end_free_bottom:
+end_err_free_bottom:
   owl_texture_free_data_from_file(loading_info->bottom);
 
-end_free_top:
+end_err_free_top:
   owl_texture_free_data_from_file(loading_info->top);
 
-end_free_left:
+end_err_free_left:
   owl_texture_free_data_from_file(loading_info->left);
 
-end_free_right:
+end_err_free_right:
   owl_texture_free_data_from_file(loading_info->right);
 
-end_error:
+end_err:
   code = OWL_ERROR_UNKNOWN;
 
 end:
@@ -336,7 +331,6 @@ enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
         r, requirements.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_GPU_ONLY);
 
     OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &box->memory));
-
     OWL_VK_CHECK(vkBindImageMemory(r->device, box->image, box->memory, 0));
   }
 

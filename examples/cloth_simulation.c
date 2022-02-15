@@ -241,7 +241,7 @@ static struct owl_draw_cmd skybox_draw_cmd;
 
 #define UNSELECTED (owl_u32) - 1
 #define TPATH "../../assets/cloth.jpeg"
-#define FONTPATH "../../assets/Terminus.ttf"
+#define FONTPATH "../../assets/Inconsolata-Regular.ttf"
 
 int main(void) {
   owl_v3 eye;

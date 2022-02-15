@@ -110,15 +110,16 @@ enum owl_code owl_font_create(struct owl_vk_renderer *renderer, int size,
 
   {
     struct owl_texture_info info;
+
     info.width = (*font)->atlas_width;
     info.height = (*font)->atlas_height;
     info.format = OWL_PIXEL_FORMAT_R8_UNORM;
-    info.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-    info.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-    info.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-    info.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
-    info.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
-    info.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
+    info.mip_mode = OWL_SAMPLER_MIP_MODE_NEAREST;
+    info.min_filter = OWL_SAMPLER_FILTER_NEAREST;
+    info.mag_filter = OWL_SAMPLER_FILTER_NEAREST;
+    info.wrap_u = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+    info.wrap_v = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+    info.wrap_w = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
 
     code = owl_texture_init_from_ref(renderer, &info, &ref, &(*font)->atlas);
 
