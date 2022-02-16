@@ -602,15 +602,19 @@ owl_renderer_init_common_pools_(struct owl_vk_renderer *r) {
   {
 #define OWL_MAX_UNIFORM_SETS 16
 #define OWL_MAX_SAMPLER_SETS 16
-#define OWL_MAX_SETS 32
-    VkDescriptorPoolSize sizes[2];
+#define OWL_MAX_TEXTURE_SETS 16
+#define OWL_MAX_SETS 48
+    VkDescriptorPoolSize sizes[3];
     VkDescriptorPoolCreateInfo pool;
 
     sizes[0].descriptorCount = OWL_MAX_UNIFORM_SETS;
     sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
     sizes[1].descriptorCount = OWL_MAX_SAMPLER_SETS;
-    sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    sizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+
+    sizes[2].descriptorCount = OWL_MAX_TEXTURE_SETS;
+    sizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 
     pool.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool.pNext = NULL;
@@ -948,20 +952,26 @@ owl_renderer_init_set_layouts_(struct owl_vk_renderer *r) {
   }
 
   {
-    VkDescriptorSetLayoutBinding binding;
+    VkDescriptorSetLayoutBinding bindings[2];
     VkDescriptorSetLayoutCreateInfo layout;
 
-    binding.binding = 0;
-    binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    binding.descriptorCount = 1;
-    binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    binding.pImmutableSamplers = NULL;
+    bindings[0].binding = 0;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+    bindings[0].descriptorCount = 1;
+    bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[0].pImmutableSamplers = NULL;
+
+    bindings[1].binding = 1;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    bindings[1].descriptorCount = 1;
+    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[1].pImmutableSamplers = NULL;
 
     layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layout.pNext = NULL;
     layout.flags = 0;
-    layout.bindingCount = 1;
-    layout.pBindings = &binding;
+    layout.bindingCount = OWL_ARRAY_SIZE(bindings);
+    layout.pBindings = bindings;
 
     OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
                                              &r->texture_set_layout));
@@ -3105,5 +3115,3 @@ owl_renderer_free_single_use_cmd_buffer(struct owl_vk_renderer const *r,
 
   return code;
 }
-
-

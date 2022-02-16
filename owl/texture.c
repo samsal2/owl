@@ -399,25 +399,40 @@ enum owl_code owl_texture_init_from_ref(
   }
 
   {
-    VkDescriptorImageInfo image;
-    VkWriteDescriptorSet write;
+    VkDescriptorImageInfo images[2];
+    VkWriteDescriptorSet writes[2];
 
-    image.sampler = tex->sampler;
-    image.imageView = tex->view;
-    image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    images[0].sampler = tex->sampler;
+    images[0].imageView = VK_NULL_HANDLE;
+    images[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.pNext = NULL;
-    write.dstSet = tex->set;
-    write.dstBinding = 0;
-    write.dstArrayElement = 0;
-    write.descriptorCount = 1;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    write.pImageInfo = &image;
-    write.pBufferInfo = NULL;
-    write.pTexelBufferView = NULL;
+    images[1].sampler = VK_NULL_HANDLE;
+    images[1].imageView = tex->view;
+    images[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);
+    writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[0].pNext = NULL;
+    writes[0].dstSet = tex->set;
+    writes[0].dstBinding = 0;
+    writes[0].dstArrayElement = 0;
+    writes[0].descriptorCount = 1;
+    writes[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+    writes[0].pImageInfo = &images[0];
+    writes[0].pBufferInfo = NULL;
+    writes[0].pTexelBufferView = NULL;
+
+    writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[1].pNext = NULL;
+    writes[1].dstSet = tex->set;
+    writes[1].dstBinding = 1;
+    writes[1].dstArrayElement = 0;
+    writes[1].descriptorCount = 1;
+    writes[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    writes[1].pImageInfo = &images[1];
+    writes[1].pBufferInfo = NULL;
+    writes[1].pTexelBufferView = NULL;
+
+    vkUpdateDescriptorSets(r->device, OWL_ARRAY_SIZE(writes), writes, 0, NULL);
   }
 
   owl_renderer_clear_dynamic_offset(r);

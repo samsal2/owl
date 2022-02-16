@@ -901,6 +901,8 @@ owl_model_process_materials_(struct owl_vk_renderer *r, cgltf_data const *data,
       images[4].imageView = model->textures[handle].view;
       images[4].imageLayout = model->textures[handle].image_layout;
 
+      // FIXME: not using combined image sampler atm
+      OWL_ASSERT(0 && "FATAL");
       for (j = 0; j < OWL_ARRAY_SIZE(writes); ++j) {
         writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         writes[j].pNext = NULL;
