@@ -51,7 +51,7 @@ OWL_INTERNAL void owl_start_recording_(struct owl_vk_renderer *r) {
     begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     begin.pNext = NULL;
     begin.renderPass = r->main_render_pass;
-    begin.framebuffer = r->framebuffers[r->swapchain_active_image];
+    begin.framebuffer = r->swapchain_framebuffers[r->swapchain_active_image];
     begin.renderArea.offset.x = 0;
     begin.renderArea.offset.y = 0;
     begin.renderArea.extent = r->swapchain_extent;

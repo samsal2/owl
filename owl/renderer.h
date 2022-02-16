@@ -156,7 +156,7 @@ struct owl_vk_renderer {
   /* ====================================================================== */
   /* main framebuffers */
   /* ====================================================================== */
-  VkFramebuffer framebuffers[OWL_VK_RENDERER_MAX_SWAPCHAIN_IMAGES];
+  VkFramebuffer swapchain_framebuffers[OWL_VK_RENDERER_MAX_SWAPCHAIN_IMAGES];
   /* ====================================================================== */
 
   /* ====================================================================== */

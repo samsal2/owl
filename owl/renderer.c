@@ -910,7 +910,7 @@ owl_renderer_init_framebuffers_(struct owl_vk_renderer *r) {
     framebuffer.layers = 1;
 
     OWL_VK_CHECK(vkCreateFramebuffer(r->device, &framebuffer, NULL,
-                                     &r->framebuffers[i]));
+                                     &r->swapchain_framebuffers[i]));
   }
 
   return code;
@@ -920,7 +920,7 @@ OWL_INTERNAL void owl_renderer_deinit_framebuffers_(struct owl_vk_renderer *r) {
   owl_u32 i;
 
   for (i = 0; i < r->swapchain_images_count; ++i)
-    vkDestroyFramebuffer(r->device, r->framebuffers[i], NULL);
+    vkDestroyFramebuffer(r->device, r->swapchain_framebuffers[i], NULL);
 }
 
 OWL_INTERNAL enum owl_code
