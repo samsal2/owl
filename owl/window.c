@@ -188,7 +188,7 @@ void owl_window_deinit(struct owl_window *w) {
     glfwTerminate();
 }
 
-#ifndef NDEBUG
+#ifdef OWL_ENABLE_VALIDATION
 #define OWL_MAX_EXTENSIONS 64
 
 OWL_INTERNAL char const *const *
@@ -208,7 +208,7 @@ owl_get_dbg_instance_extensions_(owl_u32 *count) {
 }
 
 #undef OWL_MAX_EXTENSIONS
-#endif
+#endif /* OWL_ENABLE_VALIDATION */
 
 enum owl_code
 owl_window_fill_vk_renderer_info(struct owl_window const *w,
@@ -220,11 +220,11 @@ owl_window_fill_vk_renderer_info(struct owl_window const *w,
   info->surface_user_data = w;
   info->create_surface = owl_vk_surface_init_callback_;
 
-#ifndef NDEBUG
+#ifdef OWL_ENABLE_VALIDATION
   info->instance_extensions = owl_get_dbg_instance_extensions_(&count);
-#else
+#else /* OWL_ENABLE_VALIDATION */
   info->instance_extensions = glfwGetRequiredInstanceExtensions(count);
-#endif
+#endif /* OWL_ENABLE_VALIDATION */
 
   info->instance_extension_count = (int)count;
   info->name = w->title;

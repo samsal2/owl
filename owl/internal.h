@@ -31,7 +31,7 @@ void owl_dbg_free_(void *p, char const *f, int l);
 #define OWL_DBG_LOG(...) owl_dbg_log_(__FILE__, __LINE__, __VA_ARGS__)
 void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 
-#else
+#else /* NDEBUG */
 
 #include <stdlib.h>
 #define OWL_MALLOC(s) malloc(s)
@@ -41,7 +41,7 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 
 #define OWL_DBG_LOG(...)
 
-#endif
+#endif /* NDEBUG */
 
 #define OWL_CLAMP(v, l, h) ((v) < (l) ? (l) : ((v) > (h) ? (h) : (v)))
 #define OWL_MAX(a, b) ((a) < (b) ? (b) : (a))
@@ -65,6 +65,14 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 
 #define OWL_VK_CHECK(e) e
 
-#endif
+#endif /* NDEBUG */
+
+
+#ifndef NDEBUG
+
+#define OWL_ENABLE_VALIDATION
+
+#endif /* NDEBUG */
+
 
 #endif

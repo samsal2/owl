@@ -8,12 +8,12 @@
 OWL_GLOBAL char const *const required_device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-#ifndef NDEBUG
+#ifdef OWL_ENABLE_VALIDATION
 
 OWL_GLOBAL char const *const debug_validation_layers[] = {
     "VK_LAYER_KHRONOS_validation"};
 
-#endif
+#endif /* OWL_ENABLE_VALIDATION */
 
 OWL_INTERNAL enum owl_code
 owl_renderer_init_instance_(struct owl_vk_renderer_info const *info,
@@ -34,13 +34,13 @@ owl_renderer_init_instance_(struct owl_vk_renderer_info const *info,
   instance.pNext = NULL;
   instance.flags = 0;
   instance.pApplicationInfo = &app;
-#ifndef NDEBUG
+#ifdef OWL_ENABLE_VALIDATION
   instance.enabledLayerCount = OWL_ARRAY_SIZE(debug_validation_layers);
   instance.ppEnabledLayerNames = debug_validation_layers;
-#else
+#else /* OWL_ENABLE_VALIDATION */
   instance.enabledLayerCount = 0;
   instance.ppEnabledLayerNames = NULL;
-#endif
+#endif /* OWL_ENABLE_VALIDATION */
   instance.enabledExtensionCount = (owl_u32)info->instance_extension_count;
   instance.ppEnabledExtensionNames = info->instance_extensions;
 
@@ -53,7 +53,7 @@ OWL_INTERNAL void owl_renderer_deinit_instance_(struct owl_vk_renderer *r) {
   vkDestroyInstance(r->instance, NULL);
 }
 
-#ifndef NDEBUG
+#ifdef OWL_ENABLE_VALIDATION
 
 #define OWL_VK_GET_INSTANCE_PROC_ADDR(i, fn)                                   \
   ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))
@@ -122,7 +122,7 @@ OWL_INTERNAL void owl_renderer_deinit_debug_(struct owl_vk_renderer *r) {
   vkDestroyDebugUtilsMessenger(r->instance, r->debug, NULL);
 }
 
-#endif /* NDEBUG */
+#endif /* OWL_ENABLE_VALIDATION */
 
 OWL_INTERNAL enum owl_code
 owl_renderer_init_surface_(struct owl_vk_renderer_info const *info,
@@ -345,10 +345,10 @@ owl_renderer_select_sample_count_(struct owl_vk_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   if (VK_SAMPLE_COUNT_2_BIT & samples) {
-    r->sample_count = VK_SAMPLE_COUNT_2_BIT;
+    r->msaa_sample_count = VK_SAMPLE_COUNT_2_BIT;
   } else {
     OWL_ASSERT(0 && "disabling multisampling is not supported");
-    r->sample_count = VK_SAMPLE_COUNT_1_BIT;
+    r->msaa_sample_count = VK_SAMPLE_COUNT_1_BIT;
     code = OWL_ERROR_UNKNOWN;
     goto end;
   }
@@ -659,7 +659,7 @@ owl_renderer_init_main_render_pass_(struct owl_vk_renderer *r) {
   /* color */
   attachments[0].flags = 0;
   attachments[0].format = r->surface_format.format;
-  attachments[0].samples = r->sample_count;
+  attachments[0].samples = r->msaa_sample_count;
   attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
   attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -670,7 +670,7 @@ owl_renderer_init_main_render_pass_(struct owl_vk_renderer *r) {
   /* depth */
   attachments[1].flags = 0;
   attachments[1].format = VK_FORMAT_D32_SFLOAT;
-  attachments[1].samples = r->sample_count;
+  attachments[1].samples = r->msaa_sample_count;
   attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
   attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -761,7 +761,7 @@ owl_renderer_init_attachments_(struct owl_vk_renderer *r) {
     image.extent.depth = 1;
     image.mipLevels = 1;
     image.arrayLayers = 1;
-    image.samples = r->sample_count;
+    image.samples = r->msaa_sample_count;
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
     image.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -824,7 +824,7 @@ owl_renderer_init_attachments_(struct owl_vk_renderer *r) {
     image.extent.depth = 1;
     image.mipLevels = 1;
     image.arrayLayers = 1;
-    image.samples = r->sample_count;
+    image.samples = r->msaa_sample_count;
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
     image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -1383,7 +1383,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = r->sample_count;
+    multisample.rasterizationSamples = r->msaa_sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -1562,7 +1562,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = r->sample_count;
+    multisample.rasterizationSamples = r->msaa_sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -1741,7 +1741,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = r->sample_count;
+    multisample.rasterizationSamples = r->msaa_sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -1912,7 +1912,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = r->sample_count;
+    multisample.rasterizationSamples = r->msaa_sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -2103,7 +2103,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = r->sample_count;
+    multisample.rasterizationSamples = r->msaa_sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -2294,7 +2294,7 @@ owl_renderer_init_pipelines_(struct owl_vk_renderer *r) {
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample.pNext = NULL;
     multisample.flags = 0;
-    multisample.rasterizationSamples = r->sample_count;
+    multisample.rasterizationSamples = r->msaa_sample_count;
     multisample.sampleShadingEnable = VK_FALSE;
     multisample.minSampleShading = 1.0F;
     multisample.pSampleMask = NULL;
@@ -2645,7 +2645,7 @@ owl_renderer_init_garbage_(struct owl_vk_renderer *r) {
   OWL_MEMSET(r->garbage_buffers, 0, sizeof(r->garbage_buffers));
   OWL_MEMSET(r->garbage_memories, 0, sizeof(r->garbage_memories));
   OWL_MEMSET(r->garbage_pvm_sets, 0, sizeof(r->garbage_pvm_sets));
-#endif
+#endif /* NDEBUG */
 
   return code;
 }
@@ -2740,10 +2740,10 @@ enum owl_code owl_renderer_init(struct owl_vk_renderer_info const *info,
   if (OWL_SUCCESS != (code = owl_renderer_init_instance_(info, r)))
     goto end;
 
-#ifndef NDEBUG
+#ifdef OWL_ENABLE_VALIDATION
   if (OWL_SUCCESS != (code = owl_renderer_init_debug_(r)))
     goto end;
-#endif
+#endif /* OWL_ENABLE_VALIDATION */
 
   if (OWL_SUCCESS != (code = owl_renderer_init_surface_(info, r)))
     goto end_err_deinit_instance;
@@ -2860,9 +2860,9 @@ void owl_renderer_deinit(struct owl_vk_renderer *r) {
   owl_renderer_deinit_device_(r);
   owl_renderer_deinit_surface_(r);
 
-#ifndef NDEBUG
+#ifdef OWL_ENABLE_VALIDATION
   owl_renderer_deinit_debug_(r);
-#endif
+#endif /* OWL_ENABLE_VALIDATION */
 
   owl_renderer_deinit_instance_(r);
 }
