@@ -1,1 +1,1 @@
-![Screenshot](images/image.png)
+![Screenshot](assets/cloth.png)
