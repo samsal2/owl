@@ -223,7 +223,7 @@ owl_window_fill_vk_renderer_info(struct owl_window const *w,
 #ifdef OWL_ENABLE_VALIDATION
   info->instance_extensions = owl_get_dbg_instance_extensions_(&count);
 #else /* OWL_ENABLE_VALIDATION */
-  info->instance_extensions = glfwGetRequiredInstanceExtensions(count);
+  info->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
 #endif /* OWL_ENABLE_VALIDATION */
 
   info->instance_extension_count = (int)count;
