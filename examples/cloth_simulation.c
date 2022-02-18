@@ -234,7 +234,7 @@ static struct owl_texture *texture;
 static struct owl_draw_cmd group;
 static struct cloth cloth;
 static struct owl_font *font;
-static struct owl_text_cmd text;
+static struct owl_draw_cmd text;
 static struct owl_skybox_info skybox_info;
 static struct owl_skybox *skybox;
 static struct owl_draw_cmd skybox_draw_cmd;
@@ -280,9 +280,10 @@ int main(void) {
  
   init_cloth(&cloth, texture);
 
-  text.font = font;
-  OWL_SET_V3(0.0F, 0.0F, 0.0F, text.color);
-  OWL_SET_V2(-1.0F, -0.93F, text.pos);
+  text.type = OWL_DRAW_CMD_TYPE_TEXT;
+  text.storage.as_text.font = font;
+  OWL_SET_V3(0.0F, 0.0F, 0.0F, text.storage.as_text.color);
+  OWL_SET_V2(-1.0F, -0.93F, text.storage.as_text.position);
 
   pvm = get_cloth_pvm(&cloth);
 
@@ -351,8 +352,8 @@ int main(void) {
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
 #endif
 
-    text.text = fps_string(input->dt_time);
-    owl_text_cmd_submit(renderer, &text);
+    text.storage.as_text.text = fps_string(input->dt_time);
+    owl_draw_cmd_submit(renderer, &text);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_frame_end(renderer)) {
       owl_renderer_recreate_swapchain(window, renderer);

@@ -26,7 +26,7 @@ static struct owl_window *window;
 static struct owl_vk_renderer *renderer;
 static struct owl_font *font;
 static struct owl_input_state *input;
-static struct owl_text_cmd text;
+static struct owl_draw_cmd text;
 static struct owl_model *model;
 static struct owl_draw_cmd_ubo ubo;
 
@@ -42,9 +42,10 @@ int main(void) {
   TEST(owl_font_create(renderer, 64, FONTPATH, &font));
   TEST(owl_model_create_from_file(renderer, MODELPATH, &model));
 
-  text.font = font;
-  OWL_SET_V3(1.0F, 1.0F, 1.0F, text.color);
-  OWL_SET_V2(-1.0F, -0.93F, text.pos);
+  text.type = OWL_DRAW_CMD_TYPE_TEXT;
+  text.storage.as_text.font = font;
+  OWL_SET_V3(1.0F, 1.0F, 1.0F, text.storage.as_text.color);
+  OWL_SET_V2(-1.0F, -0.93F, text.storage.as_text.position);
 
   OWL_IDENTITY_M4(ubo.model);
   OWL_IDENTITY_M4(ubo.view);
@@ -72,8 +73,8 @@ int main(void) {
     owl_model_submit(renderer, &ubo, model);
 
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
-    text.text = fps_string(input->dt_time);
-    owl_text_cmd_submit(renderer, &text);
+    text.storage.as_text.text = fps_string(input->dt_time);
+    owl_draw_cmd_submit(renderer, &text);
 
     if (OWL_SUCCESS != owl_frame_end(renderer)) {
       owl_renderer_recreate_swapchain(window, renderer);

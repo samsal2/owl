@@ -12,8 +12,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   model.h
   renderer.c
   renderer.h
-  text.c
-  text.h
   vector_math.c
   vector_math.h
   window.c

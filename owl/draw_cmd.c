@@ -1,5 +1,6 @@
 #include "draw_cmd.h"
 
+#include "font.h"
 #include "internal.h"
 #include "renderer.h"
 #include "skybox.h"
@@ -265,6 +266,125 @@ owl_draw_cmd_submit_skybox_(struct owl_vk_renderer *r,
   return code;
 }
 
+OWL_INTERNAL enum owl_code
+owl_draw_cmd_fill_char_quad_(struct owl_vk_renderer const *r,
+                             struct owl_draw_cmd_text const *text, char c,
+                             owl_v2 offset, struct owl_draw_cmd_quad *quad) {
+
+  float uv_offset;
+  owl_v2 uv_bearing;
+  owl_v2 current_position;
+  owl_v2 screen_position;
+  owl_v2 glyph_uv_size;
+  owl_v2 glyph_screen_size;
+  struct owl_glyph const *glyph;
+  enum owl_code code = OWL_SUCCESS;
+
+  if ((int)c >= (int)OWL_ARRAY_SIZE(text->font->glyphs)) {
+    code = OWL_ERROR_OUT_OF_BOUNDS;
+    goto end;
+  }
+
+  quad->texture = &text->font->atlas;
+
+  OWL_IDENTITY_M4(quad->ubo.projection);
+  OWL_IDENTITY_M4(quad->ubo.view);
+  OWL_IDENTITY_M4(quad->ubo.model);
+
+  glyph = &text->font->glyphs[(int)c];
+
+  OWL_ADD_V2(text->position, offset, current_position);
+
+  /* TODO(samuel): save the bearing as a normalized value */
+  uv_bearing[0] = (float)glyph->bearing[0] / (float)r->width;
+  uv_bearing[1] = -(float)glyph->bearing[1] / (float)r->height;
+
+  OWL_ADD_V2(current_position, uv_bearing, screen_position);
+
+  /* TODO(samuel): save the size as a normalized value */
+  glyph_screen_size[0] = (float)glyph->size[0] / (float)r->width;
+  glyph_screen_size[1] = (float)glyph->size[1] / (float)r->height;
+
+  /* TODO(samuel): save the size as a normalized value */
+  glyph_uv_size[0] = (float)glyph->size[0] / (float)text->font->atlas_width;
+  glyph_uv_size[1] = (float)glyph->size[1] / (float)text->font->atlas_height;
+
+  /* TODO(samuel): save the offset as a normalized value */
+  uv_offset = (float)glyph->offset / (float)text->font->atlas_width;
+
+  quad->vertices[0].position[0] = screen_position[0];
+  quad->vertices[0].position[1] = screen_position[1];
+  quad->vertices[0].position[2] = 0.0F;
+  quad->vertices[0].color[0] = text->color[0];
+  quad->vertices[0].color[1] = text->color[1];
+  quad->vertices[0].color[2] = text->color[2];
+  quad->vertices[0].uv[0] = uv_offset;
+  quad->vertices[0].uv[1] = 0.0F;
+
+  quad->vertices[1].position[0] = screen_position[0] + glyph_screen_size[0];
+  quad->vertices[1].position[1] = screen_position[1];
+  quad->vertices[1].position[2] = 0.0F;
+  quad->vertices[1].color[0] = text->color[0];
+  quad->vertices[1].color[1] = text->color[1];
+  quad->vertices[1].color[2] = text->color[2];
+  quad->vertices[1].uv[0] = uv_offset + glyph_uv_size[0];
+  quad->vertices[1].uv[1] = 0.0F;
+
+  quad->vertices[2].position[0] = screen_position[0];
+  quad->vertices[2].position[1] = screen_position[1] + glyph_screen_size[1];
+  quad->vertices[2].position[2] = 0.0F;
+  quad->vertices[2].color[0] = text->color[0];
+  quad->vertices[2].color[1] = text->color[1];
+  quad->vertices[2].color[2] = text->color[2];
+  quad->vertices[2].uv[0] = uv_offset;
+  quad->vertices[2].uv[1] = glyph_uv_size[1];
+
+  quad->vertices[3].position[0] = screen_position[0] + glyph_screen_size[0];
+  quad->vertices[3].position[1] = screen_position[1] + glyph_screen_size[1];
+  quad->vertices[3].position[2] = 0.0F;
+  quad->vertices[3].color[0] = text->color[0];
+  quad->vertices[3].color[1] = text->color[1];
+  quad->vertices[3].color[2] = text->color[2];
+  quad->vertices[3].uv[0] = uv_offset + glyph_uv_size[0];
+  quad->vertices[3].uv[1] = glyph_uv_size[1];
+
+end:
+  return code;
+}
+
+OWL_INTERNAL void owl_font_step_offset_(struct owl_vk_renderer const *r,
+                                        struct owl_font const *font,
+                                        char const c, owl_v2 offset) {
+  offset[0] += font->glyphs[(int)c].advance[0] / (float)r->width;
+  /* FIXME(samuel): not sure if i should substract or add */
+  offset[1] += font->glyphs[(int)c].advance[1] / (float)r->height;
+}
+
+OWL_INTERNAL enum owl_code
+owl_draw_cmd_submit_text_(struct owl_vk_renderer *r,
+                          struct owl_draw_cmd_text const *text) {
+  char const *c;
+  owl_v2 offset;
+  enum owl_code code = OWL_SUCCESS;
+
+  OWL_ZERO_V2(offset);
+
+  for (c = text->text; '\0' != *c; ++c) {
+    struct owl_draw_cmd_quad quad;
+
+    code = owl_draw_cmd_fill_char_quad_(r, text, *c, offset, &quad);
+
+    if (OWL_SUCCESS != code)
+      goto end;
+
+    owl_draw_cmd_submit_quad_(r, &quad);
+    owl_font_step_offset_(r, text->font, *c, offset);
+  }
+
+end:
+  return code;
+}
+
 enum owl_code owl_draw_cmd_submit(struct owl_vk_renderer *r,
                                   struct owl_draw_cmd const *cmd) {
   switch (cmd->type) {
@@ -276,5 +396,8 @@ enum owl_code owl_draw_cmd_submit(struct owl_vk_renderer *r,
 
   case OWL_DRAW_CMD_TYPE_SKYBOX:
     return owl_draw_cmd_submit_skybox_(r, &cmd->storage.as_skybox);
+
+  case OWL_DRAW_CMD_TYPE_TEXT:
+    return owl_draw_cmd_submit_text_(r, &cmd->storage.as_text);
   }
 }

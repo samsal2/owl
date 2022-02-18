@@ -20,7 +20,8 @@ struct owl_draw_cmd_ubo {
 enum owl_draw_cmd_type {
   OWL_DRAW_CMD_TYPE_BASIC, /**/
   OWL_DRAW_CMD_TYPE_QUAD,
-  OWL_DRAW_CMD_TYPE_SKYBOX
+  OWL_DRAW_CMD_TYPE_SKYBOX,
+  OWL_DRAW_CMD_TYPE_TEXT
 };
 
 struct owl_draw_cmd_basic {
@@ -45,10 +46,18 @@ struct owl_draw_cmd_skybox {
   struct owl_skybox const *skybox;
 };
 
+struct owl_draw_cmd_text {
+  owl_v3 color;
+  owl_v2 position;
+  char const *text;
+  struct owl_font const *font;
+};
+
 union owl_draw_cmd_storage {
   struct owl_draw_cmd_basic as_basic;
   struct owl_draw_cmd_quad as_quad;
   struct owl_draw_cmd_skybox as_skybox;
+  struct owl_draw_cmd_text as_text;
 };
 
 struct owl_draw_cmd {

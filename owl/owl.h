@@ -8,7 +8,6 @@
 #include "model.h"
 #include "renderer.h"
 #include "skybox.h"
-#include "text.h"
 #include "texture.h"
 #include "types.h"
 #include "vector_math.h"
