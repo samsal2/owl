@@ -13,7 +13,7 @@ struct owl_skybox_vertex {
   owl_v3 position;
 };
 
-struct owl_skybox_uniform {
+struct owl_skybox_ubo {
   owl_m4 projection;
   owl_m4 view;
   owl_m4 model;

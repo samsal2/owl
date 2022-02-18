@@ -228,25 +228,25 @@ owl_draw_cmd_submit_skybox_(struct owl_vk_renderer *r,
     VkDeviceSize size;
     VkDescriptorSet sets[2];
     struct owl_dynamic_buffer_reference ref;
-    struct owl_skybox_uniform uniform;
+    struct owl_skybox_ubo ubo;
 
-    size = sizeof(struct owl_skybox_uniform);
+    size = sizeof(struct owl_skybox_ubo);
     data = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
 
 #if 1
-    OWL_COPY_M4(skybox->ubo.projection, uniform.projection);
+    OWL_COPY_M4(skybox->ubo.projection, ubo.projection);
 #else
-    OWL_IDENTITY_M4(uniform.projection);
+    OWL_IDENTITY_M4(ubo.projection);
 #endif
 
 #if 1
-    OWL_IDENTITY_M4(uniform.view);
-    OWL_COPY_M3(skybox->ubo.view, uniform.view);
+    OWL_IDENTITY_M4(ubo.view);
+    OWL_COPY_M3(skybox->ubo.view, ubo.view);
 #else
-    OWL_IDENTITY_M4(uniform.view);
+    OWL_IDENTITY_M4(ubo.view);
 #endif
 
-    OWL_MEMCPY(data, &uniform, size);
+    OWL_MEMCPY(data, &ubo, size);
 
     sets[0] = ref.pvm_set;
     sets[1] = skybox->skybox->set;

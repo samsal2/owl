@@ -122,14 +122,14 @@ struct owl_model_primitive {
 
 #define OWL_MODEL_MAX_JOINTS 8
 
-struct owl_model_mesh_uniform {
+struct owl_model_mesh_ubo {
   int joint_count;
   owl_m4 matrix;
   owl_m4 joints[OWL_MODEL_MAX_JOINTS];
 };
 
 struct owl_model_mesh_data {
-  struct owl_model_mesh_uniform uniform;
+  struct owl_model_mesh_ubo ubo;
 
   void *ubo_data;
   VkBuffer ubo_buffer;

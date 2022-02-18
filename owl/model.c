@@ -317,7 +317,7 @@ owl_model_process_mesh_(struct owl_vk_renderer const *r, cgltf_mesh const *mesh,
     buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer.pNext = NULL;
     buffer.flags = 0;
-    buffer.size = sizeof(struct owl_model_mesh_uniform);
+    buffer.size = sizeof(struct owl_model_mesh_ubo);
     buffer.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     buffer.queueFamilyIndexCount = 0;
@@ -365,7 +365,7 @@ owl_model_process_mesh_(struct owl_vk_renderer const *r, cgltf_mesh const *mesh,
 
     buffer.buffer = mesh_data->ubo_buffer;
     buffer.offset = 0;
-    buffer.range = sizeof(struct owl_model_mesh_uniform);
+    buffer.range = sizeof(struct owl_model_mesh_ubo);
 
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.pNext = NULL;
