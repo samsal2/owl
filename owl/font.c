@@ -12,7 +12,6 @@
 
 #define OWL_FIRST_CHAR 32
 
-
 OWL_GLOBAL int ft_library_reference_count = 0;
 OWL_GLOBAL FT_Library ft_library;
 
@@ -32,7 +31,6 @@ OWL_INTERNAL void owl_decrement_ft_library_count_(void) {
     FT_Done_FreeType(ft_library);
 }
 
-
 OWL_INTERNAL void owl_calc_dims_(FT_Face face, int *width, int *height) {
   int i;
 
@@ -47,27 +45,30 @@ OWL_INTERNAL void owl_calc_dims_(FT_Face face, int *width, int *height) {
   }
 }
 
-OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face,  int x_offset,
-  int atlas_width, int atlas_height, owl_byte *data) {
+OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face, int x_offset,
+                                              int atlas_width, int atlas_height,
+                                              owl_byte *data) {
 
   OWL_UNUSED(atlas_height);
 
   int bx; /* bitmap x position */
   for (bx = 0; bx < (int)face->glyph->bitmap.width; ++bx) {
-    int by;                /* bitmap y position, shared by data*/
+    int by;                       /* bitmap y position, shared by data*/
     int const dx = x_offset + bx; /* atlas x position */
 
     for (by = 0; by < (int)face->glyph->bitmap.rows; ++by) {
-      int const dw = atlas_width;           /* data width */
+      int const dw = atlas_width;                    /* data width */
       int const bw = (int)face->glyph->bitmap.width; /* buf width */
 
       data[by * dw + dx] = face->glyph->bitmap.buffer[by * bw + bx];
     }
   }
 }
-                            
-OWL_INTERNAL enum owl_code owl_font_init_atlas_(struct owl_vk_renderer *r, 
-  struct owl_dynamic_buffer_reference const *ref, struct owl_font *font ) {
+
+OWL_INTERNAL enum owl_code
+owl_font_init_atlas_(struct owl_vk_renderer *r,
+                     struct owl_dynamic_buffer_reference const *ref,
+                     struct owl_font *font) {
   enum owl_code code;
   struct owl_texture_info info;
 
@@ -85,7 +86,6 @@ OWL_INTERNAL enum owl_code owl_font_init_atlas_(struct owl_vk_renderer *r,
 
   return code;
 }
-
 
 enum owl_code owl_font_create(struct owl_vk_renderer *r, int size,
                               char const *path, struct owl_font **font) {
@@ -134,7 +134,8 @@ enum owl_code owl_font_create(struct owl_vk_renderer *r, int size,
       goto end_err_done_face;
     }
 
-    owl_face_glyph_bitmap_copy_(face, x, (*font)->atlas_width, (*font)->atlas_height, data);
+    owl_face_glyph_bitmap_copy_(face, x, (*font)->atlas_width,
+                                (*font)->atlas_height, data);
 
     /* set the current glyph data */
     (*font)->glyphs[i].offset = x;
@@ -263,8 +264,8 @@ enum owl_code owl_submit_text_group(struct owl_vk_renderer *r,
   for (c = text; '\0' != *c; ++c) {
     struct owl_draw_cmd group;
 
-    code = owl_fill_char_quad_(r->width, r->height, font, cpos,
-                               color, *c, &group);
+    code =
+        owl_fill_char_quad_(r->width, r->height, font, cpos, color, *c, &group);
 
     if (OWL_SUCCESS != code)
       goto end;

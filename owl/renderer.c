@@ -37,7 +37,7 @@ owl_renderer_init_instance_(struct owl_vk_renderer_info const *info,
 #ifdef OWL_ENABLE_VALIDATION
   instance.enabledLayerCount = OWL_ARRAY_SIZE(debug_validation_layers);
   instance.ppEnabledLayerNames = debug_validation_layers;
-#else /* OWL_ENABLE_VALIDATION */
+#else  /* OWL_ENABLE_VALIDATION */
   instance.enabledLayerCount = 0;
   instance.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */

@@ -67,12 +67,10 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 
 #endif /* NDEBUG */
 
-
 #ifndef NDEBUG
 
 #define OWL_ENABLE_VALIDATION
 
 #endif /* NDEBUG */
-
 
 #endif
