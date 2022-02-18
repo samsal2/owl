@@ -27,9 +27,7 @@ OWL_INTERNAL enum owl_code owl_acquire_next_image_(struct owl_vk_renderer *r) {
 OWL_INTERNAL void owl_prepare_frame_(struct owl_vk_renderer *r) {
   OWL_VK_CHECK(vkWaitForFences(r->device, 1, &r->in_flight_fences[r->active],
                                VK_TRUE, OWL_VK_TIMEOUT));
-
   OWL_VK_CHECK(vkResetFences(r->device, 1, &r->in_flight_fences[r->active]));
-
   OWL_VK_CHECK(vkResetCommandPool(r->device, r->frame_cmd_pools[r->active], 0));
 }
 
