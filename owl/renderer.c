@@ -5,12 +5,12 @@
 #include "skybox.h"
 #include "window.h"
 
-OWL_GLOBAL char const *const required_device_extensions[] = {
+OWL_GLOBAL char const *const g_required_device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 #ifdef OWL_ENABLE_VALIDATION
 
-OWL_GLOBAL char const *const debug_validation_layers[] = {
+OWL_GLOBAL char const *const g_debug_validation_layers[] = {
     "VK_LAYER_KHRONOS_validation"};
 
 #endif /* OWL_ENABLE_VALIDATION */
@@ -35,8 +35,8 @@ owl_renderer_init_instance_(struct owl_vk_renderer_info const *info,
   instance.flags = 0;
   instance.pApplicationInfo = &app;
 #ifdef OWL_ENABLE_VALIDATION
-  instance.enabledLayerCount = OWL_ARRAY_SIZE(debug_validation_layers);
-  instance.ppEnabledLayerNames = debug_validation_layers;
+  instance.enabledLayerCount = OWL_ARRAY_SIZE(g_debug_validation_layers);
+  instance.ppEnabledLayerNames = g_debug_validation_layers;
 #else  /* OWL_ENABLE_VALIDATION */
   instance.enabledLayerCount = 0;
   instance.ppEnabledLayerNames = NULL;
@@ -211,16 +211,16 @@ owl_validate_device_extensions_(owl_u32 count,
                                 VkExtensionProperties const *extensions) {
   owl_u32 i;
   owl_u32 j;
-  int found[OWL_ARRAY_SIZE(required_device_extensions)];
+  int found[OWL_ARRAY_SIZE(g_required_device_extensions)];
 
   OWL_MEMSET(found, 0, sizeof(found));
 
   for (i = 0; i < count; ++i)
-    for (j = 0; j < OWL_ARRAY_SIZE(required_device_extensions); ++j)
-      if (!strcmp(required_device_extensions[j], extensions[i].extensionName))
+    for (j = 0; j < OWL_ARRAY_SIZE(g_required_device_extensions); ++j)
+      if (!strcmp(g_required_device_extensions[j], extensions[i].extensionName))
         found[j] = 1;
 
-  for (i = 0; i < OWL_ARRAY_SIZE(required_device_extensions); ++i)
+  for (i = 0; i < OWL_ARRAY_SIZE(g_required_device_extensions); ++i)
     if (!found[i])
       return 0;
 
@@ -404,8 +404,8 @@ owl_renderer_init_device_(struct owl_vk_renderer *r) {
   device.pQueueCreateInfos = queues;
   device.enabledLayerCount = 0;      /* deprecated */
   device.ppEnabledLayerNames = NULL; /* deprecated */
-  device.enabledExtensionCount = OWL_ARRAY_SIZE(required_device_extensions);
-  device.ppEnabledExtensionNames = required_device_extensions;
+  device.enabledExtensionCount = OWL_ARRAY_SIZE(g_required_device_extensions);
+  device.ppEnabledExtensionNames = g_required_device_extensions;
   device.pEnabledFeatures = &r->device_features;
 
   OWL_VK_CHECK(vkCreateDevice(r->physical_device, &device, NULL, &r->device));

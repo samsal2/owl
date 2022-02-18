@@ -12,23 +12,23 @@
 
 #define OWL_FIRST_CHAR 32
 
-OWL_GLOBAL int ft_library_reference_count = 0;
-OWL_GLOBAL FT_Library ft_library;
+OWL_GLOBAL int g_ft_library_reference_count = 0;
+OWL_GLOBAL FT_Library g_ft_library;
 
 OWL_INTERNAL void owl_ensure_ft_library_(void) {
   FT_Error err = FT_Err_Ok;
 
-  if (!(ft_library_reference_count++))
-    err = FT_Init_FreeType(&ft_library);
+  if (!(g_ft_library_reference_count++))
+    err = FT_Init_FreeType(&g_ft_library);
 
   OWL_ASSERT(FT_Err_Ok == err);
 }
 
 OWL_INTERNAL void owl_decrement_ft_library_count_(void) {
-  OWL_ASSERT(ft_library_reference_count);
+  OWL_ASSERT(g_ft_library_reference_count);
 
-  if (!--ft_library_reference_count)
-    FT_Done_FreeType(ft_library);
+  if (!--g_ft_library_reference_count)
+    FT_Done_FreeType(g_ft_library);
 }
 
 OWL_INTERNAL void owl_calc_dims_(FT_Face face, int *width, int *height) {
@@ -106,7 +106,7 @@ enum owl_code owl_font_create(struct owl_vk_renderer *r, int size,
 
   (*font)->size = size;
 
-  if (FT_Err_Ok != (FT_New_Face(ft_library, path, 0, &face))) {
+  if (FT_Err_Ok != (FT_New_Face(g_ft_library, path, 0, &face))) {
     code = OWL_ERROR_BAD_INIT;
     goto end_err_free_font;
   }
