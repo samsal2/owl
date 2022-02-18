@@ -1,2 +1,4 @@
-﻿BasedOnStyle: LLVM
-ReflowComments: true
+---
+BasedOnStyle:      LLVM
+SortIncludes:    true
+...
