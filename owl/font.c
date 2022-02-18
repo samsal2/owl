@@ -66,7 +66,7 @@ OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face, int x_offset,
 }
 
 OWL_INTERNAL enum owl_code
-owl_font_init_atlas_(struct owl_vk_renderer *r,
+owl_font_init_atlas_(struct owl_renderer *r,
                      struct owl_dynamic_buffer_reference const *ref,
                      struct owl_font *font) {
   enum owl_code code;
@@ -87,7 +87,7 @@ owl_font_init_atlas_(struct owl_vk_renderer *r,
   return code;
 }
 
-enum owl_code owl_font_create(struct owl_vk_renderer *r, int size,
+enum owl_code owl_font_create(struct owl_renderer *r, int size,
                               char const *path, struct owl_font **font) {
   int i;
   int x;
@@ -170,7 +170,7 @@ end:
   return code;
 }
 
-void owl_font_destroy(struct owl_vk_renderer *r, struct owl_font *font) {
+void owl_font_destroy(struct owl_renderer *r, struct owl_font *font) {
   owl_texture_deinit(r, &font->atlas);
   OWL_FREE(font);
   owl_decrement_ft_library_count_();
@@ -251,7 +251,7 @@ end:
   return code;
 }
 
-enum owl_code owl_submit_text_group(struct owl_vk_renderer *r,
+enum owl_code owl_submit_text_group(struct owl_renderer *r,
                                     struct owl_font const *font,
                                     owl_v2 const pos, owl_v3 const color,
                                     char const *text) {

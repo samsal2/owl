@@ -8,7 +8,7 @@
 #include "vector_math.h"
 
 OWL_INTERNAL enum owl_code
-owl_draw_cmd_submit_basic_(struct owl_vk_renderer *r,
+owl_draw_cmd_submit_basic_(struct owl_renderer *r,
                            struct owl_draw_cmd_basic const *basic) {
   enum owl_code code = OWL_SUCCESS;
 
@@ -67,7 +67,7 @@ owl_draw_cmd_submit_basic_(struct owl_vk_renderer *r,
 }
 
 OWL_INTERNAL enum owl_code
-owl_draw_cmd_submit_quad_(struct owl_vk_renderer *r,
+owl_draw_cmd_submit_quad_(struct owl_renderer *r,
                           struct owl_draw_cmd_quad const *quad) {
   enum owl_code code = OWL_SUCCESS;
 
@@ -126,7 +126,7 @@ owl_draw_cmd_submit_quad_(struct owl_vk_renderer *r,
 }
 
 OWL_INTERNAL enum owl_code
-owl_draw_cmd_submit_skybox_(struct owl_vk_renderer *r,
+owl_draw_cmd_submit_skybox_(struct owl_renderer *r,
                             struct owl_draw_cmd_skybox const *skybox) {
   enum owl_code code = OWL_SUCCESS;
 
@@ -267,7 +267,7 @@ owl_draw_cmd_submit_skybox_(struct owl_vk_renderer *r,
 }
 
 OWL_INTERNAL enum owl_code
-owl_draw_cmd_fill_char_quad_(struct owl_vk_renderer const *r,
+owl_draw_cmd_fill_char_quad_(struct owl_renderer const *r,
                              struct owl_draw_cmd_text const *text, char c,
                              owl_v2 offset, struct owl_draw_cmd_quad *quad) {
 
@@ -352,7 +352,7 @@ end:
   return code;
 }
 
-OWL_INTERNAL void owl_font_step_offset_(struct owl_vk_renderer const *r,
+OWL_INTERNAL void owl_font_step_offset_(struct owl_renderer const *r,
                                         struct owl_font const *font,
                                         char const c, owl_v2 offset) {
   offset[0] += font->glyphs[(int)c].advance[0] / (float)r->width;
@@ -361,7 +361,7 @@ OWL_INTERNAL void owl_font_step_offset_(struct owl_vk_renderer const *r,
 }
 
 OWL_INTERNAL enum owl_code
-owl_draw_cmd_submit_text_(struct owl_vk_renderer *r,
+owl_draw_cmd_submit_text_(struct owl_renderer *r,
                           struct owl_draw_cmd_text const *text) {
   char const *c;
   owl_v2 offset;
@@ -385,7 +385,7 @@ end:
   return code;
 }
 
-enum owl_code owl_draw_cmd_submit(struct owl_vk_renderer *r,
+enum owl_code owl_draw_cmd_submit(struct owl_renderer *r,
                                   struct owl_draw_cmd const *cmd) {
   switch (cmd->type) {
   case OWL_DRAW_CMD_TYPE_BASIC:

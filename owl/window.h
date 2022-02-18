@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-struct owl_vk_renderer_info;
+struct owl_renderer_info;
 
 enum owl_button_state {
   OWL_BUTTON_STATE_NONE,
@@ -182,9 +182,8 @@ enum owl_code owl_window_init(struct owl_window_info const *info,
 
 void owl_window_deinit(struct owl_window *w);
 
-enum owl_code
-owl_window_fill_vk_renderer_info(struct owl_window const *w,
-                                 struct owl_vk_renderer_info *info);
+enum owl_code owl_window_fill_renderer_info(struct owl_window const *w,
+                                               struct owl_renderer_info *info);
 
 enum owl_code owl_window_create(struct owl_window_info const *info,
                                 struct owl_input_state **input,

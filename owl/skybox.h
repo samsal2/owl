@@ -7,7 +7,7 @@
 
 #define OWL_SKYBOX_FACE_COUNT 6
 
-struct owl_vk_renderer;
+struct owl_renderer;
 
 struct owl_skybox_vertex {
   owl_v3 position;
@@ -37,16 +37,16 @@ struct owl_skybox {
   VkDescriptorSet set;
 };
 
-enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
+enum owl_code owl_skybox_init(struct owl_renderer *r,
                               struct owl_skybox_info const *info,
                               struct owl_skybox *box);
 
-void owl_skybox_deinit(struct owl_vk_renderer *r, struct owl_skybox *box);
+void owl_skybox_deinit(struct owl_renderer *r, struct owl_skybox *box);
 
-enum owl_code owl_skybox_create(struct owl_vk_renderer *r,
+enum owl_code owl_skybox_create(struct owl_renderer *r,
                                 struct owl_skybox_info const *info,
                                 struct owl_skybox **box);
 
-void owl_skybox_destroy(struct owl_vk_renderer *r, struct owl_skybox *box);
+void owl_skybox_destroy(struct owl_renderer *r, struct owl_skybox *box);
 
 #endif

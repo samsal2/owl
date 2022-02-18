@@ -173,7 +173,7 @@ owl_skybox_deinit_loading_info_(struct owl_skybox_loading_info *info) {
 }
 
 OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
-    struct owl_vk_renderer *r, struct owl_skybox_loading_info const *info,
+    struct owl_renderer *r, struct owl_skybox_loading_info const *info,
     struct owl_skybox const *box) {
   owl_u32 i;
   VkCommandBuffer cmd;
@@ -277,7 +277,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   return code;
 }
 
-enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
+enum owl_code owl_skybox_init(struct owl_renderer *r,
                               struct owl_skybox_info const *info,
                               struct owl_skybox *box) {
   struct owl_skybox_loading_info loading_info;
@@ -313,7 +313,7 @@ enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
     image.pQueueFamilyIndices = NULL;
     image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &box->image));
+    OWL_CHECK(vkCreateImage(r->device, &image, NULL, &box->image));
 
 #undef OWL_IMAGE_USAGE
   }
@@ -328,10 +328,10 @@ enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, requirements.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_GPU_ONLY);
+        r, requirements.memoryTypeBits, OWL_MEMORY_VISIBILITY_GPU_ONLY);
 
-    OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &box->memory));
-    OWL_VK_CHECK(vkBindImageMemory(r->device, box->image, box->memory, 0));
+    OWL_CHECK(vkAllocateMemory(r->device, &memory, NULL, &box->memory));
+    OWL_CHECK(vkBindImageMemory(r->device, box->image, box->memory, 0));
   }
 
   owl_skybox_copy_loading_info_to_image_(r, &loading_info, box);
@@ -359,7 +359,7 @@ enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
     sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     sampler.unnormalizedCoordinates = VK_FALSE;
 
-    OWL_VK_CHECK(vkCreateSampler(r->device, &sampler, NULL, &box->sampler));
+    OWL_CHECK(vkCreateSampler(r->device, &sampler, NULL, &box->sampler));
 
 #undef OWL_MAX_ANISOTROPY
   }
@@ -382,7 +382,7 @@ enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
     view.subresourceRange.baseArrayLayer = 0;
     view.subresourceRange.layerCount = OWL_SKYBOX_FACE_COUNT;
 
-    OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &box->view));
+    OWL_CHECK(vkCreateImageView(r->device, &view, NULL, &box->view));
   }
 
   {
@@ -397,7 +397,7 @@ enum owl_code owl_skybox_init(struct owl_vk_renderer *r,
     set.descriptorSetCount = 1;
     set.pSetLayouts = &layout;
 
-    OWL_VK_CHECK(vkAllocateDescriptorSets(r->device, &set, &box->set));
+    OWL_CHECK(vkAllocateDescriptorSets(r->device, &set, &box->set));
   }
 
   {
@@ -443,8 +443,8 @@ end:
   return code;
 }
 
-void owl_skybox_deinit(struct owl_vk_renderer *r, struct owl_skybox *box) {
-  OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
+void owl_skybox_deinit(struct owl_renderer *r, struct owl_skybox *box) {
+  OWL_CHECK(vkDeviceWaitIdle(r->device));
 
   vkFreeDescriptorSets(r->device, r->common_set_pool, 1, &box->set);
   vkDestroySampler(r->device, box->sampler, NULL);
@@ -452,7 +452,7 @@ void owl_skybox_deinit(struct owl_vk_renderer *r, struct owl_skybox *box) {
   vkFreeMemory(r->device, box->memory, NULL);
   vkDestroyImage(r->device, box->image, NULL);
 }
-enum owl_code owl_skybox_create(struct owl_vk_renderer *r,
+enum owl_code owl_skybox_create(struct owl_renderer *r,
                                 struct owl_skybox_info const *info,
                                 struct owl_skybox **box) {
   enum owl_code code = OWL_SUCCESS;
@@ -471,7 +471,7 @@ end:
   return code;
 }
 
-void owl_skybox_destroy(struct owl_vk_renderer *r, struct owl_skybox *box) {
+void owl_skybox_destroy(struct owl_renderer *r, struct owl_skybox *box) {
   owl_skybox_deinit(r, box);
   OWL_FREE(box);
 }

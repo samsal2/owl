@@ -289,7 +289,7 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
 }
 
 OWL_INTERNAL enum owl_code
-owl_model_process_mesh_(struct owl_vk_renderer const *r, cgltf_mesh const *mesh,
+owl_model_process_mesh_(struct owl_renderer const *r, cgltf_mesh const *mesh,
                         struct owl_model_node const *node,
                         struct owl_model_load_state *state,
                         struct owl_model *model) {
@@ -323,8 +323,7 @@ owl_model_process_mesh_(struct owl_vk_renderer const *r, cgltf_mesh const *mesh,
     buffer.queueFamilyIndexCount = 0;
     buffer.pQueueFamilyIndices = NULL;
 
-    OWL_VK_CHECK(
-        vkCreateBuffer(r->device, &buffer, NULL, &mesh_data->ubo_buffer));
+    OWL_CHECK(vkCreateBuffer(r->device, &buffer, NULL, &mesh_data->ubo_buffer));
   }
 
   {
@@ -338,13 +337,13 @@ owl_model_process_mesh_(struct owl_vk_renderer const *r, cgltf_mesh const *mesh,
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, requirements.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_CPU_ONLY);
+        r, requirements.memoryTypeBits, OWL_MEMORY_VISIBILITY_CPU_ONLY);
 
-    OWL_VK_CHECK(
+    OWL_CHECK(
         vkAllocateMemory(r->device, &memory, NULL, &mesh_data->ubo_memory));
 
-    OWL_VK_CHECK(vkMapMemory(r->device, mesh_data->ubo_memory, 0, VK_WHOLE_SIZE,
-                             0, &mesh_data->ubo_data));
+    OWL_CHECK(vkMapMemory(r->device, mesh_data->ubo_memory, 0, VK_WHOLE_SIZE, 0,
+                          &mesh_data->ubo_data));
   }
 
   {
@@ -355,8 +354,7 @@ owl_model_process_mesh_(struct owl_vk_renderer const *r, cgltf_mesh const *mesh,
     set.descriptorSetCount = 1;
     set.pSetLayouts = &r->node_set_layout;
 
-    OWL_VK_CHECK(
-        vkAllocateDescriptorSets(r->device, &set, &mesh_data->ubo_set));
+    OWL_CHECK(vkAllocateDescriptorSets(r->device, &set, &mesh_data->ubo_set));
   }
 
   {
@@ -390,7 +388,7 @@ end:
 }
 
 OWL_INTERNAL void
-owl_model_deinit_mesh_(struct owl_vk_renderer const *r,
+owl_model_deinit_mesh_(struct owl_renderer const *r,
                        struct owl_model_mesh_data const *data) {
   vkFreeDescriptorSets(r->device, r->common_set_pool, 1, &data->ubo_set);
   vkFreeMemory(r->device, data->ubo_memory, NULL);
@@ -398,7 +396,7 @@ owl_model_deinit_mesh_(struct owl_vk_renderer const *r,
 }
 
 OWL_INTERNAL enum owl_code
-owl_model_process_node_(struct owl_vk_renderer const *r, cgltf_node const *node,
+owl_model_process_node_(struct owl_renderer const *r, cgltf_node const *node,
                         struct owl_model_node const *parent,
                         struct owl_model_load_state *state,
                         struct owl_model *model) {
@@ -522,7 +520,7 @@ struct owl_model_texture_sampler_info {
 };
 
 OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
-    struct owl_vk_renderer *r, char const *path,
+    struct owl_renderer *r, char const *path,
     struct owl_model_texture_sampler_info const *sampler_info,
     struct owl_model_texture_data *tex) {
   owl_byte *data;
@@ -559,7 +557,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
     image.pQueueFamilyIndices = NULL;
     image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &tex->image));
+    OWL_CHECK(vkCreateImage(r->device, &image, NULL, &tex->image));
 
 #undef OWL_IMAGE_USAGE
   }
@@ -574,10 +572,10 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, requirements.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_GPU_ONLY);
+        r, requirements.memoryTypeBits, OWL_MEMORY_VISIBILITY_GPU_ONLY);
 
-    OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &tex->memory));
-    OWL_VK_CHECK(vkBindImageMemory(r->device, tex->image, tex->memory, 0));
+    OWL_CHECK(vkAllocateMemory(r->device, &memory, NULL, &tex->memory));
+    OWL_CHECK(vkBindImageMemory(r->device, tex->image, tex->memory, 0));
   }
 
   {
@@ -598,7 +596,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
     view.subresourceRange.baseArrayLayer = 0;
     view.subresourceRange.layerCount = 1;
 
-    OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &tex->view));
+    OWL_CHECK(vkCreateImageView(r->device, &view, NULL, &tex->view));
   }
 
   {
@@ -685,7 +683,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
     sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     sampler.unnormalizedCoordinates = VK_FALSE;
 
-    OWL_VK_CHECK(vkCreateSampler(r->device, &sampler, NULL, &tex->sampler));
+    OWL_CHECK(vkCreateSampler(r->device, &sampler, NULL, &tex->sampler));
 
 #undef OWL_MAX_ANISOTROPY
   }
@@ -696,7 +694,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
 }
 
 OWL_INTERNAL void
-owl_model_deinit_texture_data_(struct owl_vk_renderer *r,
+owl_model_deinit_texture_data_(struct owl_renderer *r,
                                struct owl_model_texture_data *tex) {
   vkDestroyImage(r->device, tex->image, NULL);
   vkFreeMemory(r->device, tex->memory, NULL);
@@ -704,7 +702,7 @@ owl_model_deinit_texture_data_(struct owl_vk_renderer *r,
   vkDestroySampler(r->device, tex->sampler, NULL);
 }
 
-enum owl_code owl_model_process_textures_(struct owl_vk_renderer *r,
+enum owl_code owl_model_process_textures_(struct owl_renderer *r,
                                           cgltf_data const *data,
                                           struct owl_model *model) {
   int i;
@@ -747,7 +745,7 @@ OWL_INTERNAL enum owl_code owl_get_texture_(struct owl_model const *model,
 }
 
 OWL_INTERNAL enum owl_code
-owl_model_process_materials_(struct owl_vk_renderer *r, cgltf_data const *data,
+owl_model_process_materials_(struct owl_renderer *r, cgltf_data const *data,
                              struct owl_model *model) {
   int i;
   enum owl_code code;
@@ -863,7 +861,7 @@ owl_model_process_materials_(struct owl_vk_renderer *r, cgltf_data const *data,
       set.descriptorSetCount = OWL_ARRAY_SIZE(layouts);
       set.pSetLayouts = layouts;
 
-      OWL_VK_CHECK(
+      OWL_CHECK(
           vkAllocateDescriptorSets(r->device, &set, &material_data->set));
     }
 #endif
@@ -944,7 +942,7 @@ OWL_INTERNAL void owl_add_vertices_and_indices_count_(cgltf_node const *node,
   }
 }
 
-OWL_INTERNAL enum owl_code owl_submit_node_(struct owl_vk_renderer *r,
+OWL_INTERNAL enum owl_code owl_submit_node_(struct owl_renderer *r,
                                             struct owl_model const *model,
                                             struct owl_model_node const *node) {
   int i;
@@ -965,7 +963,7 @@ OWL_INTERNAL enum owl_code owl_submit_node_(struct owl_vk_renderer *r,
 }
 
 enum owl_code
-owl_model_alloc_buffers_(struct owl_vk_renderer *r, int vertices_count,
+owl_model_alloc_buffers_(struct owl_renderer *r, int vertices_count,
                          int indices_count,
                          struct owl_dynamic_buffer_reference const *vertices,
                          struct owl_dynamic_buffer_reference const *indices,
@@ -984,8 +982,7 @@ owl_model_alloc_buffers_(struct owl_vk_renderer *r, int vertices_count,
     buffer.queueFamilyIndexCount = 0;
     buffer.pQueueFamilyIndices = NULL;
 
-    OWL_VK_CHECK(
-        vkCreateBuffer(r->device, &buffer, NULL, &model->vertex_buffer));
+    OWL_CHECK(vkCreateBuffer(r->device, &buffer, NULL, &model->vertex_buffer));
   }
 
   {
@@ -999,13 +996,13 @@ owl_model_alloc_buffers_(struct owl_vk_renderer *r, int vertices_count,
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, requirements.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_GPU_ONLY);
+        r, requirements.memoryTypeBits, OWL_MEMORY_VISIBILITY_GPU_ONLY);
 
-    OWL_VK_CHECK(
+    OWL_CHECK(
         vkAllocateMemory(r->device, &memory, NULL, &model->vertex_memory));
 
-    OWL_VK_CHECK(vkBindBufferMemory(r->device, model->vertex_buffer,
-                                    model->vertex_memory, 0));
+    OWL_CHECK(vkBindBufferMemory(r->device, model->vertex_buffer,
+                                 model->vertex_memory, 0));
   }
 
   {
@@ -1021,8 +1018,7 @@ owl_model_alloc_buffers_(struct owl_vk_renderer *r, int vertices_count,
     buffer.queueFamilyIndexCount = 0;
     buffer.pQueueFamilyIndices = NULL;
 
-    OWL_VK_CHECK(
-        vkCreateBuffer(r->device, &buffer, NULL, &model->index_buffer));
+    OWL_CHECK(vkCreateBuffer(r->device, &buffer, NULL, &model->index_buffer));
   }
 
   {
@@ -1036,13 +1032,12 @@ owl_model_alloc_buffers_(struct owl_vk_renderer *r, int vertices_count,
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, requirements.memoryTypeBits, OWL_VK_MEMORY_VISIBILITY_GPU_ONLY);
+        r, requirements.memoryTypeBits, OWL_MEMORY_VISIBILITY_GPU_ONLY);
 
-    OWL_VK_CHECK(
-        vkAllocateMemory(r->device, &memory, NULL, &model->index_memory));
+    OWL_CHECK(vkAllocateMemory(r->device, &memory, NULL, &model->index_memory));
 
-    OWL_VK_CHECK(vkBindBufferMemory(r->device, model->index_buffer,
-                                    model->index_memory, 0));
+    OWL_CHECK(vkBindBufferMemory(r->device, model->index_buffer,
+                                 model->index_memory, 0));
   }
 
   {
@@ -1074,8 +1069,7 @@ owl_model_alloc_buffers_(struct owl_vk_renderer *r, int vertices_count,
   return OWL_SUCCESS;
 }
 
-enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
-                                       char const *path,
+enum owl_code owl_model_init_from_file(struct owl_renderer *r, char const *path,
                                        struct owl_model *model) {
   cgltf_options options;
   cgltf_data *data = NULL;
@@ -1133,16 +1127,16 @@ end:
   return code;
 }
 
-enum owl_code owl_model_create_from_file(struct owl_vk_renderer *r,
+enum owl_code owl_model_create_from_file(struct owl_renderer *r,
                                          char const *path,
                                          struct owl_model **model) {
   *model = OWL_MALLOC(sizeof(**model));
   return owl_model_init_from_file(r, path, *model);
 }
 
-void owl_model_deinit(struct owl_vk_renderer *r, struct owl_model *model) {
+void owl_model_deinit(struct owl_renderer *r, struct owl_model *model) {
   int i;
-  OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
+  OWL_CHECK(vkDeviceWaitIdle(r->device));
 
   vkFreeMemory(r->device, model->index_memory, NULL);
   vkDestroyBuffer(r->device, model->index_buffer, NULL);
@@ -1156,13 +1150,13 @@ void owl_model_deinit(struct owl_vk_renderer *r, struct owl_model *model) {
     owl_model_deinit_mesh_(r, &model->meshes[i]);
 }
 
-void owl_model_destroy(struct owl_vk_renderer *r, struct owl_model *model) {
+void owl_model_destroy(struct owl_renderer *r, struct owl_model *model) {
   owl_model_deinit(r, model);
   OWL_FREE(model);
 }
 
 OWL_INTERNAL void
-owl_model_bind_vertex_and_index_buffers_(struct owl_vk_renderer *r,
+owl_model_bind_vertex_and_index_buffers_(struct owl_renderer *r,
                                          struct owl_model const *model) {
   VkDeviceSize const offset[] = {0};
   vkCmdBindVertexBuffers(r->frame_cmd_buffers[r->active], 0, 1,
@@ -1175,7 +1169,7 @@ owl_model_bind_vertex_and_index_buffers_(struct owl_vk_renderer *r,
 #if 0
 
 OWL_INTERNAL void
-owl_model_submit_primitives_(struct owl_vk_renderer *r,
+owl_model_submit_primitives_(struct owl_renderer *r,
                              struct owl_model const *model,
                              struct owl_model_mesh const *mesh) {
   int i;
@@ -1196,7 +1190,7 @@ owl_model_submit_primitives_(struct owl_vk_renderer *r,
 
 #endif
 
-enum owl_code owl_model_submit(struct owl_vk_renderer *r,
+enum owl_code owl_model_submit(struct owl_renderer *r,
                                struct owl_draw_cmd_ubo const *ubo,
                                struct owl_model const *model) {
   int i;

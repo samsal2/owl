@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-struct owl_vk_renderer;
+struct owl_renderer;
 
 struct owl_draw_cmd_vertex {
   owl_v3 position;
@@ -65,7 +65,7 @@ struct owl_draw_cmd {
   union owl_draw_cmd_storage storage;
 };
 
-enum owl_code owl_draw_cmd_submit(struct owl_vk_renderer *r,
+enum owl_code owl_draw_cmd_submit(struct owl_renderer *r,
                                   struct owl_draw_cmd const *cmd);
 
 #endif

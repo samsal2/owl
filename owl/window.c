@@ -90,7 +90,7 @@ OWL_INTERNAL void owl_keyboard_callback_(GLFWwindow *glfw, int key,
 }
 
 OWL_INTERNAL enum owl_code
-owl_vk_surface_init_callback_(struct owl_vk_renderer const *r, void const *data,
+owl_vk_surface_init_callback_(struct owl_renderer const *r, void const *data,
                               VkSurfaceKHR *out) {
   struct owl_window const *w = data;
   int err = glfwCreateWindowSurface(r->instance, w->data, NULL, out);
@@ -210,9 +210,8 @@ owl_get_dbg_instance_extensions_(owl_u32 *count) {
 #undef OWL_MAX_EXTENSIONS
 #endif /* OWL_ENABLE_VALIDATION */
 
-enum owl_code
-owl_window_fill_vk_renderer_info(struct owl_window const *w,
-                                 struct owl_vk_renderer_info *info) {
+enum owl_code owl_window_fill_renderer_info(struct owl_window const *w,
+                                               struct owl_renderer_info *info) {
   owl_u32 count;
 
   info->framebuffer_width = w->framebuffer_width;

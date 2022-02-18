@@ -172,18 +172,17 @@ struct owl_model {
   struct owl_model_mesh_data meshes[OWL_MODEL_MAX_MESHES];
 };
 
-enum owl_code owl_model_init_from_file(struct owl_vk_renderer *r,
-                                       char const *path,
+enum owl_code owl_model_init_from_file(struct owl_renderer *r, char const *path,
                                        struct owl_model *model);
 
-enum owl_code owl_model_create_from_file(struct owl_vk_renderer *r,
+enum owl_code owl_model_create_from_file(struct owl_renderer *r,
                                          char const *path,
                                          struct owl_model **model);
 
-void owl_model_deinit(struct owl_vk_renderer *r, struct owl_model *model);
-void owl_model_destroy(struct owl_vk_renderer *r, struct owl_model *model);
+void owl_model_deinit(struct owl_renderer *r, struct owl_model *model);
+void owl_model_destroy(struct owl_renderer *r, struct owl_model *model);
 
-enum owl_code owl_model_submit(struct owl_vk_renderer *r,
+enum owl_code owl_model_submit(struct owl_renderer *r,
                                struct owl_draw_cmd_ubo const *ubo,
                                struct owl_model const *model);
 

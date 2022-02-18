@@ -53,17 +53,17 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 
 #ifndef NDEBUG
 
-#define OWL_VK_CHECK(e)                                                        \
+#define OWL_CHECK(e)                                                           \
   do {                                                                         \
     VkResult const result_ = e;                                                \
     if (VK_SUCCESS != result_)                                                 \
-      OWL_DBG_LOG("OWL_VK_CHECK(%i)\n", result_);                              \
+      OWL_DBG_LOG("OWL_CHECK(%i)\n", result_);                                 \
     OWL_ASSERT(VK_SUCCESS == result_);                                         \
   } while (0)
 
 #else /* NDEBUG */
 
-#define OWL_VK_CHECK(e) e
+#define OWL_CHECK(e) e
 
 #endif /* NDEBUG */
 

@@ -34,7 +34,7 @@ void fill_quad(struct owl_draw_cmd *group, struct owl_texture *texture) {
 
 static struct owl_window_info window_info;
 static struct owl_window *window;
-static struct owl_vk_renderer *renderer;
+static struct owl_renderer *renderer;
 static struct owl_texture_info tex_info;
 static struct owl_texture *texture;
 static struct owl_draw_cmd group;

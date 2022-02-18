@@ -5,7 +5,7 @@
 
 #include <vulkan/vulkan.h>
 
-struct owl_vk_renderer;
+struct owl_renderer;
 struct owl_dynamic_buffer_reference;
 struct owl_model_texture_data;
 
@@ -63,34 +63,32 @@ owl_byte *owl_texture_data_from_file(char const *path,
 void owl_texture_free_data_from_file(owl_byte *data);
 
 enum owl_code owl_texture_init_from_ref(
-    struct owl_vk_renderer *r, struct owl_texture_info const *info,
+    struct owl_renderer *r, struct owl_texture_info const *info,
     struct owl_dynamic_buffer_reference const *ref, struct owl_texture *tex);
 
-enum owl_code owl_texture_init_from_file(struct owl_vk_renderer *r,
+enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
                                          struct owl_texture_info *info,
                                          char const *path,
                                          struct owl_texture *tex);
 
-enum owl_code owl_texture_init_from_data(struct owl_vk_renderer *r,
+enum owl_code owl_texture_init_from_data(struct owl_renderer *r,
                                          struct owl_texture_info const *info,
                                          owl_byte const *data,
                                          struct owl_texture *tex);
 
-void owl_texture_deinit(struct owl_vk_renderer const *r,
-                        struct owl_texture *tex);
+void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *tex);
 
-enum owl_code owl_texture_create_from_file(struct owl_vk_renderer *r,
+enum owl_code owl_texture_create_from_file(struct owl_renderer *r,
                                            struct owl_texture_info *info,
                                            char const *path,
                                            struct owl_texture **tex);
 
-enum owl_code owl_texture_create_from_data(struct owl_vk_renderer *r,
+enum owl_code owl_texture_create_from_data(struct owl_renderer *r,
                                            struct owl_texture_info const *info,
                                            owl_byte const *data,
                                            struct owl_texture **tex);
 
-void owl_texture_destroy(struct owl_vk_renderer const *r,
-                         struct owl_texture *tex);
+void owl_texture_destroy(struct owl_renderer const *r, struct owl_texture *tex);
 
 struct owl_vk_image_transition_info {
   owl_u32 mips;

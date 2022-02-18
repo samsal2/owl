@@ -11,7 +11,7 @@
   } while (0)
 
 static struct owl_window *window;
-static struct owl_vk_renderer *renderer;
+static struct owl_renderer *renderer;
 
 int main(void) {
   TEST(owl_create_window(600, 600, "fluid-simulation", &window));

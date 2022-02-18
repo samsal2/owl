@@ -4,13 +4,13 @@
 #include "renderer.h"
 #include "types.h"
 
-#define OWL_VK_TIMEOUT (owl_u64) - 1
+#define OWL_TIMEOUT (owl_u64) - 1
 
-OWL_INTERNAL enum owl_code owl_acquire_next_image_(struct owl_vk_renderer *r) {
+OWL_INTERNAL enum owl_code owl_acquire_next_image_(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   VkResult const result =
-      vkAcquireNextImageKHR(r->device, r->swapchain, OWL_VK_TIMEOUT,
+      vkAcquireNextImageKHR(r->device, r->swapchain, OWL_TIMEOUT,
                             r->image_available_semaphores[r->active],
                             VK_NULL_HANDLE, &r->swapchain_active_image);
 
@@ -24,14 +24,14 @@ OWL_INTERNAL enum owl_code owl_acquire_next_image_(struct owl_vk_renderer *r) {
   return code;
 }
 
-OWL_INTERNAL void owl_prepare_frame_(struct owl_vk_renderer *r) {
-  OWL_VK_CHECK(vkWaitForFences(r->device, 1, &r->in_flight_fences[r->active],
-                               VK_TRUE, OWL_VK_TIMEOUT));
-  OWL_VK_CHECK(vkResetFences(r->device, 1, &r->in_flight_fences[r->active]));
-  OWL_VK_CHECK(vkResetCommandPool(r->device, r->frame_cmd_pools[r->active], 0));
+OWL_INTERNAL void owl_prepare_frame_(struct owl_renderer *r) {
+  OWL_CHECK(vkWaitForFences(r->device, 1, &r->in_flight_fences[r->active],
+                            VK_TRUE, OWL_TIMEOUT));
+  OWL_CHECK(vkResetFences(r->device, 1, &r->in_flight_fences[r->active]));
+  OWL_CHECK(vkResetCommandPool(r->device, r->frame_cmd_pools[r->active], 0));
 }
 
-OWL_INTERNAL void owl_start_recording_(struct owl_vk_renderer *r) {
+OWL_INTERNAL void owl_start_recording_(struct owl_renderer *r) {
   {
     VkCommandBufferBeginInfo begin;
 
@@ -40,7 +40,7 @@ OWL_INTERNAL void owl_start_recording_(struct owl_vk_renderer *r) {
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin.pInheritanceInfo = NULL;
 
-    OWL_VK_CHECK(vkBeginCommandBuffer(r->frame_cmd_buffers[r->active], &begin));
+    OWL_CHECK(vkBeginCommandBuffer(r->frame_cmd_buffers[r->active], &begin));
   }
 
   {
@@ -61,7 +61,7 @@ OWL_INTERNAL void owl_start_recording_(struct owl_vk_renderer *r) {
   }
 }
 
-enum owl_code owl_frame_begin(struct owl_vk_renderer *r) {
+enum owl_code owl_frame_begin(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   if (OWL_SUCCESS != (code = owl_acquire_next_image_(r)))
@@ -73,17 +73,17 @@ enum owl_code owl_frame_begin(struct owl_vk_renderer *r) {
 end:
   return code;
 }
-#undef OWL_VK_TIMEOUT
+#undef OWL_TIMEOUT
 
-OWL_INTERNAL void owl_end_recording_(struct owl_vk_renderer *r) {
+OWL_INTERNAL void owl_end_recording_(struct owl_renderer *r) {
   vkCmdEndRenderPass(r->frame_cmd_buffers[r->active]);
-  OWL_VK_CHECK(vkEndCommandBuffer(r->frame_cmd_buffers[r->active]));
+  OWL_CHECK(vkEndCommandBuffer(r->frame_cmd_buffers[r->active]));
 }
 
-OWL_INTERNAL void owl_submit_graphics_(struct owl_vk_renderer *r) {
-#define OWL_VK_WAIT_STAGE VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+OWL_INTERNAL void owl_submit_graphics_(struct owl_renderer *r) {
+#define OWL_WAIT_STAGE VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
   VkSubmitInfo submit;
-  VkPipelineStageFlags const stage = OWL_VK_WAIT_STAGE;
+  VkPipelineStageFlags const stage = OWL_WAIT_STAGE;
 
   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit.pNext = NULL;
@@ -95,12 +95,12 @@ OWL_INTERNAL void owl_submit_graphics_(struct owl_vk_renderer *r) {
   submit.commandBufferCount = 1;
   submit.pCommandBuffers = &r->frame_cmd_buffers[r->active];
 
-  OWL_VK_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit,
-                             r->in_flight_fences[r->active]));
-#undef OWL_VK_WAIT_STAGE
+  OWL_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit,
+                          r->in_flight_fences[r->active]));
+#undef OWL_WAIT_STAGE
 }
 
-OWL_INTERNAL enum owl_code owl_present_swapchain_(struct owl_vk_renderer *r) {
+OWL_INTERNAL enum owl_code owl_present_swapchain_(struct owl_renderer *r) {
   VkResult result;
   VkPresentInfoKHR present;
   enum owl_code code = OWL_SUCCESS;
@@ -126,12 +126,12 @@ OWL_INTERNAL enum owl_code owl_present_swapchain_(struct owl_vk_renderer *r) {
   return code;
 }
 
-OWL_INTERNAL void owl_renderer_swap_active_(struct owl_vk_renderer *r) {
-  if (OWL_VK_RENDERER_DYNAMIC_BUFFER_COUNT == ++r->active)
+OWL_INTERNAL void owl_renderer_swap_active_(struct owl_renderer *r) {
+  if (OWL_RENDERER_DYNAMIC_BUFFER_COUNT == ++r->active)
     r->active = 0;
 }
 
-enum owl_code owl_frame_end(struct owl_vk_renderer *r) {
+enum owl_code owl_frame_end(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   owl_end_recording_(r);

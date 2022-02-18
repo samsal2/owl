@@ -23,7 +23,7 @@ char const *fps_string(double time) {
 
 static struct owl_window_info window_info;
 static struct owl_window *window;
-static struct owl_vk_renderer *renderer;
+static struct owl_renderer *renderer;
 static struct owl_font *font;
 static struct owl_input_state *input;
 static struct owl_draw_cmd text;
