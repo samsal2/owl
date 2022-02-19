@@ -25,10 +25,10 @@ OWL_INTERNAL enum owl_code owl_acquire_next_image_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL void owl_prepare_frame_(struct owl_renderer *r) {
-  OWL_CHECK(vkWaitForFences(r->device, 1, &r->in_flight_fences[r->active],
-                            VK_TRUE, OWL_TIMEOUT));
-  OWL_CHECK(vkResetFences(r->device, 1, &r->in_flight_fences[r->active]));
-  OWL_CHECK(vkResetCommandPool(r->device, r->frame_cmd_pools[r->active], 0));
+  OWL_VK_CHECK(vkWaitForFences(r->device, 1, &r->in_flight_fences[r->active],
+                               VK_TRUE, OWL_TIMEOUT));
+  OWL_VK_CHECK(vkResetFences(r->device, 1, &r->in_flight_fences[r->active]));
+  OWL_VK_CHECK(vkResetCommandPool(r->device, r->frame_cmd_pools[r->active], 0));
 }
 
 OWL_INTERNAL void owl_start_recording_(struct owl_renderer *r) {
@@ -40,7 +40,7 @@ OWL_INTERNAL void owl_start_recording_(struct owl_renderer *r) {
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin.pInheritanceInfo = NULL;
 
-    OWL_CHECK(vkBeginCommandBuffer(r->frame_cmd_buffers[r->active], &begin));
+    OWL_VK_CHECK(vkBeginCommandBuffer(r->frame_cmd_buffers[r->active], &begin));
   }
 
   {
@@ -77,7 +77,7 @@ end:
 
 OWL_INTERNAL void owl_end_recording_(struct owl_renderer *r) {
   vkCmdEndRenderPass(r->frame_cmd_buffers[r->active]);
-  OWL_CHECK(vkEndCommandBuffer(r->frame_cmd_buffers[r->active]));
+  OWL_VK_CHECK(vkEndCommandBuffer(r->frame_cmd_buffers[r->active]));
 }
 
 OWL_INTERNAL void owl_submit_graphics_(struct owl_renderer *r) {
@@ -95,8 +95,8 @@ OWL_INTERNAL void owl_submit_graphics_(struct owl_renderer *r) {
   submit.commandBufferCount = 1;
   submit.pCommandBuffers = &r->frame_cmd_buffers[r->active];
 
-  OWL_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit,
-                          r->in_flight_fences[r->active]));
+  OWL_VK_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit,
+                             r->in_flight_fences[r->active]));
 #undef OWL_WAIT_STAGE
 }
 

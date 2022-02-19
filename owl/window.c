@@ -211,8 +211,8 @@ owl_get_dbg_instance_extensions_(owl_u32 *count) {
 #endif /* OWL_ENABLE_VALIDATION */
 
 enum owl_code
-owl_window_fill_renderer_info(struct owl_window const *w,
-                              struct owl_renderer_init_info *info) {
+owl_window_fill_renderer_init_info(struct owl_window const *w,
+                                   struct owl_renderer_init_info *info) {
   owl_u32 count;
 
   info->framebuffer_width = w->framebuffer_width;

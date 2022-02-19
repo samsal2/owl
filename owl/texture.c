@@ -265,7 +265,7 @@ enum owl_code owl_texture_init_from_ref(
     image.pQueueFamilyIndices = NULL;
     image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    OWL_CHECK(vkCreateImage(r->device, &image, NULL, &tex->image));
+    OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &tex->image));
 
 #undef OWL_IMAGE_USAGE
   }
@@ -283,8 +283,8 @@ enum owl_code owl_texture_init_from_ref(
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
         r, requirements.memoryTypeBits, OWL_MEMORY_VISIBILITY_GPU_ONLY);
 
-    OWL_CHECK(vkAllocateMemory(r->device, &memory, NULL, &tex->memory));
-    OWL_CHECK(vkBindImageMemory(r->device, tex->image, tex->memory, 0));
+    OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &tex->memory));
+    OWL_VK_CHECK(vkBindImageMemory(r->device, tex->image, tex->memory, 0));
   }
 
   {
@@ -305,7 +305,7 @@ enum owl_code owl_texture_init_from_ref(
     view.subresourceRange.baseArrayLayer = 0;
     view.subresourceRange.layerCount = 1;
 
-    OWL_CHECK(vkCreateImageView(r->device, &view, NULL, &tex->view));
+    OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &tex->view));
   }
 
   /* init the descriptor set */
@@ -318,7 +318,7 @@ enum owl_code owl_texture_init_from_ref(
     set.descriptorSetCount = 1;
     set.pSetLayouts = &r->texture_set_layout;
 
-    OWL_CHECK(vkAllocateDescriptorSets(r->device, &set, &tex->set));
+    OWL_VK_CHECK(vkAllocateDescriptorSets(r->device, &set, &tex->set));
   }
 
   /* stage, mips and layout */
@@ -394,7 +394,7 @@ enum owl_code owl_texture_init_from_ref(
     sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     sampler.unnormalizedCoordinates = VK_FALSE;
 
-    OWL_CHECK(vkCreateSampler(r->device, &sampler, NULL, &tex->sampler));
+    OWL_VK_CHECK(vkCreateSampler(r->device, &sampler, NULL, &tex->sampler));
 
 #undef OWL_MAX_ANISOTROPY
   }
@@ -488,7 +488,7 @@ end:
 }
 
 void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *tex) {
-  OWL_CHECK(vkDeviceWaitIdle(r->device));
+  OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
   vkDestroySampler(r->device, tex->sampler, NULL);
   vkFreeDescriptorSets(r->device, r->common_set_pool, 1, &tex->set);

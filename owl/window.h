@@ -183,8 +183,8 @@ enum owl_code owl_window_init(struct owl_window_init_info const *info,
 void owl_window_deinit(struct owl_window *w);
 
 enum owl_code
-owl_window_fill_renderer_info(struct owl_window const *w,
-                              struct owl_renderer_init_info *info);
+owl_window_fill_renderer_init_info(struct owl_window const *w,
+                                   struct owl_renderer_init_info *info);
 
 enum owl_code owl_window_create(struct owl_window_init_info const *info,
                                 struct owl_input_state **input,
