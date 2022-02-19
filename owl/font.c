@@ -70,7 +70,7 @@ owl_font_init_atlas_(struct owl_renderer *r,
                      struct owl_dynamic_buffer_reference const *ref,
                      struct owl_font *font) {
   enum owl_code code;
-  struct owl_texture_info info;
+  struct owl_texture_init_info info;
 
   info.width = font->atlas_width;
   info.height = font->atlas_height;

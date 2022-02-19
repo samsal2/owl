@@ -43,7 +43,7 @@ enum owl_sampler_addr_mode {
   OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER
 };
 
-struct owl_texture_info {
+struct owl_texture_init_info {
   int width;
   int height;
   enum owl_pixel_format format;
@@ -58,35 +58,35 @@ struct owl_texture_info {
 owl_u32 owl_calc_mips(owl_u32 width, owl_u32 height);
 
 owl_byte *owl_texture_data_from_file(char const *path,
-                                     struct owl_texture_info *info);
+                                     struct owl_texture_init_info *info);
 
 void owl_texture_free_data_from_file(owl_byte *data);
 
 enum owl_code owl_texture_init_from_ref(
-    struct owl_renderer *r, struct owl_texture_info const *info,
+    struct owl_renderer *r, struct owl_texture_init_info const *info,
     struct owl_dynamic_buffer_reference const *ref, struct owl_texture *tex);
 
 enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
-                                         struct owl_texture_info *info,
+                                         struct owl_texture_init_info *info,
                                          char const *path,
                                          struct owl_texture *tex);
 
-enum owl_code owl_texture_init_from_data(struct owl_renderer *r,
-                                         struct owl_texture_info const *info,
-                                         owl_byte const *data,
-                                         struct owl_texture *tex);
+enum owl_code
+owl_texture_init_from_data(struct owl_renderer *r,
+                           struct owl_texture_init_info const *info,
+                           owl_byte const *data, struct owl_texture *tex);
 
 void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *tex);
 
 enum owl_code owl_texture_create_from_file(struct owl_renderer *r,
-                                           struct owl_texture_info *info,
+                                           struct owl_texture_init_info *info,
                                            char const *path,
                                            struct owl_texture **tex);
 
-enum owl_code owl_texture_create_from_data(struct owl_renderer *r,
-                                           struct owl_texture_info const *info,
-                                           owl_byte const *data,
-                                           struct owl_texture **tex);
+enum owl_code
+owl_texture_create_from_data(struct owl_renderer *r,
+                             struct owl_texture_init_info const *info,
+                             owl_byte const *data, struct owl_texture **tex);
 
 void owl_texture_destroy(struct owl_renderer const *r, struct owl_texture *tex);
 
@@ -115,6 +115,7 @@ owl_vk_image_generate_mips(VkCommandBuffer cmd,
 
 VkFormat owl_as_vk_format_(enum owl_pixel_format format);
 
-VkDeviceSize owl_info_required_size_(struct owl_texture_info const *info);
+VkDeviceSize
+owl_texture_init_info_required_size_(struct owl_texture_init_info const *info);
 
 #endif

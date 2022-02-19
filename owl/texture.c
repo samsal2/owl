@@ -226,13 +226,14 @@ owl_as_vk_addr_mode_(enum owl_sampler_addr_mode mode) {
   }
 }
 
-VkDeviceSize owl_info_required_size_(struct owl_texture_info const *info) {
+VkDeviceSize
+owl_texture_init_info_required_size_(struct owl_texture_init_info const *info) {
   VkDeviceSize p = (VkDeviceSize)info->width * (VkDeviceSize)info->height;
   return owl_sizeof_format_(info->format) * p;
 }
 
 enum owl_code owl_texture_init_from_ref(
-    struct owl_renderer *r, struct owl_texture_info const *info,
+    struct owl_renderer *r, struct owl_texture_init_info const *info,
     struct owl_dynamic_buffer_reference const *ref, struct owl_texture *tex) {
   enum owl_code code = OWL_SUCCESS;
   owl_u32 mips = owl_calc_mips((owl_u32)info->width, (owl_u32)info->height);
@@ -440,10 +441,10 @@ enum owl_code owl_texture_init_from_ref(
   return code;
 }
 
-enum owl_code owl_texture_init_from_data(struct owl_renderer *r,
-                                         struct owl_texture_info const *info,
-                                         owl_byte const *data,
-                                         struct owl_texture *tex) {
+enum owl_code
+owl_texture_init_from_data(struct owl_renderer *r,
+                           struct owl_texture_init_info const *info,
+                           owl_byte const *data, struct owl_texture *tex) {
   owl_byte *stage;
   VkDeviceSize size;
   struct owl_dynamic_buffer_reference ref;
@@ -451,7 +452,7 @@ enum owl_code owl_texture_init_from_data(struct owl_renderer *r,
 
   OWL_ASSERT(owl_renderer_is_dynamic_buffer_clear(r));
 
-  size = owl_info_required_size_(info);
+  size = owl_texture_init_info_required_size_(info);
 
   if (!(stage = owl_renderer_dynamic_buffer_alloc(r, size, &ref))) {
     code = OWL_ERROR_BAD_ALLOC;
@@ -467,7 +468,7 @@ end:
 }
 
 enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
-                                         struct owl_texture_info *info,
+                                         struct owl_texture_init_info *info,
                                          char const *path,
                                          struct owl_texture *tex) {
   owl_byte *data;
@@ -496,10 +497,10 @@ void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *tex) {
   vkDestroyImage(r->device, tex->image, NULL);
 }
 
-enum owl_code owl_texture_create_from_data(struct owl_renderer *r,
-                                           struct owl_texture_info const *info,
-                                           owl_byte const *data,
-                                           struct owl_texture **tex) {
+enum owl_code
+owl_texture_create_from_data(struct owl_renderer *r,
+                             struct owl_texture_init_info const *info,
+                             owl_byte const *data, struct owl_texture **tex) {
   enum owl_code code = OWL_SUCCESS;
 
   if (!(*tex = OWL_MALLOC(sizeof(**tex)))) {
@@ -517,7 +518,7 @@ end:
 }
 
 enum owl_code owl_texture_create_from_file(struct owl_renderer *r,
-                                           struct owl_texture_info *info,
+                                           struct owl_texture_init_info *info,
                                            char const *path,
                                            struct owl_texture **tex) {
   enum owl_code code = OWL_SUCCESS;
@@ -543,7 +544,7 @@ void owl_texture_destroy(struct owl_renderer const *r,
 }
 
 owl_byte *owl_texture_data_from_file(char const *path,
-                                     struct owl_texture_info *info) {
+                                     struct owl_texture_init_info *info) {
 
   int channels;
   info->format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;

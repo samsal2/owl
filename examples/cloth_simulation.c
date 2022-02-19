@@ -225,17 +225,17 @@ char const *fps_string(double time) {
     }                                                                          \
   } while (0)
 
-static struct owl_window_info window_info;
+static struct owl_window_init_info window_info;
 static struct owl_window *window;
 static struct owl_input_state *input;
 static struct owl_renderer *renderer;
-static struct owl_texture_info texture_info;
+static struct owl_texture_init_info texture_info;
 static struct owl_texture *texture;
 static struct owl_draw_cmd group;
 static struct cloth cloth;
 static struct owl_font *font;
 static struct owl_draw_cmd text;
-static struct owl_skybox_info skybox_info;
+static struct owl_skybox_init_info skybox_info;
 static struct owl_skybox *skybox;
 static struct owl_draw_cmd skybox_draw_cmd;
 
@@ -269,15 +269,14 @@ int main(void) {
 
   TEST(owl_font_create(renderer, 64, FONTPATH, &font));
 
-  skybox_info.right =  "../../assets/skybox/right.jpg";
-  skybox_info.left =   "../../assets/skybox/left.jpg";
-  skybox_info.top =    "../../assets/skybox/top.jpg";
+  skybox_info.right = "../../assets/skybox/right.jpg";
+  skybox_info.left = "../../assets/skybox/left.jpg";
+  skybox_info.top = "../../assets/skybox/top.jpg";
   skybox_info.bottom = "../../assets/skybox/bottom.jpg";
-  skybox_info.front =  "../../assets/skybox/front.jpg";
-  skybox_info.back =   "../../assets/skybox/back.jpg";
+  skybox_info.front = "../../assets/skybox/front.jpg";
+  skybox_info.back = "../../assets/skybox/back.jpg";
   TEST(owl_skybox_create(renderer, &skybox_info, &skybox));
- 
- 
+
   init_cloth(&cloth, texture);
 
   text.type = OWL_DRAW_CMD_TYPE_TEXT;
@@ -294,7 +293,8 @@ int main(void) {
 #if 0
   owl_ortho_m4(-2.0F, 2.0F, -2.0F, 2.0F, 0.1F, 10.0F, pvm->projection);
 #else
-  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F, pvm->projection);
+  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F,
+                     pvm->projection);
 #endif
 
   OWL_SET_V3(0.0F, 0.0F, 2.0F, eye);
@@ -346,7 +346,6 @@ int main(void) {
 #if 1
     owl_draw_cmd_submit(renderer, &cloth.group_);
 #endif
-
 
 #if 1
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);

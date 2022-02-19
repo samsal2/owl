@@ -2,12 +2,12 @@
 
 #include <stdio.h>
 
-#define TEST(fn)                                                             \
-  do {                                                                       \
-    if (OWL_SUCCESS != (fn)) {                                               \
-      printf("something went wrong in call: %s\n", (#fn));                   \
-      return 0;                                                              \
-    }                                                                        \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    if (OWL_SUCCESS != (fn)) {                                                 \
+      printf("something went wrong in call: %s\n", (#fn));                     \
+      return 0;                                                                \
+    }                                                                          \
   } while (0)
 
 static struct owl_window *window;

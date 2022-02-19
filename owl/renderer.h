@@ -35,7 +35,7 @@ enum owl_pipeline_type {
 typedef enum owl_code (*owl_vk_surface_callback)(struct owl_renderer const *,
                                                  void const *, VkSurfaceKHR *);
 
-struct owl_renderer_info {
+struct owl_renderer_init_info {
   char const *name;
 
   int framebuffer_width;
@@ -240,14 +240,14 @@ struct owl_renderer {
   /* ====================================================================== */
 };
 
-enum owl_code owl_renderer_init(struct owl_renderer_info const *info,
+enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
                                 struct owl_renderer *r);
 
 enum owl_code owl_renderer_create(struct owl_window *w,
                                   struct owl_renderer **r);
 
 enum owl_code
-owl_renderer_reinit_swapchain(struct owl_renderer_info const *info,
+owl_renderer_reinit_swapchain(struct owl_renderer_init_info const *info,
                               struct owl_renderer *r);
 
 enum owl_code owl_renderer_recreate_swapchain(struct owl_window *w,

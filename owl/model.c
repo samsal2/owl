@@ -524,7 +524,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
     struct owl_model_texture_sampler_info const *sampler_info,
     struct owl_model_texture_data *tex) {
   owl_byte *data;
-  struct owl_texture_info info;
+  struct owl_texture_init_info info;
   enum owl_code code = OWL_SUCCESS;
 
   strncpy(tex->uri, path, sizeof(tex->uri));
@@ -605,7 +605,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
     owl_byte *stage;
     struct owl_dynamic_buffer_reference ref;
 
-    size = owl_info_required_size_(&info);
+    size = owl_texture_init_info_required_size_(&info);
 
     if (!(stage = owl_renderer_dynamic_buffer_alloc(r, size, &ref)))
       return OWL_ERROR_BAD_ALLOC;

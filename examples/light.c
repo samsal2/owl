@@ -58,12 +58,12 @@ static void fill_group(OwlTexture texture, struct owl_render_group *group) {
   OWL_SET_V3(0.0F, 0.0F, 1.0F, group->storage.as_light.lighting.view);
 }
 
-#define TEST(fn)                                                             \
-  do {                                                                       \
-    if (OWL_SUCCESS != (fn)) {                                               \
-      printf("something went wrong in call: %s\n", (#fn));                   \
-      return 0;                                                              \
-    }                                                                        \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    if (OWL_SUCCESS != (fn)) {                                                 \
+      printf("something went wrong in call: %s\n", (#fn));                     \
+      return 0;                                                                \
+    }                                                                          \
   } while (0)
 
 #define TEXPATH "../../assets/Chaeyoung.jpeg"
@@ -82,8 +82,8 @@ int main(void) {
 
   TEST(owl_create_window(600, 600, "light", &window));
   TEST(owl_create_renderer(window, &renderer));
-  TEST(owl_create_texture_from_file(renderer, TEXPATH,
-                                    OWL_SAMPLER_TYPE_LINEAR, &texture));
+  TEST(owl_create_texture_from_file(renderer, TEXPATH, OWL_SAMPLER_TYPE_LINEAR,
+                                    &texture));
   TEST(owl_create_font(renderer, 64, FONTPATH, &font));
 
   OWL_SET_V2(-1.0F, -0.93F, fpspos);
@@ -105,8 +105,7 @@ int main(void) {
     owl_submit_render_group(renderer, &group);
 
     owl_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
-    owl_submit_text_group(renderer, font, fpspos, fpscolor,
-                          fps_string(frame));
+    owl_submit_text_group(renderer, font, fpspos, fpscolor, fps_string(frame));
 
     if (OWL_SUCCESS != owl_end_frame(renderer)) {
       owl_recreate_renderer(window, renderer);

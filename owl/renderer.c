@@ -16,7 +16,7 @@ OWL_GLOBAL char const *const g_debug_validation_layers[] = {
 #endif /* OWL_ENABLE_VALIDATION */
 
 OWL_INTERNAL enum owl_code
-owl_renderer_init_instance_(struct owl_renderer_info const *info,
+owl_renderer_init_instance_(struct owl_renderer_init_info const *info,
                             struct owl_renderer *r) {
   VkApplicationInfo app;
   VkInstanceCreateInfo instance;
@@ -125,7 +125,7 @@ OWL_INTERNAL void owl_renderer_deinit_debug_(struct owl_renderer *r) {
 #endif /* OWL_ENABLE_VALIDATION */
 
 OWL_INTERNAL enum owl_code
-owl_renderer_init_surface_(struct owl_renderer_info const *info,
+owl_renderer_init_surface_(struct owl_renderer_init_info const *info,
                            struct owl_renderer *r) {
   return info->create_surface(r, info->surface_user_data, &r->surface);
 }
@@ -475,7 +475,7 @@ end:
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_init_swapchain_(struct owl_renderer_info const *info,
+owl_renderer_init_swapchain_(struct owl_renderer_init_info const *info,
                              struct owl_renderer *r) {
   owl_u32 i;
   owl_u32 families[2];
@@ -2719,7 +2719,7 @@ end:
   return code;
 }
 
-enum owl_code owl_renderer_init(struct owl_renderer_info const *info,
+enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
                                 struct owl_renderer *r) {
   enum owl_code code;
 
@@ -2877,7 +2877,7 @@ end:
 }
 
 enum owl_code
-owl_renderer_reinit_swapchain(struct owl_renderer_info const *info,
+owl_renderer_reinit_swapchain(struct owl_renderer_init_info const *info,
                               struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
@@ -2948,7 +2948,7 @@ void owl_renderer_clear_dynamic_offset(struct owl_renderer *r) {
 
 enum owl_code owl_renderer_create(struct owl_window *w,
                                   struct owl_renderer **r) {
-  struct owl_renderer_info info;
+  struct owl_renderer_init_info info;
   enum owl_code code = OWL_SUCCESS;
 
   if (!(*r = OWL_MALLOC(sizeof(**r)))) {
@@ -2969,7 +2969,7 @@ end:
 
 enum owl_code owl_renderer_recreate_swapchain(struct owl_window *w,
                                               struct owl_renderer *r) {
-  struct owl_renderer_info info;
+  struct owl_renderer_init_info info;
   owl_window_fill_renderer_info(w, &info);
   return owl_renderer_reinit_swapchain(&info, r);
 }

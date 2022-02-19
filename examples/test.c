@@ -32,18 +32,18 @@ void fill_quad(struct owl_draw_cmd *group, struct owl_texture *texture) {
   OWL_IDENTITY_M4(group->storage.as_quad.ubo.model);
 }
 
-static struct owl_window_info window_info;
+static struct owl_window_init_info window_info;
 static struct owl_window *window;
 static struct owl_renderer *renderer;
-static struct owl_texture_info tex_info;
+static struct owl_texture_init_info tex_info;
 static struct owl_texture *texture;
 static struct owl_draw_cmd group;
 static struct owl_input_state *input;
 
-#define TEST(fn)                                                             \
-  do {                                                                       \
-    if (OWL_SUCCESS != (fn))                                                 \
-      printf("error at: %s\n", #fn);                                         \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    if (OWL_SUCCESS != (fn))                                                   \
+      printf("error at: %s\n", #fn);                                           \
   } while (0)
 
 #define TEXPATH "../../assets/Chaeyoung.jpeg"

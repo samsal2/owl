@@ -128,7 +128,7 @@ OWL_INTERNAL enum owl_code owl_window_ensure_glfw_(void) {
 }
 
 OWL_INTERNAL void *
-owl_window_create_handle_(struct owl_window_info const *info) {
+owl_window_create_handle_(struct owl_window_init_info const *info) {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   ++global_window_count;
   return glfwCreateWindow(info->width, info->height, info->title, NULL, NULL);
@@ -161,7 +161,7 @@ OWL_INTERNAL void owl_window_init_input_(struct owl_window *w) {
     w->input.keyboard[i] = OWL_BUTTON_STATE_NONE;
 }
 
-enum owl_code owl_window_init(struct owl_window_info const *info,
+enum owl_code owl_window_init(struct owl_window_init_info const *info,
                               struct owl_input_state **input,
                               struct owl_window *w) {
   owl_window_ensure_glfw_();
@@ -210,8 +210,9 @@ owl_get_dbg_instance_extensions_(owl_u32 *count) {
 #undef OWL_MAX_EXTENSIONS
 #endif /* OWL_ENABLE_VALIDATION */
 
-enum owl_code owl_window_fill_renderer_info(struct owl_window const *w,
-                                               struct owl_renderer_info *info) {
+enum owl_code
+owl_window_fill_renderer_info(struct owl_window const *w,
+                              struct owl_renderer_init_info *info) {
   owl_u32 count;
 
   info->framebuffer_width = w->framebuffer_width;
@@ -241,7 +242,7 @@ void owl_window_poll(struct owl_window *w) {
   owl_window_update_timer_(w);
 }
 
-enum owl_code owl_window_create(struct owl_window_info const *info,
+enum owl_code owl_window_create(struct owl_window_init_info const *info,
                                 struct owl_input_state **input,
                                 struct owl_window **w) {
   enum owl_code code = OWL_SUCCESS;

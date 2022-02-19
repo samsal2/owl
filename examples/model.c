@@ -6,13 +6,13 @@
 #define FONTPATH "../../assets/SourceCodePro-Regular.ttf"
 #define TEXPATH "../../assets/Chaeyoung.jpeg"
 
-#define TEST(fn)                                                             \
-  do {                                                                       \
-    enum owl_code err = (fn);                                                \
-    if (OWL_SUCCESS != (err)) {                                              \
-      printf("something went wrong in call: %s, err %i\n", (#fn), err);      \
-      return 0;                                                              \
-    }                                                                        \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    enum owl_code err = (fn);                                                  \
+    if (OWL_SUCCESS != (err)) {                                                \
+      printf("something went wrong in call: %s, err %i\n", (#fn), err);        \
+      return 0;                                                                \
+    }                                                                          \
   } while (0)
 
 char const *fps_string(double time) {
@@ -21,7 +21,7 @@ char const *fps_string(double time) {
   return buffer;
 }
 
-static struct owl_window_info window_info;
+static struct owl_window_init_info window_info;
 static struct owl_window *window;
 static struct owl_renderer *renderer;
 static struct owl_font *font;
@@ -52,7 +52,8 @@ int main(void) {
   OWL_IDENTITY_M4(ubo.projection);
 
 #if 1
-  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 100.0F, ubo.projection);
+  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 100.0F,
+                     ubo.projection);
 
   OWL_SET_V3(0.0F, 0.0F, 5.0F, eye);
   OWL_SET_V3(0.0F, 0.0F, 0.0F, center);

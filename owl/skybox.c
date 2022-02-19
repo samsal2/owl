@@ -47,10 +47,10 @@ owl_skybox_copy_to_image_(VkCommandBuffer cmd, owl_u32 base_width,
 }
 
 OWL_INTERNAL enum owl_code
-owl_skybox_init_loading_info_(struct owl_skybox_info const *info,
+owl_skybox_init_loading_info_(struct owl_skybox_init_info const *info,
                               struct owl_skybox_loading_info *loading_info) {
 
-  struct owl_texture_info texture_info;
+  struct owl_texture_init_info texture_info;
   enum owl_code code = OWL_SUCCESS;
 
   loading_info->right = owl_texture_data_from_file(info->right, &texture_info);
@@ -184,11 +184,11 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   OWL_ASSERT(owl_renderer_is_dynamic_buffer_clear(r));
 
   {
-    struct owl_texture_info texture_info;
+    struct owl_texture_init_info texture_info;
     texture_info.width = (int)info->width;
     texture_info.height = (int)info->height;
     texture_info.format = info->format;
-    size = owl_info_required_size_(&texture_info);
+    size = owl_texture_init_info_required_size_(&texture_info);
   }
 
   transition.mips = info->mips;
@@ -278,7 +278,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
 }
 
 enum owl_code owl_skybox_init(struct owl_renderer *r,
-                              struct owl_skybox_info const *info,
+                              struct owl_skybox_init_info const *info,
                               struct owl_skybox *box) {
   struct owl_skybox_loading_info loading_info;
   enum owl_code code = OWL_SUCCESS;
@@ -453,7 +453,7 @@ void owl_skybox_deinit(struct owl_renderer *r, struct owl_skybox *box) {
   vkDestroyImage(r->device, box->image, NULL);
 }
 enum owl_code owl_skybox_create(struct owl_renderer *r,
-                                struct owl_skybox_info const *info,
+                                struct owl_skybox_init_info const *info,
                                 struct owl_skybox **box) {
   enum owl_code code = OWL_SUCCESS;
 
