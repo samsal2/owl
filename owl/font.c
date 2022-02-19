@@ -82,7 +82,7 @@ owl_font_init_atlas_(struct owl_renderer *r,
   info.wrap_v = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
   info.wrap_w = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
 
-  code = owl_texture_init_from_ref(r, &info, ref, &font->atlas);
+  code = owl_texture_init_from_reference(r, &info, ref, &font->atlas);
 
   return code;
 }

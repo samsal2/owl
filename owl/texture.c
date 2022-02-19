@@ -232,7 +232,7 @@ owl_texture_init_info_required_size_(struct owl_texture_init_info const *info) {
   return owl_sizeof_format_(info->format) * p;
 }
 
-enum owl_code owl_texture_init_from_ref(
+enum owl_code owl_texture_init_from_reference(
     struct owl_renderer *r, struct owl_texture_init_info const *info,
     struct owl_dynamic_buffer_reference const *ref, struct owl_texture *tex) {
   enum owl_code code = OWL_SUCCESS;
@@ -400,16 +400,17 @@ enum owl_code owl_texture_init_from_ref(
   }
 
   {
-    VkDescriptorImageInfo images[2];
+    VkDescriptorImageInfo image;
+    VkDescriptorImageInfo sampler;
     VkWriteDescriptorSet writes[2];
 
-    images[0].sampler = tex->sampler;
-    images[0].imageView = VK_NULL_HANDLE;
-    images[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    sampler.sampler = tex->sampler;
+    sampler.imageView = VK_NULL_HANDLE;
+    sampler.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    images[1].sampler = VK_NULL_HANDLE;
-    images[1].imageView = tex->view;
-    images[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    image.sampler = VK_NULL_HANDLE;
+    image.imageView = tex->view;
+    image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[0].pNext = NULL;
@@ -418,7 +419,7 @@ enum owl_code owl_texture_init_from_ref(
     writes[0].dstArrayElement = 0;
     writes[0].descriptorCount = 1;
     writes[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-    writes[0].pImageInfo = &images[0];
+    writes[0].pImageInfo = &sampler;
     writes[0].pBufferInfo = NULL;
     writes[0].pTexelBufferView = NULL;
 
@@ -429,7 +430,7 @@ enum owl_code owl_texture_init_from_ref(
     writes[1].dstArrayElement = 0;
     writes[1].descriptorCount = 1;
     writes[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    writes[1].pImageInfo = &images[1];
+    writes[1].pImageInfo = &image;
     writes[1].pBufferInfo = NULL;
     writes[1].pTexelBufferView = NULL;
 
@@ -461,7 +462,7 @@ owl_texture_init_from_data(struct owl_renderer *r,
 
   OWL_MEMCPY(stage, data, size);
 
-  code = owl_texture_init_from_ref(r, info, &ref, tex);
+  code = owl_texture_init_from_reference(r, info, &ref, tex);
 
 end:
   return code;

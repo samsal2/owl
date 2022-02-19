@@ -5,8 +5,9 @@
 #include "vector_math.h"
 
 /* clang-format off */
-#include <vulkan/vulkan.h>
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan.h>
 /* clang-format on */
 
 OWL_INTERNAL enum owl_mouse_button owl_as_mouse_button_(int type) {

@@ -62,7 +62,7 @@ owl_byte *owl_texture_data_from_file(char const *path,
 
 void owl_texture_free_data_from_file(owl_byte *data);
 
-enum owl_code owl_texture_init_from_ref(
+enum owl_code owl_texture_init_from_reference(
     struct owl_renderer *r, struct owl_texture_init_info const *info,
     struct owl_dynamic_buffer_reference const *ref, struct owl_texture *tex);
 
