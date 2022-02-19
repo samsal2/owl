@@ -49,8 +49,7 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 #define OWL_UNUSED(e) ((void)e)
 #define OWL_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define OWL_ALIGNU2(v, a) ((v) + (a)-1) & ~((a)-1)
-#define OWL_STATIC_ASSERT(b, msg)                                              \
-  typedef char owl_static_assert_##__LINE__##_[!!(b)]
+#define OWL_STATIC_ASSERT(b, msg) typedef char owl_static_assert_[!!(b)]
 
 #ifndef NDEBUG
 
