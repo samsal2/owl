@@ -2671,11 +2671,8 @@ owl_renderer_move_dynamic_to_garbage_(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   {
-    /* previous count */
-    int prev_count = r->garbage_buffers_count;
-    /* new count */
-    int new_count =
-        r->garbage_buffers_count + OWL_RENDERER_DYNAMIC_BUFFER_COUNT;
+    int previous_count = r->garbage_buffers_count;
+    int new_count = previous_count + OWL_RENDERER_DYNAMIC_BUFFER_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS <= new_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -2683,17 +2680,14 @@ owl_renderer_move_dynamic_to_garbage_(struct owl_renderer *r) {
     }
 
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-      r->garbage_buffers[prev_count + i] = r->dynamic_buffers[i];
+      r->garbage_buffers[previous_count + i] = r->dynamic_buffers[i];
 
     r->garbage_buffers_count = new_count;
   }
 
   {
-    /* previous count */
-    int prev_count = r->garbage_pvm_sets_count;
-    /* new count */
-    int new_count =
-        r->garbage_pvm_sets_count + OWL_RENDERER_DYNAMIC_BUFFER_COUNT;
+    int previous_count = r->garbage_pvm_sets_count;
+    int new_count = previous_count + OWL_RENDERER_DYNAMIC_BUFFER_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS <= new_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -2701,23 +2695,21 @@ owl_renderer_move_dynamic_to_garbage_(struct owl_renderer *r) {
     }
 
     for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-      r->garbage_pvm_sets[prev_count + i] = r->dynamic_pvm_sets[i];
+      r->garbage_pvm_sets[previous_count + i] = r->dynamic_pvm_sets[i];
 
     r->garbage_pvm_sets_count = new_count;
   }
 
   {
-    /* previous count */
-    int prev_count = r->garbage_memories_count;
-    /* new count */
-    int new_count = r->garbage_memories_count + 1;
+    int previous_count = r->garbage_memories_count;
+    int new_count = previous_count + 1;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS <= new_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 
-    r->garbage_memories[prev_count + 0] = r->dynamic_memory;
+    r->garbage_memories[previous_count + 0] = r->dynamic_memory;
     r->garbage_memories_count = new_count;
   }
 
@@ -2727,7 +2719,7 @@ end:
 
 enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
                                 struct owl_renderer *r) {
-  enum owl_code code;
+  enum owl_code code = OWL_SUCCESS;
 
   r->width = info->framebuffer_width;
   r->height = info->framebuffer_height;

@@ -45,8 +45,8 @@ owl_model_request_mesh_(struct owl_model *model, struct owl_model_mesh *mesh) {
   return OWL_SUCCESS;
 }
 
-OWL_INTERNAL cgltf_attribute const *owl_find_attr_(cgltf_primitive const *prim,
-                                                   char const *name) {
+OWL_INTERNAL cgltf_attribute const *
+owl_gltf_find_attr_(cgltf_primitive const *prim, char const *name) {
   int i;
 
   for (i = 0; i < (int)prim->attributes_count; ++i)
@@ -56,12 +56,12 @@ OWL_INTERNAL cgltf_attribute const *owl_find_attr_(cgltf_primitive const *prim,
   return NULL;
 }
 
-OWL_INTERNAL void const *owl_get_attr_data_(cgltf_attribute const *attr) {
+OWL_INTERNAL void const *owl_gltf_get_attr_data_(cgltf_attribute const *attr) {
   owl_byte const *bdata = attr->data->buffer_view->buffer->data;
   return &bdata[attr->data->buffer_view->offset + attr->data->offset];
 }
 
-OWL_INTERNAL int owl_get_type_size_(cgltf_type type) {
+OWL_INTERNAL int owl_gltf_get_type_size_(cgltf_type type) {
   switch (type) {
   case cgltf_type_scalar:
     return 1;
@@ -135,38 +135,41 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
   out->indices_count = (owl_u32)prim->indices->count;
 
   /* position */
-  if ((attr = owl_find_attr_(prim, "POSITION"))) {
-    pos_data = owl_get_attr_data_(attr);
-    pos_stride = owl_get_type_size_(attr->data->type) * (int)sizeof(float);
+  if ((attr = owl_gltf_find_attr_(prim, "POSITION"))) {
+    pos_data = owl_gltf_get_attr_data_(attr);
+    pos_stride = owl_gltf_get_type_size_(attr->data->type) * (int)sizeof(float);
     out->vertex_count = (owl_u32)attr->data->count;
   } else {
     return OWL_ERROR_UNKNOWN;
   }
 
-  if ((attr = owl_find_attr_(prim, "NORMAL"))) {
-    normal_data = owl_get_attr_data_(attr);
-    normal_stride = owl_get_type_size_(attr->data->type) * (int)sizeof(float);
+  if ((attr = owl_gltf_find_attr_(prim, "NORMAL"))) {
+    normal_data = owl_gltf_get_attr_data_(attr);
+    normal_stride =
+        owl_gltf_get_type_size_(attr->data->type) * (int)sizeof(float);
   }
 
-  if ((attr = owl_find_attr_(prim, "TEXCOORD_0"))) {
-    uv0_data = owl_get_attr_data_(attr);
-    uv0_stride = owl_get_type_size_(attr->data->type) * (int)sizeof(float);
+  if ((attr = owl_gltf_find_attr_(prim, "TEXCOORD_0"))) {
+    uv0_data = owl_gltf_get_attr_data_(attr);
+    uv0_stride = owl_gltf_get_type_size_(attr->data->type) * (int)sizeof(float);
   }
 
-  if ((attr = owl_find_attr_(prim, "TEXCOORD_1"))) {
-    uv1_data = owl_get_attr_data_(attr);
-    uv1_stride = owl_get_type_size_(attr->data->type) * (int)sizeof(float);
+  if ((attr = owl_gltf_find_attr_(prim, "TEXCOORD_1"))) {
+    uv1_data = owl_gltf_get_attr_data_(attr);
+    uv1_stride = owl_gltf_get_type_size_(attr->data->type) * (int)sizeof(float);
   }
 
-  if ((attr = owl_find_attr_(prim, "JOINTS_0"))) {
-    joint_data = owl_get_attr_data_(attr);
-    joint_stride = owl_get_type_size_(attr->data->type) * (int)sizeof(float);
+  if ((attr = owl_gltf_find_attr_(prim, "JOINTS_0"))) {
+    joint_data = owl_gltf_get_attr_data_(attr);
+    joint_stride =
+        owl_gltf_get_type_size_(attr->data->type) * (int)sizeof(float);
     joint_type = attr->data->component_type;
   }
 
-  if ((attr = owl_find_attr_(prim, "WEIGHTS_0"))) {
-    weight_data = owl_get_attr_data_(attr);
-    weight_stride = owl_get_type_size_(attr->data->type) * (int)sizeof(float);
+  if ((attr = owl_gltf_find_attr_(prim, "WEIGHTS_0"))) {
+    weight_data = owl_gltf_get_attr_data_(attr);
+    weight_stride =
+        owl_gltf_get_type_size_(attr->data->type) * (int)sizeof(float);
   }
 
   /* vertices */
@@ -294,8 +297,8 @@ owl_model_process_mesh_(struct owl_renderer const *r, cgltf_mesh const *mesh,
                         struct owl_model_load_state *state,
                         struct owl_model *model) {
   int i;
-  enum owl_code code;
   struct owl_model_mesh_data *mesh_data;
+  enum owl_code code = OWL_SUCCESS;
   struct owl_model_node_data *node_data = &model->nodes[node->handle];
 
   code = owl_model_request_mesh_(model, &node_data->mesh);
@@ -731,9 +734,9 @@ enum owl_code owl_model_process_textures_(struct owl_renderer *r,
   return code;
 }
 
-OWL_INTERNAL enum owl_code owl_get_texture_(struct owl_model const *model,
-                                            char const *uri,
-                                            struct owl_model_texture *texture) {
+OWL_INTERNAL enum owl_code
+owl_model_get_texture_(struct owl_model const *model, char const *uri,
+                       struct owl_model_texture *texture) {
   int i;
 
   for (i = 0; i < model->textures_count; ++i) {
@@ -750,7 +753,7 @@ OWL_INTERNAL enum owl_code
 owl_model_process_materials_(struct owl_renderer *r, cgltf_data const *data,
                              struct owl_model *model) {
   int i;
-  enum owl_code code;
+  enum owl_code code = OWL_SUCCESS;
 
   OWL_UNUSED(r);
 
@@ -764,10 +767,10 @@ owl_model_process_materials_(struct owl_renderer *r, cgltf_data const *data,
     struct owl_model_material_data *material_data = &model->materials[i];
 
     if (material->pbr_metallic_roughness.base_color_texture.texture) {
-      code = owl_get_texture_(model,
-                              material->pbr_metallic_roughness
-                                  .base_color_texture.texture->image->uri,
-                              &material_data->base_color_texture);
+      code = owl_model_get_texture_(model,
+                                    material->pbr_metallic_roughness
+                                        .base_color_texture.texture->image->uri,
+                                    &material_data->base_color_texture);
 
       if (OWL_SUCCESS != code)
         return code;
@@ -779,11 +782,11 @@ owl_model_process_materials_(struct owl_renderer *r, cgltf_data const *data,
     }
 
     if (material->pbr_metallic_roughness.metallic_roughness_texture.texture) {
-      code =
-          owl_get_texture_(model,
-                           material->pbr_metallic_roughness
-                               .metallic_roughness_texture.texture->image->uri,
-                           &material_data->metallic_roughness_texture);
+      code = owl_model_get_texture_(
+          model,
+          material->pbr_metallic_roughness.metallic_roughness_texture.texture
+              ->image->uri,
+          &material_data->metallic_roughness_texture);
 
       if (OWL_SUCCESS != code)
         return code;
@@ -796,9 +799,9 @@ owl_model_process_materials_(struct owl_renderer *r, cgltf_data const *data,
     }
 
     if (material->normal_texture.texture) {
-      code =
-          owl_get_texture_(model, material->normal_texture.texture->image->uri,
-                           &material_data->metallic_roughness_texture);
+      code = owl_model_get_texture_(
+          model, material->normal_texture.texture->image->uri,
+          &material_data->metallic_roughness_texture);
 
       if (OWL_SUCCESS != code)
         return code;
@@ -809,9 +812,9 @@ owl_model_process_materials_(struct owl_renderer *r, cgltf_data const *data,
     }
 
     if (material->emissive_texture.texture) {
-      code = owl_get_texture_(model,
-                              material->emissive_texture.texture->image->uri,
-                              &material_data->emissive_texture);
+      code = owl_model_get_texture_(
+          model, material->emissive_texture.texture->image->uri,
+          &material_data->emissive_texture);
 
       if (OWL_SUCCESS != code)
         return code;
@@ -822,9 +825,9 @@ owl_model_process_materials_(struct owl_renderer *r, cgltf_data const *data,
     }
 
     if (material->occlusion_texture.texture) {
-      code = owl_get_texture_(model,
-                              material->occlusion_texture.texture->image->uri,
-                              &material_data->occlusion_texture);
+      code = owl_model_get_texture_(
+          model, material->occlusion_texture.texture->image->uri,
+          &material_data->occlusion_texture);
 
       if (OWL_SUCCESS != code)
         return code;
@@ -936,7 +939,7 @@ OWL_INTERNAL void owl_add_vertices_and_indices_count_(cgltf_node const *node,
   if (node->mesh) {
     for (i = 0; i < (int)node->mesh->primitives_count; ++i) {
       cgltf_primitive const *prim = &node->mesh->primitives[i];
-      cgltf_attribute const *attr = owl_find_attr_(prim, "POSITION");
+      cgltf_attribute const *attr = owl_gltf_find_attr_(prim, "POSITION");
 
       *indices_count += prim->indices->count;
       *vertices_count += attr->data->count;

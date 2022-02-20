@@ -48,10 +48,10 @@ OWL_INTERNAL void owl_calc_dims_(FT_Face face, int *width, int *height) {
 OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face, int x_offset,
                                               int atlas_width, int atlas_height,
                                               owl_byte *data) {
+  int bx; /* bitmap x position */
 
   OWL_UNUSED(atlas_height);
 
-  int bx; /* bitmap x position */
   for (bx = 0; bx < (int)face->glyph->bitmap.width; ++bx) {
     int by;                       /* bitmap y position, shared by data*/
     int const dx = x_offset + bx; /* atlas x position */
@@ -69,7 +69,7 @@ OWL_INTERNAL enum owl_code
 owl_font_init_atlas_(struct owl_renderer *r,
                      struct owl_dynamic_buffer_reference const *ref,
                      struct owl_font *font) {
-  enum owl_code code;
+  enum owl_code code = OWL_SUCCESS;
   struct owl_texture_init_info info;
 
   info.width = font->atlas_width;

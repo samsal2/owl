@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.17.3)
 
-
 project(owl)
 
 option(OWL_BUILD_EXAMPLES "Build examples" ON)
@@ -45,6 +44,7 @@ target_include_directories(owl PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories(owl PUBLIC ${Vulkan_INCLUDE_DIR})
 
 set(OWL_C_CLANG_BASE_COMPILE_FLAGS 
+    -std=c90
 		-Wall
 		-Wshadow
 		-Wextra
@@ -107,3 +107,4 @@ target_compile_options(owl PRIVATE
 
 target_link_options(owl PUBLIC
 	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Debug>>:${OWL_C_CLANG_DEBUG_LINK_FLAGS}>")
+

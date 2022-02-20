@@ -114,8 +114,8 @@ OWL_INTERNAL void owl_window_update_timer_(struct owl_window *w) {
   w->input.dt_time = w->input.time - w->input.past_time;
 }
 
-OWL_INTERNAL void owl_window_update_prev_cursor_(struct owl_window *w) {
-  OWL_COPY_V2(w->input.cursor_position, w->input.prev_cursor_position);
+OWL_INTERNAL void owl_window_update_previous_cursor_(struct owl_window *w) {
+  OWL_COPY_V2(w->input.cursor_position, w->input.previous_cursor_position);
 }
 
 OWL_GLOBAL int global_window_count = 0;
@@ -135,7 +135,7 @@ owl_window_create_handle_(struct owl_window_init_info const *info) {
   return glfwCreateWindow(info->width, info->height, info->title, NULL, NULL);
 }
 
-OWL_INTERNAL void owl_window_set_callbacks_(struct owl_window *w) {
+OWL_INTERNAL void owl_window_setup_callbacks_(struct owl_window *w) {
   /* FIXME: not exactly setting up callbacks */
   glfwSetWindowUserPointer(w->data, w);
   glfwGetWindowSize(w->data, &w->window_width, &w->window_height);
@@ -152,7 +152,7 @@ OWL_INTERNAL void owl_window_set_callbacks_(struct owl_window *w) {
 OWL_INTERNAL void owl_window_init_input_(struct owl_window *w) {
   int i;
 
-  OWL_ZERO_V2(w->input.prev_cursor_position);
+  OWL_ZERO_V2(w->input.previous_cursor_position);
   OWL_ZERO_V2(w->input.cursor_position);
 
   for (i = 0; i < OWL_MOUSE_BUTTON_COUNT; ++i)
@@ -172,7 +172,7 @@ enum owl_code owl_window_init(struct owl_window_init_info const *info,
 
   w->data = owl_window_create_handle_(info);
 
-  owl_window_set_callbacks_(w);
+  owl_window_setup_callbacks_(w);
   owl_window_init_input_(w);
   owl_window_init_timer_(w);
 
@@ -238,26 +238,7 @@ int owl_window_is_done(struct owl_window *w) {
 }
 
 void owl_window_poll(struct owl_window *w) {
-  owl_window_update_prev_cursor_(w);
+  owl_window_update_previous_cursor_(w);
   glfwPollEvents();
   owl_window_update_timer_(w);
-}
-
-enum owl_code owl_window_create(struct owl_window_init_info const *info,
-                                struct owl_input_state **input,
-                                struct owl_window **w) {
-  enum owl_code code = OWL_SUCCESS;
-
-  if (!(*w = OWL_MALLOC(sizeof(**w))))
-    return OWL_ERROR_BAD_ALLOC;
-
-  if (OWL_SUCCESS != (code = owl_window_init(info, input, *w)))
-    OWL_FREE(*w);
-
-  return code;
-}
-
-void owl_window_destroy(struct owl_window *w) {
-  owl_window_deinit(w);
-  OWL_FREE(w);
 }

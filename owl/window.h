@@ -152,7 +152,7 @@ struct owl_input_state {
   double past_time;
   double time;
   owl_v2 cursor_position;
-  owl_v2 prev_cursor_position;
+  owl_v2 previous_cursor_position;
   enum owl_button_state mouse[OWL_MOUSE_BUTTON_COUNT];
   enum owl_button_state keyboard[OWL_KEYBOARD_KEY_LAST];
 };

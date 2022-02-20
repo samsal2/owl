@@ -108,7 +108,7 @@ typedef enum cgltf_file_type
 {
 	cgltf_file_type_invalid,
 	cgltf_file_type_gltf,
-	cgltf_file_type_glb,
+	cgltf_file_type_glb
 } cgltf_file_type;
 
 typedef enum cgltf_result
@@ -122,7 +122,7 @@ typedef enum cgltf_result
 	cgltf_result_file_not_found,
 	cgltf_result_io_error,
 	cgltf_result_out_of_memory,
-	cgltf_result_legacy_gltf,
+	cgltf_result_legacy_gltf
 } cgltf_result;
 
 typedef struct cgltf_memory_options
@@ -151,7 +151,7 @@ typedef enum cgltf_buffer_view_type
 {
 	cgltf_buffer_view_type_invalid,
 	cgltf_buffer_view_type_indices,
-	cgltf_buffer_view_type_vertices,
+	cgltf_buffer_view_type_vertices
 } cgltf_buffer_view_type;
 
 typedef enum cgltf_attribute_type
@@ -163,7 +163,7 @@ typedef enum cgltf_attribute_type
 	cgltf_attribute_type_texcoord,
 	cgltf_attribute_type_color,
 	cgltf_attribute_type_joints,
-	cgltf_attribute_type_weights,
+	cgltf_attribute_type_weights
 } cgltf_attribute_type;
 
 typedef enum cgltf_component_type
@@ -174,7 +174,7 @@ typedef enum cgltf_component_type
 	cgltf_component_type_r_16, /* SHORT */
 	cgltf_component_type_r_16u, /* UNSIGNED_SHORT */
 	cgltf_component_type_r_32u, /* UNSIGNED_INT */
-	cgltf_component_type_r_32f, /* FLOAT */
+	cgltf_component_type_r_32f /* FLOAT */
 } cgltf_component_type;
 
 typedef enum cgltf_type
@@ -186,7 +186,7 @@ typedef enum cgltf_type
 	cgltf_type_vec4,
 	cgltf_type_mat2,
 	cgltf_type_mat3,
-	cgltf_type_mat4,
+	cgltf_type_mat4
 } cgltf_type;
 
 typedef enum cgltf_primitive_type
@@ -197,14 +197,14 @@ typedef enum cgltf_primitive_type
 	cgltf_primitive_type_line_strip,
 	cgltf_primitive_type_triangles,
 	cgltf_primitive_type_triangle_strip,
-	cgltf_primitive_type_triangle_fan,
+	cgltf_primitive_type_triangle_fan
 } cgltf_primitive_type;
 
 typedef enum cgltf_alpha_mode
 {
 	cgltf_alpha_mode_opaque,
 	cgltf_alpha_mode_mask,
-	cgltf_alpha_mode_blend,
+	cgltf_alpha_mode_blend
 } cgltf_alpha_mode;
 
 typedef enum cgltf_animation_path_type {
@@ -212,32 +212,32 @@ typedef enum cgltf_animation_path_type {
 	cgltf_animation_path_type_translation,
 	cgltf_animation_path_type_rotation,
 	cgltf_animation_path_type_scale,
-	cgltf_animation_path_type_weights,
+	cgltf_animation_path_type_weights
 } cgltf_animation_path_type;
 
 typedef enum cgltf_interpolation_type {
 	cgltf_interpolation_type_linear,
 	cgltf_interpolation_type_step,
-	cgltf_interpolation_type_cubic_spline,
+	cgltf_interpolation_type_cubic_spline
 } cgltf_interpolation_type;
 
 typedef enum cgltf_camera_type {
 	cgltf_camera_type_invalid,
 	cgltf_camera_type_perspective,
-	cgltf_camera_type_orthographic,
+	cgltf_camera_type_orthographic
 } cgltf_camera_type;
 
 typedef enum cgltf_light_type {
 	cgltf_light_type_invalid,
 	cgltf_light_type_directional,
 	cgltf_light_type_point,
-	cgltf_light_type_spot,
+	cgltf_light_type_spot
 } cgltf_light_type;
 
 typedef enum cgltf_data_free_method {
 	cgltf_data_free_method_none,
 	cgltf_data_free_method_file_release,
-	cgltf_data_free_method_memory_free,
+	cgltf_data_free_method_memory_free
 } cgltf_data_free_method;
 
 typedef struct cgltf_extras {
@@ -266,14 +266,14 @@ typedef enum cgltf_meshopt_compression_mode {
 	cgltf_meshopt_compression_mode_invalid,
 	cgltf_meshopt_compression_mode_attributes,
 	cgltf_meshopt_compression_mode_triangles,
-	cgltf_meshopt_compression_mode_indices,
+	cgltf_meshopt_compression_mode_indices
 } cgltf_meshopt_compression_mode;
 
 typedef enum cgltf_meshopt_compression_filter {
 	cgltf_meshopt_compression_filter_none,
 	cgltf_meshopt_compression_filter_octahedral,
 	cgltf_meshopt_compression_filter_quaternion,
-	cgltf_meshopt_compression_filter_exponential,
+	cgltf_meshopt_compression_filter_exponential
 } cgltf_meshopt_compression_filter;
 
 typedef struct cgltf_meshopt_compression
