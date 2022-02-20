@@ -118,20 +118,21 @@ OWL_INTERNAL void owl_window_update_previous_cursor_(struct owl_window *w) {
   OWL_COPY_V2(w->input.cursor_position, w->input.previous_cursor_position);
 }
 
-OWL_GLOBAL int global_window_count = 0;
+OWL_GLOBAL int g_glfw_user_count = 0;
 
 OWL_INTERNAL enum owl_code owl_window_ensure_glfw_(void) {
-  if (!global_window_count)
-    if (GLFW_FALSE == glfwInit())
-      return OWL_ERROR_BAD_INIT;
+  enum owl_code code = OWL_SUCCESS;
 
-  return OWL_SUCCESS;
+  if (!g_glfw_user_count++)
+    if (GLFW_FALSE == glfwInit()) 
+      code = OWL_ERROR_BAD_INIT;
+
+  return code;
 }
 
 OWL_INTERNAL void *
 owl_window_create_handle_(struct owl_window_init_info const *info) {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  ++global_window_count;
   return glfwCreateWindow(info->width, info->height, info->title, NULL, NULL);
 }
 
@@ -165,10 +166,14 @@ OWL_INTERNAL void owl_window_init_input_(struct owl_window *w) {
 enum owl_code owl_window_init(struct owl_window_init_info const *info,
                               struct owl_input_state **input,
                               struct owl_window *w) {
+  enum owl_code code = OWL_SUCCESS;
+
   owl_window_ensure_glfw_();
 
-  if (!input)
-    return OWL_ERROR_BAD_PTR;
+  if (!input) {
+    code = OWL_ERROR_BAD_PTR;
+    goto end;
+  }
 
   w->data = owl_window_create_handle_(info);
 
@@ -179,13 +184,15 @@ enum owl_code owl_window_init(struct owl_window_init_info const *info,
   *input = &w->input;
   w->title = info->title;
 
-  return OWL_SUCCESS;
+end:
+  return code;
 }
 
 void owl_window_deinit(struct owl_window *w) {
   glfwDestroyWindow(w->data);
 
-  if (!--global_window_count)
+
+  if (!--g_glfw_user_count)
     glfwTerminate();
 }
 
@@ -193,7 +200,7 @@ void owl_window_deinit(struct owl_window *w) {
 #define OWL_MAX_EXTENSIONS 64
 
 OWL_INTERNAL char const *const *
-owl_get_dbg_instance_extensions_(owl_u32 *count) {
+owl_get_debug_instance_extensions_(owl_u32 *count) {
   char const *const *extensions;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 
@@ -215,6 +222,7 @@ enum owl_code
 owl_window_fill_renderer_init_info(struct owl_window const *w,
                                    struct owl_renderer_init_info *info) {
   owl_u32 count;
+  enum owl_code code = OWL_SUCCESS;
 
   info->framebuffer_width = w->framebuffer_width;
   info->framebuffer_height = w->framebuffer_height;
@@ -222,7 +230,7 @@ owl_window_fill_renderer_init_info(struct owl_window const *w,
   info->create_surface = owl_vk_surface_init_callback_;
 
 #ifdef OWL_ENABLE_VALIDATION
-  info->instance_extensions = owl_get_dbg_instance_extensions_(&count);
+  info->instance_extensions = owl_get_debug_instance_extensions_(&count);
 #else  /* OWL_ENABLE_VALIDATION */
   info->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
 #endif /* OWL_ENABLE_VALIDATION */
@@ -230,7 +238,7 @@ owl_window_fill_renderer_init_info(struct owl_window const *w,
   info->instance_extension_count = (int)count;
   info->name = w->title;
 
-  return OWL_SUCCESS;
+  return code;
 }
 
 int owl_window_is_done(struct owl_window *w) {

@@ -3004,6 +3004,7 @@ owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
 enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
                                          enum owl_pipeline_type type) {
   enum owl_code code = OWL_SUCCESS;
+
   r->bound_pipeline = type;
 
   if (OWL_PIPELINE_TYPE_NONE == type)

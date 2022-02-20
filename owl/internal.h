@@ -16,20 +16,20 @@
 
 #include <stdio.h>
 
-#define OWL_MALLOC(s) owl_dbg_malloc_(s, __FILE__, __LINE__)
-void *owl_dbg_malloc_(size_t s, char const *f, int l);
+#define OWL_MALLOC(s) owl_debug_malloc_(s, __FILE__, __LINE__)
+void *owl_debug_malloc_(size_t s, char const *f, int l);
 
-#define OWL_CALLOC(c, s) owl_dbg_calloc_(c, s, __FILE__, __LINE__)
-void *owl_dbg_calloc_(size_t c, size_t s, char const *f, int l);
+#define OWL_CALLOC(c, s) owl_debug_calloc_(c, s, __FILE__, __LINE__)
+void *owl_debug_calloc_(size_t c, size_t s, char const *f, int l);
 
-#define OWL_REALLOC(p, s) owl_dbg_realloc_(p, s, __FILE__, __LINE__)
-void *owl_dbg_realloc_(void *p, size_t s, char const *f, int l);
+#define OWL_REALLOC(p, s) owl_debug_realloc_(p, s, __FILE__, __LINE__)
+void *owl_debug_realloc_(void *p, size_t s, char const *f, int l);
 
-#define OWL_FREE(p) owl_dbg_free_(p, __FILE__, __LINE__)
-void owl_dbg_free_(void *p, char const *f, int l);
+#define OWL_FREE(p) owl_debug_free_(p, __FILE__, __LINE__)
+void owl_debug_free_(void *p, char const *f, int l);
 
-#define OWL_DBG_LOG(...) owl_dbg_log_(__FILE__, __LINE__, __VA_ARGS__)
-void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
+#define OWL_DEBUG_LOG(...) owl_debug_log_(__FILE__, __LINE__, __VA_ARGS__)
+void owl_debug_log_(char const *f, int l, char const *fmt, ...);
 
 #else /* NDEBUG */
 
@@ -39,7 +39,7 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
 #define OWL_REALLOC(p, s) realloc(p, s)
 #define OWL_FREE(p) free(p)
 
-#define OWL_DBG_LOG(...)
+#define OWL_DEBUG_LOG(...)
 
 #endif /* NDEBUG */
 
@@ -57,7 +57,7 @@ void owl_dbg_log_(char const *f, int l, char const *fmt, ...);
   do {                                                                         \
     VkResult const result_ = e;                                                \
     if (VK_SUCCESS != result_)                                                 \
-      OWL_DBG_LOG("OWL_VK_CHECK(%i)\n", result_);                              \
+      OWL_DEBUG_LOG("OWL_VK_CHECK(%i)\n", result_);                              \
     OWL_ASSERT(VK_SUCCESS == result_);                                         \
   } while (0)
 
