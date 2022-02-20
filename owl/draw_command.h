@@ -1,5 +1,5 @@
-#ifndef OWL_DRAW_CMD_H_
-#define OWL_DRAW_CMD_H_
+#ifndef OWL_DRAW_COMMAND_H_
+#define OWL_DRAW_COMMAND_H_
 
 #include "types.h"
 
@@ -18,10 +18,10 @@ struct owl_draw_command_ubo {
 };
 
 enum owl_draw_command_type {
-  OWL_DRAW_CMD_TYPE_BASIC, /**/
-  OWL_DRAW_CMD_TYPE_QUAD,
-  OWL_DRAW_CMD_TYPE_SKYBOX,
-  OWL_DRAW_CMD_TYPE_TEXT
+  OWL_DRAW_COMMAND_TYPE_BASIC, /**/
+  OWL_DRAW_COMMAND_TYPE_QUAD,
+  OWL_DRAW_COMMAND_TYPE_SKYBOX,
+  OWL_DRAW_COMMAND_TYPE_TEXT
 };
 
 struct owl_draw_command_basic {

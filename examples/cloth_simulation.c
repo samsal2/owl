@@ -198,7 +198,7 @@ static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
 void init_cloth(struct cloth *cloth, struct owl_texture *texture) {
   init_cloth_(cloth);
 
-  cloth->group_.type = OWL_DRAW_CMD_TYPE_BASIC;
+  cloth->group_.type = OWL_DRAW_COMMAND_TYPE_BASIC;
   cloth->group_.storage.as_basic.texture = texture;
   cloth->group_.storage.as_basic.indices_count = IDXS_COUNT;
   cloth->group_.storage.as_basic.indices = cloth->indices_;
@@ -282,7 +282,7 @@ int main(void) {
 
   init_cloth(&cloth, &texture);
 
-  text.type = OWL_DRAW_CMD_TYPE_TEXT;
+  text.type = OWL_DRAW_COMMAND_TYPE_TEXT;
   text.storage.as_text.font = &font;
   OWL_SET_V3(0.0F, 0.0F, 0.0F, text.storage.as_text.color);
   OWL_SET_V2(-1.0F, -0.93F, text.storage.as_text.position);
@@ -310,7 +310,7 @@ int main(void) {
 
   owl_translate_m4(position, pvm->model);
 
-  skybox_draw_command.type = OWL_DRAW_CMD_TYPE_SKYBOX;
+  skybox_draw_command.type = OWL_DRAW_COMMAND_TYPE_SKYBOX;
   skybox_draw_command.storage.as_skybox.skybox = &skybox;
   skybox_draw_command.storage.as_skybox.ubo = *pvm;
 

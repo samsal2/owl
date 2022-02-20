@@ -388,16 +388,16 @@ end:
 enum owl_code owl_draw_command_submit(struct owl_renderer *r,
                                       struct owl_draw_command const *command) {
   switch (command->type) {
-  case OWL_DRAW_CMD_TYPE_BASIC:
+  case OWL_DRAW_COMMAND_TYPE_BASIC:
     return owl_draw_command_submit_basic_(r, &command->storage.as_basic);
 
-  case OWL_DRAW_CMD_TYPE_QUAD:
+  case OWL_DRAW_COMMAND_TYPE_QUAD:
     return owl_draw_command_submit_quad_(r, &command->storage.as_quad);
 
-  case OWL_DRAW_CMD_TYPE_SKYBOX:
+  case OWL_DRAW_COMMAND_TYPE_SKYBOX:
     return owl_draw_command_submit_skybox_(r, &command->storage.as_skybox);
 
-  case OWL_DRAW_CMD_TYPE_TEXT:
+  case OWL_DRAW_COMMAND_TYPE_TEXT:
     return owl_draw_command_submit_text_(r, &command->storage.as_text);
   }
 }
