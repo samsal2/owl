@@ -2854,8 +2854,9 @@ void owl_renderer_deinit(struct owl_renderer *r) {
   owl_renderer_deinit_instance_(r);
 }
 
-OWL_INTERNAL enum owl_code owl_renderer_reserve_dynamic_memory_(struct owl_renderer *r,
-                                                  VkDeviceSize size) {
+OWL_INTERNAL enum owl_code
+owl_renderer_reserve_dynamic_memory_(struct owl_renderer *r,
+                                     VkDeviceSize size) {
   enum owl_code code = OWL_SUCCESS;
   VkDeviceSize required = r->dynamic_offsets[r->active] + size;
 
@@ -3076,7 +3077,8 @@ owl_renderer_free_single_use_command_buffer(struct owl_renderer const *r,
 
 #define OWL_TIMEOUT (owl_u64) - 1
 
-OWL_INTERNAL enum owl_code owl_renderer_acquire_next_image_(struct owl_renderer *r) {
+OWL_INTERNAL enum owl_code
+owl_renderer_acquire_next_image_(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   VkResult const result =
@@ -3174,7 +3176,8 @@ OWL_INTERNAL void owl_renderer_submit_graphics_(struct owl_renderer *r) {
 #undef OWL_WAIT_STAGE
 }
 
-OWL_INTERNAL enum owl_code owl_renderer_present_swapchain_(struct owl_renderer *r) {
+OWL_INTERNAL enum owl_code
+owl_renderer_present_swapchain_(struct owl_renderer *r) {
   VkResult result;
   VkPresentInfoKHR present;
   enum owl_code code = OWL_SUCCESS;
@@ -3222,4 +3225,3 @@ enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
 end:
   return code;
 }
-
