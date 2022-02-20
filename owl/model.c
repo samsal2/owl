@@ -1224,7 +1224,7 @@ enum owl_code owl_model_submit(struct owl_renderer *r,
     vkCmdBindDescriptorSets(r->frame_command_buffers[r->active],
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->pipeline_layouts[r->bound_pipeline], 0,
-                            OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
+                            OWL_ARRAY_SIZE(sets), sets, 1, &ref.u32_offset);
   }
 
   for (i = 0; i < model->roots_count; ++i)

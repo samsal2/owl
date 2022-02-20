@@ -4,8 +4,8 @@
 #include "types.h"
 
 /* math */
-#define OWL_DEG_TO_RAD(angle) ((angle)*0.01745329252F)
-#define OWL_RAD_TO_DEG(angle) ((angle)*57.2957795131F)
+#define OWL_DEG_TO_RAD(a) ((a)*0.01745329252F)
+#define OWL_RAD_TO_DEG(a) ((a)*57.2957795131F)
 
 #define OWL_V2_ZERO(v)                                                         \
   do {                                                                         \
