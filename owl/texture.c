@@ -498,52 +498,6 @@ void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *tex) {
   vkDestroyImage(r->device, tex->image, NULL);
 }
 
-enum owl_code
-owl_texture_create_from_data(struct owl_renderer *r,
-                             struct owl_texture_init_info const *info,
-                             owl_byte const *data, struct owl_texture **tex) {
-  enum owl_code code = OWL_SUCCESS;
-
-  if (!(*tex = OWL_MALLOC(sizeof(**tex)))) {
-    code = OWL_ERROR_BAD_ALLOC;
-    goto end;
-  }
-
-  code = owl_texture_init_from_data(r, info, data, *tex);
-
-  if (OWL_SUCCESS != code)
-    OWL_FREE(*tex);
-
-end:
-  return code;
-}
-
-enum owl_code owl_texture_create_from_file(struct owl_renderer *r,
-                                           struct owl_texture_init_info *info,
-                                           char const *path,
-                                           struct owl_texture **tex) {
-  enum owl_code code = OWL_SUCCESS;
-
-  if (!(*tex = OWL_MALLOC(sizeof(**tex)))) {
-    code = OWL_ERROR_BAD_ALLOC;
-    goto end;
-  }
-
-  code = owl_texture_init_from_file(r, info, path, *tex);
-
-  if (OWL_SUCCESS != code)
-    OWL_FREE(*tex);
-
-end:
-  return code;
-}
-
-void owl_texture_destroy(struct owl_renderer const *r,
-                         struct owl_texture *tex) {
-  owl_texture_deinit(r, tex);
-  OWL_FREE(tex);
-}
-
 owl_byte *owl_texture_data_from_file(char const *path,
                                      struct owl_texture_init_info *info) {
 

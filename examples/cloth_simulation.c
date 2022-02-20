@@ -226,17 +226,18 @@ char const *fps_string(double time) {
   } while (0)
 
 static struct owl_window_init_info window_info;
-static struct owl_window *window;
+static struct owl_window window;
 static struct owl_input_state *input;
-static struct owl_renderer *renderer;
+static struct owl_renderer_init_info renderer_info;
+static struct owl_renderer renderer;
 static struct owl_texture_init_info texture_info;
-static struct owl_texture *texture;
+static struct owl_texture texture;
 static struct owl_draw_cmd group;
 static struct cloth cloth;
-static struct owl_font *font;
+static struct owl_font font;
 static struct owl_draw_cmd text;
 static struct owl_skybox_init_info skybox_info;
-static struct owl_skybox *skybox;
+static struct owl_skybox skybox;
 static struct owl_draw_cmd skybox_draw_cmd;
 
 #define UNSELECTED (owl_u32) - 1
@@ -255,9 +256,11 @@ int main(void) {
   window_info.height = 600;
   window_info.width = 600;
   window_info.title = "cloth-sim";
-  TEST(owl_window_create(&window_info, &input, &window));
+  TEST(owl_window_init(&window_info, &input, &window));
 
-  TEST(owl_renderer_create(window, &renderer));
+  owl_window_fill_renderer_init_info(&window, &renderer_info);
+
+  TEST(owl_renderer_init(&renderer_info, &renderer));
 
   texture_info.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
   texture_info.min_filter = OWL_SAMPLER_FILTER_LINEAR;
@@ -265,9 +268,9 @@ int main(void) {
   texture_info.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
   texture_info.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
   texture_info.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  TEST(owl_texture_create_from_file(renderer, &texture_info, TPATH, &texture));
+  TEST(owl_texture_init_from_file(&renderer, &texture_info, TPATH, &texture));
 
-  TEST(owl_font_create(renderer, 64, FONTPATH, &font));
+  TEST(owl_font_init(&renderer, 64, FONTPATH, &font));
 
   skybox_info.right = "../../assets/skybox/right.jpg";
   skybox_info.left = "../../assets/skybox/left.jpg";
@@ -275,12 +278,12 @@ int main(void) {
   skybox_info.bottom = "../../assets/skybox/bottom.jpg";
   skybox_info.front = "../../assets/skybox/front.jpg";
   skybox_info.back = "../../assets/skybox/back.jpg";
-  TEST(owl_skybox_create(renderer, &skybox_info, &skybox));
+  TEST(owl_skybox_init(&renderer, &skybox_info, &skybox));
 
-  init_cloth(&cloth, texture);
+  init_cloth(&cloth, &texture);
 
   text.type = OWL_DRAW_CMD_TYPE_TEXT;
-  text.storage.as_text.font = font;
+  text.storage.as_text.font = &font;
   OWL_SET_V3(0.0F, 0.0F, 0.0F, text.storage.as_text.color);
   OWL_SET_V2(-1.0F, -0.93F, text.storage.as_text.position);
 
@@ -308,10 +311,10 @@ int main(void) {
   owl_translate_m4(position, pvm->model);
 
   skybox_draw_cmd.type = OWL_DRAW_CMD_TYPE_SKYBOX;
-  skybox_draw_cmd.storage.as_skybox.skybox = skybox;
+  skybox_draw_cmd.storage.as_skybox.skybox = &skybox;
   skybox_draw_cmd.storage.as_skybox.ubo = *pvm;
 
-  while (!owl_window_is_done(window)) {
+  while (!owl_window_is_done(&window)) {
 #if 1
 
     if (UNSELECTED == selected &&
@@ -329,42 +332,44 @@ int main(void) {
 
     update_cloth(1.0F / 60.0F, &cloth);
 
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_frame_begin(renderer)) {
-      owl_renderer_recreate_swapchain(window, renderer);
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_frame_begin(&renderer)) {
+      owl_window_fill_renderer_init_info(&window, &renderer_info);
+      owl_renderer_reinit_swapchain(&renderer_info, &renderer);
       continue;
     }
 
-    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_SKYBOX);
-    owl_draw_cmd_submit(renderer, &skybox_draw_cmd);
+    owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_SKYBOX);
+    owl_draw_cmd_submit(&renderer, &skybox_draw_cmd);
 
 #if 1
-    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
+    owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_MAIN);
 #else
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_WIRES);
 #endif
 
 #if 1
-    owl_draw_cmd_submit(renderer, &cloth.group_);
+    owl_draw_cmd_submit(&renderer, &cloth.group_);
 #endif
 
 #if 1
-    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
+    owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_FONT);
 #endif
 
     text.storage.as_text.text = fps_string(input->dt_time);
-    owl_draw_cmd_submit(renderer, &text);
+    owl_draw_cmd_submit(&renderer, &text);
 
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_frame_end(renderer)) {
-      owl_renderer_recreate_swapchain(window, renderer);
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_frame_end(&renderer)) {
+      owl_window_fill_renderer_init_info(&window, &renderer_info);
+      owl_renderer_reinit_swapchain(&renderer_info, &renderer);
       continue;
     }
 
-    owl_window_poll(window);
+    owl_window_poll(&window);
   }
 
-  owl_skybox_destroy(renderer, skybox);
-  owl_font_destroy(renderer, font);
-  owl_texture_destroy(renderer, texture);
-  owl_renderer_destroy(renderer);
-  owl_window_destroy(window);
+  owl_skybox_deinit(&renderer, &skybox);
+  owl_font_deinit(&renderer, &font);
+  owl_texture_deinit(&renderer, &texture);
+  owl_renderer_deinit(&renderer);
+  owl_window_deinit(&window);
 }

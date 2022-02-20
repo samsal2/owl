@@ -43,10 +43,4 @@ enum owl_code owl_skybox_init(struct owl_renderer *r,
 
 void owl_skybox_deinit(struct owl_renderer *r, struct owl_skybox *box);
 
-enum owl_code owl_skybox_create(struct owl_renderer *r,
-                                struct owl_skybox_init_info const *info,
-                                struct owl_skybox **box);
-
-void owl_skybox_destroy(struct owl_renderer *r, struct owl_skybox *box);
-
 #endif

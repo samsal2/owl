@@ -452,26 +452,3 @@ void owl_skybox_deinit(struct owl_renderer *r, struct owl_skybox *box) {
   vkFreeMemory(r->device, box->memory, NULL);
   vkDestroyImage(r->device, box->image, NULL);
 }
-enum owl_code owl_skybox_create(struct owl_renderer *r,
-                                struct owl_skybox_init_info const *info,
-                                struct owl_skybox **box) {
-  enum owl_code code = OWL_SUCCESS;
-
-  if (!(*box = OWL_MALLOC(sizeof(**box)))) {
-    code = OWL_ERROR_BAD_ALLOC;
-    goto end;
-  }
-
-  code = owl_skybox_init(r, info, *box);
-
-  if (OWL_SUCCESS != code)
-    OWL_FREE(*box);
-
-end:
-  return code;
-}
-
-void owl_skybox_destroy(struct owl_renderer *r, struct owl_skybox *box) {
-  owl_skybox_deinit(r, box);
-  OWL_FREE(box);
-}

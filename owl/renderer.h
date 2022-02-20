@@ -244,19 +244,11 @@ struct owl_renderer {
 enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
                                 struct owl_renderer *r);
 
-enum owl_code owl_renderer_create(struct owl_window *w,
-                                  struct owl_renderer **r);
-
 enum owl_code
 owl_renderer_reinit_swapchain(struct owl_renderer_init_info const *info,
                               struct owl_renderer *r);
 
-enum owl_code owl_renderer_recreate_swapchain(struct owl_window *w,
-                                              struct owl_renderer *r);
-
 void owl_renderer_deinit(struct owl_renderer *r);
-
-void owl_renderer_destroy(struct owl_renderer *r);
 
 enum owl_code owl_renderer_reserve_dynamic_memory(struct owl_renderer *r,
                                                   VkDeviceSize size);

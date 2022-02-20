@@ -2955,39 +2955,6 @@ void owl_renderer_clear_dynamic_offset(struct owl_renderer *r) {
   r->dynamic_offsets[r->active] = 0;
 }
 
-enum owl_code owl_renderer_create(struct owl_window *w,
-                                  struct owl_renderer **r) {
-  struct owl_renderer_init_info info;
-  enum owl_code code = OWL_SUCCESS;
-
-  if (!(*r = OWL_MALLOC(sizeof(**r)))) {
-    code = OWL_ERROR_BAD_ALLOC;
-    goto end;
-  }
-
-  owl_window_fill_renderer_init_info(w, &info);
-
-  if (OWL_SUCCESS != (code = owl_renderer_init(&info, *r))) {
-    OWL_FREE(*r);
-    goto end;
-  }
-
-end:
-  return code;
-}
-
-enum owl_code owl_renderer_recreate_swapchain(struct owl_window *w,
-                                              struct owl_renderer *r) {
-  struct owl_renderer_init_info info;
-  owl_window_fill_renderer_init_info(w, &info);
-  return owl_renderer_reinit_swapchain(&info, r);
-}
-
-void owl_renderer_destroy(struct owl_renderer *r) {
-  owl_renderer_deinit(r);
-  OWL_FREE(r);
-}
-
 OWL_INTERNAL VkDeviceSize
 owl_renderer_next_dynamic_offset_(struct owl_renderer *r, VkDeviceSize size) {
   return OWL_ALIGNU2(r->dynamic_offsets[r->active] + size,

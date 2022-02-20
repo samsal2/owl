@@ -87,8 +87,8 @@ owl_font_init_atlas_(struct owl_renderer *r,
   return code;
 }
 
-enum owl_code owl_font_create(struct owl_renderer *r, int size,
-                              char const *path, struct owl_font **font) {
+enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
+                            struct owl_font *font) {
   int i;
   int x;
   owl_byte *data;
@@ -99,16 +99,11 @@ enum owl_code owl_font_create(struct owl_renderer *r, int size,
 
   owl_ensure_ft_library_();
 
-  if (!(*font = OWL_MALLOC(sizeof(**font)))) {
-    code = OWL_ERROR_BAD_ALLOC;
-    goto end;
-  }
-
-  (*font)->size = size;
+  font->size = size;
 
   if (FT_Err_Ok != (FT_New_Face(g_ft_library, path, 0, &face))) {
     code = OWL_ERROR_BAD_INIT;
-    goto end_err_free_font;
+    goto end;
   }
 
   if (FT_Err_Ok != FT_Set_Char_Size(face, 0, size << 6, 96, 96)) {
@@ -116,9 +111,9 @@ enum owl_code owl_font_create(struct owl_renderer *r, int size,
     goto end_err_done_face;
   }
 
-  owl_calc_dims_(face, &(*font)->atlas_width, &(*font)->atlas_height);
+  owl_calc_dims_(face, &font->atlas_width, &font->atlas_height);
 
-  alloc_size = (VkDeviceSize)((*font)->atlas_width * (*font)->atlas_height);
+  alloc_size = (VkDeviceSize)(font->atlas_width * font->atlas_height);
   data = owl_renderer_dynamic_buffer_alloc(r, alloc_size, &ref);
 
   if (!data) {
@@ -134,24 +129,24 @@ enum owl_code owl_font_create(struct owl_renderer *r, int size,
       goto end_err_done_face;
     }
 
-    owl_face_glyph_bitmap_copy_(face, x, (*font)->atlas_width,
-                                (*font)->atlas_height, data);
+    owl_face_glyph_bitmap_copy_(face, x, font->atlas_width, font->atlas_height,
+                                data);
 
     /* set the current glyph data */
-    (*font)->glyphs[i].offset = x;
-    (*font)->glyphs[i].advance[0] = (int)face->glyph->advance.x >> 6;
-    (*font)->glyphs[i].advance[1] = (int)face->glyph->advance.y >> 6;
+    font->glyphs[i].offset = x;
+    font->glyphs[i].advance[0] = (int)face->glyph->advance.x >> 6;
+    font->glyphs[i].advance[1] = (int)face->glyph->advance.y >> 6;
 
-    (*font)->glyphs[i].size[0] = (int)face->glyph->bitmap.width;
-    (*font)->glyphs[i].size[1] = (int)face->glyph->bitmap.rows;
+    font->glyphs[i].size[0] = (int)face->glyph->bitmap.width;
+    font->glyphs[i].size[1] = (int)face->glyph->bitmap.rows;
 
-    (*font)->glyphs[i].bearing[0] = face->glyph->bitmap_left;
-    (*font)->glyphs[i].bearing[1] = face->glyph->bitmap_top;
+    font->glyphs[i].bearing[0] = face->glyph->bitmap_left;
+    font->glyphs[i].bearing[1] = face->glyph->bitmap_top;
 
     x += (int)face->glyph->bitmap.width;
   }
 
-  code = owl_font_init_atlas_(r, &ref, *font);
+  code = owl_font_init_atlas_(r, &ref, font);
 
   if (OWL_SUCCESS != code)
     goto end_err_done_face;
@@ -163,15 +158,11 @@ enum owl_code owl_font_create(struct owl_renderer *r, int size,
 end_err_done_face:
   FT_Done_Face(face);
 
-end_err_free_font:
-  OWL_FREE(*font);
-
 end:
   return code;
 }
 
-void owl_font_destroy(struct owl_renderer *r, struct owl_font *font) {
+void owl_font_deinit(struct owl_renderer *r, struct owl_font *font) {
   owl_texture_deinit(r, &font->atlas);
-  OWL_FREE(font);
   owl_decrement_ft_library_count_();
 }

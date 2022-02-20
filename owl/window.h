@@ -186,12 +186,6 @@ enum owl_code
 owl_window_fill_renderer_init_info(struct owl_window const *w,
                                    struct owl_renderer_init_info *info);
 
-enum owl_code owl_window_create(struct owl_window_init_info const *info,
-                                struct owl_input_state **input,
-                                struct owl_window **w);
-
-void owl_window_destroy(struct owl_window *w);
-
 void owl_window_poll(struct owl_window *w);
 
 int owl_window_is_done(struct owl_window *w);
