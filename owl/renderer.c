@@ -154,7 +154,6 @@ end:
 }
 
 OWL_INTERNAL int owl_renderer_query_families_(struct owl_renderer const *r,
-                                              VkPhysicalDevice device,
                                               owl_u32 *graphics_family_index,
                                               owl_u32 *present_family_index) {
 #define OWL_QUEUE_UNSELECTED (owl_u32) - 1
@@ -163,12 +162,15 @@ OWL_INTERNAL int owl_renderer_query_families_(struct owl_renderer const *r,
   owl_u32 i, count;
   VkQueueFamilyProperties *properties;
 
-  vkGetPhysicalDeviceQueueFamilyProperties(device, &count, NULL);
+  vkGetPhysicalDeviceQueueFamilyProperties(r->physical_device, &count, NULL);
 
-  if (!(properties = OWL_MALLOC(count * sizeof(*properties))))
-    return 0;
+  if (!(properties = OWL_MALLOC(count * sizeof(*properties)))) {
+    found = 0;
+    goto end;
+  }
 
-  vkGetPhysicalDeviceQueueFamilyProperties(device, &count, properties);
+  vkGetPhysicalDeviceQueueFamilyProperties(r->physical_device, &count,
+                                           properties);
 
   *graphics_family_index = OWL_QUEUE_UNSELECTED;
   *present_family_index = OWL_QUEUE_UNSELECTED;
@@ -182,8 +184,8 @@ OWL_INTERNAL int owl_renderer_query_families_(struct owl_renderer const *r,
     if (VK_QUEUE_GRAPHICS_BIT & properties[i].queueFlags)
       *graphics_family_index = i;
 
-    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(device, i, r->surface,
-                                                      &has_surface));
+    OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(
+        r->physical_device, i, r->surface, &has_surface));
 
     if (has_surface)
       *present_family_index = i;
@@ -203,6 +205,7 @@ OWL_INTERNAL int owl_renderer_query_families_(struct owl_renderer const *r,
 end_free_properties:
   OWL_FREE(properties);
 
+end:
   return found;
 }
 
@@ -238,30 +241,31 @@ owl_renderer_select_physical_device_(struct owl_renderer *r) {
     owl_u32 extension_count;
     VkExtensionProperties *extensions;
 
+    r->physical_device = r->device_options[i];
+
     OWL_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
-        r->device_options[i], r->surface, &has_formats, NULL));
+        r->physical_device, r->surface, &has_formats, NULL));
 
     if (!has_formats)
       continue;
 
     OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-        r->device_options[i], r->surface, &has_modes, NULL));
+        r->physical_device, r->surface, &has_modes, NULL));
 
     if (!has_modes)
       continue;
 
-    if (!owl_renderer_query_families_(r, r->device_options[i],
-                                      &r->graphics_family_index,
+    if (!owl_renderer_query_families_(r, &r->graphics_family_index,
                                       &r->present_family_index))
       continue;
 
-    vkGetPhysicalDeviceFeatures(r->device_options[i], &r->device_features);
+    vkGetPhysicalDeviceFeatures(r->physical_device, &r->device_features);
 
     if (!r->device_features.samplerAnisotropy)
       continue;
 
-    OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(
-        r->device_options[i], NULL, &extension_count, NULL));
+    OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(r->physical_device, NULL,
+                                                      &extension_count, NULL));
 
     if (!(extensions = OWL_MALLOC(extension_count * sizeof(*extensions)))) {
       code = OWL_ERROR_BAD_ALLOC;
@@ -269,7 +273,7 @@ owl_renderer_select_physical_device_(struct owl_renderer *r) {
     }
 
     OWL_VK_CHECK(vkEnumerateDeviceExtensionProperties(
-        r->device_options[i], NULL, &extension_count, extensions));
+        r->physical_device, NULL, &extension_count, extensions));
 
     if (!owl_validate_device_extensions_(extension_count, extensions)) {
       OWL_FREE(extensions);
@@ -277,8 +281,6 @@ owl_renderer_select_physical_device_(struct owl_renderer *r) {
     }
 
     OWL_FREE(extensions);
-
-    r->physical_device = r->device_options[i];
 
     vkGetPhysicalDeviceProperties(r->physical_device, &r->device_properties);
 
