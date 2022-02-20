@@ -188,7 +188,7 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
       v->normal[1] = data[1];
       v->normal[2] = data[2];
     } else {
-      OWL_ZERO_V3(v->normal);
+      OWL_V3_ZERO(v->normal);
     }
 
     if (uv0_data) {
@@ -196,7 +196,7 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
       v->uv0[0] = data[0];
       v->uv0[1] = data[1];
     } else {
-      OWL_ZERO_V2(v->uv0);
+      OWL_V2_ZERO(v->uv0);
     }
 
     if (uv1_data) {
@@ -204,7 +204,7 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
       v->uv1[0] = data[0];
       v->uv1[1] = data[1];
     } else {
-      OWL_ZERO_V2(v->uv1);
+      OWL_V2_ZERO(v->uv1);
     }
 
     if (joint_data && weight_data) {
@@ -242,8 +242,8 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
         v->weight0[3] = data[4];
       }
     } else {
-      OWL_ZERO_V4(v->joint0);
-      OWL_ZERO_V4(v->weight0);
+      OWL_V4_ZERO(v->joint0);
+      OWL_V4_ZERO(v->weight0);
     }
   }
 
@@ -843,13 +843,13 @@ owl_model_process_materials_(struct owl_renderer *r, cgltf_data const *data,
     material_data->metallic_factor =
         material->pbr_metallic_roughness.metallic_factor;
 
-    OWL_COPY_V4(material->pbr_metallic_roughness.base_color_factor,
+    OWL_V4_COPY(material->pbr_metallic_roughness.base_color_factor,
                 material_data->base_color_factor);
 
     material_data->alpha_cutoff = material->alpha_cutoff;
 
-    OWL_SET_V4(0.0F, 0.0F, 0.0F, 1.0F, material_data->emissive_factor);
-    OWL_COPY_V3(material->emissive_factor, material_data->emissive_factor);
+    OWL_V4_SET(0.0F, 0.0F, 0.0F, 1.0F, material_data->emissive_factor);
+    OWL_V3_COPY(material->emissive_factor, material_data->emissive_factor);
 
     material_data->name = material->name;
 

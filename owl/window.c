@@ -115,7 +115,7 @@ OWL_INTERNAL void owl_window_update_timer_(struct owl_window *w) {
 }
 
 OWL_INTERNAL void owl_window_update_previous_cursor_(struct owl_window *w) {
-  OWL_COPY_V2(w->input.cursor_position, w->input.previous_cursor_position);
+  OWL_V2_COPY(w->input.cursor_position, w->input.previous_cursor_position);
 }
 
 OWL_GLOBAL int g_glfw_user_count = 0;
@@ -153,8 +153,8 @@ OWL_INTERNAL void owl_window_setup_callbacks_(struct owl_window *w) {
 OWL_INTERNAL void owl_window_init_input_(struct owl_window *w) {
   int i;
 
-  OWL_ZERO_V2(w->input.previous_cursor_position);
-  OWL_ZERO_V2(w->input.cursor_position);
+  OWL_V2_ZERO(w->input.previous_cursor_position);
+  OWL_V2_ZERO(w->input.cursor_position);
 
   for (i = 0; i < OWL_MOUSE_BUTTON_COUNT; ++i)
     w->input.mouse[i] = OWL_BUTTON_STATE_NONE;

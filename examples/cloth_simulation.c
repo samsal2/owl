@@ -46,14 +46,14 @@ static void init_cloth_(struct cloth *cloth) {
 
       p->movable = 1;
 
-      OWL_SET_V3(w, h, 0.0F, p->position);
-      OWL_SET_V3(0.0F, 0.0F, 0.0F, p->velocity);
-      OWL_SET_V3(0.0F, GRAVITY, 0.8F, p->acceleration);
-      OWL_SET_V3(w, h, 0.0F, p->previous_position);
+      OWL_V3_SET(w, h, 0.0F, p->position);
+      OWL_V3_SET(0.0F, 0.0F, 0.0F, p->velocity);
+      OWL_V3_SET(0.0F, GRAVITY, 0.8F, p->acceleration);
+      OWL_V3_SET(w, h, 0.0F, p->previous_position);
 
-      OWL_SET_V3(w, h, 0.0F, cloth->vertices_[k].position);
-      OWL_SET_V3(1.0F, 1.0F, 1.0F, cloth->vertices_[k].color);
-      OWL_SET_V2((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F, cloth->vertices_[k].uv);
+      OWL_V3_SET(w, h, 0.0F, cloth->vertices_[k].position);
+      OWL_V3_SET(1.0F, 1.0F, 1.0F, cloth->vertices_[k].color);
+      OWL_V2_SET((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F, cloth->vertices_[k].uv);
     }
   }
 
@@ -65,7 +65,8 @@ static void init_cloth_(struct cloth *cloth) {
       if (j) {
         owl_u32 link = CLOTH_COORD(i, j - 1);
         p->links[0] = &cloth->particles[link];
-        p->rest_distances[0] = owl_dist_v3(p->position, p->links[0]->position);
+        p->rest_distances[0] =
+            owl_v3_distance(p->position, p->links[0]->position);
       } else {
         p->links[0] = NULL;
         p->rest_distances[0] = 0.0F;
@@ -74,7 +75,8 @@ static void init_cloth_(struct cloth *cloth) {
       if (i) {
         owl_u32 link = CLOTH_COORD(i - 1, j);
         p->links[1] = &cloth->particles[link];
-        p->rest_distances[1] = owl_dist_v3(p->position, p->links[1]->position);
+        p->rest_distances[1] =
+            owl_v3_distance(p->position, p->links[1]->position);
       } else {
         p->links[1] = NULL;
         p->rest_distances[1] = 0.0F;
@@ -83,7 +85,8 @@ static void init_cloth_(struct cloth *cloth) {
       if (j < CLOTH_H - 1) {
         owl_u32 link = CLOTH_COORD(i, j + 1);
         p->links[2] = &cloth->particles[link];
-        p->rest_distances[2] = owl_dist_v3(p->position, p->links[2]->position);
+        p->rest_distances[2] =
+            owl_v3_distance(p->position, p->links[2]->position);
       } else {
         p->links[2] = NULL;
         p->rest_distances[2] = 0.0F;
@@ -92,7 +95,8 @@ static void init_cloth_(struct cloth *cloth) {
       if (i < CLOTH_W - 1) {
         owl_u32 link = CLOTH_COORD(i + 1, j);
         p->links[3] = &cloth->particles[link];
-        p->rest_distances[3] = owl_dist_v3(p->position, p->links[3]->position);
+        p->rest_distances[3] =
+            owl_v3_distance(p->position, p->links[3]->position);
       } else {
         p->links[3] = NULL;
         p->rest_distances[3] = 0.0F;
@@ -130,13 +134,13 @@ static void update_cloth(float dt, struct cloth *cloth) {
 
     p->acceleration[1] += GRAVITY;
 
-    OWL_SUB_V3(p->position, p->previous_position, p->velocity);
-    OWL_SCALE_V3(p->velocity, 1.0F - DAMPING, p->velocity);
-    OWL_SCALE_V3(p->acceleration, dt, tmp);
-    OWL_ADD_V3(tmp, p->velocity, tmp);
-    OWL_COPY_V3(p->position, p->previous_position);
-    OWL_ADD_V3(p->position, tmp, p->position);
-    OWL_ZERO_V3(p->acceleration);
+    OWL_V3_SUB(p->position, p->previous_position, p->velocity);
+    OWL_V3_SCALE(p->velocity, 1.0F - DAMPING, p->velocity);
+    OWL_V3_SCALE(p->acceleration, dt, tmp);
+    OWL_V3_ADD(tmp, p->velocity, tmp);
+    OWL_V3_COPY(p->position, p->previous_position);
+    OWL_V3_ADD(p->position, tmp, p->position);
+    OWL_V3_ZERO(p->acceleration);
 
     /* constraint */
     for (j = 0; j < STEPS; ++j) {
@@ -150,23 +154,23 @@ static void update_cloth(float dt, struct cloth *cloth) {
         if (!link)
           continue;
 
-        OWL_SUB_V3(link->position, p->position, delta);
-        factor = 1 - (p->rest_distances[k] / owl_mag_v3(delta));
-        OWL_SCALE_V3(delta, factor, correction);
-        OWL_SCALE_V3(correction, 0.5F, correction);
-        OWL_ADD_V3(p->position, correction, p->position);
+        OWL_V3_SUB(link->position, p->position, delta);
+        factor = 1 - (p->rest_distances[k] / owl_v3_mag(delta));
+        OWL_V3_SCALE(delta, factor, correction);
+        OWL_V3_SCALE(correction, 0.5F, correction);
+        OWL_V3_ADD(p->position, correction, p->position);
 
         if (!link->movable)
           continue;
 
-        OWL_NEGATE_V3(correction, correction);
-        OWL_ADD_V3(link->position, correction, link->position);
+        OWL_V3_NEGATE(correction, correction);
+        OWL_V3_ADD(link->position, correction, link->position);
       }
     }
   }
 
   for (i = 0; i < PARTICLE_COUNT; ++i)
-    OWL_COPY_V3(cloth->particles[i].position, cloth->vertices_[i].position);
+    OWL_V3_COPY(cloth->particles[i].position, cloth->vertices_[i].position);
 }
 
 static void change_particle_position(owl_u32 id, owl_v2 const position,
@@ -174,17 +178,17 @@ static void change_particle_position(owl_u32 id, owl_v2 const position,
   struct particle *p = &cloth->particles[id];
 
   if (p->movable)
-    OWL_COPY_V2(position, p->position);
+    OWL_V2_COPY(position, p->position);
 }
 
 static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
   owl_u32 i;
   owl_u32 current = 0;
-  float min_dist = owl_dist_v2(pos, cloth->particles[current].position);
+  float min_dist = owl_v2_distance(pos, cloth->particles[current].position);
 
   for (i = 1; i < PARTICLE_COUNT; ++i) {
     struct particle *p = &cloth->particles[i];
-    float const new_dist = owl_dist_v2(pos, p->position);
+    float const new_dist = owl_v2_distance(pos, p->position);
 
     if (new_dist < min_dist) {
       current = i;
@@ -284,31 +288,31 @@ int main(void) {
 
   text.type = OWL_DRAW_COMMAND_TYPE_TEXT;
   text.storage.as_text.font = &font;
-  OWL_SET_V3(0.0F, 0.0F, 0.0F, text.storage.as_text.color);
-  OWL_SET_V2(-1.0F, -0.93F, text.storage.as_text.position);
+  OWL_V3_SET(0.0F, 0.0F, 0.0F, text.storage.as_text.color);
+  OWL_V2_SET(-1.0F, -0.93F, text.storage.as_text.position);
 
   pvm = get_cloth_pvm(&cloth);
 
-  OWL_IDENTITY_M4(pvm->model);
-  OWL_IDENTITY_M4(pvm->view);
-  OWL_IDENTITY_M4(pvm->projection);
+  OWL_M4_IDENTITY(pvm->model);
+  OWL_M4_IDENTITY(pvm->view);
+  OWL_M4_IDENTITY(pvm->projection);
 
 #if 0
-  owl_ortho_m4(-2.0F, 2.0F, -2.0F, 2.0F, 0.1F, 10.0F, pvm->projection);
+  owl_m4_ortho(-2.0F, 2.0F, -2.0F, 2.0F, 0.1F, 10.0F, pvm->projection);
 #else
-  owl_perspective_m4(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F,
+  owl_m4_perspective(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F,
                      pvm->projection);
 #endif
 
-  OWL_SET_V3(0.0F, 0.0F, 2.0F, eye);
-  OWL_SET_V3(0.0F, 0.0F, 0.0F, center);
-  OWL_SET_V3(0.0F, 1.0F, 0.0F, up);
+  OWL_V3_SET(0.0F, 0.0F, 2.0F, eye);
+  OWL_V3_SET(0.0F, 0.0F, 0.0F, center);
+  OWL_V3_SET(0.0F, 1.0F, 0.0F, up);
 
-  owl_look_at_m4(eye, center, up, pvm->view);
+  owl_m4_look_at(eye, center, up, pvm->view);
 
-  OWL_SET_V3(0.0F, 0.0F, -2.0F, position);
+  OWL_V3_SET(0.0F, 0.0F, -2.0F, position);
 
-  owl_translate_m4(position, pvm->model);
+  owl_m4_translate(position, pvm->model);
 
   skybox_draw_command.type = OWL_DRAW_COMMAND_TYPE_SKYBOX;
   skybox_draw_command.storage.as_skybox.skybox = &skybox;

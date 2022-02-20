@@ -234,16 +234,16 @@ owl_draw_command_submit_skybox_(struct owl_renderer *r,
     data = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
 
 #if 1
-    OWL_COPY_M4(skybox->ubo.projection, ubo.projection);
+    OWL_M4_COPY(skybox->ubo.projection, ubo.projection);
 #else
-    OWL_IDENTITY_M4(ubo.projection);
+    OWL_M4_IDENTITY(ubo.projection);
 #endif
 
 #if 1
-    OWL_IDENTITY_M4(ubo.view);
-    OWL_COPY_M3(skybox->ubo.view, ubo.view);
+    OWL_M4_IDENTITY(ubo.view);
+    OWL_M3_COPY(skybox->ubo.view, ubo.view);
 #else
-    OWL_IDENTITY_M4(ubo.view);
+    OWL_M4_IDENTITY(ubo.view);
 #endif
 
     OWL_MEMCPY(data, &ubo, size);
@@ -287,19 +287,19 @@ OWL_INTERNAL enum owl_code owl_draw_command_fill_char_quad_(
 
   quad->texture = &text->font->atlas;
 
-  OWL_IDENTITY_M4(quad->ubo.projection);
-  OWL_IDENTITY_M4(quad->ubo.view);
-  OWL_IDENTITY_M4(quad->ubo.model);
+  OWL_M4_IDENTITY(quad->ubo.projection);
+  OWL_M4_IDENTITY(quad->ubo.view);
+  OWL_M4_IDENTITY(quad->ubo.model);
 
   glyph = &text->font->glyphs[(int)c];
 
-  OWL_ADD_V2(text->position, offset, current_position);
+  OWL_V2_ADD(text->position, offset, current_position);
 
   /* TODO(samuel): save the bearing as a normalized value */
   uv_bearing[0] = (float)glyph->bearing[0] / (float)r->width;
   uv_bearing[1] = -(float)glyph->bearing[1] / (float)r->height;
 
-  OWL_ADD_V2(current_position, uv_bearing, screen_position);
+  OWL_V2_ADD(current_position, uv_bearing, screen_position);
 
   /* TODO(samuel): save the size as a normalized value */
   glyph_screen_size[0] = (float)glyph->size[0] / (float)r->width;
@@ -367,7 +367,7 @@ owl_draw_command_submit_text_(struct owl_renderer *r,
   owl_v2 offset;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ZERO_V2(offset);
+  OWL_V2_ZERO(offset);
 
   for (c = text->text; '\0' != *c; ++c) {
     struct owl_draw_command_quad quad;

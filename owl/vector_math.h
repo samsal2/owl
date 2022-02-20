@@ -7,20 +7,20 @@
 #define OWL_DEG_TO_RAD(angle) ((angle)*0.01745329252F)
 #define OWL_RAD_TO_DEG(angle) ((angle)*57.2957795131F)
 
-#define OWL_ZERO_V2(v)                                                         \
+#define OWL_V2_ZERO(v)                                                         \
   do {                                                                         \
     (v)[0] = 0.0F;                                                             \
     (v)[1] = 0.0F;                                                             \
   } while (0)
 
-#define OWL_ZERO_V3(v)                                                         \
+#define OWL_V3_ZERO(v)                                                         \
   do {                                                                         \
     (v)[0] = 0.0F;                                                             \
     (v)[1] = 0.0F;                                                             \
     (v)[2] = 0.0F;                                                             \
   } while (0)
 
-#define OWL_ZERO_V4(v)                                                         \
+#define OWL_V4_ZERO(v)                                                         \
   do {                                                                         \
     (v)[0] = 0.0F;                                                             \
     (v)[1] = 0.0F;                                                             \
@@ -28,20 +28,20 @@
     (v)[3] = 0.0F;                                                             \
   } while (0)
 
-#define OWL_SET_V2(x, y, out)                                                  \
+#define OWL_V2_SET(x, y, out)                                                  \
   do {                                                                         \
     (out)[0] = (x);                                                            \
     (out)[1] = (y);                                                            \
   } while (0)
 
-#define OWL_SET_V3(x, y, z, out)                                               \
+#define OWL_V3_SET(x, y, z, out)                                               \
   do {                                                                         \
     (out)[0] = (x);                                                            \
     (out)[1] = (y);                                                            \
     (out)[2] = (z);                                                            \
   } while (0)
 
-#define OWL_SET_V4(x, y, z, w, out)                                            \
+#define OWL_V4_SET(x, y, z, w, out)                                            \
   do {                                                                         \
     (out)[0] = (x);                                                            \
     (out)[1] = (y);                                                            \
@@ -49,7 +49,7 @@
     (out)[3] = (w);                                                            \
   } while (0)
 
-#define OWL_IDENTITY_M4(m)                                                     \
+#define OWL_M4_IDENTITY(m)                                                     \
   do {                                                                         \
     (m)[0][0] = 1.0F;                                                          \
     (m)[0][1] = 0.0F;                                                          \
@@ -69,20 +69,20 @@
     (m)[3][3] = 1.0F;                                                          \
   } while (0)
 
-#define OWL_COPY_V2(in, out)                                                   \
+#define OWL_V2_COPY(in, out)                                                   \
   do {                                                                         \
     (out)[0] = (in)[0];                                                        \
     (out)[1] = (in)[1];                                                        \
   } while (0)
 
-#define OWL_COPY_V3(in, out)                                                   \
+#define OWL_V3_COPY(in, out)                                                   \
   do {                                                                         \
     (out)[0] = (in)[0];                                                        \
     (out)[1] = (in)[1];                                                        \
     (out)[2] = (in)[2];                                                        \
   } while (0)
 
-#define OWL_COPY_V4(in, out)                                                   \
+#define OWL_V4_COPY(in, out)                                                   \
   do {                                                                         \
     (out)[0] = (in)[0];                                                        \
     (out)[1] = (in)[1];                                                        \
@@ -90,7 +90,7 @@
     (out)[3] = (in)[3];                                                        \
   } while (0)
 
-#define OWL_COPY_M4(in, out)                                                   \
+#define OWL_M4_COPY(in, out)                                                   \
   do {                                                                         \
     (out)[0][0] = (in)[0][0];                                                  \
     (out)[0][1] = (in)[0][1];                                                  \
@@ -110,7 +110,7 @@
     (out)[3][3] = (in)[3][3];                                                  \
   } while (0)
 
-#define OWL_COPY_V16_M4(in, out)                                               \
+#define OWL_M4_COPY_V16(in, out)                                               \
   do {                                                                         \
     (out)[0][0] = (in)[0];                                                     \
     (out)[0][1] = (in)[1];                                                     \
@@ -130,7 +130,7 @@
     (out)[3][3] = (in)[15];                                                    \
   } while (0)
 
-#define OWL_COPY_M3(in, out)                                                   \
+#define OWL_M3_COPY(in, out)                                                   \
   do {                                                                         \
     (out)[0][0] = (in)[0][0];                                                  \
     (out)[0][1] = (in)[0][1];                                                  \
@@ -143,18 +143,18 @@
     (out)[2][2] = (in)[2][2];                                                  \
   } while (0)
 
-#define OWL_DOT_V2(lhs, rhs) ((lhs)[0] * (rhs)[0] + (lhs)[1] * (rhs)[1])
-#define OWL_DOT_V3(lhs, rhs)                                                   \
+#define OWL_V2_DOT(lhs, rhs) ((lhs)[0] * (rhs)[0] + (lhs)[1] * (rhs)[1])
+#define OWL_V3_DOT(lhs, rhs)                                                   \
   ((lhs)[0] * (rhs)[0] + (lhs)[1] * (rhs)[1] + (lhs)[2] * (rhs)[2])
 
-#define OWL_SCALE_V3(v, scale, out)                                            \
+#define OWL_V3_SCALE(v, scale, out)                                            \
   do {                                                                         \
     (out)[0] = (scale) * (v)[0];                                               \
     (out)[1] = (scale) * (v)[1];                                               \
     (out)[2] = (scale) * (v)[2];                                               \
   } while (0)
 
-#define OWL_SCALE_V4(v, scale, out)                                            \
+#define OWL_V4_SCALE(v, scale, out)                                            \
   do {                                                                         \
     (out)[0] = (scale) * (v)[0];                                               \
     (out)[1] = (scale) * (v)[1];                                               \
@@ -162,20 +162,20 @@
     (out)[3] = (scale) * (v)[3];                                               \
   } while (0)
 
-#define OWL_INV_SCALE_V2(v, scale, out)                                        \
+#define OWL_V2_INVERSE_SCALE(v, scale, out)                                    \
   do {                                                                         \
     (out)[0] = (v)[0] / (scale);                                               \
     (out)[1] = (v)[1] / (scale);                                               \
   } while (0)
 
-#define OWL_INV_SCALE_V3(v, scale, out)                                        \
+#define OWL_V3_INVERSE_SCALE(v, scale, out)                                    \
   do {                                                                         \
     (out)[0] = (v)[0] / (scale);                                               \
     (out)[1] = (v)[1] / (scale);                                               \
     (out)[2] = (v)[2] / (scale);                                               \
   } while (0)
 
-#define OWL_INV_SCALE_V4(v, scale, out)                                        \
+#define OWL_V4_INVERSE_SCALE(v, scale, out)                                    \
   do {                                                                         \
     (out)[0] = (v)[0] / (scale);                                               \
     (out)[1] = (v)[1] / (scale);                                               \
@@ -183,14 +183,14 @@
     (out)[3] = (v)[3] / (scale);                                               \
   } while (0)
 
-#define OWL_NEGATE_V3(v, out)                                                  \
+#define OWL_V3_NEGATE(v, out)                                                  \
   do {                                                                         \
     (out)[0] = -(v)[0];                                                        \
     (out)[1] = -(v)[1];                                                        \
     (out)[2] = -(v)[2];                                                        \
   } while (0)
 
-#define OWL_NEGATE_V4(v, out)                                                  \
+#define OWL_V4_NEGATE(v, out)                                                  \
   do {                                                                         \
     (out)[0] = -(v)[0];                                                        \
     (out)[1] = -(v)[1];                                                        \
@@ -198,20 +198,20 @@
     (out)[3] = -(v)[4];                                                        \
   } while (0)
 
-#define OWL_ADD_V2(lhs, rhs, out)                                              \
+#define OWL_V2_ADD(lhs, rhs, out)                                              \
   do {                                                                         \
     (out)[0] = (lhs)[0] + (rhs)[0];                                            \
     (out)[1] = (lhs)[1] + (rhs)[1];                                            \
   } while (0)
 
-#define OWL_ADD_V3(lhs, rhs, out)                                              \
+#define OWL_V3_ADD(lhs, rhs, out)                                              \
   do {                                                                         \
     (out)[0] = (lhs)[0] + (rhs)[0];                                            \
     (out)[1] = (lhs)[1] + (rhs)[1];                                            \
     (out)[2] = (lhs)[2] + (rhs)[2];                                            \
   } while (0)
 
-#define OWL_ADD_V4(lhs, rhs, out)                                              \
+#define OWL_V4_ADD(lhs, rhs, out)                                              \
   do {                                                                         \
     (out)[0] = (lhs)[0] + (rhs)[0];                                            \
     (out)[1] = (lhs)[1] + (rhs)[1];                                            \
@@ -219,20 +219,20 @@
     (out)[3] = (lhs)[3] + (rhs)[3];                                            \
   } while (0)
 
-#define OWL_SUB_V2(lhs, rhs, out)                                              \
+#define OWL_V2_SUB(lhs, rhs, out)                                              \
   do {                                                                         \
     (out)[0] = (lhs)[0] - (rhs)[0];                                            \
     (out)[1] = (lhs)[1] - (rhs)[1];                                            \
   } while (0)
 
-#define OWL_SUB_V3(lhs, rhs, out)                                              \
+#define OWL_V3_SUB(lhs, rhs, out)                                              \
   do {                                                                         \
     (out)[0] = (lhs)[0] - (rhs)[0];                                            \
     (out)[1] = (lhs)[1] - (rhs)[1];                                            \
     (out)[2] = (lhs)[2] - (rhs)[2];                                            \
   } while (0)
 
-#define OWL_SUB_V4(lhs, rhs, out)                                              \
+#define OWL_V4_SUB(lhs, rhs, out)                                              \
   do {                                                                         \
     (out)[0] = (lhs)[0] - (rhs)[0];                                            \
     (out)[1] = (lhs)[1] - (rhs)[1];                                            \
@@ -240,56 +240,56 @@
     (out)[3] = (lhs)[3] - (rhs)[3];                                            \
   } while (0)
 
-void owl_cross_v3(owl_v3 const lhs, owl_v3 const rhs, owl_v3 out);
+void owl_v3_cross(owl_v3 const lhs, owl_v3 const rhs, owl_v3 out);
 
-void owl_mul_m4_v4(owl_m4 const m, owl_v4 const v, owl_v4 out);
+void owl_m4v4_mul(owl_m4 const m, owl_v4 const v, owl_v4 out);
 
-float owl_mag_v2(owl_v2 const v);
+float owl_v2_mag(owl_v2 const v);
 
-float owl_mag_v3(owl_v3 const v);
+float owl_v3_mag(owl_v3 const v);
 
-void owl_norm_v3(owl_v3 const v, owl_v3 out);
+void owl_v3_normalize(owl_v3 const v, owl_v3 out);
 
-void owl_make_rotate_m4(float angle, owl_v3 const axis, owl_m4 out);
+void owl_m4_make_rotate(float angle, owl_v3 const axis, owl_m4 out);
 
-void owl_translate_m4(owl_v3 const v, owl_m4 out);
+void owl_m4_translate(owl_v3 const v, owl_m4 out);
 
-void owl_ortho_m4(float left, float right, float bottom, float top, float near,
+void owl_m4_ortho(float left, float right, float bottom, float top, float near,
                   float far, owl_m4 out);
 
-void owl_perspective_m4(float fov, float ratio, float near, float far,
+void owl_m4_perspective(float fov, float ratio, float near, float far,
                         owl_m4 out);
 
-void owl_look_m4(owl_v3 const eye, owl_v3 const direction, owl_v3 const up,
+void owl_m4_look(owl_v3 const eye, owl_v3 const direction, owl_v3 const up,
                  owl_m4 out);
 
-void owl_look_at_m4(owl_v3 const eye, owl_v3 const center, owl_v3 const up,
+void owl_m4_look_at(owl_v3 const eye, owl_v3 const center, owl_v3 const up,
                     owl_m4 out);
 
-void owl_find_dir_v3(float pitch, float yaw, owl_v3 const up, owl_v3 out);
+void owl_v3_direction(float pitch, float yaw, owl_v3 const up, owl_v3 out);
 
-void owl_mul_rot_m4(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out);
+void owl_m4_mul_rotation(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out);
 
-void owl_rotate_m4(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out);
+void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out);
 
-float owl_dist_v2(owl_v2 const from, owl_v2 const to);
+float owl_v2_distance(owl_v2 const from, owl_v2 const to);
 
-float owl_dist_v3(owl_v3 const from, owl_v3 const to);
+float owl_v3_distance(owl_v3 const from, owl_v3 const to);
 
-void owl_mul_complex(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out);
+void owl_complex_mul(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out);
 
 #ifndef NDEBUG
 
-#define OWL_MATH_V2_FORMAT "%.2f %.2f"
-#define OWL_MATH_V2_FORMAT_ARGS(v) v[0], v[1]
+#define OWL_V2_FORMAT "%.2f %.2f"
+#define OWL_V2_FORMAT_ARGS(v) v[0], v[1]
 
-#define OWL_MATH_V3_FORMAT "%.2f %.2f %.2f"
-#define OWL_MATH_V3_FORMAT_ARGS(v) v[0], v[1], v[2]
+#define OWL_V3_FORMAT "%.2f %.2f %.2f"
+#define OWL_V3_FORMAT_ARGS(v) v[0], v[1], v[2]
 
-#define OWL_MATH_V4_FORMAT "%.2f %.2f %.2f %.2f"
-#define OWL_MATH_V4_FORMAT_ARGS(v) v[0], v[1], v[2], v[3]
+#define OWL_V4_FORMAT "%.2f %.2f %.2f %.2f"
+#define OWL_V4_FORMAT_ARGS(v) v[0], v[1], v[2], v[3]
 
-#define OWL_MATH_M4_FORMAT                                                     \
+#define OWL_M4_FORMAT                                                          \
   "%.2f %.2f %.2f %.2f\n"                                                      \
   "%.2f %.2f %.2f %.2f\n"                                                      \
   "%.2f %.2f %.2f %.2f\n"                                                      \
@@ -297,7 +297,7 @@ void owl_mul_complex(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out);
 
 /* clang-format off */
 
-#define OWL_MATH_M4_FORMAT_ARGS(v)                                             \
+#define OWL_M4_FORMAT_ARGS(v)                                             \
   v[0][0], v[0][1], v[0][2], v[0][3],                                          \
   v[1][0], v[1][1], v[1][2], v[1][3],                                          \
   v[2][0], v[2][1], v[2][2], v[3][3],                                          \
@@ -305,10 +305,10 @@ void owl_mul_complex(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out);
 
 /* clang-format on */
 
-void owl_print_v2(owl_v2 const v);
-void owl_print_v3(owl_v3 const v);
-void owl_print_v4(owl_v4 const v);
-void owl_print_m4(owl_m4 const m);
+void owl_v2_print(owl_v2 const v);
+void owl_v3_print(owl_v3 const v);
+void owl_v4_print(owl_v4 const v);
+void owl_m4_print(owl_m4 const m);
 
 #endif /* NDEBUG */
 
