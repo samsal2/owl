@@ -1,4 +1,4 @@
-#include "draw_cmd.h"
+#include "draw_command.h"
 
 #include "font.h"
 #include "internal.h"
@@ -8,8 +8,8 @@
 #include "vector_math.h"
 
 OWL_INTERNAL enum owl_code
-owl_draw_cmd_submit_basic_(struct owl_renderer *r,
-                           struct owl_draw_cmd_basic const *basic) {
+owl_draw_command_submit_basic_(struct owl_renderer *r,
+                               struct owl_draw_command_basic const *basic) {
   enum owl_code code = OWL_SUCCESS;
 
   {
@@ -22,8 +22,8 @@ owl_draw_cmd_submit_basic_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, basic->vertices, size);
 
-    vkCmdBindVertexBuffers(r->frame_cmd_buffers[r->active], 0, 1, &ref.buffer,
-                           &ref.offset);
+    vkCmdBindVertexBuffers(r->frame_command_buffers[r->active], 0, 1,
+                           &ref.buffer, &ref.offset);
   }
 
   {
@@ -36,7 +36,7 @@ owl_draw_cmd_submit_basic_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, basic->indices, size);
 
-    vkCmdBindIndexBuffer(r->frame_cmd_buffers[r->active], ref.buffer,
+    vkCmdBindIndexBuffer(r->frame_command_buffers[r->active], ref.buffer,
                          ref.offset, VK_INDEX_TYPE_UINT32);
   }
 
@@ -54,21 +54,21 @@ owl_draw_cmd_submit_basic_(struct owl_renderer *r,
     sets[0] = ref.pvm_set;
     sets[1] = basic->texture->set;
 
-    vkCmdBindDescriptorSets(r->frame_cmd_buffers[r->active],
+    vkCmdBindDescriptorSets(r->frame_command_buffers[r->active],
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->pipeline_layouts[r->bound_pipeline], 0,
                             OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
   }
 
-  vkCmdDrawIndexed(r->frame_cmd_buffers[r->active],
+  vkCmdDrawIndexed(r->frame_command_buffers[r->active],
                    (owl_u32)basic->indices_count, 1, 0, 0, 0);
 
   return code;
 }
 
 OWL_INTERNAL enum owl_code
-owl_draw_cmd_submit_quad_(struct owl_renderer *r,
-                          struct owl_draw_cmd_quad const *quad) {
+owl_draw_command_submit_quad_(struct owl_renderer *r,
+                              struct owl_draw_command_quad const *quad) {
   enum owl_code code = OWL_SUCCESS;
 
   {
@@ -81,8 +81,8 @@ owl_draw_cmd_submit_quad_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, quad->vertices, size);
 
-    vkCmdBindVertexBuffers(r->frame_cmd_buffers[r->active], 0, 1, &ref.buffer,
-                           &ref.offset);
+    vkCmdBindVertexBuffers(r->frame_command_buffers[r->active], 0, 1,
+                           &ref.buffer, &ref.offset);
   }
 
   {
@@ -96,7 +96,7 @@ owl_draw_cmd_submit_quad_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, indices, size);
 
-    vkCmdBindIndexBuffer(r->frame_cmd_buffers[r->active], ref.buffer,
+    vkCmdBindIndexBuffer(r->frame_command_buffers[r->active], ref.buffer,
                          ref.offset, VK_INDEX_TYPE_UINT32);
   }
 
@@ -114,20 +114,20 @@ owl_draw_cmd_submit_quad_(struct owl_renderer *r,
     sets[0] = ref.pvm_set;
     sets[1] = quad->texture->set;
 
-    vkCmdBindDescriptorSets(r->frame_cmd_buffers[r->active],
+    vkCmdBindDescriptorSets(r->frame_command_buffers[r->active],
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->pipeline_layouts[r->bound_pipeline], 0,
                             OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
   }
 
-  vkCmdDrawIndexed(r->frame_cmd_buffers[r->active], 6, 1, 0, 0, 0);
+  vkCmdDrawIndexed(r->frame_command_buffers[r->active], 6, 1, 0, 0, 0);
 
   return code;
 }
 
 OWL_INTERNAL enum owl_code
-owl_draw_cmd_submit_skybox_(struct owl_renderer *r,
-                            struct owl_draw_cmd_skybox const *skybox) {
+owl_draw_command_submit_skybox_(struct owl_renderer *r,
+                                struct owl_draw_command_skybox const *skybox) {
   enum owl_code code = OWL_SUCCESS;
 
   OWL_LOCAL_PERSIST owl_v3 const vertices[] = {
@@ -202,8 +202,8 @@ owl_draw_cmd_submit_skybox_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, vertices, size);
 
-    vkCmdBindVertexBuffers(r->frame_cmd_buffers[r->active], 0, 1, &ref.buffer,
-                           &ref.offset);
+    vkCmdBindVertexBuffers(r->frame_command_buffers[r->active], 0, 1,
+                           &ref.buffer, &ref.offset);
   }
 
 #if 0
@@ -218,7 +218,7 @@ owl_draw_cmd_submit_skybox_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, indices, size);
 
-    vkCmdBindIndexBuffer(r->frame_cmd_buffers[r->active], ref.buffer,
+    vkCmdBindIndexBuffer(r->frame_command_buffers[r->active], ref.buffer,
                          ref.offset, VK_INDEX_TYPE_UINT32);
   }
 #endif
@@ -251,25 +251,25 @@ owl_draw_cmd_submit_skybox_(struct owl_renderer *r,
     sets[0] = ref.pvm_set;
     sets[1] = skybox->skybox->set;
 
-    vkCmdBindDescriptorSets(r->frame_cmd_buffers[r->active],
+    vkCmdBindDescriptorSets(r->frame_command_buffers[r->active],
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->pipeline_layouts[r->bound_pipeline], 0,
                             OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
   }
 
 #if 0
-  vkCmdDrawIndexed(r->frame_cmd_buffers[r->active], 6, 1, 0, 0, 0);
+  vkCmdDrawIndexed(r->frame_command_buffers[r->active], 6, 1, 0, 0, 0);
 #else
-  vkCmdDraw(r->frame_cmd_buffers[r->active], OWL_ARRAY_SIZE(vertices), 1, 0, 0);
+  vkCmdDraw(r->frame_command_buffers[r->active], OWL_ARRAY_SIZE(vertices), 1, 0,
+            0);
 #endif
 
   return code;
 }
 
-OWL_INTERNAL enum owl_code
-owl_draw_cmd_fill_char_quad_(struct owl_renderer const *r,
-                             struct owl_draw_cmd_text const *text, char c,
-                             owl_v2 offset, struct owl_draw_cmd_quad *quad) {
+OWL_INTERNAL enum owl_code owl_draw_command_fill_char_quad_(
+    struct owl_renderer const *r, struct owl_draw_command_text const *text,
+    char c, owl_v2 offset, struct owl_draw_command_quad *quad) {
 
   float uv_offset;
   owl_v2 uv_bearing;
@@ -361,8 +361,8 @@ OWL_INTERNAL void owl_font_step_offset_(struct owl_renderer const *r,
 }
 
 OWL_INTERNAL enum owl_code
-owl_draw_cmd_submit_text_(struct owl_renderer *r,
-                          struct owl_draw_cmd_text const *text) {
+owl_draw_command_submit_text_(struct owl_renderer *r,
+                              struct owl_draw_command_text const *text) {
   char const *c;
   owl_v2 offset;
   enum owl_code code = OWL_SUCCESS;
@@ -370,14 +370,14 @@ owl_draw_cmd_submit_text_(struct owl_renderer *r,
   OWL_ZERO_V2(offset);
 
   for (c = text->text; '\0' != *c; ++c) {
-    struct owl_draw_cmd_quad quad;
+    struct owl_draw_command_quad quad;
 
-    code = owl_draw_cmd_fill_char_quad_(r, text, *c, offset, &quad);
+    code = owl_draw_command_fill_char_quad_(r, text, *c, offset, &quad);
 
     if (OWL_SUCCESS != code)
       goto end;
 
-    owl_draw_cmd_submit_quad_(r, &quad);
+    owl_draw_command_submit_quad_(r, &quad);
     owl_font_step_offset_(r, text->font, *c, offset);
   }
 
@@ -385,19 +385,19 @@ end:
   return code;
 }
 
-enum owl_code owl_draw_cmd_submit(struct owl_renderer *r,
-                                  struct owl_draw_cmd const *cmd) {
-  switch (cmd->type) {
+enum owl_code owl_draw_command_submit(struct owl_renderer *r,
+                                      struct owl_draw_command const *command) {
+  switch (command->type) {
   case OWL_DRAW_CMD_TYPE_BASIC:
-    return owl_draw_cmd_submit_basic_(r, &cmd->storage.as_basic);
+    return owl_draw_command_submit_basic_(r, &command->storage.as_basic);
 
   case OWL_DRAW_CMD_TYPE_QUAD:
-    return owl_draw_cmd_submit_quad_(r, &cmd->storage.as_quad);
+    return owl_draw_command_submit_quad_(r, &command->storage.as_quad);
 
   case OWL_DRAW_CMD_TYPE_SKYBOX:
-    return owl_draw_cmd_submit_skybox_(r, &cmd->storage.as_skybox);
+    return owl_draw_command_submit_skybox_(r, &command->storage.as_skybox);
 
   case OWL_DRAW_CMD_TYPE_TEXT:
-    return owl_draw_cmd_submit_text_(r, &cmd->storage.as_text);
+    return owl_draw_command_submit_text_(r, &command->storage.as_text);
   }
 }

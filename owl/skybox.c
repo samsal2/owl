@@ -21,7 +21,7 @@ struct owl_skybox_loading_info {
 };
 
 OWL_INTERNAL void
-owl_skybox_copy_to_image_(VkCommandBuffer cmd, owl_u32 base_width,
+owl_skybox_copy_to_image_(VkCommandBuffer command, owl_u32 base_width,
                           owl_u32 base_height, owl_u32 face, owl_u32 level,
                           struct owl_dynamic_buffer_reference const *ref,
                           struct owl_skybox const *box) {
@@ -42,7 +42,7 @@ owl_skybox_copy_to_image_(VkCommandBuffer cmd, owl_u32 base_width,
   copy.imageExtent.height = base_height >> level;
   copy.imageExtent.depth = 1;
 
-  vkCmdCopyBufferToImage(cmd, ref->buffer, box->image,
+  vkCmdCopyBufferToImage(command, ref->buffer, box->image,
                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 }
 
@@ -176,7 +176,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
     struct owl_renderer *r, struct owl_skybox_loading_info const *info,
     struct owl_skybox const *box) {
   owl_u32 i;
-  VkCommandBuffer cmd;
+  VkCommandBuffer command;
   VkDeviceSize size;
   struct owl_vk_image_transition_info transition;
   enum owl_code code = OWL_SUCCESS;
@@ -197,8 +197,8 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   transition.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   transition.image = box->image;
 
-  owl_renderer_alloc_single_use_cmd_buffer(r, &cmd);
-  owl_vk_image_transition(cmd, &transition);
+  owl_renderer_alloc_single_use_command_buffer(r, &command);
+  owl_vk_image_transition(command, &transition);
 
   {
     struct owl_dynamic_buffer_reference ref;
@@ -207,7 +207,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
     OWL_MEMCPY(staging, info->right, size);
 
     for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(cmd, info->width, info->height, 0, i, &ref,
+      owl_skybox_copy_to_image_(command, info->width, info->height, 0, i, &ref,
                                 box);
   }
 
@@ -218,7 +218,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
     OWL_MEMCPY(staging, info->left, size);
 
     for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(cmd, info->width, info->height, 1, i, &ref,
+      owl_skybox_copy_to_image_(command, info->width, info->height, 1, i, &ref,
                                 box);
   }
 
@@ -229,7 +229,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
     OWL_MEMCPY(staging, info->bottom, size);
 
     for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(cmd, info->width, info->height, 2, i, &ref,
+      owl_skybox_copy_to_image_(command, info->width, info->height, 2, i, &ref,
                                 box);
   }
 
@@ -240,7 +240,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
     OWL_MEMCPY(staging, info->top, size);
 
     for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(cmd, info->width, info->height, 3, i, &ref,
+      owl_skybox_copy_to_image_(command, info->width, info->height, 3, i, &ref,
                                 box);
   }
 
@@ -251,7 +251,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
     OWL_MEMCPY(staging, info->back, size);
 
     for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(cmd, info->width, info->height, 4, i, &ref,
+      owl_skybox_copy_to_image_(command, info->width, info->height, 4, i, &ref,
                                 box);
   }
 
@@ -262,15 +262,15 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
     OWL_MEMCPY(staging, info->front, size);
 
     for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(cmd, info->width, info->height, 5, i, &ref,
+      owl_skybox_copy_to_image_(command, info->width, info->height, 5, i, &ref,
                                 box);
   }
 
   transition.from = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   transition.to = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-  owl_vk_image_transition(cmd, &transition);
-  owl_renderer_free_single_use_cmd_buffer(r, cmd);
+  owl_vk_image_transition(command, &transition);
+  owl_renderer_free_single_use_command_buffer(r, command);
 
   owl_renderer_clear_dynamic_offset(r);
 

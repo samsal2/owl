@@ -1,9 +1,8 @@
 #ifndef OWL_OWL_H_
 #define OWL_OWL_H_
 
-#include "draw_cmd.h"
+#include "draw_command.h"
 #include "font.h"
-#include "frame.h"
 #include "internal.h"
 #include "model.h"
 #include "renderer.h"

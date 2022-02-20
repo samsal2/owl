@@ -1,7 +1,7 @@
 #ifndef OWL_MODEL_H_
 #define OWL_MODEL_H_
 
-#include "draw_cmd.h"
+#include "draw_command.h"
 #include "texture.h"
 
 #include <vulkan/vulkan.h>
@@ -183,7 +183,7 @@ void owl_model_deinit(struct owl_renderer *r, struct owl_model *model);
 void owl_model_destroy(struct owl_renderer *r, struct owl_model *model);
 
 enum owl_code owl_model_submit(struct owl_renderer *r,
-                               struct owl_draw_cmd_ubo const *ubo,
+                               struct owl_draw_command_ubo const *ubo,
                                struct owl_model const *model);
 
 #endif

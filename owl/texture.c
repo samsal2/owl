@@ -31,7 +31,7 @@ OWL_INTERNAL VkDeviceSize owl_sizeof_format_(enum owl_pixel_format format) {
 }
 
 enum owl_code
-owl_vk_image_transition(VkCommandBuffer cmd,
+owl_vk_image_transition(VkCommandBuffer command,
                         struct owl_vk_image_transition_info const *info) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src = VK_PIPELINE_STAGE_NONE_KHR;
@@ -92,14 +92,14 @@ owl_vk_image_transition(VkCommandBuffer cmd,
     goto end;
   }
 
-  vkCmdPipelineBarrier(cmd, src, dst, 0, 0, NULL, 0, NULL, 1, &barrier);
+  vkCmdPipelineBarrier(command, src, dst, 0, 0, NULL, 0, NULL, 1, &barrier);
 
 end:
   return code;
 }
 
 enum owl_code
-owl_vk_image_generate_mips(VkCommandBuffer cmd,
+owl_vk_image_generate_mips(VkCommandBuffer command,
                            struct owl_vk_image_mip_info const *info) {
   owl_u32 i;
   owl_i32 width;
@@ -134,7 +134,7 @@ owl_vk_image_generate_mips(VkCommandBuffer cmd,
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
                          VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1,
                          &barrier);
     {
@@ -160,7 +160,7 @@ owl_vk_image_generate_mips(VkCommandBuffer cmd,
       blit.dstSubresource.baseArrayLayer = 0;
       blit.dstSubresource.layerCount = 1;
 
-      vkCmdBlitImage(cmd, info->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+      vkCmdBlitImage(command, info->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                      info->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                      &blit, VK_FILTER_LINEAR);
     }
@@ -170,7 +170,7 @@ owl_vk_image_generate_mips(VkCommandBuffer cmd,
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0,
                          NULL, 1, &barrier);
   }
@@ -181,7 +181,7 @@ owl_vk_image_generate_mips(VkCommandBuffer cmd,
   barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+  vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0,
                        NULL, 1, &barrier);
 end:
@@ -323,8 +323,8 @@ enum owl_code owl_texture_init_from_reference(
 
   /* stage, mips and layout */
   {
-    VkCommandBuffer cmd;
-    owl_renderer_alloc_single_use_cmd_buffer(r, &cmd);
+    VkCommandBuffer command;
+    owl_renderer_alloc_single_use_command_buffer(r, &command);
 
     {
       struct owl_vk_image_transition_info transition;
@@ -335,7 +335,7 @@ enum owl_code owl_texture_init_from_reference(
       transition.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
       transition.image = tex->image;
 
-      owl_vk_image_transition(cmd, &transition);
+      owl_vk_image_transition(command, &transition);
     }
 
     {
@@ -353,7 +353,7 @@ enum owl_code owl_texture_init_from_reference(
       copy.imageExtent.width = (owl_u32)info->width;
       copy.imageExtent.height = (owl_u32)info->height;
       copy.imageExtent.depth = 1;
-      vkCmdCopyBufferToImage(cmd, ref->buffer, tex->image,
+      vkCmdCopyBufferToImage(command, ref->buffer, tex->image,
                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
     }
 
@@ -365,10 +365,10 @@ enum owl_code owl_texture_init_from_reference(
       mip.mips = mips;
       mip.image = tex->image;
 
-      owl_vk_image_generate_mips(cmd, &mip);
+      owl_vk_image_generate_mips(command, &mip);
     }
 
-    owl_renderer_free_single_use_cmd_buffer(r, cmd);
+    owl_renderer_free_single_use_command_buffer(r, command);
   }
 
   {

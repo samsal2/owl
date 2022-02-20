@@ -605,7 +605,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
   }
 
   {
-    VkCommandBuffer cmd;
+    VkCommandBuffer command;
     VkDeviceSize size;
     owl_byte *stage;
     struct owl_dynamic_buffer_reference ref;
@@ -615,7 +615,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
     if (!(stage = owl_renderer_dynamic_buffer_alloc(r, size, &ref)))
       return OWL_ERROR_BAD_ALLOC;
 
-    owl_renderer_alloc_single_use_cmd_buffer(r, &cmd);
+    owl_renderer_alloc_single_use_command_buffer(r, &command);
 
     {
       struct owl_vk_image_transition_info transition;
@@ -626,7 +626,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
       transition.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
       transition.image = tex->image;
 
-      owl_vk_image_transition(cmd, &transition);
+      owl_vk_image_transition(command, &transition);
     }
 
     {
@@ -647,7 +647,7 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
       copy.imageExtent.height = (owl_u32)info.height;
       copy.imageExtent.depth = 1;
 
-      vkCmdCopyBufferToImage(cmd, ref.buffer, tex->image,
+      vkCmdCopyBufferToImage(command, ref.buffer, tex->image,
                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
     }
     {
@@ -658,10 +658,10 @@ OWL_INTERNAL enum owl_code owl_model_init_texture_data_(
       mip.mips = tex->mips;
       mip.image = tex->image;
 
-      owl_vk_image_generate_mips(cmd, &mip);
+      owl_vk_image_generate_mips(command, &mip);
     }
 
-    owl_renderer_free_single_use_cmd_buffer(r, cmd);
+    owl_renderer_free_single_use_command_buffer(r, command);
   }
 
   {
@@ -957,8 +957,8 @@ OWL_INTERNAL enum owl_code owl_submit_node_(struct owl_renderer *r,
 
   for (i = 0; i < mesh_data->primitives_count; ++i) {
     struct owl_model_primitive const *prim = &mesh_data->primitives[i];
-    vkCmdDrawIndexed(r->frame_cmd_buffers[r->active], prim->indices_count, 1,
-                     prim->first_index, 0, 0);
+    vkCmdDrawIndexed(r->frame_command_buffers[r->active], prim->indices_count,
+                     1, prim->first_index, 0, 0);
   }
 
   for (i = 0; i < node_data->children_count; ++i)
@@ -1049,8 +1049,8 @@ owl_model_alloc_buffers_(struct owl_renderer *r, int vertices_count,
   }
 
   {
-    VkCommandBuffer cmd;
-    owl_renderer_alloc_single_use_cmd_buffer(r, &cmd);
+    VkCommandBuffer command;
+    owl_renderer_alloc_single_use_command_buffer(r, &command);
 
     {
       VkBufferCopy copy;
@@ -1059,7 +1059,8 @@ owl_model_alloc_buffers_(struct owl_renderer *r, int vertices_count,
       copy.size =
           (VkDeviceSize)vertices_count * sizeof(struct owl_model_vertex);
 
-      vkCmdCopyBuffer(cmd, vertices->buffer, model->vertex_buffer, 1, &copy);
+      vkCmdCopyBuffer(command, vertices->buffer, model->vertex_buffer, 1,
+                      &copy);
     }
 
     {
@@ -1068,10 +1069,10 @@ owl_model_alloc_buffers_(struct owl_renderer *r, int vertices_count,
       copy.dstOffset = 0;
       copy.size = (VkDeviceSize)indices_count * sizeof(owl_u32);
 
-      vkCmdCopyBuffer(cmd, indices->buffer, model->index_buffer, 1, &copy);
+      vkCmdCopyBuffer(command, indices->buffer, model->index_buffer, 1, &copy);
     }
 
-    owl_renderer_free_single_use_cmd_buffer(r, cmd);
+    owl_renderer_free_single_use_command_buffer(r, command);
   }
 
   return OWL_SUCCESS;
@@ -1168,11 +1169,11 @@ OWL_INTERNAL void
 owl_model_bind_vertex_and_index_buffers_(struct owl_renderer *r,
                                          struct owl_model const *model) {
   VkDeviceSize const offset[] = {0};
-  vkCmdBindVertexBuffers(r->frame_cmd_buffers[r->active], 0, 1,
+  vkCmdBindVertexBuffers(r->frame_command_buffers[r->active], 0, 1,
                          &model->vertex_buffer, offset);
 
-  vkCmdBindIndexBuffer(r->frame_cmd_buffers[r->active], model->index_buffer, 0,
-                       VK_INDEX_TYPE_UINT32);
+  vkCmdBindIndexBuffer(r->frame_command_buffers[r->active], model->index_buffer,
+                       0, VK_INDEX_TYPE_UINT32);
 }
 
 #if 0
@@ -1200,7 +1201,7 @@ owl_model_submit_primitives_(struct owl_renderer *r,
 #endif
 
 enum owl_code owl_model_submit(struct owl_renderer *r,
-                               struct owl_draw_cmd_ubo const *ubo,
+                               struct owl_draw_command_ubo const *ubo,
                                struct owl_model const *model) {
   int i;
 
@@ -1220,7 +1221,7 @@ enum owl_code owl_model_submit(struct owl_renderer *r,
     sets[0] = ref.pvm_set;
     sets[1] = model->materials[1].set;
 
-    vkCmdBindDescriptorSets(r->frame_cmd_buffers[r->active],
+    vkCmdBindDescriptorSets(r->frame_command_buffers[r->active],
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->pipeline_layouts[r->bound_pipeline], 0,
                             OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);

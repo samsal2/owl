@@ -594,8 +594,8 @@ owl_renderer_init_common_pools_(struct owl_renderer *r) {
     pool.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     pool.queueFamilyIndex = r->graphics_family_index;
 
-    OWL_VK_CHECK(
-        vkCreateCommandPool(r->device, &pool, NULL, &r->transient_cmd_pool));
+    OWL_VK_CHECK(vkCreateCommandPool(r->device, &pool, NULL,
+                                     &r->transient_command_pool));
   }
 
   {
@@ -634,7 +634,7 @@ owl_renderer_init_common_pools_(struct owl_renderer *r) {
 
 OWL_INTERNAL void owl_renderer_deinit_common_pools_(struct owl_renderer *r) {
   vkDestroyDescriptorPool(r->device, r->common_set_pool, NULL);
-  vkDestroyCommandPool(r->device, r->transient_cmd_pool, NULL);
+  vkDestroyCommandPool(r->device, r->transient_command_pool, NULL);
 }
 
 OWL_INTERNAL enum owl_code
@@ -1311,21 +1311,21 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     VkGraphicsPipelineCreateInfo pipeline;
 
     vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_draw_cmd_vertex);
+    vertex_binding.stride = sizeof(struct owl_draw_command_vertex);
     vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     vertex_attrs[0].binding = 0;
     vertex_attrs[0].location = 0;
     vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_draw_cmd_vertex, position);
+    vertex_attrs[0].offset = offsetof(struct owl_draw_command_vertex, position);
     vertex_attrs[1].binding = 0;
     vertex_attrs[1].location = 1;
     vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_draw_cmd_vertex, color);
+    vertex_attrs[1].offset = offsetof(struct owl_draw_command_vertex, color);
     vertex_attrs[2].binding = 0;
     vertex_attrs[2].location = 2;
     vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_draw_cmd_vertex, uv);
+    vertex_attrs[2].offset = offsetof(struct owl_draw_command_vertex, uv);
 
     input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     input.pNext = NULL;
@@ -1490,21 +1490,21 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     VkGraphicsPipelineCreateInfo pipeline;
 
     vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_draw_cmd_vertex);
+    vertex_binding.stride = sizeof(struct owl_draw_command_vertex);
     vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     vertex_attrs[0].binding = 0;
     vertex_attrs[0].location = 0;
     vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_draw_cmd_vertex, position);
+    vertex_attrs[0].offset = offsetof(struct owl_draw_command_vertex, position);
     vertex_attrs[1].binding = 0;
     vertex_attrs[1].location = 1;
     vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_draw_cmd_vertex, color);
+    vertex_attrs[1].offset = offsetof(struct owl_draw_command_vertex, color);
     vertex_attrs[2].binding = 0;
     vertex_attrs[2].location = 2;
     vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_draw_cmd_vertex, uv);
+    vertex_attrs[2].offset = offsetof(struct owl_draw_command_vertex, uv);
 
     input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     input.pNext = NULL;
@@ -1669,21 +1669,21 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     VkGraphicsPipelineCreateInfo pipeline;
 
     vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_draw_cmd_vertex);
+    vertex_binding.stride = sizeof(struct owl_draw_command_vertex);
     vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     vertex_attrs[0].binding = 0;
     vertex_attrs[0].location = 0;
     vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_draw_cmd_vertex, position);
+    vertex_attrs[0].offset = offsetof(struct owl_draw_command_vertex, position);
     vertex_attrs[1].binding = 0;
     vertex_attrs[1].location = 1;
     vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_draw_cmd_vertex, color);
+    vertex_attrs[1].offset = offsetof(struct owl_draw_command_vertex, color);
     vertex_attrs[2].binding = 0;
     vertex_attrs[2].location = 2;
     vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_draw_cmd_vertex, uv);
+    vertex_attrs[2].offset = offsetof(struct owl_draw_command_vertex, uv);
 
     input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     input.pNext = NULL;
@@ -2400,47 +2400,47 @@ OWL_INTERNAL void owl_renderer_deinit_pipelines(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_init_frame_cmds_(struct owl_renderer *r) {
+owl_renderer_init_frame_commands_(struct owl_renderer *r) {
   owl_u32 i;
   enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i) {
-    VkCommandPoolCreateInfo cmd_pool;
+    VkCommandPoolCreateInfo command_pool;
 
-    cmd_pool.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    cmd_pool.pNext = NULL;
-    cmd_pool.flags = 0;
-    cmd_pool.queueFamilyIndex = r->graphics_family_index;
+    command_pool.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    command_pool.pNext = NULL;
+    command_pool.flags = 0;
+    command_pool.queueFamilyIndex = r->graphics_family_index;
 
-    OWL_VK_CHECK(vkCreateCommandPool(r->device, &cmd_pool, NULL,
-                                     &r->frame_cmd_pools[i]));
+    OWL_VK_CHECK(vkCreateCommandPool(r->device, &command_pool, NULL,
+                                     &r->frame_command_pools[i]));
   }
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i) {
-    VkCommandBufferAllocateInfo cmd;
+    VkCommandBufferAllocateInfo command;
 
-    cmd.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    cmd.pNext = NULL;
-    cmd.commandPool = r->frame_cmd_pools[i];
-    cmd.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    cmd.commandBufferCount = 1;
+    command.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    command.pNext = NULL;
+    command.commandPool = r->frame_command_pools[i];
+    command.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    command.commandBufferCount = 1;
 
-    OWL_VK_CHECK(
-        vkAllocateCommandBuffers(r->device, &cmd, &r->frame_cmd_buffers[i]));
+    OWL_VK_CHECK(vkAllocateCommandBuffers(r->device, &command,
+                                          &r->frame_command_buffers[i]));
   }
 
   return code;
 }
 
-OWL_INTERNAL void owl_renderer_deinit_frame_cmds_(struct owl_renderer *r) {
+OWL_INTERNAL void owl_renderer_deinit_frame_commands_(struct owl_renderer *r) {
   owl_u32 i;
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkFreeCommandBuffers(r->device, r->frame_cmd_pools[i], 1,
-                         &r->frame_cmd_buffers[i]);
+    vkFreeCommandBuffers(r->device, r->frame_command_pools[i], 1,
+                         &r->frame_command_buffers[i]);
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkDestroyCommandPool(r->device, r->frame_cmd_pools[i], NULL);
+    vkDestroyCommandPool(r->device, r->frame_command_pools[i], NULL);
 }
 
 OWL_INTERNAL enum owl_code
@@ -2590,7 +2590,7 @@ owl_renderer_init_dynamic_buffer_(struct owl_renderer *r, VkDeviceSize size) {
 
       buffer.buffer = r->dynamic_buffers[i];
       buffer.offset = 0;
-      buffer.range = sizeof(struct owl_draw_cmd_ubo);
+      buffer.range = sizeof(struct owl_draw_command_ubo);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
@@ -2765,11 +2765,11 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
   if (OWL_SUCCESS != (code = owl_renderer_init_pipelines_(r)))
     goto end_err_deinit_shaders;
 
-  if (OWL_SUCCESS != (code = owl_renderer_init_frame_cmds_(r)))
+  if (OWL_SUCCESS != (code = owl_renderer_init_frame_commands_(r)))
     goto end_err_deinit_pipelines;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_frame_sync_(r)))
-    goto end_err_deinit_frame_cmds;
+    goto end_err_deinit_frame_commands;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_dynamic_buffer_(r, 1024 * 1024)))
     goto end_err_deinit_frame_sync;
@@ -2785,8 +2785,8 @@ end_err_deinit_dynamic_buffer:
 end_err_deinit_frame_sync:
   owl_renderer_deinit_frame_sync_(r);
 
-end_err_deinit_frame_cmds:
-  owl_renderer_deinit_frame_cmds_(r);
+end_err_deinit_frame_commands:
+  owl_renderer_deinit_frame_commands_(r);
 
 end_err_deinit_pipelines:
   owl_renderer_deinit_pipelines(r);
@@ -2834,7 +2834,7 @@ void owl_renderer_deinit(struct owl_renderer *r) {
   owl_renderer_deinit_garbage_(r);
   owl_renderer_deinit_dynamic_buffer_(r);
   owl_renderer_deinit_frame_sync_(r);
-  owl_renderer_deinit_frame_cmds_(r);
+  owl_renderer_deinit_frame_commands_(r);
   owl_renderer_deinit_pipelines(r);
   owl_renderer_deinit_shaders_(r);
   owl_renderer_deinit_pipeline_layouts_(r);
@@ -2854,7 +2854,7 @@ void owl_renderer_deinit(struct owl_renderer *r) {
   owl_renderer_deinit_instance_(r);
 }
 
-enum owl_code owl_renderer_reserve_dynamic_memory(struct owl_renderer *r,
+OWL_INTERNAL enum owl_code owl_renderer_reserve_dynamic_memory_(struct owl_renderer *r,
                                                   VkDeviceSize size) {
   enum owl_code code = OWL_SUCCESS;
   VkDeviceSize required = r->dynamic_offsets[r->active] + size;
@@ -2934,7 +2934,7 @@ int owl_renderer_is_dynamic_buffer_clear(struct owl_renderer *r) {
   return 0 == r->dynamic_offsets[r->active];
 }
 
-void owl_renderer_clear_garbage(struct owl_renderer *r) {
+OWL_INTERNAL void owl_renderer_clear_garbage_(struct owl_renderer *r) {
   owl_renderer_deinit_garbage_(r);
 
   /* NOTE: deiniting dyn garbage leaves it in a valid state */
@@ -2958,7 +2958,7 @@ owl_renderer_dynamic_buffer_alloc(struct owl_renderer *r, VkDeviceSize size,
                                   struct owl_dynamic_buffer_reference *ref) {
   owl_byte *data = NULL;
 
-  if (OWL_SUCCESS != owl_renderer_reserve_dynamic_memory(r, size))
+  if (OWL_SUCCESS != owl_renderer_reserve_dynamic_memory_(r, size))
     goto end;
 
   ref->offset32 = (owl_u32)r->dynamic_offsets[r->active];
@@ -3010,7 +3010,7 @@ enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
   if (OWL_PIPELINE_TYPE_NONE == type)
     goto end;
 
-  vkCmdBindPipeline(r->frame_cmd_buffers[r->active],
+  vkCmdBindPipeline(r->frame_command_buffers[r->active],
                     VK_PIPELINE_BIND_POINT_GRAPHICS, r->pipelines[type]);
 
 end:
@@ -3018,8 +3018,8 @@ end:
 }
 
 enum owl_code
-owl_renderer_alloc_single_use_cmd_buffer(struct owl_renderer const *r,
-                                         VkCommandBuffer *cmd) {
+owl_renderer_alloc_single_use_command_buffer(struct owl_renderer const *r,
+                                             VkCommandBuffer *command) {
   enum owl_code code = OWL_SUCCESS;
 
   {
@@ -3027,11 +3027,11 @@ owl_renderer_alloc_single_use_cmd_buffer(struct owl_renderer const *r,
 
     buf.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     buf.pNext = NULL;
-    buf.commandPool = r->transient_cmd_pool;
+    buf.commandPool = r->transient_command_pool;
     buf.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     buf.commandBufferCount = 1;
 
-    OWL_VK_CHECK(vkAllocateCommandBuffers(r->device, &buf, cmd));
+    OWL_VK_CHECK(vkAllocateCommandBuffers(r->device, &buf, command));
   }
 
   {
@@ -3042,19 +3042,19 @@ owl_renderer_alloc_single_use_cmd_buffer(struct owl_renderer const *r,
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin.pInheritanceInfo = NULL;
 
-    OWL_VK_CHECK(vkBeginCommandBuffer(*cmd, &begin));
+    OWL_VK_CHECK(vkBeginCommandBuffer(*command, &begin));
   }
 
   return code;
 }
 
 enum owl_code
-owl_renderer_free_single_use_cmd_buffer(struct owl_renderer const *r,
-                                        VkCommandBuffer cmd) {
+owl_renderer_free_single_use_command_buffer(struct owl_renderer const *r,
+                                            VkCommandBuffer command) {
   VkSubmitInfo submit;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_VK_CHECK(vkEndCommandBuffer(cmd));
+  OWL_VK_CHECK(vkEndCommandBuffer(command));
 
   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit.pNext = NULL;
@@ -3062,14 +3062,164 @@ owl_renderer_free_single_use_cmd_buffer(struct owl_renderer const *r,
   submit.pWaitSemaphores = NULL;
   submit.pWaitDstStageMask = NULL;
   submit.commandBufferCount = 1;
-  submit.pCommandBuffers = &cmd;
+  submit.pCommandBuffers = &command;
   submit.signalSemaphoreCount = 0;
   submit.pSignalSemaphores = NULL;
 
   OWL_VK_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit, NULL));
   OWL_VK_CHECK(vkQueueWaitIdle(r->graphics_queue));
 
-  vkFreeCommandBuffers(r->device, r->transient_cmd_pool, 1, &cmd);
+  vkFreeCommandBuffers(r->device, r->transient_command_pool, 1, &command);
 
   return code;
 }
+
+#define OWL_TIMEOUT (owl_u64) - 1
+
+OWL_INTERNAL enum owl_code owl_renderer_acquire_next_image_(struct owl_renderer *r) {
+  enum owl_code code = OWL_SUCCESS;
+
+  VkResult const result =
+      vkAcquireNextImageKHR(r->device, r->swapchain, OWL_TIMEOUT,
+                            r->image_available_semaphores[r->active],
+                            VK_NULL_HANDLE, &r->swapchain_active_image);
+
+  if (VK_ERROR_OUT_OF_DATE_KHR == result)
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+  else if (VK_SUBOPTIMAL_KHR == result)
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+  else if (VK_ERROR_SURFACE_LOST_KHR == result)
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+
+  return code;
+}
+
+OWL_INTERNAL void owl_renderer_prepare_frame_(struct owl_renderer *r) {
+  OWL_VK_CHECK(vkWaitForFences(r->device, 1, &r->in_flight_fences[r->active],
+                               VK_TRUE, OWL_TIMEOUT));
+  OWL_VK_CHECK(vkResetFences(r->device, 1, &r->in_flight_fences[r->active]));
+  OWL_VK_CHECK(
+      vkResetCommandPool(r->device, r->frame_command_pools[r->active], 0));
+}
+
+OWL_INTERNAL void owl_renderer_begin_recording_(struct owl_renderer *r) {
+  {
+    VkCommandBufferBeginInfo begin;
+
+    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin.pNext = NULL;
+    begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    begin.pInheritanceInfo = NULL;
+
+    OWL_VK_CHECK(
+        vkBeginCommandBuffer(r->frame_command_buffers[r->active], &begin));
+  }
+
+  {
+    VkRenderPassBeginInfo begin;
+
+    begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    begin.pNext = NULL;
+    begin.renderPass = r->main_render_pass;
+    begin.framebuffer = r->swapchain_framebuffers[r->swapchain_active_image];
+    begin.renderArea.offset.x = 0;
+    begin.renderArea.offset.y = 0;
+    begin.renderArea.extent = r->swapchain_extent;
+    begin.clearValueCount = OWL_ARRAY_SIZE(r->swapchain_clear_values);
+    begin.pClearValues = r->swapchain_clear_values;
+
+    vkCmdBeginRenderPass(r->frame_command_buffers[r->active], &begin,
+                         VK_SUBPASS_CONTENTS_INLINE);
+  }
+}
+
+enum owl_code owl_renderer_begin_frame(struct owl_renderer *r) {
+  enum owl_code code = OWL_SUCCESS;
+
+  if (OWL_SUCCESS != (code = owl_renderer_acquire_next_image_(r)))
+    goto end;
+
+  owl_renderer_prepare_frame_(r);
+  owl_renderer_begin_recording_(r);
+
+end:
+  return code;
+}
+#undef OWL_TIMEOUT
+
+OWL_INTERNAL void owl_renderer_end_recording_(struct owl_renderer *r) {
+  vkCmdEndRenderPass(r->frame_command_buffers[r->active]);
+  OWL_VK_CHECK(vkEndCommandBuffer(r->frame_command_buffers[r->active]));
+}
+
+OWL_INTERNAL void owl_renderer_submit_graphics_(struct owl_renderer *r) {
+#define OWL_WAIT_STAGE VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+
+  VkSubmitInfo submit;
+  VkPipelineStageFlags const stage = OWL_WAIT_STAGE;
+
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.pNext = NULL;
+  submit.waitSemaphoreCount = 1;
+  submit.pWaitSemaphores = &r->image_available_semaphores[r->active];
+  submit.signalSemaphoreCount = 1;
+  submit.pSignalSemaphores = &r->render_done_semaphores[r->active];
+  submit.pWaitDstStageMask = &stage;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &r->frame_command_buffers[r->active];
+
+  OWL_VK_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit,
+                             r->in_flight_fences[r->active]));
+
+#undef OWL_WAIT_STAGE
+}
+
+OWL_INTERNAL enum owl_code owl_renderer_present_swapchain_(struct owl_renderer *r) {
+  VkResult result;
+  VkPresentInfoKHR present;
+  enum owl_code code = OWL_SUCCESS;
+
+  present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+  present.pNext = NULL;
+  present.waitSemaphoreCount = 1;
+  present.pWaitSemaphores = &r->render_done_semaphores[r->active];
+  present.swapchainCount = 1;
+  present.pSwapchains = &r->swapchain;
+  present.pImageIndices = &r->swapchain_active_image;
+  present.pResults = NULL;
+
+  result = vkQueuePresentKHR(r->present_queue, &present);
+
+  if (VK_ERROR_OUT_OF_DATE_KHR == result)
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+  else if (VK_SUBOPTIMAL_KHR == result)
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+  else if (VK_ERROR_SURFACE_LOST_KHR == result)
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+
+  return code;
+}
+
+OWL_INTERNAL void owl_renderer_swap_active_(struct owl_renderer *r) {
+  if (OWL_RENDERER_DYNAMIC_BUFFER_COUNT == ++r->active)
+    r->active = 0;
+}
+
+enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
+  enum owl_code code = OWL_SUCCESS;
+
+  owl_renderer_end_recording_(r);
+  owl_renderer_submit_graphics_(r);
+
+  if (OWL_SUCCESS != (code = owl_renderer_present_swapchain_(r)))
+    goto end;
+
+  owl_renderer_swap_active_(r);
+  /* reset dyn buffer */
+  owl_renderer_clear_dynamic_offset(r);
+  owl_renderer_clear_garbage_(r);
+
+end:
+  return code;
+}
+

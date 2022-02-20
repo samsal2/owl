@@ -128,7 +128,7 @@ struct owl_renderer {
   /* ====================================================================== */
   /* general purpose pools */
   /* ====================================================================== */
-  VkCommandPool transient_cmd_pool;
+  VkCommandPool transient_command_pool;
   VkDescriptorPool common_set_pool;
   /* ====================================================================== */
 
@@ -200,8 +200,8 @@ struct owl_renderer {
   /* ====================================================================== */
   /* frame submition resources */
   /* ====================================================================== */
-  VkCommandPool frame_cmd_pools[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  VkCommandBuffer frame_cmd_buffers[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
+  VkCommandPool frame_command_pools[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
+  VkCommandBuffer frame_command_buffers[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -250,14 +250,9 @@ owl_renderer_reinit_swapchain(struct owl_renderer_init_info const *info,
 
 void owl_renderer_deinit(struct owl_renderer *r);
 
-enum owl_code owl_renderer_reserve_dynamic_memory(struct owl_renderer *r,
-                                                  VkDeviceSize size);
-
 int owl_renderer_is_dynamic_buffer_clear(struct owl_renderer *r);
 
 void owl_renderer_clear_dynamic_offset(struct owl_renderer *r);
-
-void owl_renderer_clear_garbage(struct owl_renderer *r);
 
 owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
                                       owl_u32 filter,
@@ -271,11 +266,16 @@ enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
                                          enum owl_pipeline_type type);
 
 enum owl_code
-owl_renderer_alloc_single_use_cmd_buffer(struct owl_renderer const *r,
-                                         VkCommandBuffer *cmd);
+owl_renderer_alloc_single_use_command_buffer(struct owl_renderer const *r,
+                                             VkCommandBuffer *command);
 
 enum owl_code
-owl_renderer_free_single_use_cmd_buffer(struct owl_renderer const *r,
-                                        VkCommandBuffer cmd);
+owl_renderer_free_single_use_command_buffer(struct owl_renderer const *r,
+                                            VkCommandBuffer command);
 
+void owl_renderer_clear_dynamic_offset(struct owl_renderer *r);
+
+enum owl_code owl_renderer_begin_frame(struct owl_renderer *r);
+
+enum owl_code owl_renderer_end_frame(struct owl_renderer *r);
 #endif

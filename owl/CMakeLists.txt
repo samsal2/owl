@@ -2,8 +2,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   CMakeLists.txt
   font.c
   font.h
-  frame.c
-  frame.h
   texture.c
   texture.h
   internal.c
@@ -16,7 +14,7 @@ target_sources(${PROJECT_NAME} PRIVATE
   vector_math.h
   window.c
   window.h
-  draw_cmd.c
-  draw_cmd.h
+  draw_command.c
+  draw_command.h
   skybox.c
   skybox.h)

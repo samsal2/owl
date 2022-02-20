@@ -87,7 +87,7 @@ struct owl_vk_image_transition_info {
 };
 
 enum owl_code
-owl_vk_image_transition(VkCommandBuffer cmd,
+owl_vk_image_transition(VkCommandBuffer command,
                         struct owl_vk_image_transition_info const *info);
 
 struct owl_vk_image_mip_info {
@@ -98,7 +98,7 @@ struct owl_vk_image_mip_info {
 };
 
 enum owl_code
-owl_vk_image_generate_mips(VkCommandBuffer cmd,
+owl_vk_image_generate_mips(VkCommandBuffer command,
                            struct owl_vk_image_mip_info const *info);
 
 VkFormat owl_as_vk_format_(enum owl_pixel_format format);

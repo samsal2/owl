@@ -29,9 +29,9 @@ struct cloth {
   struct particle particles[PARTICLE_COUNT];
 
   /* priv draw info */
-  struct owl_draw_cmd group_;
+  struct owl_draw_command group_;
   owl_u32 indices_[IDXS_COUNT];
-  struct owl_draw_cmd_vertex vertices_[PARTICLE_COUNT];
+  struct owl_draw_command_vertex vertices_[PARTICLE_COUNT];
 };
 
 static void init_cloth_(struct cloth *cloth) {
@@ -206,7 +206,7 @@ void init_cloth(struct cloth *cloth, struct owl_texture *texture) {
   cloth->group_.storage.as_basic.vertices = cloth->vertices_;
 }
 
-struct owl_draw_cmd_ubo *get_cloth_pvm(struct cloth *cloth) {
+struct owl_draw_command_ubo *get_cloth_pvm(struct cloth *cloth) {
   return &cloth->group_.storage.as_basic.ubo;
 }
 
@@ -232,13 +232,13 @@ static struct owl_renderer_init_info renderer_info;
 static struct owl_renderer renderer;
 static struct owl_texture_init_info texture_info;
 static struct owl_texture texture;
-static struct owl_draw_cmd group;
+static struct owl_draw_command group;
 static struct cloth cloth;
 static struct owl_font font;
-static struct owl_draw_cmd text;
+static struct owl_draw_command text;
 static struct owl_skybox_init_info skybox_info;
 static struct owl_skybox skybox;
-static struct owl_draw_cmd skybox_draw_cmd;
+static struct owl_draw_command skybox_draw_command;
 
 #define UNSELECTED (owl_u32) - 1
 #define TPATH "../../assets/cloth.jpeg"
@@ -250,7 +250,7 @@ int main(void) {
   owl_v3 up;
   owl_v3 position;
   owl_v3 color;
-  struct owl_draw_cmd_ubo *pvm;
+  struct owl_draw_command_ubo *pvm;
   owl_u32 selected = UNSELECTED;
 
   window_info.height = 600;
@@ -310,9 +310,9 @@ int main(void) {
 
   owl_translate_m4(position, pvm->model);
 
-  skybox_draw_cmd.type = OWL_DRAW_CMD_TYPE_SKYBOX;
-  skybox_draw_cmd.storage.as_skybox.skybox = &skybox;
-  skybox_draw_cmd.storage.as_skybox.ubo = *pvm;
+  skybox_draw_command.type = OWL_DRAW_CMD_TYPE_SKYBOX;
+  skybox_draw_command.storage.as_skybox.skybox = &skybox;
+  skybox_draw_command.storage.as_skybox.ubo = *pvm;
 
   while (!owl_window_is_done(&window)) {
 #if 1
@@ -332,14 +332,14 @@ int main(void) {
 
     update_cloth(1.0F / 60.0F, &cloth);
 
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_frame_begin(&renderer)) {
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(&renderer)) {
       owl_window_fill_renderer_init_info(&window, &renderer_info);
       owl_renderer_reinit_swapchain(&renderer_info, &renderer);
       continue;
     }
 
     owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_SKYBOX);
-    owl_draw_cmd_submit(&renderer, &skybox_draw_cmd);
+    owl_draw_command_submit(&renderer, &skybox_draw_command);
 
 #if 1
     owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_MAIN);
@@ -348,7 +348,7 @@ int main(void) {
 #endif
 
 #if 1
-    owl_draw_cmd_submit(&renderer, &cloth.group_);
+    owl_draw_command_submit(&renderer, &cloth.group_);
 #endif
 
 #if 1
@@ -356,9 +356,9 @@ int main(void) {
 #endif
 
     text.storage.as_text.text = fps_string(input->dt_time);
-    owl_draw_cmd_submit(&renderer, &text);
+    owl_draw_command_submit(&renderer, &text);
 
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_frame_end(&renderer)) {
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(&renderer)) {
       owl_window_fill_renderer_init_info(&window, &renderer_info);
       owl_renderer_reinit_swapchain(&renderer_info, &renderer);
       continue;

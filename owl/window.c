@@ -124,7 +124,7 @@ OWL_INTERNAL enum owl_code owl_window_ensure_glfw_(void) {
   enum owl_code code = OWL_SUCCESS;
 
   if (!g_glfw_user_count++)
-    if (GLFW_FALSE == glfwInit()) 
+    if (GLFW_FALSE == glfwInit())
       code = OWL_ERROR_BAD_INIT;
 
   return code;
@@ -190,7 +190,6 @@ end:
 
 void owl_window_deinit(struct owl_window *w) {
   glfwDestroyWindow(w->data);
-
 
   if (!--g_glfw_user_count)
     glfwTerminate();
