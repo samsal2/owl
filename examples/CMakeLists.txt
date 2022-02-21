@@ -3,11 +3,5 @@ macro(add_example name)
   target_link_libraries(${name} owl)
 endmacro()
 
-# add_example(hello_world)
 add_example(cloth_simulation)
-# add_example(model)
-# add_example(fluid_simulation)
-# add_example(light)
-
-# add_example(test)
 

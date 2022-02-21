@@ -234,7 +234,7 @@ owl_window_fill_renderer_init_info(struct owl_window const *w,
   info->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
 #endif /* OWL_ENABLE_VALIDATION */
 
-  info->instance_extension_count = (int)count;
+  info->instance_extensions_count = (int)count;
   info->name = w->title;
 
   return code;

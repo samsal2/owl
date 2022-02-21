@@ -38,7 +38,7 @@ struct owl_renderer_init_info {
   int framebuffer_width;
   int framebuffer_height;
 
-  int instance_extension_count;
+  int instance_extensions_count;
   char const *const *instance_extensions;
 
   void const *surface_user_data;
@@ -47,7 +47,7 @@ struct owl_renderer_init_info {
 };
 
 struct owl_dynamic_buffer_reference {
-  owl_u32 u32_offset;
+  owl_u32 offset32;
   VkDeviceSize offset;
   VkBuffer buffer;
   VkDescriptorSet pvm_set;
@@ -242,7 +242,7 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
                                 struct owl_renderer *r);
 
 enum owl_code
-owl_renderer_reinit_swapchain(struct owl_renderer_init_info const *info,
+owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
                               struct owl_renderer *r);
 
 void owl_renderer_deinit(struct owl_renderer *r);

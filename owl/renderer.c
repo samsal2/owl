@@ -41,7 +41,7 @@ owl_renderer_init_instance_(struct owl_renderer_init_info const *info,
   instance.enabledLayerCount = 0;
   instance.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
-  instance.enabledExtensionCount = (owl_u32)info->instance_extension_count;
+  instance.enabledExtensionCount = (owl_u32)info->instance_extensions_count;
   instance.ppEnabledExtensionNames = info->instance_extensions;
 
   OWL_VK_CHECK(vkCreateInstance(&instance, NULL, &r->instance));
@@ -214,20 +214,25 @@ owl_validate_device_extensions_(owl_u32 count,
                                 VkExtensionProperties const *extensions) {
   owl_u32 i;
   owl_u32 j;
-  int found[OWL_ARRAY_SIZE(g_required_device_extensions)];
+  int found = 1;
+  int extensions_found[OWL_ARRAY_SIZE(g_required_device_extensions)];
 
-  OWL_MEMSET(found, 0, sizeof(found));
+  OWL_MEMSET(extensions_found, 0, sizeof(extensions_found));
 
   for (i = 0; i < count; ++i)
     for (j = 0; j < OWL_ARRAY_SIZE(g_required_device_extensions); ++j)
       if (!strcmp(g_required_device_extensions[j], extensions[i].extensionName))
-        found[j] = 1;
+        extensions_found[j] = 1;
 
-  for (i = 0; i < OWL_ARRAY_SIZE(g_required_device_extensions); ++i)
-    if (!found[i])
-      return 0;
+  for (i = 0; i < OWL_ARRAY_SIZE(g_required_device_extensions); ++i) {
+    if (!extensions_found[i]) {
+      found = 0;
+      goto end;
+    }
+  }
 
-  return 1;
+end:
+  return found;
 }
 
 OWL_INTERNAL enum owl_code
@@ -297,7 +302,7 @@ end:
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_select_surface_format_(struct owl_renderer *r, 
+owl_renderer_select_surface_format_(struct owl_renderer *r,
                                     VkSurfaceFormatKHR const *expected) {
   owl_u32 i;
   owl_u32 formats_count;
@@ -364,7 +369,7 @@ OWL_INTERNAL owl_u32 owl_get_queue_count_(struct owl_renderer const *r) {
 }
 
 OWL_INTERNAL enum owl_code owl_renderer_init_device_(struct owl_renderer *r) {
-  VkSurfaceFormatKHR expected;
+  VkSurfaceFormatKHR format;
   VkDeviceCreateInfo device;
   VkDeviceQueueCreateInfo queues[2];
   float const priority = 1.0F;
@@ -376,10 +381,10 @@ OWL_INTERNAL enum owl_code owl_renderer_init_device_(struct owl_renderer *r) {
   if (OWL_SUCCESS != (code = owl_renderer_select_physical_device_(r)))
     goto end;
 
-  expected.format = VK_FORMAT_B8G8R8A8_SRGB;
-  expected.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+  format.format = VK_FORMAT_B8G8R8A8_SRGB;
+  format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
-  if (OWL_SUCCESS != (code = owl_renderer_select_surface_format_(r, &expected)))
+  if (OWL_SUCCESS != (code = owl_renderer_select_surface_format_(r, &format)))
     goto end;
 
   if (OWL_SUCCESS != (code = owl_renderer_select_sample_count_(r)))
@@ -411,6 +416,7 @@ OWL_INTERNAL enum owl_code owl_renderer_init_device_(struct owl_renderer *r) {
   device.pEnabledFeatures = &r->device_features;
 
   OWL_VK_CHECK(vkCreateDevice(r->physical_device, &device, NULL, &r->device));
+
   vkGetDeviceQueue(r->device, r->graphics_family_index, 0, &r->graphics_queue);
   vkGetDeviceQueue(r->device, r->present_family_index, 0, &r->present_queue);
 
@@ -2390,7 +2396,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
   return code;
 }
 
-OWL_INTERNAL void owl_renderer_deinit_pipelines(struct owl_renderer *r) {
+OWL_INTERNAL void owl_renderer_deinit_pipelines_(struct owl_renderer *r) {
   /* NOTE: could loop it, but it's a good remainder */
 
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND],
@@ -2738,7 +2744,7 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
   if (OWL_SUCCESS != (code = owl_renderer_init_surface_(info, r)))
 #ifdef OWL_ENABLE_VALIDATION
     goto end_err_deinit_debug;
-#else /* OWL_ENABLE_VALIDATION */
+#else  /* OWL_ENABLE_VALIDATION */
     goto end_err_deinit_instance;
 #endif /* OWL_ENABLE_VALIDATION */
 
@@ -2796,7 +2802,7 @@ end_err_deinit_frame_commands:
   owl_renderer_deinit_frame_commands_(r);
 
 end_err_deinit_pipelines:
-  owl_renderer_deinit_pipelines(r);
+  owl_renderer_deinit_pipelines_(r);
 
 end_err_deinit_shaders:
   owl_renderer_deinit_shaders_(r);
@@ -2847,7 +2853,7 @@ void owl_renderer_deinit(struct owl_renderer *r) {
   owl_renderer_deinit_dynamic_buffer_(r);
   owl_renderer_deinit_frame_sync_(r);
   owl_renderer_deinit_frame_commands_(r);
-  owl_renderer_deinit_pipelines(r);
+  owl_renderer_deinit_pipelines_(r);
   owl_renderer_deinit_shaders_(r);
   owl_renderer_deinit_pipeline_layouts_(r);
   owl_renderer_deinit_set_layouts_(r);
@@ -2890,14 +2896,14 @@ end:
   return code;
 }
 
-enum owl_code
-owl_renderer_reinit_swapchain(struct owl_renderer_init_info const *info,
-                              struct owl_renderer *r) {
+OWL_INTERNAL enum owl_code
+owl_renderer_reinit_swapchain_(struct owl_renderer_init_info const *info,
+                               struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
-  owl_renderer_deinit_pipelines(r);
+  owl_renderer_deinit_pipelines_(r);
   owl_renderer_deinit_framebuffers_(r);
   owl_renderer_deinit_attachments_(r);
   owl_renderer_deinit_main_render_pass_(r);
@@ -2943,6 +2949,12 @@ end:
   return code;
 }
 
+enum owl_code
+owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
+                              struct owl_renderer *r) {
+  return owl_renderer_reinit_swapchain_(info, r);
+}
+
 int owl_renderer_is_dynamic_buffer_clear(struct owl_renderer *r) {
   return 0 == r->dynamic_offsets[r->active];
 }
@@ -2974,7 +2986,7 @@ owl_renderer_dynamic_buffer_alloc(struct owl_renderer *r, VkDeviceSize size,
   if (OWL_SUCCESS != owl_renderer_reserve_dynamic_memory_(r, size))
     goto end;
 
-  ref->u32_offset = (owl_u32)r->dynamic_offsets[r->active];
+  ref->offset32 = (owl_u32)r->dynamic_offsets[r->active];
   ref->offset = r->dynamic_offsets[r->active];
   ref->buffer = r->dynamic_buffers[r->active];
   ref->pvm_set = r->dynamic_pvm_sets[r->active];

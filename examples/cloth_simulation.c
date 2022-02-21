@@ -262,7 +262,7 @@ int main(void) {
   window_info.title = "cloth-sim";
   TEST(owl_window_init(&window_info, &input, &window));
 
-  owl_window_fill_renderer_init_info(&window, &renderer_info);
+  TEST(owl_window_fill_renderer_init_info(&window, &renderer_info));
 
   TEST(owl_renderer_init(&renderer_info, &renderer));
 
@@ -338,7 +338,7 @@ int main(void) {
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(&renderer)) {
       owl_window_fill_renderer_init_info(&window, &renderer_info);
-      owl_renderer_reinit_swapchain(&renderer_info, &renderer);
+      owl_renderer_resize_swapchain(&renderer_info, &renderer);
       continue;
     }
 
@@ -364,7 +364,7 @@ int main(void) {
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(&renderer)) {
       owl_window_fill_renderer_init_info(&window, &renderer_info);
-      owl_renderer_reinit_swapchain(&renderer_info, &renderer);
+      owl_renderer_resize_swapchain(&renderer_info, &renderer);
       continue;
     }
 

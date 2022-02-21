@@ -270,7 +270,6 @@ enum owl_code owl_texture_init_from_reference(
 #undef OWL_IMAGE_USAGE
   }
 
-  /* init memory */
   {
     VkMemoryAllocateInfo memory;
     VkMemoryRequirements requirements;
@@ -308,7 +307,6 @@ enum owl_code owl_texture_init_from_reference(
     OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &tex->view));
   }
 
-  /* init the descriptor set */
   {
     VkDescriptorSetAllocateInfo set;
 
@@ -321,7 +319,6 @@ enum owl_code owl_texture_init_from_reference(
     OWL_VK_CHECK(vkAllocateDescriptorSets(r->device, &set, &tex->set));
   }
 
-  /* stage, mips and layout */
   {
     VkCommandBuffer command;
     owl_renderer_alloc_single_use_command_buffer(r, &command);
@@ -340,6 +337,7 @@ enum owl_code owl_texture_init_from_reference(
 
     {
       VkBufferImageCopy copy;
+
       copy.bufferOffset = ref->offset;
       copy.bufferRowLength = 0;
       copy.bufferImageHeight = 0;
@@ -353,6 +351,7 @@ enum owl_code owl_texture_init_from_reference(
       copy.imageExtent.width = (owl_u32)info->width;
       copy.imageExtent.height = (owl_u32)info->height;
       copy.imageExtent.depth = 1;
+
       vkCmdCopyBufferToImage(command, ref->buffer, tex->image,
                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
     }
