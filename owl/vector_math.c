@@ -35,9 +35,13 @@ void owl_m4v4_mul(owl_m4 const m, owl_v4 const v, owl_v4 out) {
       m[0][3] * tmp[0] + m[1][3] * tmp[1] + m[2][3] * tmp[2] + m[3][3] * tmp[3];
 }
 
-float owl_v2_mag(owl_v2 const v) { return OWL_SQRTF(OWL_V2_DOT(v, v)); }
+float owl_v2_mag(owl_v2 const v) {
+  return OWL_SQRTF(OWL_V2_DOT(v, v));
+}
 
-float owl_v3_mag(owl_v3 const v) { return OWL_SQRTF(OWL_V3_DOT(v, v)); }
+float owl_v3_mag(owl_v3 const v) {
+  return OWL_SQRTF(OWL_V3_DOT(v, v));
+}
 
 void owl_v3_normalize(owl_v3 const v, owl_v3 out) {
   float const mag = 1 / owl_v3_mag(v);

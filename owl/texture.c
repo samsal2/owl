@@ -506,4 +506,6 @@ owl_byte *owl_texture_data_from_file(char const *path,
   return stbi_load(path, &info->width, &info->height, &ch, STBI_rgb_alpha);
 }
 
-void owl_texture_free_data_from_file(owl_byte *data) { stbi_image_free(data); }
+void owl_texture_free_data_from_file(owl_byte *data) {
+  stbi_image_free(data);
+}
