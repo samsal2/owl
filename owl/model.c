@@ -1214,11 +1214,6 @@ void owl_model_deinit(struct owl_renderer *r, struct owl_model *model) {
     owl_model_deinit_mesh_(r, &model->meshes[i]);
 }
 
-void owl_model_destroy(struct owl_renderer *r, struct owl_model *model) {
-  owl_model_deinit(r, model);
-  OWL_FREE(model);
-}
-
 OWL_INTERNAL void
 owl_model_bind_vertex_and_index_buffers_(struct owl_renderer *r,
                                          struct owl_model const *model) {
@@ -1230,56 +1225,11 @@ owl_model_bind_vertex_and_index_buffers_(struct owl_renderer *r,
                        VK_INDEX_TYPE_UINT32);
 }
 
-#if 0
-
-OWL_INTERNAL void
-owl_model_submit_primitives_(struct owl_renderer *r,
-                             struct owl_model const *model,
-                             struct owl_model_mesh const *mesh) {
-  int i;
-  struct owl_model_mesh_data const *mesh_data;
-
-  if (OWL_MODEL_MESH_HANDLE_NONE == mesh->handle)
-    return;
-
-  mesh_data = &model->meshes[mesh->handle];
-
-  for (i = 0; i < mesh_data->primitives_count; ++i) {
-    struct owl_model_material const *material =
-        &mesh_data->primitives[i].material;
-    struct owl_model_material_data const *material_data =
-        &model->materials[material->handle];
-  }
-}
-
-#endif
-
 enum owl_code owl_model_submit(struct owl_renderer *r,
-                               struct owl_draw_uniform const *uniform,
                                struct owl_model const *model) {
   int i;
 
   owl_model_bind_vertex_and_index_buffers_(r, model);
-
-  {
-    VkDeviceSize size;
-    owl_byte *data;
-    VkDescriptorSet sets[2];
-    struct owl_dynamic_buffer_reference ref;
-
-    size = sizeof(*uniform);
-    data = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
-
-    OWL_MEMCPY(data, uniform, size);
-
-    sets[0] = ref.pvm_set;
-    sets[1] = model->materials[1].set;
-
-    vkCmdBindDescriptorSets(r->active_command_buffer,
-                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            r->pipeline_layouts[r->bound_pipeline], 0,
-                            OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
-  }
 
   for (i = 0; i < model->roots_count; ++i)
     owl_submit_node_(r, model, &model->roots[i]);

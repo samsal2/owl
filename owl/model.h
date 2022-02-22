@@ -175,15 +175,9 @@ struct owl_model {
 enum owl_code owl_model_init_from_file(struct owl_renderer *r, char const *path,
                                        struct owl_model *model);
 
-enum owl_code owl_model_create_from_file(struct owl_renderer *r,
-                                         char const *path,
-                                         struct owl_model **model);
-
 void owl_model_deinit(struct owl_renderer *r, struct owl_model *model);
-void owl_model_destroy(struct owl_renderer *r, struct owl_model *model);
 
 enum owl_code owl_model_submit(struct owl_renderer *r,
-                               struct owl_draw_uniform const *uniform,
                                struct owl_model const *model);
 
 #endif
