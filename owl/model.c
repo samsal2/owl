@@ -57,8 +57,8 @@ owl_gltf_find_attr_(cgltf_primitive const *prim, char const *name) {
 }
 
 OWL_INTERNAL void const *owl_gltf_get_attr_data_(cgltf_attribute const *attr) {
-  owl_byte const *bdata = attr->data->buffer_view->buffer->data;
-  return &bdata[attr->data->buffer_view->offset + attr->data->offset];
+  owl_byte const *d = attr->data->buffer_view->buffer->data;
+  return &d[attr->data->buffer_view->offset + attr->data->offset];
 }
 
 OWL_INTERNAL int owl_gltf_get_type_size_(cgltf_type type) {
@@ -766,95 +766,97 @@ owl_model_process_materials_(struct owl_renderer *r, cgltf_data const *data,
   model->materials_count = (int)data->materials_count;
 
   for (i = 0; i < model->materials_count; ++i) {
-    cgltf_material const *material = &data->materials[i];
-    struct owl_model_material_data *material_data = &model->materials[i];
+    cgltf_material const *gltf_material = &data->materials[i];
+    struct owl_model_material_data *material = &model->materials[i];
 
-    if (material->pbr_metallic_roughness.base_color_texture.texture) {
+    if (gltf_material->pbr_metallic_roughness.base_color_texture.texture) {
       code = owl_model_get_texture_(model,
-                                    material->pbr_metallic_roughness
+                                    gltf_material->pbr_metallic_roughness
                                         .base_color_texture.texture->image->uri,
-                                    &material_data->base_color_texture);
+                                    &material->base_color_texture);
 
       if (OWL_SUCCESS != code)
         return code;
 
-      material_data->base_color_texcoord =
-          material->pbr_metallic_roughness.base_color_texture.texcoord;
+      material->base_color_texcoord =
+          gltf_material->pbr_metallic_roughness.base_color_texture.texcoord;
     } else {
-      material_data->base_color_texture.handle = OWL_MODEL_TEXTURE_HANDLE_NONE;
+      material->base_color_texture.handle = OWL_MODEL_TEXTURE_HANDLE_NONE;
     }
 
-    if (material->pbr_metallic_roughness.metallic_roughness_texture.texture) {
+    if (gltf_material->pbr_metallic_roughness.metallic_roughness_texture
+            .texture) {
       code = owl_model_get_texture_(
           model,
-          material->pbr_metallic_roughness.metallic_roughness_texture.texture
-              ->image->uri,
-          &material_data->metallic_roughness_texture);
+          gltf_material->pbr_metallic_roughness.metallic_roughness_texture
+              .texture->image->uri,
+          &material->metallic_roughness_texture);
 
       if (OWL_SUCCESS != code)
         return code;
 
-      material_data->metallic_roughness_texcoord =
-          material->pbr_metallic_roughness.metallic_roughness_texture.texcoord;
+      material->metallic_roughness_texcoord =
+          gltf_material->pbr_metallic_roughness.metallic_roughness_texture
+              .texcoord;
     } else {
-      material_data->metallic_roughness_texture.handle =
+      material->metallic_roughness_texture.handle =
           OWL_MODEL_TEXTURE_HANDLE_NONE;
     }
 
-    if (material->normal_texture.texture) {
+    if (gltf_material->normal_texture.texture) {
       code = owl_model_get_texture_(
-          model, material->normal_texture.texture->image->uri,
-          &material_data->metallic_roughness_texture);
+          model, gltf_material->normal_texture.texture->image->uri,
+          &material->metallic_roughness_texture);
 
       if (OWL_SUCCESS != code)
         return code;
 
-      material_data->normal_texcoord = material->normal_texture.texcoord;
+      material->normal_texcoord = gltf_material->normal_texture.texcoord;
     } else {
-      material_data->normal_texture.handle = OWL_MODEL_TEXTURE_HANDLE_NONE;
+      material->normal_texture.handle = OWL_MODEL_TEXTURE_HANDLE_NONE;
     }
 
-    if (material->emissive_texture.texture) {
+    if (gltf_material->emissive_texture.texture) {
       code = owl_model_get_texture_(
-          model, material->emissive_texture.texture->image->uri,
-          &material_data->emissive_texture);
+          model, gltf_material->emissive_texture.texture->image->uri,
+          &material->emissive_texture);
 
       if (OWL_SUCCESS != code)
         return code;
 
-      material_data->emissive_texcoord = material->emissive_texture.texcoord;
+      material->emissive_texcoord = gltf_material->emissive_texture.texcoord;
     } else {
-      material_data->emissive_texture.handle = OWL_MODEL_TEXTURE_HANDLE_NONE;
+      material->emissive_texture.handle = OWL_MODEL_TEXTURE_HANDLE_NONE;
     }
 
-    if (material->occlusion_texture.texture) {
+    if (gltf_material->occlusion_texture.texture) {
       code = owl_model_get_texture_(
-          model, material->occlusion_texture.texture->image->uri,
-          &material_data->occlusion_texture);
+          model, gltf_material->occlusion_texture.texture->image->uri,
+          &material->occlusion_texture);
 
       if (OWL_SUCCESS != code)
         return code;
 
-      material_data->occlusion_texcoord = material->occlusion_texture.texcoord;
+      material->occlusion_texcoord = gltf_material->occlusion_texture.texcoord;
     }
 
-    material_data->alpha_mode = owl_get_alpha_mode_(material->alpha_mode);
+    material->alpha_mode = owl_get_alpha_mode_(gltf_material->alpha_mode);
 
-    material_data->roughness_factor =
-        material->pbr_metallic_roughness.roughness_factor;
+    material->roughness_factor =
+        gltf_material->pbr_metallic_roughness.roughness_factor;
 
-    material_data->metallic_factor =
-        material->pbr_metallic_roughness.metallic_factor;
+    material->metallic_factor =
+        gltf_material->pbr_metallic_roughness.metallic_factor;
 
-    OWL_V4_COPY(material->pbr_metallic_roughness.base_color_factor,
-                material_data->base_color_factor);
+    OWL_V4_COPY(gltf_material->pbr_metallic_roughness.base_color_factor,
+                material->base_color_factor);
 
-    material_data->alpha_cutoff = material->alpha_cutoff;
+    material->alpha_cutoff = gltf_material->alpha_cutoff;
 
-    OWL_V4_SET(0.0F, 0.0F, 0.0F, 1.0F, material_data->emissive_factor);
-    OWL_V3_COPY(material->emissive_factor, material_data->emissive_factor);
+    OWL_V4_SET(0.0F, 0.0F, 0.0F, 1.0F, material->emissive_factor);
+    OWL_V3_COPY(gltf_material->emissive_factor, material->emissive_factor);
 
-    material_data->name = material->name;
+    material->name = gltf_material->name;
 
 #if 0
     {
@@ -908,7 +910,7 @@ owl_model_process_materials_(struct owl_renderer *r, cgltf_data const *data,
       images[4].imageLayout = model->textures[handle].image_layout;
 
       // FIXME: not using combined image sampler atm
-      OWL_ASSERT(0 && "FATAL");
+      OWL_STATIC_ASSERT(0, "implement separated sampler and texture ");
       for (j = 0; j < OWL_ARRAY_SIZE(writes); ++j) {
         writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         writes[j].pNext = NULL;
@@ -1007,9 +1009,9 @@ OWL_INTERNAL enum owl_code owl_submit_node_(struct owl_renderer *r,
         r->active_command_buffer, r->pipeline_layouts[r->bound_pipeline],
         VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push_constant), &push_constant);
 
-    if (primitive->has_indices) 
-      vkCmdDrawIndexed(r->active_command_buffer, primitive->indices_count,
-                       1, primitive->first_index, 0, 0);
+    if (primitive->has_indices)
+      vkCmdDrawIndexed(r->active_command_buffer, primitive->indices_count, 1,
+                       primitive->first_index, 0, 0);
     else
       vkCmdDraw(r->active_command_buffer, primitive->vertex_count, 1, 0, 0);
   }

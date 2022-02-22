@@ -346,10 +346,10 @@ end:
 
 OWL_INTERNAL enum owl_code
 owl_renderer_select_sample_count_(struct owl_renderer *r) {
+  enum owl_code code = OWL_SUCCESS;
   VkSampleCountFlags const samples =
       r->device_properties.limits.framebufferColorSampleCounts &
       r->device_properties.limits.framebufferDepthSampleCounts;
-  enum owl_code code = OWL_SUCCESS;
 
   if (VK_SAMPLE_COUNT_2_BIT & samples) {
     r->msaa_sample_count = VK_SAMPLE_COUNT_2_BIT;
@@ -486,7 +486,6 @@ end:
 OWL_INTERNAL enum owl_code
 owl_renderer_init_swapchain_(struct owl_renderer_init_info const *info,
                              struct owl_renderer *r) {
-  owl_u32 i;
   owl_u32 families[2];
   VkSurfaceCapabilitiesKHR capabilities;
   VkSwapchainCreateInfoKHR swapchain;
@@ -548,6 +547,26 @@ owl_renderer_init_swapchain_(struct owl_renderer_init_info const *info,
                                        &r->swapchain_images_count,
                                        r->swapchain_images));
 
+  r->swapchain_clear_values[0].color.float32[0] = 0.0F;
+  r->swapchain_clear_values[0].color.float32[1] = 0.0F;
+  r->swapchain_clear_values[0].color.float32[2] = 0.0F;
+  r->swapchain_clear_values[0].color.float32[3] = 1.0F;
+  r->swapchain_clear_values[1].depthStencil.depth = 1.0F;
+  r->swapchain_clear_values[1].depthStencil.stencil = 0.0F;
+
+end:
+  return code;
+}
+
+OWL_INTERNAL void owl_renderer_deinit_swapchain_(struct owl_renderer *r) {
+  vkDestroySwapchainKHR(r->device, r->swapchain, NULL);
+}
+
+OWL_INTERNAL enum owl_code 
+owl_renderer_init_swapchain_views_(struct owl_renderer * r) {
+  owl_u32 i;
+  enum owl_code code = OWL_SUCCESS;
+
   for (i = 0; i < r->swapchain_images_count; ++i) {
     VkImageViewCreateInfo view;
 
@@ -571,24 +590,15 @@ owl_renderer_init_swapchain_(struct owl_renderer_init_info const *info,
         vkCreateImageView(r->device, &view, NULL, &r->swapchain_views[i]));
   }
 
-  r->swapchain_clear_values[0].color.float32[0] = 0.0F;
-  r->swapchain_clear_values[0].color.float32[1] = 0.0F;
-  r->swapchain_clear_values[0].color.float32[2] = 0.0F;
-  r->swapchain_clear_values[0].color.float32[3] = 1.0F;
-  r->swapchain_clear_values[1].depthStencil.depth = 1.0F;
-  r->swapchain_clear_values[1].depthStencil.stencil = 0.0F;
-
-end:
   return code;
 }
 
-OWL_INTERNAL void owl_renderer_deinit_swapchain_(struct owl_renderer *r) {
+OWL_INTERNAL void
+owl_renderer_deinit_swapchain_views_(struct owl_renderer *r) {
   owl_u32 i;
 
   for (i = 0; i < r->swapchain_images_count; ++i)
     vkDestroyImageView(r->device, r->swapchain_views[i], NULL);
-
-  vkDestroySwapchainKHR(r->device, r->swapchain, NULL);
 }
 
 OWL_INTERNAL enum owl_code
@@ -899,7 +909,7 @@ OWL_INTERNAL void owl_renderer_deinit_attachments_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_init_framebuffers_(struct owl_renderer *r) {
+owl_renderer_init_swapchain_framebuffers_(struct owl_renderer *r) {
   owl_u32 i;
   enum owl_code code = OWL_SUCCESS;
 
@@ -928,7 +938,7 @@ owl_renderer_init_framebuffers_(struct owl_renderer *r) {
   return code;
 }
 
-OWL_INTERNAL void owl_renderer_deinit_framebuffers_(struct owl_renderer *r) {
+OWL_INTERNAL void owl_renderer_deinit_swapchain_framebuffers_(struct owl_renderer *r) {
   owl_u32 i;
 
   for (i = 0; i < r->swapchain_images_count; ++i)
@@ -2757,8 +2767,11 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
   if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_(info, r)))
     goto end_err_deinit_device;
 
-  if (OWL_SUCCESS != (code = owl_renderer_init_common_pools_(r)))
+  if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_views_(r)))
     goto end_err_deinit_swapchain;
+
+  if (OWL_SUCCESS != (code = owl_renderer_init_common_pools_(r)))
+    goto end_err_deinit_swapchain_views;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_main_render_pass_(r)))
     goto end_err_deinit_common_pools;
@@ -2766,11 +2779,11 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
   if (OWL_SUCCESS != (code = owl_renderer_init_attachments_(r)))
     goto end_err_deinit_main_render_pass;
 
-  if (OWL_SUCCESS != (code = owl_renderer_init_framebuffers_(r)))
+  if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_framebuffers_(r)))
     goto end_err_deinit_attachments;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_set_layouts_(r)))
-    goto end_err_deinit_framebuffers;
+    goto end_err_deinit_swapchain_framebuffers;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_pipelines_layouts_(r)))
     goto end_err_deinit_set_layouts;
@@ -2816,8 +2829,8 @@ end_err_deinit_pipeline_layouts:
 end_err_deinit_set_layouts:
   owl_renderer_deinit_set_layouts_(r);
 
-end_err_deinit_framebuffers:
-  owl_renderer_deinit_framebuffers_(r);
+end_err_deinit_swapchain_framebuffers:
+  owl_renderer_deinit_swapchain_framebuffers_(r);
 
 end_err_deinit_attachments:
   owl_renderer_deinit_attachments_(r);
@@ -2827,6 +2840,9 @@ end_err_deinit_main_render_pass:
 
 end_err_deinit_common_pools:
   owl_renderer_deinit_common_pools_(r);
+
+end_err_deinit_swapchain_views:
+  owl_renderer_deinit_swapchain_views_(r);
 
 end_err_deinit_swapchain:
   owl_renderer_deinit_swapchain_(r);
@@ -2860,10 +2876,11 @@ void owl_renderer_deinit(struct owl_renderer *r) {
   owl_renderer_deinit_shaders_(r);
   owl_renderer_deinit_pipeline_layouts_(r);
   owl_renderer_deinit_set_layouts_(r);
-  owl_renderer_deinit_framebuffers_(r);
+  owl_renderer_deinit_swapchain_framebuffers_(r);
   owl_renderer_deinit_attachments_(r);
   owl_renderer_deinit_main_render_pass_(r);
   owl_renderer_deinit_common_pools_(r);
+  owl_renderer_deinit_swapchain_views_(r);
   owl_renderer_deinit_swapchain_(r);
   owl_renderer_deinit_device_(r);
   owl_renderer_deinit_surface_(r);
@@ -2907,7 +2924,7 @@ owl_renderer_reinit_swapchain_(struct owl_renderer_init_info const *info,
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
   owl_renderer_deinit_pipelines_(r);
-  owl_renderer_deinit_framebuffers_(r);
+  owl_renderer_deinit_swapchain_framebuffers_(r);
   owl_renderer_deinit_attachments_(r);
   owl_renderer_deinit_main_render_pass_(r);
   owl_renderer_deinit_frame_sync_(r);
@@ -2916,8 +2933,11 @@ owl_renderer_reinit_swapchain_(struct owl_renderer_init_info const *info,
   if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_(info, r)))
     goto end;
 
-  if (OWL_SUCCESS != (code = owl_renderer_init_frame_sync_(r)))
+  if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_views_(r)))
     goto end_err_deinit_swapchain;
+
+  if (OWL_SUCCESS != (code = owl_renderer_init_frame_sync_(r)))
+    goto end_err_deinit_swapchain_views;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_main_render_pass_(r)))
     goto end_err_deinit_frame_sync;
@@ -2925,7 +2945,7 @@ owl_renderer_reinit_swapchain_(struct owl_renderer_init_info const *info,
   if (OWL_SUCCESS != (code = owl_renderer_init_attachments_(r)))
     goto end_err_deinit_main_render_pass;
 
-  if (OWL_SUCCESS != (code = owl_renderer_init_framebuffers_(r)))
+  if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_framebuffers_(r)))
     goto end_err_deinit_main_attachments;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_pipelines_(r)))
@@ -2934,7 +2954,7 @@ owl_renderer_reinit_swapchain_(struct owl_renderer_init_info const *info,
   goto end;
 
 end_err_deinit_main_framebuffers:
-  owl_renderer_deinit_framebuffers_(r);
+  owl_renderer_deinit_swapchain_framebuffers_(r);
 
 end_err_deinit_main_attachments:
   owl_renderer_deinit_attachments_(r);
@@ -2944,6 +2964,9 @@ end_err_deinit_main_render_pass:
 
 end_err_deinit_frame_sync:
   owl_renderer_deinit_frame_sync_(r);
+
+end_err_deinit_swapchain_views:
+  owl_renderer_deinit_swapchain_views_(r);
 
 end_err_deinit_swapchain:
   owl_renderer_deinit_swapchain_(r);

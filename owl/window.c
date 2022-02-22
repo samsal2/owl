@@ -137,7 +137,6 @@ owl_window_create_handle_(struct owl_window_init_info const *info) {
 }
 
 OWL_INTERNAL void owl_window_setup_callbacks_(struct owl_window *w) {
-  /* FIXME: not exactly setting up callbacks */
   glfwSetWindowUserPointer(w->data, w);
   glfwGetWindowSize(w->data, &w->window_width, &w->window_height);
   glfwGetFramebufferSize(w->data, &w->framebuffer_width,
