@@ -3,10 +3,10 @@
 #include "internal.h"
 #include "renderer.h"
 #include "texture.h"
+#include "vector_math.h"
 
 #include <cgltf/cgltf.h>
 #include <math.h>
-#include <owl/owl.h>
 #include <stb/stb_image.h>
 #include <stdio.h>
 
@@ -14,10 +14,10 @@
 #define OWL_MODEL_TEXTURE_HANDLE_NONE -1
 
 struct owl_model_load_state {
-  int cur_index;
+  int current_index;
   owl_u32 *indices;
 
-  int cur_vertex;
+  int current_vertex;
   struct owl_model_vertex *vertices;
 };
 
@@ -131,7 +131,7 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
 
   enum owl_code code = OWL_SUCCESS;
 
-  out->first_index = (owl_u32)state->cur_index;
+  out->first_index = (owl_u32)state->current_index;
   out->indices_count = (owl_u32)prim->indices->count;
 
   /* position */
@@ -174,7 +174,7 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
 
   /* vertices */
   for (i = 0; i < (int)out->vertex_count; ++i) {
-    struct owl_model_vertex *v = &state->vertices[state->cur_vertex + i];
+    struct owl_model_vertex *v = &state->vertices[state->current_vertex + i];
     {
       float const *data = (float const *)&pos_data[i * pos_stride];
       v->position[0] = data[0];
@@ -247,7 +247,7 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
     }
   }
 
-  state->cur_vertex += (int)out->vertex_count;
+  state->current_vertex += (int)out->vertex_count;
 
   /* indices */
   {
@@ -258,17 +258,20 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
     switch (prim->indices->component_type) {
     case cgltf_component_type_r_8u: { /* UNSIGNED_BYTE */
       for (i = 0; i < (int)prim->indices->count; ++i) {
-        state->indices[state->cur_index + i] = ((owl_u8 const *)idx_data)[i];
+        state->indices[state->current_index + i] =
+            ((owl_u8 const *)idx_data)[i];
       }
     } break;
     case cgltf_component_type_r_16u: { /* UNSIGNED_SHORT */
       for (i = 0; i < (int)prim->indices->count; ++i) {
-        state->indices[state->cur_index + i] = ((owl_u16 const *)idx_data)[i];
+        state->indices[state->current_index + i] =
+            ((owl_u16 const *)idx_data)[i];
       }
     } break;
     case cgltf_component_type_r_32u: { /* UNSIGNED_INT */
       for (i = 0; i < (int)prim->indices->count; ++i) {
-        state->indices[state->cur_index + i] = ((owl_u32 const *)idx_data)[i];
+        state->indices[state->current_index + i] =
+            ((owl_u32 const *)idx_data)[i];
       }
     } break;
       /* not supported by spec */
@@ -281,7 +284,7 @@ OWL_INTERNAL enum owl_code owl_model_process_primitive_(
     }
   }
 
-  state->cur_index += (int)prim->indices->count;
+  state->current_index += (int)prim->indices->count;
 
   code = owl_model_get_material_(model, prim->material->name, &out->material);
 
@@ -951,20 +954,72 @@ OWL_INTERNAL enum owl_code owl_submit_node_(struct owl_renderer *r,
                                             struct owl_model const *model,
                                             struct owl_model_node const *node) {
   int i;
-  struct owl_model_node_data const *node_data = &model->nodes[node->handle];
-  struct owl_model_mesh_data const *mesh_data =
-      &model->meshes[node_data->mesh.handle];
+  struct owl_model_node_data const *data;
+  struct owl_model_mesh_data const *mesh;
+  enum owl_code code = OWL_SUCCESS;
 
-  for (i = 0; i < mesh_data->primitives_count; ++i) {
-    struct owl_model_primitive const *prim = &mesh_data->primitives[i];
-    vkCmdDrawIndexed(r->frame_command_buffers[r->active], prim->indices_count,
-                     1, prim->first_index, 0, 0);
+  if (OWL_MODEL_MESH_HANDLE_NONE == model->nodes[node->handle].mesh.handle)
+    goto end;
+
+  data = &model->nodes[node->handle];
+  mesh = &model->meshes[data->mesh.handle];
+
+  for (i = 0; i < mesh->primitives_count; ++i) {
+    VkDescriptorSet sets[3];
+    struct owl_material_push_constant push_constant;
+    struct owl_model_primitive const *primitive;
+    struct owl_model_material_data const *material;
+
+    primitive = &mesh->primitives[i];
+    material = &model->materials[primitive->material.handle];
+
+#if 0
+    sets[0] = model->scene.set;
+#endif
+    sets[1] = model->materials[primitive->material.handle].set;
+    sets[2] = mesh->ubo_set;
+
+    vkCmdBindDescriptorSets(r->active_command_buffer,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            r->pipeline_layouts[r->bound_pipeline], 0,
+                            OWL_ARRAY_SIZE(sets), sets, 0, NULL);
+
+    OWL_V4_ZERO(push_constant.base_color_factor);
+
+    OWL_V4_COPY(material->emissive_factor, push_constant.emissive_factor);
+
+    OWL_V4_ZERO(push_constant.diffuse_factor);
+    OWL_V4_ZERO(push_constant.specular_factor);
+
+    push_constant.workflow = 0;
+
+    push_constant.base_color_texture_set = material->base_color_texcoord;
+    push_constant.physical_descriptor_texture_set = 0;
+    push_constant.normal_texture_set = material->normal_texcoord;
+    push_constant.occlusion_texture_set = material->occlusion_texcoord;
+    push_constant.emissive_texture_set = material->emissive_texcoord;
+    push_constant.metallic_factor = material->metallic_factor;
+    push_constant.roughness_factor = material->roughness_factor;
+    push_constant.alpha_mask = 1;
+    push_constant.alpha_mask_cutoff = material->alpha_cutoff;
+
+    vkCmdPushConstants(
+        r->active_command_buffer, r->pipeline_layouts[r->bound_pipeline],
+        VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push_constant), &push_constant);
+
+    if (primitive->has_indices) 
+      vkCmdDrawIndexed(r->active_command_buffer, primitive->indices_count,
+                       1, primitive->first_index, 0, 0);
+    else
+      vkCmdDraw(r->active_command_buffer, primitive->vertex_count, 1, 0, 0);
   }
 
-  for (i = 0; i < node_data->children_count; ++i)
-    owl_submit_node_(r, model, &node_data->children[i]);
+  for (i = 0; i < data->children_count; ++i)
+    if (OWL_SUCCESS == (code = owl_submit_node_(r, model, &data->children[i])))
+      goto end;
 
-  return OWL_SUCCESS;
+end:
+  return code;
 }
 
 enum owl_code
@@ -1111,12 +1166,12 @@ enum owl_code owl_model_init_from_file(struct owl_renderer *r, char const *path,
     owl_add_vertices_and_indices_count_(&data->nodes[i], &vertices_count,
                                         &indices_count);
 
-  state.cur_vertex = 0;
+  state.current_vertex = 0;
   state.vertices = owl_renderer_dynamic_buffer_alloc(
       r, (VkDeviceSize)vertices_count * sizeof(struct owl_model_vertex),
       &vertices_ref);
 
-  state.cur_index = 0;
+  state.current_index = 0;
   state.indices = owl_renderer_dynamic_buffer_alloc(
       r, (VkDeviceSize)indices_count * sizeof(owl_u32), &indices_ref);
 
@@ -1169,11 +1224,11 @@ OWL_INTERNAL void
 owl_model_bind_vertex_and_index_buffers_(struct owl_renderer *r,
                                          struct owl_model const *model) {
   VkDeviceSize const offset[] = {0};
-  vkCmdBindVertexBuffers(r->frame_command_buffers[r->active], 0, 1,
-                         &model->vertex_buffer, offset);
+  vkCmdBindVertexBuffers(r->active_command_buffer, 0, 1, &model->vertex_buffer,
+                         offset);
 
-  vkCmdBindIndexBuffer(r->frame_command_buffers[r->active], model->index_buffer,
-                       0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindIndexBuffer(r->active_command_buffer, model->index_buffer, 0,
+                       VK_INDEX_TYPE_UINT32);
 }
 
 #if 0
@@ -1221,7 +1276,7 @@ enum owl_code owl_model_submit(struct owl_renderer *r,
     sets[0] = ref.pvm_set;
     sets[1] = model->materials[1].set;
 
-    vkCmdBindDescriptorSets(r->frame_command_buffers[r->active],
+    vkCmdBindDescriptorSets(r->active_command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->pipeline_layouts[r->bound_pipeline], 0,
                             OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
