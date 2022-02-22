@@ -14,7 +14,7 @@ target_sources(${PROJECT_NAME} PRIVATE
   vector_math.h
   window.c
   window.h
-  draw_command.c
-  draw_command.h
+  draw.c
+  draw.h
   skybox.c
   skybox.h)

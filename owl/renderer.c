@@ -1330,21 +1330,21 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     VkGraphicsPipelineCreateInfo pipeline;
 
     vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_draw_command_vertex);
+    vertex_binding.stride = sizeof(struct owl_draw_vertex);
     vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     vertex_attrs[0].binding = 0;
     vertex_attrs[0].location = 0;
     vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_draw_command_vertex, position);
+    vertex_attrs[0].offset = offsetof(struct owl_draw_vertex, position);
     vertex_attrs[1].binding = 0;
     vertex_attrs[1].location = 1;
     vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_draw_command_vertex, color);
+    vertex_attrs[1].offset = offsetof(struct owl_draw_vertex, color);
     vertex_attrs[2].binding = 0;
     vertex_attrs[2].location = 2;
     vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_draw_command_vertex, uv);
+    vertex_attrs[2].offset = offsetof(struct owl_draw_vertex, uv);
 
     input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     input.pNext = NULL;
@@ -1509,21 +1509,21 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     VkGraphicsPipelineCreateInfo pipeline;
 
     vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_draw_command_vertex);
+    vertex_binding.stride = sizeof(struct owl_draw_vertex);
     vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     vertex_attrs[0].binding = 0;
     vertex_attrs[0].location = 0;
     vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_draw_command_vertex, position);
+    vertex_attrs[0].offset = offsetof(struct owl_draw_vertex, position);
     vertex_attrs[1].binding = 0;
     vertex_attrs[1].location = 1;
     vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_draw_command_vertex, color);
+    vertex_attrs[1].offset = offsetof(struct owl_draw_vertex, color);
     vertex_attrs[2].binding = 0;
     vertex_attrs[2].location = 2;
     vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_draw_command_vertex, uv);
+    vertex_attrs[2].offset = offsetof(struct owl_draw_vertex, uv);
 
     input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     input.pNext = NULL;
@@ -1688,21 +1688,21 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     VkGraphicsPipelineCreateInfo pipeline;
 
     vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_draw_command_vertex);
+    vertex_binding.stride = sizeof(struct owl_draw_vertex);
     vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     vertex_attrs[0].binding = 0;
     vertex_attrs[0].location = 0;
     vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_draw_command_vertex, position);
+    vertex_attrs[0].offset = offsetof(struct owl_draw_vertex, position);
     vertex_attrs[1].binding = 0;
     vertex_attrs[1].location = 1;
     vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_draw_command_vertex, color);
+    vertex_attrs[1].offset = offsetof(struct owl_draw_vertex, color);
     vertex_attrs[2].binding = 0;
     vertex_attrs[2].location = 2;
     vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_draw_command_vertex, uv);
+    vertex_attrs[2].offset = offsetof(struct owl_draw_vertex, uv);
 
     input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     input.pNext = NULL;
@@ -2612,7 +2612,7 @@ owl_renderer_init_dynamic_buffer_(struct owl_renderer *r, VkDeviceSize size) {
 
       buffer.buffer = r->dynamic_buffers[i];
       buffer.offset = 0;
-      buffer.range = sizeof(struct owl_draw_command_ubo);
+      buffer.range = sizeof(struct owl_draw_uniform);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;

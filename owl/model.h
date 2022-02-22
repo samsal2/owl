@@ -1,7 +1,7 @@
 #ifndef OWL_MODEL_H_
 #define OWL_MODEL_H_
 
-#include "draw_command.h"
+#include "draw.h"
 #include "texture.h"
 
 #include <vulkan/vulkan.h>
@@ -55,7 +55,7 @@ struct owl_model_vertex {
   owl_v4 weight0;
 };
 
-struct owl_model_ubo {
+struct owl_model_uniform {
   owl_m4 projection;
   owl_m4 view;
   owl_m4 model;
@@ -122,19 +122,19 @@ struct owl_model_primitive {
 
 #define OWL_MODEL_MAX_JOINTS 8
 
-struct owl_model_mesh_ubo {
+struct owl_model_mesh_uniform {
   int joint_count;
   owl_m4 matrix;
   owl_m4 joints[OWL_MODEL_MAX_JOINTS];
 };
 
 struct owl_model_mesh_data {
-  struct owl_model_mesh_ubo ubo;
+  struct owl_model_mesh_uniform uniform;
 
-  void *ubo_data;
-  VkBuffer ubo_buffer;
-  VkDeviceMemory ubo_memory;
-  VkDescriptorSet ubo_set;
+  void *data;
+  VkBuffer buffer;
+  VkDeviceMemory memory;
+  VkDescriptorSet set;
 
   int primitives_count;
   struct owl_model_primitive primitives[OWL_MODEL_MAX_PRIMITIVES_PER_MESH];
@@ -183,7 +183,7 @@ void owl_model_deinit(struct owl_renderer *r, struct owl_model *model);
 void owl_model_destroy(struct owl_renderer *r, struct owl_model *model);
 
 enum owl_code owl_model_submit(struct owl_renderer *r,
-                               struct owl_draw_command_ubo const *ubo,
+                               struct owl_draw_uniform const *uniform,
                                struct owl_model const *model);
 
 #endif

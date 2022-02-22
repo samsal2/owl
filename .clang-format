@@ -1,4 +1,5 @@
 ---
 BasedOnStyle: LLVM
 SortIncludes: true
+AlignArrayOfStructures: Right
 ...

@@ -323,22 +323,20 @@ owl_model_process_mesh_(struct owl_renderer const *r, cgltf_mesh const *mesh,
     buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer.pNext = NULL;
     buffer.flags = 0;
-    buffer.size = sizeof(struct owl_model_mesh_ubo);
+    buffer.size = sizeof(struct owl_model_mesh_uniform);
     buffer.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     buffer.queueFamilyIndexCount = 0;
     buffer.pQueueFamilyIndices = NULL;
 
-    OWL_VK_CHECK(
-        vkCreateBuffer(r->device, &buffer, NULL, &mesh_data->ubo_buffer));
+    OWL_VK_CHECK(vkCreateBuffer(r->device, &buffer, NULL, &mesh_data->buffer));
   }
 
   {
     VkMemoryAllocateInfo memory;
     VkMemoryRequirements requirements;
 
-    vkGetBufferMemoryRequirements(r->device, mesh_data->ubo_buffer,
-                                  &requirements);
+    vkGetBufferMemoryRequirements(r->device, mesh_data->buffer, &requirements);
 
     memory.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memory.pNext = NULL;
@@ -347,10 +345,10 @@ owl_model_process_mesh_(struct owl_renderer const *r, cgltf_mesh const *mesh,
         r, requirements.memoryTypeBits, OWL_MEMORY_VISIBILITY_CPU_ONLY);
 
     OWL_VK_CHECK(
-        vkAllocateMemory(r->device, &memory, NULL, &mesh_data->ubo_memory));
+        vkAllocateMemory(r->device, &memory, NULL, &mesh_data->memory));
 
-    OWL_VK_CHECK(vkMapMemory(r->device, mesh_data->ubo_memory, 0, VK_WHOLE_SIZE,
-                             0, &mesh_data->ubo_data));
+    OWL_VK_CHECK(vkMapMemory(r->device, mesh_data->memory, 0, VK_WHOLE_SIZE, 0,
+                             &mesh_data->data));
   }
 
   {
@@ -361,21 +359,20 @@ owl_model_process_mesh_(struct owl_renderer const *r, cgltf_mesh const *mesh,
     set.descriptorSetCount = 1;
     set.pSetLayouts = &r->node_set_layout;
 
-    OWL_VK_CHECK(
-        vkAllocateDescriptorSets(r->device, &set, &mesh_data->ubo_set));
+    OWL_VK_CHECK(vkAllocateDescriptorSets(r->device, &set, &mesh_data->set));
   }
 
   {
     VkWriteDescriptorSet write;
     VkDescriptorBufferInfo buffer;
 
-    buffer.buffer = mesh_data->ubo_buffer;
+    buffer.buffer = mesh_data->buffer;
     buffer.offset = 0;
-    buffer.range = sizeof(struct owl_model_mesh_ubo);
+    buffer.range = sizeof(struct owl_model_mesh_uniform);
 
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.pNext = NULL;
-    write.dstSet = mesh_data->ubo_set;
+    write.dstSet = mesh_data->set;
     write.dstBinding = 0;
     write.dstArrayElement = 0;
     write.descriptorCount = 1;
@@ -398,9 +395,9 @@ end:
 OWL_INTERNAL void
 owl_model_deinit_mesh_(struct owl_renderer const *r,
                        struct owl_model_mesh_data const *data) {
-  vkFreeDescriptorSets(r->device, r->common_set_pool, 1, &data->ubo_set);
-  vkFreeMemory(r->device, data->ubo_memory, NULL);
-  vkDestroyBuffer(r->device, data->ubo_buffer, NULL);
+  vkFreeDescriptorSets(r->device, r->common_set_pool, 1, &data->set);
+  vkFreeMemory(r->device, data->memory, NULL);
+  vkDestroyBuffer(r->device, data->buffer, NULL);
 }
 
 OWL_INTERNAL enum owl_code
@@ -979,7 +976,7 @@ OWL_INTERNAL enum owl_code owl_submit_node_(struct owl_renderer *r,
     sets[0] = model->scene.set;
 #endif
     sets[1] = model->materials[primitive->material.handle].set;
-    sets[2] = mesh->ubo_set;
+    sets[2] = mesh->set;
 
     vkCmdBindDescriptorSets(r->active_command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -1258,7 +1255,7 @@ owl_model_submit_primitives_(struct owl_renderer *r,
 #endif
 
 enum owl_code owl_model_submit(struct owl_renderer *r,
-                               struct owl_draw_command_ubo const *ubo,
+                               struct owl_draw_uniform const *uniform,
                                struct owl_model const *model) {
   int i;
 
@@ -1270,10 +1267,10 @@ enum owl_code owl_model_submit(struct owl_renderer *r,
     VkDescriptorSet sets[2];
     struct owl_dynamic_buffer_reference ref;
 
-    size = sizeof(*ubo);
+    size = sizeof(*uniform);
     data = owl_renderer_dynamic_buffer_alloc(r, size, &ref);
 
-    OWL_MEMCPY(data, ubo, size);
+    OWL_MEMCPY(data, uniform, size);
 
     sets[0] = ref.pvm_set;
     sets[1] = model->materials[1].set;

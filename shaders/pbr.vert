@@ -12,7 +12,6 @@ layout (set = 0, binding = 0) uniform UBO
 	mat4 projection;
 	mat4 model;
 	mat4 view;
-	vec3 cam_pos;
 } ubo;
 
 #define MAX_NUM_JOINTS 128
