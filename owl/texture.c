@@ -474,6 +474,8 @@ enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
   owl_byte *data;
   enum owl_code code = OWL_SUCCESS;
 
+  OWL_ASSERT(owl_renderer_is_dynamic_buffer_clear(r));
+
   if (!(data = owl_texture_data_from_file(path, info))) {
     code = OWL_ERROR_BAD_ALLOC;
     goto end;
@@ -499,10 +501,9 @@ void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *tex) {
 owl_byte *owl_texture_data_from_file(char const *path,
                                      struct owl_texture_init_info *info) {
 
-  int channels;
+  int ch;
   info->format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
-  return stbi_load(path, &info->width, &info->height, &channels,
-                   STBI_rgb_alpha);
+  return stbi_load(path, &info->width, &info->height, &ch, STBI_rgb_alpha);
 }
 
 void owl_texture_free_data_from_file(owl_byte *data) { stbi_image_free(data); }

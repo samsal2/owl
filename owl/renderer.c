@@ -562,8 +562,8 @@ OWL_INTERNAL void owl_renderer_deinit_swapchain_(struct owl_renderer *r) {
   vkDestroySwapchainKHR(r->device, r->swapchain, NULL);
 }
 
-OWL_INTERNAL enum owl_code 
-owl_renderer_init_swapchain_views_(struct owl_renderer * r) {
+OWL_INTERNAL enum owl_code
+owl_renderer_init_swapchain_views_(struct owl_renderer *r) {
   owl_u32 i;
   enum owl_code code = OWL_SUCCESS;
 
@@ -593,8 +593,7 @@ owl_renderer_init_swapchain_views_(struct owl_renderer * r) {
   return code;
 }
 
-OWL_INTERNAL void
-owl_renderer_deinit_swapchain_views_(struct owl_renderer *r) {
+OWL_INTERNAL void owl_renderer_deinit_swapchain_views_(struct owl_renderer *r) {
   owl_u32 i;
 
   for (i = 0; i < r->swapchain_images_count; ++i)
@@ -938,7 +937,8 @@ owl_renderer_init_swapchain_framebuffers_(struct owl_renderer *r) {
   return code;
 }
 
-OWL_INTERNAL void owl_renderer_deinit_swapchain_framebuffers_(struct owl_renderer *r) {
+OWL_INTERNAL void
+owl_renderer_deinit_swapchain_framebuffers_(struct owl_renderer *r) {
   owl_u32 i;
 
   for (i = 0; i < r->swapchain_images_count; ++i)
