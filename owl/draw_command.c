@@ -22,8 +22,8 @@ owl_draw_command_submit_basic_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, basic->vertices, size);
 
-    vkCmdBindVertexBuffers(r->frame_command_buffers[r->active], 0, 1,
-                           &ref.buffer, &ref.offset);
+    vkCmdBindVertexBuffers(r->active_command_buffer, 0, 1, &ref.buffer,
+                           &ref.offset);
   }
 
   {
@@ -36,8 +36,8 @@ owl_draw_command_submit_basic_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, basic->indices, size);
 
-    vkCmdBindIndexBuffer(r->frame_command_buffers[r->active], ref.buffer,
-                         ref.offset, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(r->active_command_buffer, ref.buffer, ref.offset,
+                         VK_INDEX_TYPE_UINT32);
   }
 
   {
@@ -54,14 +54,14 @@ owl_draw_command_submit_basic_(struct owl_renderer *r,
     sets[0] = ref.pvm_set;
     sets[1] = basic->texture->set;
 
-    vkCmdBindDescriptorSets(r->frame_command_buffers[r->active],
+    vkCmdBindDescriptorSets(r->active_command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->pipeline_layouts[r->bound_pipeline], 0,
                             OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
   }
 
-  vkCmdDrawIndexed(r->frame_command_buffers[r->active],
-                   (owl_u32)basic->indices_count, 1, 0, 0, 0);
+  vkCmdDrawIndexed(r->active_command_buffer, (owl_u32)basic->indices_count, 1,
+                   0, 0, 0);
 
   return code;
 }
@@ -81,8 +81,8 @@ owl_draw_command_submit_quad_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, quad->vertices, size);
 
-    vkCmdBindVertexBuffers(r->frame_command_buffers[r->active], 0, 1,
-                           &ref.buffer, &ref.offset);
+    vkCmdBindVertexBuffers(r->active_command_buffer, 0, 1, &ref.buffer,
+                           &ref.offset);
   }
 
   {
@@ -96,8 +96,8 @@ owl_draw_command_submit_quad_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, indices, size);
 
-    vkCmdBindIndexBuffer(r->frame_command_buffers[r->active], ref.buffer,
-                         ref.offset, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(r->active_command_buffer, ref.buffer, ref.offset,
+                         VK_INDEX_TYPE_UINT32);
   }
 
   {
@@ -114,13 +114,13 @@ owl_draw_command_submit_quad_(struct owl_renderer *r,
     sets[0] = ref.pvm_set;
     sets[1] = quad->texture->set;
 
-    vkCmdBindDescriptorSets(r->frame_command_buffers[r->active],
+    vkCmdBindDescriptorSets(r->active_command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->pipeline_layouts[r->bound_pipeline], 0,
                             OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
   }
 
-  vkCmdDrawIndexed(r->frame_command_buffers[r->active], 6, 1, 0, 0, 0);
+  vkCmdDrawIndexed(r->active_command_buffer, 6, 1, 0, 0, 0);
 
   return code;
 }
@@ -202,8 +202,8 @@ owl_draw_command_submit_skybox_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, vertices, size);
 
-    vkCmdBindVertexBuffers(r->frame_command_buffers[r->active], 0, 1,
-                           &ref.buffer, &ref.offset);
+    vkCmdBindVertexBuffers(r->active_command_buffer, 0, 1, &ref.buffer,
+                           &ref.offset);
   }
 
 #if 0
@@ -218,7 +218,7 @@ owl_draw_command_submit_skybox_(struct owl_renderer *r,
 
     OWL_MEMCPY(data, indices, size);
 
-    vkCmdBindIndexBuffer(r->frame_command_buffers[r->active], ref.buffer,
+    vkCmdBindIndexBuffer(r->active_command_buffer, ref.buffer,
                          ref.offset, VK_INDEX_TYPE_UINT32);
   }
 #endif
@@ -251,17 +251,16 @@ owl_draw_command_submit_skybox_(struct owl_renderer *r,
     sets[0] = ref.pvm_set;
     sets[1] = skybox->skybox->set;
 
-    vkCmdBindDescriptorSets(r->frame_command_buffers[r->active],
+    vkCmdBindDescriptorSets(r->active_command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->pipeline_layouts[r->bound_pipeline], 0,
                             OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
   }
 
 #if 0
-  vkCmdDrawIndexed(r->frame_command_buffers[r->active], 6, 1, 0, 0, 0);
+  vkCmdDrawIndexed(r->active_command_buffer, 6, 1, 0, 0, 0);
 #else
-  vkCmdDraw(r->frame_command_buffers[r->active], OWL_ARRAY_SIZE(vertices), 1, 0,
-            0);
+  vkCmdDraw(r->active_command_buffer, OWL_ARRAY_SIZE(vertices), 1, 0, 0);
 #endif
 
   return code;

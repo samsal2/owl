@@ -2413,6 +2413,8 @@ owl_renderer_init_frame_commands_(struct owl_renderer *r) {
   owl_u32 i;
   enum owl_code code = OWL_SUCCESS;
 
+  r->active_frame = 0;
+
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i) {
     VkCommandPoolCreateInfo command_pool;
 
@@ -2437,6 +2439,8 @@ owl_renderer_init_frame_commands_(struct owl_renderer *r) {
     OWL_VK_CHECK(vkAllocateCommandBuffers(r->device, &command,
                                           &r->frame_command_buffers[i]));
   }
+
+  r->active_command_buffer = r->frame_command_buffers[r->active_frame];
 
   return code;
 }
@@ -2505,7 +2509,6 @@ owl_renderer_init_dynamic_buffer_(struct owl_renderer *r, VkDeviceSize size) {
   owl_u32 i;
   enum owl_code code = OWL_SUCCESS;
 
-  r->active = 0;
   r->dynamic_buffer_size = size;
 
   /* init buffers */
@@ -2876,7 +2879,7 @@ OWL_INTERNAL enum owl_code
 owl_renderer_reserve_dynamic_memory_(struct owl_renderer *r,
                                      VkDeviceSize size) {
   enum owl_code code = OWL_SUCCESS;
-  VkDeviceSize required = r->dynamic_offsets[r->active] + size;
+  VkDeviceSize required = r->dynamic_offsets[r->active_frame] + size;
 
   if (required > r->dynamic_buffer_size) {
     vkUnmapMemory(r->device, r->dynamic_memory);
@@ -2956,7 +2959,7 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
 }
 
 int owl_renderer_is_dynamic_buffer_clear(struct owl_renderer *r) {
-  return 0 == r->dynamic_offsets[r->active];
+  return 0 == r->dynamic_offsets[r->active_frame];
 }
 
 OWL_INTERNAL void owl_renderer_clear_garbage_(struct owl_renderer *r) {
@@ -2969,13 +2972,13 @@ OWL_INTERNAL void owl_renderer_clear_garbage_(struct owl_renderer *r) {
 }
 
 void owl_renderer_clear_dynamic_offset(struct owl_renderer *r) {
-  r->dynamic_offsets[r->active] = 0;
+  r->dynamic_offsets[r->active_frame] = 0;
 }
 
-OWL_INTERNAL VkDeviceSize
-owl_renderer_next_dynamic_offset_(struct owl_renderer *r, VkDeviceSize size) {
-  return OWL_ALIGNU2(r->dynamic_offsets[r->active] + size,
-                     r->dynamic_buffer_alignment);
+OWL_INTERNAL void owl_renderer_next_dynamic_offset_(struct owl_renderer *r,
+                                                    VkDeviceSize size) {
+  VkDeviceSize *offset = &r->dynamic_offsets[r->active_frame];
+  *offset = OWL_ALIGNU2(*offset + size, r->dynamic_buffer_alignment);
 }
 
 void *
@@ -2986,13 +2989,13 @@ owl_renderer_dynamic_buffer_alloc(struct owl_renderer *r, VkDeviceSize size,
   if (OWL_SUCCESS != owl_renderer_reserve_dynamic_memory_(r, size))
     goto end;
 
-  ref->offset32 = (owl_u32)r->dynamic_offsets[r->active];
-  ref->offset = r->dynamic_offsets[r->active];
-  ref->buffer = r->dynamic_buffers[r->active];
-  ref->pvm_set = r->dynamic_pvm_sets[r->active];
+  ref->offset32 = (owl_u32)r->dynamic_offsets[r->active_frame];
+  ref->offset = r->dynamic_offsets[r->active_frame];
+  ref->buffer = r->dynamic_buffers[r->active_frame];
+  ref->pvm_set = r->dynamic_pvm_sets[r->active_frame];
 
-  data = r->dynamic_data[r->active] + r->dynamic_offsets[r->active];
-  r->dynamic_offsets[r->active] = owl_renderer_next_dynamic_offset_(r, size);
+  data = r->dynamic_data[r->active_frame] + r->dynamic_offsets[r->active_frame];
+  owl_renderer_next_dynamic_offset_(r, size);
 
 end:
   return data;
@@ -3035,8 +3038,8 @@ enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
   if (OWL_PIPELINE_TYPE_NONE == type)
     goto end;
 
-  vkCmdBindPipeline(r->frame_command_buffers[r->active],
-                    VK_PIPELINE_BIND_POINT_GRAPHICS, r->pipelines[type]);
+  vkCmdBindPipeline(r->active_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    r->pipelines[type]);
 
 end:
   return code;
@@ -3107,7 +3110,7 @@ owl_renderer_acquire_next_image_(struct owl_renderer *r) {
 
   VkResult const result =
       vkAcquireNextImageKHR(r->device, r->swapchain, OWL_TIMEOUT,
-                            r->image_available_semaphores[r->active],
+                            r->image_available_semaphores[r->active_frame],
                             VK_NULL_HANDLE, &r->swapchain_active_image);
 
   if (VK_ERROR_OUT_OF_DATE_KHR == result)
@@ -3121,11 +3124,14 @@ owl_renderer_acquire_next_image_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL void owl_renderer_prepare_frame_(struct owl_renderer *r) {
-  OWL_VK_CHECK(vkWaitForFences(r->device, 1, &r->in_flight_fences[r->active],
-                               VK_TRUE, OWL_TIMEOUT));
-  OWL_VK_CHECK(vkResetFences(r->device, 1, &r->in_flight_fences[r->active]));
+  OWL_VK_CHECK(vkWaitForFences(r->device, 1,
+                               &r->in_flight_fences[r->active_frame], VK_TRUE,
+                               OWL_TIMEOUT));
   OWL_VK_CHECK(
-      vkResetCommandPool(r->device, r->frame_command_pools[r->active], 0));
+      vkResetFences(r->device, 1, &r->in_flight_fences[r->active_frame]));
+
+  OWL_VK_CHECK(vkResetCommandPool(r->device,
+                                  r->frame_command_pools[r->active_frame], 0));
 }
 
 OWL_INTERNAL void owl_renderer_begin_recording_(struct owl_renderer *r) {
@@ -3137,8 +3143,7 @@ OWL_INTERNAL void owl_renderer_begin_recording_(struct owl_renderer *r) {
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin.pInheritanceInfo = NULL;
 
-    OWL_VK_CHECK(
-        vkBeginCommandBuffer(r->frame_command_buffers[r->active], &begin));
+    OWL_VK_CHECK(vkBeginCommandBuffer(r->active_command_buffer, &begin));
   }
 
   {
@@ -3154,7 +3159,7 @@ OWL_INTERNAL void owl_renderer_begin_recording_(struct owl_renderer *r) {
     begin.clearValueCount = OWL_ARRAY_SIZE(r->swapchain_clear_values);
     begin.pClearValues = r->swapchain_clear_values;
 
-    vkCmdBeginRenderPass(r->frame_command_buffers[r->active], &begin,
+    vkCmdBeginRenderPass(r->active_command_buffer, &begin,
                          VK_SUBPASS_CONTENTS_INLINE);
   }
 }
@@ -3174,8 +3179,8 @@ end:
 #undef OWL_TIMEOUT
 
 OWL_INTERNAL void owl_renderer_end_recording_(struct owl_renderer *r) {
-  vkCmdEndRenderPass(r->frame_command_buffers[r->active]);
-  OWL_VK_CHECK(vkEndCommandBuffer(r->frame_command_buffers[r->active]));
+  vkCmdEndRenderPass(r->active_command_buffer);
+  OWL_VK_CHECK(vkEndCommandBuffer(r->active_command_buffer));
 }
 
 OWL_INTERNAL void owl_renderer_submit_graphics_(struct owl_renderer *r) {
@@ -3187,15 +3192,15 @@ OWL_INTERNAL void owl_renderer_submit_graphics_(struct owl_renderer *r) {
   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit.pNext = NULL;
   submit.waitSemaphoreCount = 1;
-  submit.pWaitSemaphores = &r->image_available_semaphores[r->active];
+  submit.pWaitSemaphores = &r->image_available_semaphores[r->active_frame];
   submit.signalSemaphoreCount = 1;
-  submit.pSignalSemaphores = &r->render_done_semaphores[r->active];
+  submit.pSignalSemaphores = &r->render_done_semaphores[r->active_frame];
   submit.pWaitDstStageMask = &stage;
   submit.commandBufferCount = 1;
-  submit.pCommandBuffers = &r->frame_command_buffers[r->active];
+  submit.pCommandBuffers = &r->active_command_buffer;
 
   OWL_VK_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit,
-                             r->in_flight_fences[r->active]));
+                             r->in_flight_fences[r->active_frame]));
 
 #undef OWL_WAIT_STAGE
 }
@@ -3209,7 +3214,7 @@ owl_renderer_present_swapchain_(struct owl_renderer *r) {
   present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   present.pNext = NULL;
   present.waitSemaphoreCount = 1;
-  present.pWaitSemaphores = &r->render_done_semaphores[r->active];
+  present.pWaitSemaphores = &r->render_done_semaphores[r->active_frame];
   present.swapchainCount = 1;
   present.pSwapchains = &r->swapchain;
   present.pImageIndices = &r->swapchain_active_image;
@@ -3228,8 +3233,10 @@ owl_renderer_present_swapchain_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL void owl_renderer_swap_active_(struct owl_renderer *r) {
-  if (OWL_RENDERER_DYNAMIC_BUFFER_COUNT == ++r->active)
-    r->active = 0;
+  if (OWL_RENDERER_DYNAMIC_BUFFER_COUNT == ++r->active_frame)
+    r->active_frame = 0;
+
+  r->active_command_buffer = r->frame_command_buffers[r->active_frame];
 }
 
 enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {

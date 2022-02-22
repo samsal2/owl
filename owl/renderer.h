@@ -55,12 +55,6 @@ struct owl_dynamic_buffer_reference {
 
 struct owl_renderer {
   /* ====================================================================== */
-  /* active buffer */
-  /* ====================================================================== */
-  int active;
-  /* ====================================================================== */
-
-  /* ====================================================================== */
   /* dims */
   /* ====================================================================== */
   int width;
@@ -197,6 +191,8 @@ struct owl_renderer {
   /* ====================================================================== */
   /* frame submition resources */
   /* ====================================================================== */
+  int active_frame;
+  VkCommandBuffer active_command_buffer;
   VkCommandPool frame_command_pools[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkCommandBuffer frame_command_buffers[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
