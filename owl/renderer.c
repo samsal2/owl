@@ -3070,19 +3070,19 @@ end:
 
 enum owl_code
 owl_renderer_alloc_single_use_command_buffer(struct owl_renderer const *r,
-                                             VkCommandBuffer *command) {
+                                             VkCommandBuffer *out) {
   enum owl_code code = OWL_SUCCESS;
 
   {
-    VkCommandBufferAllocateInfo buf;
+    VkCommandBufferAllocateInfo command;
 
-    buf.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    buf.pNext = NULL;
-    buf.commandPool = r->transient_command_pool;
-    buf.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    buf.commandBufferCount = 1;
+    command.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    command.pNext = NULL;
+    command.commandPool = r->transient_command_pool;
+    command.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    command.commandBufferCount = 1;
 
-    OWL_VK_CHECK(vkAllocateCommandBuffers(r->device, &buf, command));
+    OWL_VK_CHECK(vkAllocateCommandBuffers(r->device, &command, out));
   }
 
   {
@@ -3093,7 +3093,7 @@ owl_renderer_alloc_single_use_command_buffer(struct owl_renderer const *r,
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin.pInheritanceInfo = NULL;
 
-    OWL_VK_CHECK(vkBeginCommandBuffer(*command, &begin));
+    OWL_VK_CHECK(vkBeginCommandBuffer(*out, &begin));
   }
 
   return code;

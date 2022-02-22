@@ -481,8 +481,7 @@ enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
 
   code = owl_texture_init_from_data(r, info, data, tex);
 
-  stbi_image_free(data);
-
+  owl_texture_free_data_from_file(data);
 end:
   return code;
 }
