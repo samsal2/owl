@@ -29,7 +29,7 @@ struct cloth {
   struct particle particles[PARTICLE_COUNT];
 
   /* priv draw info */
-  struct owl_draw_basic_command group_;
+  struct owl_draw_basic_command command_;
   owl_u32 indices_[IDXS_COUNT];
   struct owl_draw_vertex vertices_[PARTICLE_COUNT];
 };
@@ -204,15 +204,15 @@ void init_cloth(struct cloth *cloth, struct owl_texture *texture) {
 
   init_cloth_(cloth);
 
-  cloth->group_.texture = texture;
-  cloth->group_.indices_count = IDXS_COUNT;
-  cloth->group_.indices = cloth->indices_;
-  cloth->group_.vertices_count = PARTICLE_COUNT;
-  cloth->group_.vertices = cloth->vertices_;
+  cloth->command_.texture = texture;
+  cloth->command_.indices_count = IDXS_COUNT;
+  cloth->command_.indices = cloth->indices_;
+  cloth->command_.vertices_count = PARTICLE_COUNT;
+  cloth->command_.vertices = cloth->vertices_;
 
   OWL_V3_SET(0.0F, 0.0F, -2.0F, position);
-  OWL_M4_IDENTITY(cloth->group_.model);
-  owl_m4_translate(position, cloth->group_.model);
+  OWL_M4_IDENTITY(cloth->command_.model);
+  owl_m4_translate(position, cloth->command_.model);
 }
 
 char const *fps_string(double time) {
@@ -243,6 +243,7 @@ static struct owl_draw_text_command text_command;
 static struct owl_camera camera;
 static struct owl_skybox_init_info skybox_info;
 static struct owl_skybox skybox;
+static struct owl_draw_skybox_command skybox_command;
 
 #define UNSELECTED (owl_u32) - 1
 #define TPATH "../../assets/cloth.jpeg"
@@ -291,6 +292,8 @@ int main(void) {
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
   OWL_V3_SET(0.0F, 0.0F, -1.0F, text_command.position);
 
+  skybox_command.skybox = &skybox;
+
   while (!owl_window_is_done(&window)) {
 #if 1
 
@@ -316,19 +319,18 @@ int main(void) {
     }
 
     owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_SKYBOX);
-    owl_renderer_submit_skybox(&renderer, &camera, &skybox);
+    owl_submit_draw_skybox_command(&renderer, &camera, &skybox_command);
 
 #if 1
     owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_MAIN);
 #else
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_WIRES);
 #endif
-    owl_renderer_submit_basic(&renderer, &camera, &cloth.group_);
-
+    owl_submit_draw_basic_command(&renderer, &camera, &cloth.command_);
 
     owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_FONT);
     text_command.text = fps_string(input->dt_time);
-    owl_renderer_submit_text(&renderer, &camera, &text_command);
+    owl_submit_draw_text_command(&renderer, &camera, &text_command);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(&renderer)) {
       owl_window_fill_renderer_init_info(&window, &renderer_info);

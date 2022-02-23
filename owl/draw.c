@@ -91,8 +91,9 @@ owl_renderer_submit_uniforms_(struct owl_renderer *r, owl_m4 const model,
 }
 
 enum owl_code
-owl_renderer_submit_basic(struct owl_renderer *r, struct owl_camera const *cam,
-                          struct owl_draw_basic_command const *command) {
+owl_submit_draw_basic_command(struct owl_renderer *r,
+                              struct owl_camera const *cam,
+                              struct owl_draw_basic_command const *command) {
   enum owl_code code = OWL_SUCCESS;
 
   code = owl_renderer_submit_vertices_(r, command->vertices_count,
@@ -121,8 +122,9 @@ end:
 }
 
 enum owl_code
-owl_renderer_submit_quad(struct owl_renderer *r, struct owl_camera const *cam,
-                         struct owl_draw_quad_command const *command) {
+owl_submit_draw_quad_command(struct owl_renderer *r,
+                             struct owl_camera const *cam,
+                             struct owl_draw_quad_command const *command) {
   enum owl_code code = OWL_SUCCESS;
   owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
 
@@ -242,8 +244,9 @@ OWL_INTERNAL void owl_font_step_offset_(int framebuffer_width,
 }
 
 enum owl_code
-owl_renderer_submit_text(struct owl_renderer *r, struct owl_camera const *cam,
-                         struct owl_draw_text_command const *command) {
+owl_submit_draw_text_command(struct owl_renderer *r,
+                             struct owl_camera const *cam,
+                             struct owl_draw_text_command const *command) {
   char const *c;
   owl_v2 offset;
   enum owl_code code = OWL_SUCCESS;
@@ -259,7 +262,7 @@ owl_renderer_submit_text(struct owl_renderer *r, struct owl_camera const *cam,
     if (OWL_SUCCESS != code)
       goto end;
 
-    owl_renderer_submit_quad(r, cam, &quad);
+    owl_submit_draw_quad_command(r, cam, &quad);
     owl_font_step_offset_(r->width, r->height, command->font, *c, offset);
   }
 
@@ -317,9 +320,10 @@ OWL_LOCAL_PERSIST owl_v3 const g_skybox_vertices[] = {
     { 1.0f, -1.0f,  1.0f}
 };
 
-enum owl_code owl_renderer_submit_skybox(struct owl_renderer *r,
-                                         struct owl_camera const *cam,
-                                         struct owl_skybox const *skybox) {
+enum owl_code
+owl_submit_draw_skybox_command(struct owl_renderer *r,
+                               struct owl_camera const *cam,
+                               struct owl_draw_skybox_command const *command) {
   owl_byte *data;
   VkDescriptorSet sets[2];
   struct owl_draw_uniform uniform;
@@ -341,7 +345,7 @@ enum owl_code owl_renderer_submit_skybox(struct owl_renderer *r,
   OWL_MEMCPY(data, &uniform, sizeof(uniform));
 
   sets[0] = ref.pvm_set;
-  sets[1] = skybox->set;
+  sets[1] = command->skybox->set;
 
   vkCmdBindDescriptorSets(r->active_command_buffer,
                           VK_PIPELINE_BIND_POINT_GRAPHICS,

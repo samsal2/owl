@@ -15,6 +15,7 @@ struct owl_renderer;
 #define OWL_RENDERER_MAX_DEVICE_OPTIONS 8
 #define OWL_RENDERER_CLEAR_VALUES_COUNT 2
 #define OWL_PIPELINE_TYPE_NONE OWL_PIPELINE_TYPE_COUNT
+#define OWL_RENDERER_MAX_TEXTURE_COUNT 64
 
 enum owl_memory_visibility {
   OWL_MEMORY_VISIBILITY_CPU_ONLY,
@@ -84,8 +85,8 @@ struct owl_renderer {
   /* ====================================================================== */
   /* device */
   /* ====================================================================== */
-  VkDevice device;
   VkPhysicalDevice physical_device;
+  VkDevice device;
 
   owl_u32 graphics_family_index;
   VkQueue graphics_queue;
@@ -206,6 +207,19 @@ struct owl_renderer {
   /* ====================================================================== */
 
   /* ====================================================================== */
+  /* double buffering garbage */
+  /* ====================================================================== */
+  int garbage_memories_count;
+  VkDeviceMemory garbage_memories[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+
+  int garbage_buffers_count;
+  VkBuffer garbage_buffers[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+
+  int garbage_pvm_sets_count;
+  VkDescriptorSet garbage_pvm_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+  /* ====================================================================== */
+
+  /* ====================================================================== */
   /* double buffering resources */
   /* ====================================================================== */
   VkDeviceMemory dynamic_memory;
@@ -221,16 +235,30 @@ struct owl_renderer {
   /* ====================================================================== */
 
   /* ====================================================================== */
-  /* double buffering garbage */
+  /* irradiance cube texture */
   /* ====================================================================== */
-  int garbage_memories_count;
-  VkDeviceMemory garbage_memories[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+  VkImage irradiance_cube_image;
+  VkDeviceMemory irradiance_cube_memory;
+  VkImageView irradiance_cube_view;
+  VkSampler irradiance_cube_sampler;
+  /* ====================================================================== */
 
-  int garbage_buffers_count;
-  VkBuffer garbage_buffers[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+  /* ====================================================================== */
+  /* prefiltered cube texture */
+  /* ====================================================================== */
+  VkImage prefiltered_cube_image;
+  VkDeviceMemory prefiltered_cube_memory;
+  VkImageView prefiltered_cube_view;
+  VkSampler prefiltered_cube_sampler;
+  /* ====================================================================== */
 
-  int garbage_pvm_sets_count;
-  VkDescriptorSet garbage_pvm_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+  /* ====================================================================== */
+  /*  lutbrdf texture */
+  /* ====================================================================== */
+  VkImage lutbrdf_image;
+  VkDeviceMemory lutbrdf_memory;
+  VkImageView lutbrdf_view;
+  VkSampler lutbrdf_sampler;
   /* ====================================================================== */
 };
 
