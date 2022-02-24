@@ -188,6 +188,7 @@ struct owl_renderer {
   /* ====================================================================== */
   VkPipeline active_pipeline;
   VkPipelineLayout active_pipeline_layout;
+
   VkPipeline pipelines[OWL_PIPELINE_TYPE_COUNT];
   VkPipelineLayout pipeline_layouts[OWL_PIPELINE_TYPE_COUNT];
   /* ====================================================================== */
@@ -198,6 +199,7 @@ struct owl_renderer {
   int frame;
   VkCommandBuffer active_frame_command_buffer;
   VkCommandPool active_frame_command_pool;
+
   VkCommandPool frame_command_pools[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkCommandBuffer frame_command_buffers[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
@@ -206,12 +208,12 @@ struct owl_renderer {
   /* frame sync primitives */
   /* ====================================================================== */
   VkFence active_in_flight_fence;
-  VkSemaphore active_image_available_semaphore;
   VkSemaphore active_render_done_semaphore;
+  VkSemaphore active_image_available_semaphore;
 
   VkFence in_flight_fences[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  VkSemaphore image_available_semaphores[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkSemaphore render_done_semaphores[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
+  VkSemaphore image_available_semaphores[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
