@@ -5,3 +5,6 @@ glslangValidator -V -x -o pbr_vertex.spv.u32 pbr.vert
 glslangValidator -V -x -o pbr_fragment.spv.u32 pbr.frag
 glslangValidator -V -x -o skybox_vertex.spv.u32 skybox.vert
 glslangValidator -V -x -o skybox_fragment.spv.u32 skybox.frag
+glslangValidator -V -x -o brdflut_vertex.spv.u32 brdflut.vert
+glslangValidator -V -x -o brdflut_fragment.spv.u32 brdflut.frag
+

@@ -1132,6 +1132,9 @@ OWL_INTERNAL enum owl_code
 owl_renderer_init_pipelines_layouts_(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
+  r->active_pipeline = VK_NULL_HANDLE;
+  r->active_pipeline_layout = VK_NULL_HANDLE;
+
   {
     VkDescriptorSetLayout sets[2];
     VkPipelineLayoutCreateInfo layout;
@@ -1323,1107 +1326,478 @@ OWL_INTERNAL void owl_renderer_deinit_shaders_(struct owl_renderer *r) {
 
 OWL_INTERNAL enum owl_code
 owl_renderer_init_pipelines_(struct owl_renderer *r) {
+#define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
+#define OWL_MAX_VERTEX_INPUT_ATTRIBUTES_COUNT 8
+#define OWL_MAX_COLOR_ATTACHMENTS_COUNT 8
+
+  int i;
+  VkVertexInputBindingDescription
+      vertex_bindings[OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT];
+  VkVertexInputAttributeDescription
+      vertex_attributes[OWL_MAX_VERTEX_INPUT_ATTRIBUTES_COUNT];
+  VkPipelineVertexInputStateCreateInfo vertex_input_state;
+  VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
+  VkViewport viewport;
+  VkRect2D scissor;
+  VkPipelineViewportStateCreateInfo viewport_state;
+  VkPipelineRasterizationStateCreateInfo rasterization_state;
+  VkPipelineMultisampleStateCreateInfo multisample_state;
+  VkPipelineColorBlendAttachmentState
+      color_attachments[OWL_MAX_COLOR_ATTACHMENT_COUNT];
+  VkPipelineColorBlendStateCreateInfo color_blend_state;
+  VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
+  VkPipelineShaderStageCreateInfo stages[2];
+  VkGraphicsPipelineCreateInfo pipeline;
+
   enum owl_code code = OWL_SUCCESS;
 
-  /* basic */
-  {
-    VkVertexInputBindingDescription vertex_binding;
-    VkVertexInputAttributeDescription vertex_attrs[3];
-    VkPipelineVertexInputStateCreateInfo input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rasterization;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline;
+  for (i = 0; i < OWL_PIPELINE_TYPE_COUNT; ++i) {
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+      vertex_bindings[0].binding = 0;
+      vertex_bindings[0].stride = sizeof(struct owl_draw_vertex);
+      vertex_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_draw_vertex);
-    vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+      vertex_attributes[0].binding = 0;
+      vertex_attributes[0].location = 0;
+      vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_attributes[0].offset = offsetof(struct owl_draw_vertex, position);
 
-    vertex_attrs[0].binding = 0;
-    vertex_attrs[0].location = 0;
-    vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_draw_vertex, position);
-    vertex_attrs[1].binding = 0;
-    vertex_attrs[1].location = 1;
-    vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_draw_vertex, color);
-    vertex_attrs[2].binding = 0;
-    vertex_attrs[2].location = 2;
-    vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_draw_vertex, uv);
+      vertex_attributes[1].binding = 0;
+      vertex_attributes[1].location = 1;
+      vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_attributes[1].offset = offsetof(struct owl_draw_vertex, color);
 
-    input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    input.pNext = NULL;
-    input.flags = 0;
-    input.vertexBindingDescriptionCount = 1;
-    input.pVertexBindingDescriptions = &vertex_binding;
-    input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(vertex_attrs);
-    input.pVertexAttributeDescriptions = vertex_attrs;
+      vertex_attributes[2].binding = 0;
+      vertex_attributes[2].location = 2;
+      vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
+      vertex_attributes[2].offset = offsetof(struct owl_draw_vertex, uv);
+      break;
 
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
+    case OWL_PIPELINE_TYPE_SKYBOX:
+      vertex_bindings[0].binding = 0;
+      vertex_bindings[0].stride = sizeof(struct owl_skybox_vertex);
+      vertex_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = r->swapchain_extent.width;
-    viewport.height = r->swapchain_extent.height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
+      vertex_attributes[0].binding = 0;
+      vertex_attributes[0].location = 0;
+      vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_attributes[0].offset =
+          offsetof(struct owl_skybox_vertex, position);
+      break;
 
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent = r->swapchain_extent;
+    case OWL_PIPELINE_TYPE_PBR:
+      vertex_bindings[0].binding = 0;
+      vertex_bindings[0].stride = sizeof(struct owl_model_vertex);
+      vertex_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
+      vertex_attributes[0].binding = 0;
+      vertex_attributes[0].location = 0;
+      vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_attributes[0].offset = offsetof(struct owl_model_vertex, position);
 
-    rasterization.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterization.pNext = NULL;
-    rasterization.flags = 0;
-    rasterization.depthClampEnable = VK_FALSE;
-    rasterization.rasterizerDiscardEnable = VK_FALSE;
-    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterization.depthBiasEnable = VK_FALSE;
-    rasterization.depthBiasConstantFactor = 0.0F;
-    rasterization.depthBiasClamp = 0.0F;
-    rasterization.depthBiasSlopeFactor = 0.0F;
-    rasterization.lineWidth = 1.0F;
+      vertex_attributes[1].binding = 0;
+      vertex_attributes[1].location = 1;
+      vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_attributes[1].offset = offsetof(struct owl_model_vertex, normal);
 
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = r->msaa_sample_count;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
+      vertex_attributes[2].binding = 0;
+      vertex_attributes[2].location = 2;
+      vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
+      vertex_attributes[2].offset = offsetof(struct owl_model_vertex, uv0);
 
-#define OWL_COLOR_WRITE_MASK                                                   \
+      vertex_attributes[3].binding = 0;
+      vertex_attributes[3].location = 3;
+      vertex_attributes[3].format = VK_FORMAT_R32G32_SFLOAT;
+      vertex_attributes[3].offset = offsetof(struct owl_model_vertex, uv1);
+
+      vertex_attributes[4].binding = 0;
+      vertex_attributes[4].location = 4;
+      vertex_attributes[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+      vertex_attributes[4].offset = offsetof(struct owl_model_vertex, joint0);
+
+      vertex_attributes[5].binding = 0;
+      vertex_attributes[5].location = 5;
+      vertex_attributes[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+      vertex_attributes[5].offset = offsetof(struct owl_model_vertex, weight0);
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+      vertex_input_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+      vertex_input_state.pNext = NULL;
+      vertex_input_state.flags = 0;
+      vertex_input_state.vertexBindingDescriptionCount = 1;
+      vertex_input_state.pVertexBindingDescriptions = vertex_bindings;
+      vertex_input_state.vertexAttributeDescriptionCount = 3;
+      vertex_input_state.pVertexAttributeDescriptions = vertex_attributes;
+      break;
+
+    case OWL_PIPELINE_TYPE_SKYBOX:
+      vertex_input_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+      vertex_input_state.pNext = NULL;
+      vertex_input_state.flags = 0;
+      vertex_input_state.vertexBindingDescriptionCount = 1;
+      vertex_input_state.pVertexBindingDescriptions = vertex_bindings;
+      vertex_input_state.vertexAttributeDescriptionCount = 1;
+      vertex_input_state.pVertexAttributeDescriptions = vertex_attributes;
+      break;
+
+    case OWL_PIPELINE_TYPE_PBR:
+      vertex_input_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+      vertex_input_state.pNext = NULL;
+      vertex_input_state.flags = 0;
+      vertex_input_state.vertexBindingDescriptionCount = 1;
+      vertex_input_state.pVertexBindingDescriptions = vertex_bindings;
+      vertex_input_state.vertexAttributeDescriptionCount = 6;
+      vertex_input_state.pVertexAttributeDescriptions = vertex_attributes;
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+    case OWL_PIPELINE_TYPE_SKYBOX:
+    case OWL_PIPELINE_TYPE_PBR:
+      input_assembly_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+      input_assembly_state.pNext = NULL;
+      input_assembly_state.flags = 0;
+      input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+      input_assembly_state.primitiveRestartEnable = VK_FALSE;
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+    case OWL_PIPELINE_TYPE_SKYBOX:
+    case OWL_PIPELINE_TYPE_PBR:
+      viewport.x = 0.0F;
+      viewport.y = 0.0F;
+      viewport.width = r->swapchain_extent.width;
+      viewport.height = r->swapchain_extent.height;
+      viewport.minDepth = 0.0F;
+      viewport.maxDepth = 1.0F;
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+    case OWL_PIPELINE_TYPE_SKYBOX:
+    case OWL_PIPELINE_TYPE_PBR:
+      scissor.offset.x = 0;
+      scissor.offset.y = 0;
+      scissor.extent = r->swapchain_extent;
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+    case OWL_PIPELINE_TYPE_SKYBOX:
+    case OWL_PIPELINE_TYPE_PBR:
+      viewport_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+      viewport_state.pNext = NULL;
+      viewport_state.flags = 0;
+      viewport_state.viewportCount = 1;
+      viewport_state.pViewports = &viewport;
+      viewport_state.scissorCount = 1;
+      viewport_state.pScissors = &scissor;
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_FONT:
+    case OWL_PIPELINE_TYPE_SKYBOX:
+    case OWL_PIPELINE_TYPE_PBR:
+      rasterization_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+      rasterization_state.pNext = NULL;
+      rasterization_state.flags = 0;
+      rasterization_state.depthClampEnable = VK_FALSE;
+      rasterization_state.rasterizerDiscardEnable = VK_FALSE;
+      rasterization_state.polygonMode = VK_POLYGON_MODE_FILL;
+      rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT;
+      rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+      rasterization_state.depthBiasEnable = VK_FALSE;
+      rasterization_state.depthBiasConstantFactor = 0.0F;
+      rasterization_state.depthBiasClamp = 0.0F;
+      rasterization_state.depthBiasSlopeFactor = 0.0F;
+      rasterization_state.lineWidth = 1.0F;
+      break;
+
+    case OWL_PIPELINE_TYPE_WIRES:
+      rasterization_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+      rasterization_state.pNext = NULL;
+      rasterization_state.flags = 0;
+      rasterization_state.depthClampEnable = VK_FALSE;
+      rasterization_state.rasterizerDiscardEnable = VK_FALSE;
+      rasterization_state.polygonMode = VK_POLYGON_MODE_LINE;
+      rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT;
+      rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+      rasterization_state.depthBiasEnable = VK_FALSE;
+      rasterization_state.depthBiasConstantFactor = 0.0F;
+      rasterization_state.depthBiasClamp = 0.0F;
+      rasterization_state.depthBiasSlopeFactor = 0.0F;
+      rasterization_state.lineWidth = 1.0F;
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+    case OWL_PIPELINE_TYPE_SKYBOX:
+    case OWL_PIPELINE_TYPE_PBR:
+      multisample_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+      multisample_state.pNext = NULL;
+      multisample_state.flags = 0;
+      multisample_state.rasterizationSamples = r->msaa_sample_count;
+      multisample_state.sampleShadingEnable = VK_FALSE;
+      multisample_state.minSampleShading = 1.0F;
+      multisample_state.pSampleMask = NULL;
+      multisample_state.alphaToCoverageEnable = VK_FALSE;
+      multisample_state.alphaToOneEnable = VK_FALSE;
+      break;
+    }
+
+#define OWL_COLOR_RGBA_WRITE_MASK                                              \
   (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |                       \
    VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_SKYBOX:
+    case OWL_PIPELINE_TYPE_PBR:
+      color_attachments[0].blendEnable = VK_FALSE;
+      color_attachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+      color_attachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+      color_attachments[0].colorBlendOp = VK_BLEND_OP_ADD;
+      color_attachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+      color_attachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+      color_attachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
+      color_attachments[0].colorWriteMask = OWL_COLOR_RGBA_WRITE_MASK;
+      break;
 
-    color_attachment.blendEnable = VK_FALSE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = OWL_COLOR_WRITE_MASK;
-
+    case OWL_PIPELINE_TYPE_FONT:
+      color_attachments[0].blendEnable = VK_TRUE;
+      color_attachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+      color_attachments[0].dstColorBlendFactor =
+          VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+      color_attachments[0].colorBlendOp = VK_BLEND_OP_ADD;
+      color_attachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+      color_attachments[0].dstAlphaBlendFactor =
+          VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+      color_attachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
+      color_attachments[0].colorWriteMask = OWL_COLOR_RGBA_WRITE_MASK;
+      break;
+    }
 #undef OWL_COLOR_WRITE_MASK
 
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
-
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_TRUE;
-    depth.depthWriteEnable = VK_TRUE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
-
-    OWL_MEMSET(&depth.front, 0, sizeof(depth.front));
-    OWL_MEMSET(&depth.back, 0, sizeof(depth.back));
-
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->basic_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->basic_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
-
-    pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline.pNext = NULL;
-    pipeline.flags = 0;
-    pipeline.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline.pStages = stages;
-    pipeline.pVertexInputState = &input;
-    pipeline.pInputAssemblyState = &input_assembly;
-    pipeline.pTessellationState = NULL;
-    pipeline.pViewportState = &viewport_state;
-    pipeline.pRasterizationState = &rasterization;
-    pipeline.pMultisampleState = &multisample;
-    pipeline.pDepthStencilState = &depth;
-    pipeline.pColorBlendState = &color;
-    pipeline.pDynamicState = NULL;
-    pipeline.layout = r->common_pipeline_layout;
-    pipeline.renderPass = r->main_render_pass;
-    pipeline.subpass = 0;
-    pipeline.basePipelineHandle = NULL;
-    pipeline.basePipelineIndex = -1;
-
-    OWL_VK_CHECK(
-        vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-                                  &r->pipelines[OWL_PIPELINE_TYPE_MAIN]));
-
-    r->pipeline_layouts[OWL_PIPELINE_TYPE_MAIN] = r->common_pipeline_layout;
-  }
-
-  /* wires */
-  {
-    VkVertexInputBindingDescription vertex_binding;
-    VkVertexInputAttributeDescription vertex_attrs[3];
-    VkPipelineVertexInputStateCreateInfo input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rasterization;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline;
-
-    vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_draw_vertex);
-    vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    vertex_attrs[0].binding = 0;
-    vertex_attrs[0].location = 0;
-    vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_draw_vertex, position);
-    vertex_attrs[1].binding = 0;
-    vertex_attrs[1].location = 1;
-    vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_draw_vertex, color);
-    vertex_attrs[2].binding = 0;
-    vertex_attrs[2].location = 2;
-    vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_draw_vertex, uv);
-
-    input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    input.pNext = NULL;
-    input.flags = 0;
-    input.vertexBindingDescriptionCount = 1;
-    input.pVertexBindingDescriptions = &vertex_binding;
-    input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(vertex_attrs);
-    input.pVertexAttributeDescriptions = vertex_attrs;
-
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
-
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = r->swapchain_extent.width;
-    viewport.height = r->swapchain_extent.height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
-
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent = r->swapchain_extent;
-
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
-
-    rasterization.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterization.pNext = NULL;
-    rasterization.flags = 0;
-    rasterization.depthClampEnable = VK_FALSE;
-    rasterization.rasterizerDiscardEnable = VK_FALSE;
-    rasterization.polygonMode = VK_POLYGON_MODE_LINE;
-    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterization.depthBiasEnable = VK_FALSE;
-    rasterization.depthBiasConstantFactor = 0.0F;
-    rasterization.depthBiasClamp = 0.0F;
-    rasterization.depthBiasSlopeFactor = 0.0F;
-    rasterization.lineWidth = 1.0F;
-
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = r->msaa_sample_count;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
-
-#define OWL_COLOR_WRITE_MASK                                                   \
-  (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |                       \
-   VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
-
-    color_attachment.blendEnable = VK_FALSE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = OWL_COLOR_WRITE_MASK;
-
-#undef OWL_COLOR_WRITE_MASK
-
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
-
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_TRUE;
-    depth.depthWriteEnable = VK_TRUE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
-
-    OWL_MEMSET(&depth.front, 0, sizeof(depth.front));
-    OWL_MEMSET(&depth.back, 0, sizeof(depth.back));
-
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->basic_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->basic_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
-
-    pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline.pNext = NULL;
-    pipeline.flags = 0;
-    pipeline.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline.pStages = stages;
-    pipeline.pVertexInputState = &input;
-    pipeline.pInputAssemblyState = &input_assembly;
-    pipeline.pTessellationState = NULL;
-    pipeline.pViewportState = &viewport_state;
-    pipeline.pRasterizationState = &rasterization;
-    pipeline.pMultisampleState = &multisample;
-    pipeline.pDepthStencilState = &depth;
-    pipeline.pColorBlendState = &color;
-    pipeline.pDynamicState = NULL;
-    pipeline.layout = r->common_pipeline_layout;
-    pipeline.renderPass = r->main_render_pass;
-    pipeline.subpass = 0;
-    pipeline.basePipelineHandle = NULL;
-    pipeline.basePipelineIndex = -1;
-
-    OWL_VK_CHECK(
-        vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-                                  &r->pipelines[OWL_PIPELINE_TYPE_WIRES]));
-
-    r->pipeline_layouts[OWL_PIPELINE_TYPE_WIRES] = r->common_pipeline_layout;
-  }
-
-  /* font */
-  {
-    VkVertexInputBindingDescription vertex_binding;
-    VkVertexInputAttributeDescription vertex_attrs[3];
-    VkPipelineVertexInputStateCreateInfo input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rasterization;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline;
-
-    vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_draw_vertex);
-    vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    vertex_attrs[0].binding = 0;
-    vertex_attrs[0].location = 0;
-    vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_draw_vertex, position);
-    vertex_attrs[1].binding = 0;
-    vertex_attrs[1].location = 1;
-    vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_draw_vertex, color);
-    vertex_attrs[2].binding = 0;
-    vertex_attrs[2].location = 2;
-    vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_draw_vertex, uv);
-
-    input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    input.pNext = NULL;
-    input.flags = 0;
-    input.vertexBindingDescriptionCount = 1;
-    input.pVertexBindingDescriptions = &vertex_binding;
-    input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(vertex_attrs);
-    input.pVertexAttributeDescriptions = vertex_attrs;
-
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
-
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = r->swapchain_extent.width;
-    viewport.height = r->swapchain_extent.height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
-
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent = r->swapchain_extent;
-
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
-
-    rasterization.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterization.pNext = NULL;
-    rasterization.flags = 0;
-    rasterization.depthClampEnable = VK_FALSE;
-    rasterization.rasterizerDiscardEnable = VK_FALSE;
-    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterization.depthBiasEnable = VK_FALSE;
-    rasterization.depthBiasConstantFactor = 0.0F;
-    rasterization.depthBiasClamp = 0.0F;
-    rasterization.depthBiasSlopeFactor = 0.0F;
-    rasterization.lineWidth = 1.0F;
-
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = r->msaa_sample_count;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
-
-#define OWL_COLOR_WRITE_MASK                                                   \
-  (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |                       \
-   VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
-
-    color_attachment.blendEnable = VK_TRUE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = OWL_COLOR_WRITE_MASK;
-
-#undef OWL_COLOR_WRITE_MASK
-
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
-
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_TRUE;
-    depth.depthWriteEnable = VK_TRUE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
-
-    OWL_MEMSET(&depth.front, 0, sizeof(depth.front));
-    OWL_MEMSET(&depth.back, 0, sizeof(depth.back));
-
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->basic_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->font_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
-
-    pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline.pNext = NULL;
-    pipeline.flags = 0;
-    pipeline.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline.pStages = stages;
-    pipeline.pVertexInputState = &input;
-    pipeline.pInputAssemblyState = &input_assembly;
-    pipeline.pTessellationState = NULL;
-    pipeline.pViewportState = &viewport_state;
-    pipeline.pRasterizationState = &rasterization;
-    pipeline.pMultisampleState = &multisample;
-    pipeline.pDepthStencilState = &depth;
-    pipeline.pColorBlendState = &color;
-    pipeline.pDynamicState = NULL;
-    pipeline.layout = r->common_pipeline_layout;
-    pipeline.renderPass = r->main_render_pass;
-    pipeline.subpass = 0;
-    pipeline.basePipelineHandle = NULL;
-    pipeline.basePipelineIndex = -1;
-
-    OWL_VK_CHECK(
-        vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-                                  &r->pipelines[OWL_PIPELINE_TYPE_FONT]));
-
-    r->pipeline_layouts[OWL_PIPELINE_TYPE_FONT] = r->common_pipeline_layout;
-  }
-
-  /* skybox */
-  {
-    VkVertexInputBindingDescription vertex_binding;
-    VkVertexInputAttributeDescription vertex_attrs[1];
-    VkPipelineVertexInputStateCreateInfo input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rasterization;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline;
-
-    vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_skybox_vertex);
-    vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    vertex_attrs[0].binding = 0;
-    vertex_attrs[0].location = 0;
-    vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_skybox_vertex, position);
-
-    input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    input.pNext = NULL;
-    input.flags = 0;
-    input.vertexBindingDescriptionCount = 1;
-    input.pVertexBindingDescriptions = &vertex_binding;
-    input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(vertex_attrs);
-    input.pVertexAttributeDescriptions = vertex_attrs;
-
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
-
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = r->swapchain_extent.width;
-    viewport.height = r->swapchain_extent.height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
-
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent = r->swapchain_extent;
-
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
-
-    rasterization.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterization.pNext = NULL;
-    rasterization.flags = 0;
-    rasterization.depthClampEnable = VK_FALSE;
-    rasterization.rasterizerDiscardEnable = VK_FALSE;
-    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterization.depthBiasEnable = VK_FALSE;
-    rasterization.depthBiasConstantFactor = 0.0F;
-    rasterization.depthBiasClamp = 0.0F;
-    rasterization.depthBiasSlopeFactor = 0.0F;
-    rasterization.lineWidth = 1.0F;
-
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = r->msaa_sample_count;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
-
-#define OWL_COLOR_WRITE_MASK                                                   \
-  (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |                       \
-   VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
-
-    color_attachment.blendEnable = VK_FALSE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = OWL_COLOR_WRITE_MASK;
-
-#undef OWL_COLOR_WRITE_MASK
-
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
-
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_FALSE;
-    depth.depthWriteEnable = VK_FALSE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
-
-    OWL_MEMSET(&depth.front, 0, sizeof(depth.front));
-    OWL_MEMSET(&depth.back, 0, sizeof(depth.back));
-
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->skybox_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->skybox_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
-
-    pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline.pNext = NULL;
-    pipeline.flags = 0;
-    pipeline.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline.pStages = stages;
-    pipeline.pVertexInputState = &input;
-    pipeline.pInputAssemblyState = &input_assembly;
-    pipeline.pTessellationState = NULL;
-    pipeline.pViewportState = &viewport_state;
-    pipeline.pRasterizationState = &rasterization;
-    pipeline.pMultisampleState = &multisample;
-    pipeline.pDepthStencilState = &depth;
-    pipeline.pColorBlendState = &color;
-    pipeline.pDynamicState = NULL;
-    pipeline.layout = r->common_pipeline_layout;
-    pipeline.renderPass = r->main_render_pass;
-    pipeline.subpass = 0;
-    pipeline.basePipelineHandle = NULL;
-    pipeline.basePipelineIndex = -1;
-
-    OWL_VK_CHECK(
-        vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-                                  &r->pipelines[OWL_PIPELINE_TYPE_SKYBOX]));
-
-    r->pipeline_layouts[OWL_PIPELINE_TYPE_SKYBOX] = r->common_pipeline_layout;
-  }
-
-  /* pbr */
-  {
-    VkVertexInputBindingDescription vertex_binding;
-    VkVertexInputAttributeDescription vertex_attrs[6];
-    VkPipelineVertexInputStateCreateInfo input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rasterization;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline;
-
-    vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_model_vertex);
-    vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    vertex_attrs[0].binding = 0;
-    vertex_attrs[0].location = 0;
-    vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_model_vertex, position);
-    vertex_attrs[1].binding = 0;
-    vertex_attrs[1].location = 1;
-    vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_model_vertex, normal);
-    vertex_attrs[2].binding = 0;
-    vertex_attrs[2].location = 2;
-    vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_model_vertex, uv0);
-    vertex_attrs[3].binding = 0;
-    vertex_attrs[3].location = 3;
-    vertex_attrs[3].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[3].offset = offsetof(struct owl_model_vertex, uv1);
-    vertex_attrs[4].binding = 0;
-    vertex_attrs[4].location = 4;
-    vertex_attrs[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    vertex_attrs[4].offset = offsetof(struct owl_model_vertex, joint0);
-    vertex_attrs[5].binding = 0;
-    vertex_attrs[5].location = 5;
-    vertex_attrs[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    vertex_attrs[5].offset = offsetof(struct owl_model_vertex, weight0);
-
-    input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    input.pNext = NULL;
-    input.flags = 0;
-    input.vertexBindingDescriptionCount = 1;
-    input.pVertexBindingDescriptions = &vertex_binding;
-    input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(vertex_attrs);
-    input.pVertexAttributeDescriptions = vertex_attrs;
-
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
-
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = r->swapchain_extent.width;
-    viewport.height = r->swapchain_extent.height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
-
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent = r->swapchain_extent;
-
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
-
-    rasterization.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterization.pNext = NULL;
-    rasterization.flags = 0;
-    rasterization.depthClampEnable = VK_FALSE;
-    rasterization.rasterizerDiscardEnable = VK_FALSE;
-    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterization.depthBiasEnable = VK_FALSE;
-    rasterization.depthBiasConstantFactor = 0.0F;
-    rasterization.depthBiasClamp = 0.0F;
-    rasterization.depthBiasSlopeFactor = 0.0F;
-    rasterization.lineWidth = 1.0F;
-
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = r->msaa_sample_count;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
-
-#define OWL_COLOR_WRITE_MASK                                                   \
-  (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |                       \
-   VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
-
-    color_attachment.blendEnable = VK_FALSE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = OWL_COLOR_WRITE_MASK;
-
-#undef OWL_COLOR_WRITE_MASK
-
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
-
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_TRUE;
-    depth.depthWriteEnable = VK_TRUE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
-
-    OWL_MEMSET(&depth.front, 0, sizeof(depth.front));
-    OWL_MEMSET(&depth.back, 0, sizeof(depth.back));
-
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->pbr_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->pbr_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
-
-    pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline.pNext = NULL;
-    pipeline.flags = 0;
-    pipeline.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline.pStages = stages;
-    pipeline.pVertexInputState = &input;
-    pipeline.pInputAssemblyState = &input_assembly;
-    pipeline.pTessellationState = NULL;
-    pipeline.pViewportState = &viewport_state;
-    pipeline.pRasterizationState = &rasterization;
-    pipeline.pMultisampleState = &multisample;
-    pipeline.pDepthStencilState = &depth;
-    pipeline.pColorBlendState = &color;
-    pipeline.pDynamicState = NULL;
-    pipeline.layout = r->pbr_pipeline_layout;
-    pipeline.renderPass = r->main_render_pass;
-    pipeline.subpass = 0;
-    pipeline.basePipelineHandle = NULL;
-    pipeline.basePipelineIndex = -1;
-
-    OWL_VK_CHECK(
-        vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-                                  &r->pipelines[OWL_PIPELINE_TYPE_PBR]));
-
-    r->pipeline_layouts[OWL_PIPELINE_TYPE_PBR] = r->pbr_pipeline_layout;
-  }
-
-  /* pbr alpha blend */
-  {
-    VkVertexInputBindingDescription vertex_binding;
-    VkVertexInputAttributeDescription vertex_attrs[6];
-    VkPipelineVertexInputStateCreateInfo input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rasterization;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline;
-
-    vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(struct owl_model_vertex);
-    vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    vertex_attrs[0].binding = 0;
-    vertex_attrs[0].location = 0;
-    vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[0].offset = offsetof(struct owl_model_vertex, position);
-    vertex_attrs[1].binding = 0;
-    vertex_attrs[1].location = 1;
-    vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attrs[1].offset = offsetof(struct owl_model_vertex, normal);
-    vertex_attrs[2].binding = 0;
-    vertex_attrs[2].location = 2;
-    vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[2].offset = offsetof(struct owl_model_vertex, uv0);
-    vertex_attrs[3].binding = 0;
-    vertex_attrs[3].location = 3;
-    vertex_attrs[3].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attrs[3].offset = offsetof(struct owl_model_vertex, uv1);
-    vertex_attrs[4].binding = 0;
-    vertex_attrs[4].location = 4;
-    vertex_attrs[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    vertex_attrs[4].offset = offsetof(struct owl_model_vertex, joint0);
-    vertex_attrs[5].binding = 0;
-    vertex_attrs[5].location = 5;
-    vertex_attrs[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    vertex_attrs[5].offset = offsetof(struct owl_model_vertex, weight0);
-
-    input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    input.pNext = NULL;
-    input.flags = 0;
-    input.vertexBindingDescriptionCount = 1;
-    input.pVertexBindingDescriptions = &vertex_binding;
-    input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(vertex_attrs);
-    input.pVertexAttributeDescriptions = vertex_attrs;
-
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
-
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = r->swapchain_extent.width;
-    viewport.height = r->swapchain_extent.height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
-
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent = r->swapchain_extent;
-
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
-
-    rasterization.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterization.pNext = NULL;
-    rasterization.flags = 0;
-    rasterization.depthClampEnable = VK_FALSE;
-    rasterization.rasterizerDiscardEnable = VK_FALSE;
-    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterization.depthBiasEnable = VK_FALSE;
-    rasterization.depthBiasConstantFactor = 0.0F;
-    rasterization.depthBiasClamp = 0.0F;
-    rasterization.depthBiasSlopeFactor = 0.0F;
-    rasterization.lineWidth = 1.0F;
-
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = r->msaa_sample_count;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
-
-#define OWL_COLOR_WRITE_MASK                                                   \
-  (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |                       \
-   VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
-
-    color_attachment.blendEnable = VK_TRUE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = OWL_COLOR_WRITE_MASK;
-
-#undef OWL_COLOR_WRITE_MASK
-
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
-
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_TRUE;
-    depth.depthWriteEnable = VK_TRUE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
-
-    OWL_MEMSET(&depth.front, 0, sizeof(depth.front));
-    OWL_MEMSET(&depth.back, 0, sizeof(depth.back));
-
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = r->pbr_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = r->pbr_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
-
-    pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline.pNext = NULL;
-    pipeline.flags = 0;
-    pipeline.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline.pStages = stages;
-    pipeline.pVertexInputState = &input;
-    pipeline.pInputAssemblyState = &input_assembly;
-    pipeline.pTessellationState = NULL;
-    pipeline.pViewportState = &viewport_state;
-    pipeline.pRasterizationState = &rasterization;
-    pipeline.pMultisampleState = &multisample;
-    pipeline.pDepthStencilState = &depth;
-    pipeline.pColorBlendState = &color;
-    pipeline.pDynamicState = NULL;
-    pipeline.layout = r->pbr_pipeline_layout;
-    pipeline.renderPass = r->main_render_pass;
-    pipeline.subpass = 0;
-    pipeline.basePipelineHandle = NULL;
-    pipeline.basePipelineIndex = -1;
-
-    OWL_VK_CHECK(vkCreateGraphicsPipelines(
-        r->device, VK_NULL_HANDLE, 1, &pipeline, NULL,
-        &r->pipelines[OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND]));
-
-    r->pipeline_layouts[OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND] =
-        r->pbr_pipeline_layout;
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+    case OWL_PIPELINE_TYPE_SKYBOX:
+    case OWL_PIPELINE_TYPE_PBR:
+      color_blend_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+      color_blend_state.pNext = NULL;
+      color_blend_state.flags = 0;
+      color_blend_state.logicOpEnable = VK_FALSE;
+      color_blend_state.logicOp = VK_LOGIC_OP_COPY;
+      color_blend_state.attachmentCount = 1;
+      color_blend_state.pAttachments = color_attachments;
+      color_blend_state.blendConstants[0] = 0.0F;
+      color_blend_state.blendConstants[1] = 0.0F;
+      color_blend_state.blendConstants[2] = 0.0F;
+      color_blend_state.blendConstants[3] = 0.0F;
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+    case OWL_PIPELINE_TYPE_PBR:
+      depth_stencil_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+      depth_stencil_state.pNext = NULL;
+      depth_stencil_state.flags = 0;
+      depth_stencil_state.depthTestEnable = VK_TRUE;
+      depth_stencil_state.depthWriteEnable = VK_TRUE;
+      depth_stencil_state.depthCompareOp = VK_COMPARE_OP_LESS;
+      depth_stencil_state.depthBoundsTestEnable = VK_FALSE;
+      depth_stencil_state.stencilTestEnable = VK_FALSE;
+      OWL_MEMSET(&depth_stencil_state.front, 0,
+                 sizeof(depth_stencil_state.front));
+      OWL_MEMSET(&depth_stencil_state.back, 0,
+                 sizeof(depth_stencil_state.back));
+      depth_stencil_state.minDepthBounds = 0.0F;
+      depth_stencil_state.maxDepthBounds = 1.0F;
+      break;
+
+    case OWL_PIPELINE_TYPE_SKYBOX:
+      depth_stencil_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+      depth_stencil_state.pNext = NULL;
+      depth_stencil_state.flags = 0;
+      depth_stencil_state.depthTestEnable = VK_FALSE;
+      depth_stencil_state.depthWriteEnable = VK_FALSE;
+      depth_stencil_state.depthCompareOp = VK_COMPARE_OP_LESS;
+      depth_stencil_state.depthBoundsTestEnable = VK_FALSE;
+      depth_stencil_state.stencilTestEnable = VK_FALSE;
+      OWL_MEMSET(&depth_stencil_state.front, 0,
+                 sizeof(depth_stencil_state.front));
+      OWL_MEMSET(&depth_stencil_state.back, 0,
+                 sizeof(depth_stencil_state.back));
+      depth_stencil_state.minDepthBounds = 0.0F;
+      depth_stencil_state.maxDepthBounds = 1.0F;
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+      stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[0].pNext = NULL;
+      stages[0].flags = 0;
+      stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+      stages[0].module = r->basic_vertex_shader;
+      stages[0].pName = "main";
+      stages[0].pSpecializationInfo = NULL;
+
+      stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[1].pNext = NULL;
+      stages[1].flags = 0;
+      stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      stages[1].module = r->basic_fragment_shader;
+      stages[1].pName = "main";
+      stages[1].pSpecializationInfo = NULL;
+      break;
+
+    case OWL_PIPELINE_TYPE_FONT:
+      stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[0].pNext = NULL;
+      stages[0].flags = 0;
+      stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+      stages[0].module = r->basic_vertex_shader;
+      stages[0].pName = "main";
+      stages[0].pSpecializationInfo = NULL;
+
+      stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[1].pNext = NULL;
+      stages[1].flags = 0;
+      stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      stages[1].module = r->font_fragment_shader;
+      stages[1].pName = "main";
+      stages[1].pSpecializationInfo = NULL;
+      break;
+
+    case OWL_PIPELINE_TYPE_SKYBOX:
+      stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[0].pNext = NULL;
+      stages[0].flags = 0;
+      stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+      stages[0].module = r->skybox_vertex_shader;
+      stages[0].pName = "main";
+      stages[0].pSpecializationInfo = NULL;
+
+      stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[1].pNext = NULL;
+      stages[1].flags = 0;
+      stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      stages[1].module = r->skybox_fragment_shader;
+      stages[1].pName = "main";
+      stages[1].pSpecializationInfo = NULL;
+      break;
+
+    case OWL_PIPELINE_TYPE_PBR:
+      stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[0].pNext = NULL;
+      stages[0].flags = 0;
+      stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+      stages[0].module = r->pbr_vertex_shader;
+      stages[0].pName = "main";
+      stages[0].pSpecializationInfo = NULL;
+
+      stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[1].pNext = NULL;
+      stages[1].flags = 0;
+      stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      stages[1].module = r->pbr_fragment_shader;
+      stages[1].pName = "main";
+      stages[1].pSpecializationInfo = NULL;
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+    case OWL_PIPELINE_TYPE_SKYBOX:
+      r->pipeline_layouts[i] = r->common_pipeline_layout;
+      break;
+
+    case OWL_PIPELINE_TYPE_PBR:
+      r->pipeline_layouts[i] = r->pbr_pipeline_layout;
+      break;
+    }
+
+    switch (i) {
+    case OWL_PIPELINE_TYPE_MAIN:
+    case OWL_PIPELINE_TYPE_WIRES:
+    case OWL_PIPELINE_TYPE_FONT:
+    case OWL_PIPELINE_TYPE_SKYBOX:
+    case OWL_PIPELINE_TYPE_PBR:
+      pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+      pipeline.pNext = NULL;
+      pipeline.flags = 0;
+      pipeline.stageCount = OWL_ARRAY_SIZE(stages);
+      pipeline.pStages = stages;
+      pipeline.pVertexInputState = &vertex_input_state;
+      pipeline.pInputAssemblyState = &input_assembly_state;
+      pipeline.pTessellationState = NULL;
+      pipeline.pViewportState = &viewport_state;
+      pipeline.pRasterizationState = &rasterization_state;
+      pipeline.pMultisampleState = &multisample_state;
+      pipeline.pDepthStencilState = &depth_stencil_state;
+      pipeline.pColorBlendState = &color_blend_state;
+      pipeline.pDynamicState = NULL;
+      pipeline.layout = r->pipeline_layouts[i];
+      pipeline.renderPass = r->main_render_pass;
+      pipeline.subpass = 0;
+      pipeline.basePipelineHandle = VK_NULL_HANDLE;
+      pipeline.basePipelineIndex = -1;
+      break;
+    }
+
+    OWL_VK_CHECK(vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1,
+                                           &pipeline, NULL, &r->pipelines[i]));
   }
 
   return code;
 }
 
 OWL_INTERNAL void owl_renderer_deinit_pipelines_(struct owl_renderer *r) {
-  /* NOTE: could loop it, but it's a good remainder */
-
-  vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND],
-                    NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_PBR], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_SKYBOX], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_FONT], NULL);
@@ -2436,7 +1810,7 @@ owl_renderer_init_frame_commands_(struct owl_renderer *r) {
   owl_u32 i;
   enum owl_code code = OWL_SUCCESS;
 
-  r->active_frame = 0;
+  r->frame = 0;
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i) {
     VkCommandPoolCreateInfo command_pool;
@@ -2463,7 +1837,8 @@ owl_renderer_init_frame_commands_(struct owl_renderer *r) {
                                           &r->frame_command_buffers[i]));
   }
 
-  r->active_command_buffer = r->frame_command_buffers[r->active_frame];
+  r->active_frame_command_buffer = r->frame_command_buffers[r->frame];
+  r->active_frame_command_pool = r->frame_command_pools[r->frame];
 
   return code;
 }
@@ -2485,6 +1860,15 @@ owl_renderer_init_frame_sync_(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i) {
+    VkFenceCreateInfo fence;
+    fence.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fence.pNext = NULL;
+    fence.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    OWL_VK_CHECK(
+        vkCreateFence(r->device, &fence, NULL, &r->in_flight_fences[i]));
+  }
+
+  for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i) {
     VkSemaphoreCreateInfo semaphore;
     semaphore.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     semaphore.pNext = NULL;
@@ -2502,14 +1886,9 @@ owl_renderer_init_frame_sync_(struct owl_renderer *r) {
                                    &r->render_done_semaphores[i]));
   }
 
-  for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i) {
-    VkFenceCreateInfo fence;
-    fence.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fence.pNext = NULL;
-    fence.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    OWL_VK_CHECK(
-        vkCreateFence(r->device, &fence, NULL, &r->in_flight_fences[i]));
-  }
+  r->active_in_flight_fence = r->in_flight_fences[r->frame];
+  r->active_image_available_semaphore = r->image_available_semaphores[r->frame];
+  r->active_render_done_semaphore = r->render_done_semaphores[r->frame];
 
   return code;
 }
@@ -2518,13 +1897,13 @@ OWL_INTERNAL void owl_renderer_deinit_frame_sync_(struct owl_renderer *r) {
   owl_u32 i;
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
+    vkDestroyFence(r->device, r->in_flight_fences[i], NULL);
+
+  for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
     vkDestroySemaphore(r->device, r->image_available_semaphores[i], NULL);
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
     vkDestroySemaphore(r->device, r->render_done_semaphores[i], NULL);
-
-  for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkDestroyFence(r->device, r->in_flight_fences[i], NULL);
 }
 
 OWL_INTERNAL enum owl_code owl_renderer_init_garbage_(struct owl_renderer *r) {
@@ -2678,11 +2057,9 @@ owl_renderer_init_dynamic_buffer_(struct owl_renderer *r, VkDeviceSize size) {
     }
   }
 
-  /* zero the offsets */
-  {
-    for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-      r->dynamic_offsets[i] = 0;
-  }
+  r->active_dynamic_data = r->dynamic_data[r->frame];
+  r->active_dynamic_buffer = r->dynamic_buffers[r->frame];
+  r->active_dynamic_pvm_set = r->dynamic_pvm_sets[r->frame];
 
   return code;
 }
@@ -2702,12 +2079,14 @@ OWL_INTERNAL void owl_renderer_deinit_dynamic_buffer_(struct owl_renderer *r) {
 
 #if 0
 OWL_INTERNAL enum owl_code
-owl_renderer_init_pbr_resources_(struct owl_renderer *r) {
+owl_renderer_init_lutbrdf_resources_(struct owl_renderer *r) {
   VkRenderPass lutbrdf_render_pass;
-  VkPipeline lutbrdf_pipeline;
   VkFramebuffer lutbrdf_framebuffer;
   VkDescriptorSetLayout lutbrdf_set_layout;
   VkPipelineLayout lutbrdf_pipeline_layout;
+  VkShaderModule lutbrdf_vertex_shader;
+  VkShaderModule lutbrdf_fragment_shader;
+  VkPipeline lutbrdf_pipeline;
   enum owl_code code = OWL_SUCCESS;
 
 #define OWL_BRDFLUT_FORMAT VK_FORMAT_R16G16_SFLOAT;
@@ -2729,13 +2108,13 @@ owl_renderer_init_pbr_resources_(struct owl_renderer *r) {
     image.arrayLayers = 1;
     image.samples = VK_SAMPLE_COUNT_1_BIT;
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
-    image.usage = OWL_BRDFLUT_USAGE : image.sharingMode =
-        VK_SHARING_MODE_EXCLUSIVE;
+    image.usage = OWL_BRDFLUT_USAGE;
+    image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image.queueFamilyIndexCount = 0;
     image.pQueueFamilyIndices = NULL;
     image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL & r->lutbrdf_image));
+    OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &r->lutbrdf_image));
   }
 
   {
@@ -2745,17 +2124,21 @@ owl_renderer_init_pbr_resources_(struct owl_renderer *r) {
     vkGetImageMemoryRequirements(r->device, r->lutbrdf_image, &requirements);
 
     memory.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memory.pNext = NULL : memory.allocationSize = requirements.size;
+    memory.pNext = NULL;
+    memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
         r, requirements.memoryTypeBits, OWL_MEMORY_VISIBILITY_GPU_ONLY);
 
-    OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &r->lutbrdf_image));
+    OWL_VK_CHECK(
+        vkAllocateMemory(r->device, &memory, NULL, &r->lutbrdf_memory));
+    OWL_VK_CHECK(
+        vkBindImageMemory(r->device, r->lutbrdf_image, r->lutbrdf_memory, 0));
   }
 
   {
     VkImageViewCreateInfo view;
 
-    view.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view.pNext = NULL;
     view.flags = 0;
     view.image = r->lutbrdf_image;
@@ -2781,12 +2164,13 @@ owl_renderer_init_pbr_resources_(struct owl_renderer *r) {
     sampler.pNext = NULL;
     sampler.flags = 0;
     sampler.magFilter = VK_FILTER_LINEAR;
-    sampler.minFilter = VK_FILTER_LINEAR : sampler.mimapMode =
-        VK_SAMPLER_MIMAP_MODE_LINEAR : sampler.addressModeU =
-            VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    sampler.minFilter = VK_FILTER_LINEAR;
+    sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler.mipLodBias = 0.0F : sampler.anisotropyEnable = VK_FALSE;
+    sampler.mipLodBias = 0.0F;
+    sampler.anisotropyEnable = VK_FALSE;
     sampler.maxAnisotropy = 1.0F;
     sampler.compareEnable = VK_FALSE;
     sampler.compareOp = VK_COMPARE_OP_NEVER;
@@ -2813,13 +2197,13 @@ owl_renderer_init_pbr_resources_(struct owl_renderer *r) {
     attachment.format = OWL_BRDFLUT_FORMAT;
     attachment.samples = VK_SAMPLE_COUNT_1_BIT;
     attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachment.storeOp = VK_ATTACHMENT_STORE_OP_LOAD;
+    attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-                                 subpass.flags = 0;
+    subpass.flags = 0;
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.inputAttachmentCount = 0;
     subpass.pInputAttachments = NULL;
@@ -2832,26 +2216,28 @@ owl_renderer_init_pbr_resources_(struct owl_renderer *r) {
 
     dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
     dependencies[0].dstSubpass = 0;
-    dependencies[0].srcStageMask = VK_PIPELINESTAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUPUT_BIT;
-    dependencies[0].srcAccessMask = VK_MEMORY_READ_BIT;
-    dependencies[0].dstAccessMasK = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[0].dstStageMask =
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
                                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
     dependencies[1].srcSubpass = 0;
     dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUPUT_BIT;
-    dependencies[1].dstStageMask = VK_PIPELINESTAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[1].srcStageMask =
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
     dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
                                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMasK = VK_MEMORY_READ_BIT;
+    dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     render_pass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     render_pass.pNext = NULL;
     render_pass.flags = 0;
     render_pass.attachmentCount = 1;
-    render_pass.pAttachments &attachment;
+    render_pass.pAttachments = &attachment;
     render_pass.subpassCount = 1;
     render_pass.pSubpasses = &subpass;
     render_pass.dependencyCount = OWL_ARRAY_SIZE(dependencies);
@@ -2868,7 +2254,7 @@ owl_renderer_init_pbr_resources_(struct owl_renderer *r) {
     framebuffer.pNext = NULL;
     framebuffer.flags = 0;
     framebuffer.renderPass = lutbrdf_render_pass;
-    framebuffer.attachmentsCount = 1;
+    framebuffer.attachmentCount = 1;
     framebuffer.pAttachments = &r->lutbrdf_view;
     framebuffer.width = OWL_BRDFLUT_DIM;
     framebuffer.height = OWL_BRDFLUT_DIM;
@@ -2907,6 +2293,43 @@ owl_renderer_init_pbr_resources_(struct owl_renderer *r) {
   }
 
   {
+
+    VkShaderModuleCreateInfo shader;
+
+    OWL_LOCAL_PERSIST owl_u32 const code[] = {
+#include "../shaders/brdflut_vertex.spv.u32"
+    };
+
+    shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader.pNext = NULL;
+    shader.flags = 0;
+    shader.codeSize = sizeof(code);
+    shader.pCode = code;
+
+    OWL_VK_CHECK(
+        vkCreateShaderModule(r->device, &shader, NULL, &lutbrdf_vertex_shader));
+  }
+
+  {
+
+    VkShaderModuleCreateInfo shader;
+
+    OWL_LOCAL_PERSIST owl_u32 const code[] = {
+#include "../shaders/brdflut_fragment.spv.u32"
+    };
+
+    shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader.pNext = NULL;
+    shader.flags = 0;
+    shader.codeSize = sizeof(code);
+    shader.pCode = code;
+
+    OWL_VK_CHECK(vkCreateShaderModule(r->device, &shader, NULL,
+                                      &lutbrdf_fragment_shader));
+  }
+
+  {
+    VkPipelineVertexInputStateCreateInfo input;
     VkPipelineInputAssemblyStateCreateInfo input_assembly;
     VkViewport viewport;
     VkRect2D scissor;
@@ -2919,23 +2342,222 @@ owl_renderer_init_pbr_resources_(struct owl_renderer *r) {
     VkPipelineShaderStageCreateInfo stages[2];
     VkGraphicsPipelineCreateInfo pipeline;
 
+    input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    input.pNext = NULL;
+    input.flags = 0;
+    input.vertexBindingDescriptionCount = 0;
+    input.pVertexBindingDescriptions = NULL;
+    input.vertexAttributeDescriptionCount = 0;
+    input.pVertexAttributeDescriptions = NULL;
+
     input_assembly.sType =
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     input_assembly.pNext = NULL;
     input_assembly.flags = 0;
     input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE :
+    input_assembly.primitiveRestartEnable = VK_FALSE;
 
-        viewport.x = viewport.y;
-    viewport.width;
-    viewport.height;
-    viewport.minDepth;
-    viewport.maxDepth;
+    viewport.x = 0.0F;
+    viewport.y = 0.0F;
+    viewport.width = OWL_BRDFLUT_DIM;
+    viewport.height = OWL_BRDFLUT_DIM;
+    viewport.minDepth = 0.0F;
+    viewport.maxDepth = 1.0F;
+
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent.width = OWL_BRDFLUT_DIM;
+    scissor.extent.height = OWL_BRDFLUT_DIM;
+
+    viewport_state.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport_state.pNext = NULL;
+    viewport_state.flags = 0;
+    viewport_state.viewportCount = 1;
+    viewport_state.pViewports = &viewport;
+    viewport_state.scissorCount = 1;
+    viewport_state.pScissors = &scissor;
+
+    rasterization.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterization.pNext = NULL;
+    rasterization.flags = 0;
+    rasterization.depthClampEnable = VK_FALSE;
+    rasterization.rasterizerDiscardEnable = VK_FALSE;
+    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterization.depthBiasEnable = VK_FALSE;
+    rasterization.depthBiasSlopeFactor = 0.0F;
+    rasterization.lineWidth = 1.0F;
+
+    multisample.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisample.pNext = NULL;
+    multisample.flags = 0;
+    multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisample.sampleShadingEnable = VK_FALSE;
+    multisample.minSampleShading = 0.0F;
+    multisample.pSampleMask = NULL;
+    multisample.alphaToCoverageEnable = VK_FALSE;
+    multisample.alphaToOneEnable = VK_FALSE;
+
+#define OWL_COLOR_WRITE_MASK                                                   \
+  VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |                        \
+      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+
+    color_attachment.blendEnable = VK_FALSE;
+    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    color_attachment.colorWriteMask = OWL_COLOR_WRITE_MASK;
+
+#undef OWL_COLOR_WRITE_MASK
+
+    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    color.pNext = NULL;
+    color.flags = 0;
+    color.logicOpEnable = VK_FALSE;
+    color.logicOp = VK_LOGIC_OP_CLEAR;
+    color.attachmentCount = 1;
+    color.pAttachments = &color_attachment;
+    color.blendConstants[0] = 0.0F;
+    color.blendConstants[1] = 0.0F;
+    color.blendConstants[2] = 0.0F;
+    color.blendConstants[3] = 0.0F;
+
+    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth.flags = 0;
+    depth.depthTestEnable = VK_FALSE;
+    depth.depthWriteEnable = VK_FALSE;
+    depth.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depth.depthBoundsTestEnable = VK_FALSE;
+    depth.stencilTestEnable = VK_FALSE;
+    OWL_MEMSET(&depth.front, 0, sizeof(depth.front));
+    OWL_MEMSET(&depth.back, 0, sizeof(depth.back));
+    depth.back.compareOp = VK_COMPARE_OP_ALWAYS;
+    depth.minDepthBounds = 0.0F;
+    depth.maxDepthBounds = 0.0F;
+
+    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stages[0].pNext = NULL;
+    stages[0].flags = 0;
+    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    stages[0].module = lutbrdf_vertex_shader;
+    stages[0].pName = "main";
+    stages[0].pSpecializationInfo = NULL;
+
+    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stages[1].pNext = NULL;
+    stages[1].flags = 0;
+    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    stages[1].module = lutbrdf_fragment_shader;
+    stages[1].pName = "main";
+    stages[1].pSpecializationInfo = NULL;
+
+    pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipeline.pNext = NULL;
+    pipeline.flags = 0;
+    pipeline.stageCount = OWL_ARRAY_SIZE(stages);
+    pipeline.pStages = stages;
+    pipeline.pVertexInputState = &input;
+    pipeline.pInputAssemblyState = &input_assembly;
+    pipeline.pTessellationState = NULL;
+    pipeline.pViewportState = &viewport_state;
+    pipeline.pRasterizationState = &rasterization;
+    pipeline.pMultisampleState = &multisample;
+    pipeline.pDepthStencilState = &depth;
+    pipeline.pColorBlendState = &color;
+    pipeline.pDynamicState = NULL;
+    pipeline.layout = lutbrdf_pipeline_layout;
+    pipeline.renderPass = lutbrdf_render_pass;
+    pipeline.subpass = 0;
+    pipeline.basePipelineHandle = VK_NULL_HANDLE;
+    pipeline.basePipelineIndex = -1;
+
+    OWL_VK_CHECK(vkCreateGraphicsPipelines(r->device, VK_NULL_HANDLE, 1,
+                                           &pipeline, NULL, &lutbrdf_pipeline));
   }
+
+  {
+    VkCommandBuffer command;
+    owl_renderer_alloc_single_use_command_buffer(r, &command);
+
+    {
+      VkClearValue clear_value;
+      VkRenderPassBeginInfo begin;
+
+      clear_value.color.float32[0] = 0.0F;
+      clear_value.color.float32[1] = 0.0F;
+      clear_value.color.float32[2] = 0.0F;
+      clear_value.color.float32[3] = 1.0F;
+
+      begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+      begin.pNext = NULL;
+      begin.renderPass = lutbrdf_render_pass;
+      begin.framebuffer = lutbrdf_framebuffer;
+      begin.renderArea.offset.x = 0;
+      begin.renderArea.offset.y = 0;
+      begin.renderArea.extent.width = OWL_BRDFLUT_DIM;
+      begin.renderArea.extent.height = OWL_BRDFLUT_DIM;
+      begin.clearValueCount = 1;
+      begin.pClearValues = &clear_value;
+
+      vkCmdBeginRenderPass(command, &begin, VK_SUBPASS_CONTENTS_INLINE);
+    }
+
+    {
+      vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        lutbrdf_pipeline);
+      vkCmdDraw(command, 3, 1, 0, 0);
+    }
+
+    { vkCmdEndRenderPass(command); }
+
+    owl_renderer_free_single_use_command_buffer(r, command);
+  }
+
+  vkDestroyPipeline(r->device, lutbrdf_pipeline, NULL);
+  vkDestroyShaderModule(r->device, lutbrdf_fragment_shader, NULL);
+  vkDestroyShaderModule(r->device, lutbrdf_vertex_shader, NULL);
+  vkDestroyPipelineLayout(r->device, lutbrdf_pipeline_layout, NULL);
+  vkDestroyDescriptorSetLayout(r->device, lutbrdf_set_layout, NULL);
+  vkDestroyFramebuffer(r->device, lutbrdf_framebuffer, NULL);
+  vkDestroyRenderPass(r->device, lutbrdf_render_pass, NULL);
 
 #undef OWL_BRDFLUT_USAGE
 #undef OWL_BRDFLUT_DIM
 #undef OWL_BRDFLUT_FORMAT
+
+  return code;
+}
+
+OWL_INTERNAL void
+owl_renderer_deinit_lutbrdf_resources_(struct owl_renderer *r) {
+  vkFreeMemory(r->device, r->lutbrdf_memory, NULL);
+  vkDestroyImageView(r->device, r->lutbrdf_view, NULL);
+  vkDestroySampler(r->device, r->lutbrdf_sampler, NULL);
+  vkDestroyImage(r->device, r->lutbrdf_image, NULL);
+}
+#endif
+
+#if 0
+OWL_INTERNAL enum owl_code
+owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
+#define OWL_CUBEMAP_TARGET_IRRADIANCE 0
+#define OWL_CUBEMAP_TARGET_PREFILTERED 1
+#define OWL_CUBEMAP_TARGET_COUNT 2
+  int i;
+  
+  for (i = 0; i < OWL_CUBEMAP_TARGET_COUNT; ++i) {
+  }
+
+#undef OWL_CUBEMAP_TARGET_COUNT
+#undef OWL_CUBEMAP_TARGET_PREFILTERED
+#undef OWL_CUBEMAP_TARGET_IRRADIANCE
 }
 #endif
 
@@ -2987,6 +2609,10 @@ owl_renderer_move_dynamic_to_garbage_(struct owl_renderer *r) {
     r->garbage_memories_count = new_count;
   }
 
+  r->active_dynamic_data = NULL;
+  r->active_dynamic_buffer = VK_NULL_HANDLE;
+  r->active_dynamic_pvm_set = VK_NULL_HANDLE;
+
 end:
   return code;
 }
@@ -3004,12 +2630,11 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
 #ifdef OWL_ENABLE_VALIDATION
   if (OWL_SUCCESS != (code = owl_renderer_init_debug_(r)))
     goto end_err_deinit_instance;
-#endif /* OWL_ENABLE_VALIDATION */
 
   if (OWL_SUCCESS != (code = owl_renderer_init_surface_(info, r)))
-#ifdef OWL_ENABLE_VALIDATION
     goto end_err_deinit_debug;
 #else  /* OWL_ENABLE_VALIDATION */
+  if (OWL_SUCCESS != (code = owl_renderer_init_surface_(info, r)))
     goto end_err_deinit_instance;
 #endif /* OWL_ENABLE_VALIDATION */
 
@@ -3059,8 +2684,8 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
     goto end_err_deinit_garbage;
 
 #if 0
-  if (OWL_SUCCESS != (code = owl_renderer_init_pbr_resources_(r)))
-    goto end_err_deinit_dynamic_buffer :
+  if (OWL_SUCCESS != (code = owl_renderer_init_lutbrdf_resources_(r)))
+    goto end_err_deinit_dynamic_buffer;
 #endif
 
   goto end;
@@ -3069,7 +2694,6 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
 end_err_deinit_dynamic_buffer:
   owl_renderer_deinit_dynamic_buffer_(r);
 #endif
-
 end_err_deinit_garbage:
   owl_renderer_deinit_garbage_(r);
 
@@ -3130,8 +2754,12 @@ end:
 void owl_renderer_deinit(struct owl_renderer *r) {
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
-  owl_renderer_deinit_garbage_(r);
+#if 0
+  owl_renderer_deinit_lutbrdf_resources_(r);
+#endif
+
   owl_renderer_deinit_dynamic_buffer_(r);
+  owl_renderer_deinit_garbage_(r);
   owl_renderer_deinit_frame_sync_(r);
   owl_renderer_deinit_frame_commands_(r);
   owl_renderer_deinit_pipelines_(r);
@@ -3158,7 +2786,7 @@ OWL_INTERNAL enum owl_code
 owl_renderer_reserve_dynamic_memory_(struct owl_renderer *r,
                                      VkDeviceSize size) {
   enum owl_code code = OWL_SUCCESS;
-  VkDeviceSize required = r->dynamic_offsets[r->active_frame] + size;
+  VkDeviceSize required = r->dynamic_offset + size;
 
   if (required > r->dynamic_buffer_size) {
     vkUnmapMemory(r->device, r->dynamic_memory);
@@ -3244,7 +2872,7 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
 }
 
 int owl_renderer_is_dynamic_buffer_clear(struct owl_renderer *r) {
-  return 0 == r->dynamic_offsets[r->active_frame];
+  return 0 == r->dynamic_offset;
 }
 
 OWL_INTERNAL void owl_renderer_clear_garbage_(struct owl_renderer *r) {
@@ -3257,13 +2885,7 @@ OWL_INTERNAL void owl_renderer_clear_garbage_(struct owl_renderer *r) {
 }
 
 void owl_renderer_clear_dynamic_offset(struct owl_renderer *r) {
-  r->dynamic_offsets[r->active_frame] = 0;
-}
-
-OWL_INTERNAL void owl_renderer_next_dynamic_offset_(struct owl_renderer *r,
-                                                    VkDeviceSize size) {
-  VkDeviceSize *offset = &r->dynamic_offsets[r->active_frame];
-  *offset = OWL_ALIGNU2(*offset + size, r->dynamic_buffer_alignment);
+  r->dynamic_offset = 0;
 }
 
 void *
@@ -3274,13 +2896,15 @@ owl_renderer_dynamic_buffer_alloc(struct owl_renderer *r, VkDeviceSize size,
   if (OWL_SUCCESS != owl_renderer_reserve_dynamic_memory_(r, size))
     goto end;
 
-  ref->offset32 = (owl_u32)r->dynamic_offsets[r->active_frame];
-  ref->offset = r->dynamic_offsets[r->active_frame];
-  ref->buffer = r->dynamic_buffers[r->active_frame];
-  ref->pvm_set = r->dynamic_pvm_sets[r->active_frame];
+  ref->offset32 = (owl_u32)r->dynamic_offset;
+  ref->offset = r->dynamic_offset;
+  ref->buffer = r->active_dynamic_buffer;
+  ref->pvm_set = r->active_dynamic_pvm_set;
 
-  data = r->dynamic_data[r->active_frame] + r->dynamic_offsets[r->active_frame];
-  owl_renderer_next_dynamic_offset_(r, size);
+  data = r->active_dynamic_data + r->dynamic_offset;
+
+  r->dynamic_offset =
+      OWL_ALIGNU2(r->dynamic_offset + size, r->dynamic_buffer_alignment);
 
 end:
   return data;
@@ -3318,13 +2942,14 @@ enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
                                          enum owl_pipeline_type type) {
   enum owl_code code = OWL_SUCCESS;
 
-  r->bound_pipeline = type;
-
   if (OWL_PIPELINE_TYPE_NONE == type)
     goto end;
 
-  vkCmdBindPipeline(r->active_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    r->pipelines[type]);
+  r->active_pipeline = r->pipelines[type];
+  r->active_pipeline_layout = r->pipeline_layouts[type];
+
+  vkCmdBindPipeline(r->active_frame_command_buffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS, r->active_pipeline);
 
 end:
   return code;
@@ -3381,7 +3006,6 @@ owl_renderer_free_single_use_command_buffer(struct owl_renderer const *r,
 
   OWL_VK_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit, NULL));
   OWL_VK_CHECK(vkQueueWaitIdle(r->graphics_queue));
-
   vkFreeCommandBuffers(r->device, r->transient_command_pool, 1, &command);
 
   return code;
@@ -3393,10 +3017,9 @@ OWL_INTERNAL enum owl_code
 owl_renderer_acquire_next_image_(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
-  VkResult const result =
-      vkAcquireNextImageKHR(r->device, r->swapchain, OWL_TIMEOUT,
-                            r->image_available_semaphores[r->active_frame],
-                            VK_NULL_HANDLE, &r->swapchain_active_image);
+  VkResult const result = vkAcquireNextImageKHR(
+      r->device, r->swapchain, OWL_TIMEOUT, r->active_image_available_semaphore,
+      VK_NULL_HANDLE, &r->active_swapchain_image_index);
 
   if (VK_ERROR_OUT_OF_DATE_KHR == result)
     code = OWL_ERROR_OUTDATED_SWAPCHAIN;
@@ -3405,18 +3028,20 @@ owl_renderer_acquire_next_image_(struct owl_renderer *r) {
   else if (VK_ERROR_SURFACE_LOST_KHR == result)
     code = OWL_ERROR_OUTDATED_SWAPCHAIN;
 
+  r->active_swapchain_image =
+      r->swapchain_images[r->active_swapchain_image_index];
+
+  r->active_swapchain_framebuffer =
+      r->swapchain_framebuffers[r->active_swapchain_image_index];
+
   return code;
 }
 
 OWL_INTERNAL void owl_renderer_prepare_frame_(struct owl_renderer *r) {
-  OWL_VK_CHECK(vkWaitForFences(r->device, 1,
-                               &r->in_flight_fences[r->active_frame], VK_TRUE,
-                               OWL_TIMEOUT));
-  OWL_VK_CHECK(
-      vkResetFences(r->device, 1, &r->in_flight_fences[r->active_frame]));
-
-  OWL_VK_CHECK(vkResetCommandPool(r->device,
-                                  r->frame_command_pools[r->active_frame], 0));
+  OWL_VK_CHECK(vkWaitForFences(r->device, 1, &r->active_in_flight_fence,
+                               VK_TRUE, OWL_TIMEOUT));
+  OWL_VK_CHECK(vkResetFences(r->device, 1, &r->active_in_flight_fence));
+  OWL_VK_CHECK(vkResetCommandPool(r->device, r->active_frame_command_pool, 0));
 }
 #undef OWL_TIMEOUT
 
@@ -3429,7 +3054,7 @@ OWL_INTERNAL void owl_renderer_begin_recording_(struct owl_renderer *r) {
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin.pInheritanceInfo = NULL;
 
-    OWL_VK_CHECK(vkBeginCommandBuffer(r->active_command_buffer, &begin));
+    OWL_VK_CHECK(vkBeginCommandBuffer(r->active_frame_command_buffer, &begin));
   }
 
   {
@@ -3438,14 +3063,14 @@ OWL_INTERNAL void owl_renderer_begin_recording_(struct owl_renderer *r) {
     begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     begin.pNext = NULL;
     begin.renderPass = r->main_render_pass;
-    begin.framebuffer = r->swapchain_framebuffers[r->swapchain_active_image];
+    begin.framebuffer = r->active_swapchain_framebuffer;
     begin.renderArea.offset.x = 0;
     begin.renderArea.offset.y = 0;
     begin.renderArea.extent = r->swapchain_extent;
     begin.clearValueCount = OWL_ARRAY_SIZE(r->swapchain_clear_values);
     begin.pClearValues = r->swapchain_clear_values;
 
-    vkCmdBeginRenderPass(r->active_command_buffer, &begin,
+    vkCmdBeginRenderPass(r->active_frame_command_buffer, &begin,
                          VK_SUBPASS_CONTENTS_INLINE);
   }
 }
@@ -3464,8 +3089,8 @@ end:
 }
 
 OWL_INTERNAL void owl_renderer_end_recording_(struct owl_renderer *r) {
-  vkCmdEndRenderPass(r->active_command_buffer);
-  OWL_VK_CHECK(vkEndCommandBuffer(r->active_command_buffer));
+  vkCmdEndRenderPass(r->active_frame_command_buffer);
+  OWL_VK_CHECK(vkEndCommandBuffer(r->active_frame_command_buffer));
 }
 
 OWL_INTERNAL void owl_renderer_submit_graphics_(struct owl_renderer *r) {
@@ -3477,15 +3102,15 @@ OWL_INTERNAL void owl_renderer_submit_graphics_(struct owl_renderer *r) {
   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit.pNext = NULL;
   submit.waitSemaphoreCount = 1;
-  submit.pWaitSemaphores = &r->image_available_semaphores[r->active_frame];
+  submit.pWaitSemaphores = &r->active_image_available_semaphore;
   submit.signalSemaphoreCount = 1;
-  submit.pSignalSemaphores = &r->render_done_semaphores[r->active_frame];
+  submit.pSignalSemaphores = &r->active_render_done_semaphore;
   submit.pWaitDstStageMask = &stage;
   submit.commandBufferCount = 1;
-  submit.pCommandBuffers = &r->active_command_buffer;
+  submit.pCommandBuffers = &r->active_frame_command_buffer;
 
-  OWL_VK_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit,
-                             r->in_flight_fences[r->active_frame]));
+  OWL_VK_CHECK(
+      vkQueueSubmit(r->graphics_queue, 1, &submit, r->active_in_flight_fence));
 
 #undef OWL_WAIT_STAGE
 }
@@ -3499,10 +3124,10 @@ owl_renderer_present_swapchain_(struct owl_renderer *r) {
   present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   present.pNext = NULL;
   present.waitSemaphoreCount = 1;
-  present.pWaitSemaphores = &r->render_done_semaphores[r->active_frame];
+  present.pWaitSemaphores = &r->active_render_done_semaphore;
   present.swapchainCount = 1;
   present.pSwapchains = &r->swapchain;
-  present.pImageIndices = &r->swapchain_active_image;
+  present.pImageIndices = &r->active_swapchain_image_index;
   present.pResults = NULL;
 
   result = vkQueuePresentKHR(r->present_queue, &present);
@@ -3517,11 +3142,18 @@ owl_renderer_present_swapchain_(struct owl_renderer *r) {
   return code;
 }
 
-OWL_INTERNAL void owl_renderer_swap_active_(struct owl_renderer *r) {
-  if (OWL_RENDERER_DYNAMIC_BUFFER_COUNT == ++r->active_frame)
-    r->active_frame = 0;
+OWL_INTERNAL void owl_renderer_update_frame_actives_(struct owl_renderer *r) {
+  if (OWL_RENDERER_DYNAMIC_BUFFER_COUNT == ++r->frame)
+    r->frame = 0;
 
-  r->active_command_buffer = r->frame_command_buffers[r->active_frame];
+  r->active_in_flight_fence = r->in_flight_fences[r->frame];
+  r->active_image_available_semaphore = r->image_available_semaphores[r->frame];
+  r->active_render_done_semaphore = r->render_done_semaphores[r->frame];
+  r->active_frame_command_buffer = r->frame_command_buffers[r->frame];
+  r->active_frame_command_pool = r->frame_command_pools[r->frame];
+  r->active_dynamic_data = r->dynamic_data[r->frame];
+  r->active_dynamic_buffer = r->dynamic_buffers[r->frame];
+  r->active_dynamic_pvm_set = r->dynamic_pvm_sets[r->frame];
 }
 
 enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
@@ -3533,9 +3165,10 @@ enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
   if (OWL_SUCCESS != (code = owl_renderer_present_swapchain_(r)))
     goto end;
 
-  owl_renderer_swap_active_(r);
-  owl_renderer_clear_dynamic_offset(r);
+  owl_renderer_update_frame_actives_(r);
   owl_renderer_clear_garbage_(r);
+
+  r->dynamic_offset = 0;
 
 end:
   return code;

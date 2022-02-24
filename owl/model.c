@@ -1043,10 +1043,10 @@ OWL_INTERNAL enum owl_code owl_submit_node_(struct owl_renderer *r,
     sets[1] = model->materials[primitive->material.handle].set;
     sets[2] = mesh->set;
 
-    vkCmdBindDescriptorSets(r->active_command_buffer,
+    vkCmdBindDescriptorSets(r->active_frame_command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            r->pipeline_layouts[r->bound_pipeline], 0,
-                            OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
+                            r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
+                            sets, 1, &ref.offset32);
 
     OWL_V4_ZERO(push_constant.base_color_factor);
 
@@ -1067,15 +1067,16 @@ OWL_INTERNAL enum owl_code owl_submit_node_(struct owl_renderer *r,
     push_constant.alpha_mask = 1;
     push_constant.alpha_mask_cutoff = material->alpha_cutoff;
 
-    vkCmdPushConstants(
-        r->active_command_buffer, r->pipeline_layouts[r->bound_pipeline],
-        VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push_constant), &push_constant);
+    vkCmdPushConstants(r->active_frame_command_buffer,
+                       r->active_pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT,
+                       0, sizeof(push_constant), &push_constant);
 
     if (primitive->has_indices)
-      vkCmdDrawIndexed(r->active_command_buffer, primitive->indices_count, 1,
-                       primitive->first_index, 0, 0);
+      vkCmdDrawIndexed(r->active_frame_command_buffer, primitive->indices_count,
+                       1, primitive->first_index, 0, 0);
     else
-      vkCmdDraw(r->active_command_buffer, primitive->vertex_count, 1, 0, 0);
+      vkCmdDraw(r->active_frame_command_buffer, primitive->vertex_count, 1, 0,
+                0);
   }
 
   for (i = 0; i < data->children_count; ++i)
@@ -1282,10 +1283,10 @@ OWL_INTERNAL void
 owl_model_bind_vertex_and_index_buffers_(struct owl_renderer *r,
                                          struct owl_model const *model) {
   VkDeviceSize const offset = 0;
-  vkCmdBindVertexBuffers(r->active_command_buffer, 0, 1, &model->vertex_buffer,
-                         &offset);
+  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1,
+                         &model->vertex_buffer, &offset);
 
-  vkCmdBindIndexBuffer(r->active_command_buffer, model->index_buffer, 0,
+  vkCmdBindIndexBuffer(r->active_frame_command_buffer, model->index_buffer, 0,
                        VK_INDEX_TYPE_UINT32);
 }
 

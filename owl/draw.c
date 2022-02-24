@@ -37,7 +37,7 @@ owl_renderer_submit_vertices_(struct owl_renderer *r, owl_u32 count,
 
   OWL_MEMCPY(data, vertices, size);
 
-  vkCmdBindVertexBuffers(r->active_command_buffer, 0, 1, &ref.buffer,
+  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &ref.buffer,
                          &ref.offset);
 
   return code;
@@ -56,7 +56,7 @@ owl_renderer_submit_indices_(struct owl_renderer *r, owl_u32 count,
 
   OWL_MEMCPY(data, indices, size);
 
-  vkCmdBindIndexBuffer(r->active_command_buffer, ref.buffer, ref.offset,
+  vkCmdBindIndexBuffer(r->active_frame_command_buffer, ref.buffer, ref.offset,
                        VK_INDEX_TYPE_UINT32);
 
   return code;
@@ -82,10 +82,10 @@ owl_renderer_submit_uniforms_(struct owl_renderer *r, owl_m4 const model,
   sets[0] = ref.pvm_set;
   sets[1] = texture->set;
 
-  vkCmdBindDescriptorSets(r->active_command_buffer,
+  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          r->pipeline_layouts[r->bound_pipeline], 0,
-                          OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
+                          r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
+                          sets, 1, &ref.offset32);
 
   return code;
 }
@@ -114,8 +114,8 @@ owl_submit_draw_basic_command(struct owl_renderer *r,
   if (OWL_SUCCESS != code)
     goto end;
 
-  vkCmdDrawIndexed(r->active_command_buffer, command->indices_count, 1, 0, 0,
-                   0);
+  vkCmdDrawIndexed(r->active_frame_command_buffer, command->indices_count, 1, 0,
+                   0, 0);
 
 end:
   return code;
@@ -144,7 +144,7 @@ owl_submit_draw_quad_command(struct owl_renderer *r,
   if (OWL_SUCCESS != code)
     goto end;
 
-  vkCmdDrawIndexed(r->active_command_buffer, 6, 1, 0, 0, 0);
+  vkCmdDrawIndexed(r->active_frame_command_buffer, 6, 1, 0, 0, 0);
 
 end:
   return code;
@@ -333,7 +333,7 @@ owl_submit_draw_skybox_command(struct owl_renderer *r,
   data = owl_renderer_dynamic_buffer_alloc(r, sizeof(g_skybox_vertices), &ref);
   OWL_MEMCPY(data, g_skybox_vertices, sizeof(g_skybox_vertices));
 
-  vkCmdBindVertexBuffers(r->active_command_buffer, 0, 1, &ref.buffer,
+  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &ref.buffer,
                          &ref.offset);
 
   OWL_M4_COPY(cam->projection, uniform.projection);
@@ -347,13 +347,13 @@ owl_submit_draw_skybox_command(struct owl_renderer *r,
   sets[0] = ref.pvm_set;
   sets[1] = command->skybox->set;
 
-  vkCmdBindDescriptorSets(r->active_command_buffer,
+  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          r->pipeline_layouts[r->bound_pipeline], 0,
-                          OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
+                          r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
+                          sets, 1, &ref.offset32);
 
-  vkCmdDraw(r->active_command_buffer, OWL_ARRAY_SIZE(g_skybox_vertices), 1, 0,
-            0);
+  vkCmdDraw(r->active_frame_command_buffer, OWL_ARRAY_SIZE(g_skybox_vertices),
+            1, 0, 0);
 
   return code;
 }

@@ -29,7 +29,6 @@ enum owl_pipeline_type {
   OWL_PIPELINE_TYPE_FONT,
   OWL_PIPELINE_TYPE_SKYBOX,
   OWL_PIPELINE_TYPE_PBR,
-  OWL_PIPELINE_TYPE_PBR_ALPHA_BLEND,
   OWL_PIPELINE_TYPE_COUNT
 };
 
@@ -111,7 +110,9 @@ struct owl_renderer {
   VkPresentModeKHR swapchain_present_mode;
   VkClearValue swapchain_clear_values[OWL_RENDERER_CLEAR_VALUES_COUNT];
 
-  owl_u32 swapchain_active_image;
+  owl_u32 active_swapchain_image_index;
+  VkImage active_swapchain_image;
+
   owl_u32 swapchain_images_count;
   VkImage swapchain_images[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES];
   VkImageView swapchain_views[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES];
@@ -149,6 +150,7 @@ struct owl_renderer {
   /* ====================================================================== */
   /* main framebuffers */
   /* ====================================================================== */
+  VkFramebuffer active_swapchain_framebuffer;
   VkFramebuffer swapchain_framebuffers[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES];
   /* ====================================================================== */
 
@@ -184,7 +186,8 @@ struct owl_renderer {
   /* ====================================================================== */
   /* pipelines */
   /* ====================================================================== */
-  enum owl_pipeline_type bound_pipeline;
+  VkPipeline active_pipeline;
+  VkPipelineLayout active_pipeline_layout;
   VkPipeline pipelines[OWL_PIPELINE_TYPE_COUNT];
   VkPipelineLayout pipeline_layouts[OWL_PIPELINE_TYPE_COUNT];
   /* ====================================================================== */
@@ -192,8 +195,9 @@ struct owl_renderer {
   /* ====================================================================== */
   /* frame submition resources */
   /* ====================================================================== */
-  int active_frame;
-  VkCommandBuffer active_command_buffer;
+  int frame;
+  VkCommandBuffer active_frame_command_buffer;
+  VkCommandPool active_frame_command_pool;
   VkCommandPool frame_command_pools[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkCommandBuffer frame_command_buffers[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
@@ -201,9 +205,13 @@ struct owl_renderer {
   /* ====================================================================== */
   /* frame sync primitives */
   /* ====================================================================== */
+  VkFence active_in_flight_fence;
+  VkSemaphore active_image_available_semaphore;
+  VkSemaphore active_render_done_semaphore;
+
+  VkFence in_flight_fences[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkSemaphore image_available_semaphores[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkSemaphore render_done_semaphores[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  VkFence in_flight_fences[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -224,16 +232,21 @@ struct owl_renderer {
   /* ====================================================================== */
   VkDeviceMemory dynamic_memory;
 
+  VkDeviceSize dynamic_offset;
   VkDeviceSize dynamic_buffer_size;
   VkDeviceSize dynamic_buffer_alignment;
   VkDeviceSize dynamic_buffer_aligned_size;
 
+  owl_byte *active_dynamic_data;
+  VkBuffer active_dynamic_buffer;
+  VkDescriptorSet active_dynamic_pvm_set;
+
   owl_byte *dynamic_data[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkBuffer dynamic_buffers[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  VkDeviceSize dynamic_offsets[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkDescriptorSet dynamic_pvm_sets[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
 
+#if 0
   /* ====================================================================== */
   /* irradiance cube texture */
   /* ====================================================================== */
@@ -260,6 +273,7 @@ struct owl_renderer {
   VkImageView lutbrdf_view;
   VkSampler lutbrdf_sampler;
   /* ====================================================================== */
+#endif
 };
 
 enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
