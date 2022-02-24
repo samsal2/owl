@@ -780,6 +780,9 @@ owl_renderer_init_attachments_(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   {
+#define OWL_IMAGE_USAGE                                                        \
+  VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+
     VkImageCreateInfo image;
     image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     image.pNext = NULL;
@@ -793,14 +796,15 @@ owl_renderer_init_attachments_(struct owl_renderer *r) {
     image.arrayLayers = 1;
     image.samples = r->msaa_sample_count;
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
-    image.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    image.usage = OWL_IMAGE_USAGE;
     image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image.queueFamilyIndexCount = 0;
     image.pQueueFamilyIndices = NULL;
     image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &r->color_image));
+
+#undef OWL_IMAGE_USAGE
   }
 
   {
@@ -1343,7 +1347,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
   VkPipelineRasterizationStateCreateInfo rasterization_state;
   VkPipelineMultisampleStateCreateInfo multisample_state;
   VkPipelineColorBlendAttachmentState
-      color_attachments[OWL_MAX_COLOR_ATTACHMENT_COUNT];
+      color_attachments[OWL_MAX_COLOR_ATTACHMENTS_COUNT];
   VkPipelineColorBlendStateCreateInfo color_blend_state;
   VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
   VkPipelineShaderStageCreateInfo stages[2];
@@ -1874,7 +1878,7 @@ owl_renderer_init_frame_sync_(struct owl_renderer *r) {
     semaphore.pNext = NULL;
     semaphore.flags = 0;
     OWL_VK_CHECK(vkCreateSemaphore(r->device, &semaphore, NULL,
-                                   &r->image_available_semaphores[i]));
+                                   &r->render_done_semaphores[i]));
   }
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i) {
@@ -1883,12 +1887,12 @@ owl_renderer_init_frame_sync_(struct owl_renderer *r) {
     semaphore.pNext = NULL;
     semaphore.flags = 0;
     OWL_VK_CHECK(vkCreateSemaphore(r->device, &semaphore, NULL,
-                                   &r->render_done_semaphores[i]));
+                                   &r->image_available_semaphores[i]));
   }
 
   r->active_in_flight_fence = r->in_flight_fences[r->frame];
-  r->active_image_available_semaphore = r->image_available_semaphores[r->frame];
   r->active_render_done_semaphore = r->render_done_semaphores[r->frame];
+  r->active_image_available_semaphore = r->image_available_semaphores[r->frame];
 
   return code;
 }
@@ -1900,10 +1904,10 @@ OWL_INTERNAL void owl_renderer_deinit_frame_sync_(struct owl_renderer *r) {
     vkDestroyFence(r->device, r->in_flight_fences[i], NULL);
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkDestroySemaphore(r->device, r->image_available_semaphores[i], NULL);
+    vkDestroySemaphore(r->device, r->render_done_semaphores[i], NULL);
 
   for (i = 0; i < OWL_RENDERER_DYNAMIC_BUFFER_COUNT; ++i)
-    vkDestroySemaphore(r->device, r->render_done_semaphores[i], NULL);
+    vkDestroySemaphore(r->device, r->image_available_semaphores[i], NULL);
 }
 
 OWL_INTERNAL enum owl_code owl_renderer_init_garbage_(struct owl_renderer *r) {
