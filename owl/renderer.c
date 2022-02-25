@@ -447,9 +447,7 @@ OWL_INTERNAL void owl_renderer_deinit_device_(struct owl_renderer *r) {
   vkDestroyDevice(r->device, NULL);
 }
 
-OWL_INTERNAL void owl_renderer_clamp_swapchain_extent_(owl_u32 width,
-                                                       owl_u32 height,
-                                                       struct owl_renderer *r) {
+OWL_INTERNAL void owl_renderer_clamp_swapchain_extent_(struct owl_renderer *r) {
 #define OWL_NO_RESTRICTIONS (owl_u32) - 1
 
   VkSurfaceCapabilitiesKHR capabilities;
@@ -465,8 +463,10 @@ OWL_INTERNAL void owl_renderer_clamp_swapchain_extent_(owl_u32 width,
     owl_u32 const max_width = capabilities.maxImageExtent.width;
     owl_u32 const max_height = capabilities.maxImageExtent.height;
 
-    r->swapchain_extent.width = OWL_CLAMP(width, min_width, max_width);
-    r->swapchain_extent.height = OWL_CLAMP(height, min_height, max_height);
+    r->swapchain_extent.width =
+        OWL_CLAMP(r->swapchain_extent.width, min_width, max_width);
+    r->swapchain_extent.height =
+        OWL_CLAMP(r->swapchain_extent.height, min_height, max_height);
   }
 
 #undef OWL_NO_RESTRICTIONS
@@ -513,8 +513,9 @@ owl_renderer_init_swapchain_(struct owl_renderer_init_info const *info,
   families[0] = r->graphics_family_index;
   families[1] = r->present_family_index;
 
-  owl_renderer_clamp_swapchain_extent_((owl_u32)info->framebuffer_width,
-                                       (owl_u32)info->framebuffer_height, r);
+  r->swapchain_extent.width = (owl_u32)info->framebuffer_width;
+  r->swapchain_extent.height = (owl_u32)info->framebuffer_height;
+  owl_renderer_clamp_swapchain_extent_(r);
 
   code = owl_renderer_select_present_mode_(r, VK_PRESENT_MODE_FIFO_KHR);
 
