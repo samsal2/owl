@@ -103,15 +103,15 @@ owl_vk_surface_init_callback_(struct owl_renderer const *r, void const *data,
 }
 
 OWL_INTERNAL void owl_window_init_timer_(struct owl_window *w) {
-  w->input.time = 0.0;
-  w->input.past_time = 0.0;
+  w->input.time_stamp = 0.0;
+  w->input.previous_time_stamp = 0.0;
   w->input.dt_time = 0.16667;
 }
 
 OWL_INTERNAL void owl_window_update_timer_(struct owl_window *w) {
-  w->input.past_time = w->input.time;
-  w->input.time = glfwGetTime();
-  w->input.dt_time = w->input.time - w->input.past_time;
+  w->input.previous_time_stamp = w->input.time_stamp;
+  w->input.time_stamp = glfwGetTime();
+  w->input.dt_time = w->input.time_stamp - w->input.previous_time_stamp;
 }
 
 OWL_INTERNAL void owl_window_update_previous_cursor_(struct owl_window *w) {

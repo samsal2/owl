@@ -149,8 +149,8 @@ enum owl_keyboard_key {
 
 struct owl_input_state {
   double dt_time;
-  double past_time;
-  double time;
+  double previous_time_stamp;
+  double time_stamp;
   owl_v2 cursor_position;
   owl_v2 previous_cursor_position;
   enum owl_button_state mouse[OWL_MOUSE_BUTTON_COUNT];
