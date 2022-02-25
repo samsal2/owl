@@ -42,8 +42,7 @@ struct owl_renderer_init_info {
   char const *const *instance_extensions;
 
   void const *surface_user_data;
-  enum owl_code (*create_surface)(struct owl_renderer const *r,
-                                  void const *user_data, VkSurfaceKHR *surface);
+  enum owl_code (*create_surface)(struct owl_renderer const *r, void const *user_data, VkSurfaceKHR *surface);
 };
 
 struct owl_dynamic_buffer_reference {
@@ -65,7 +64,7 @@ struct owl_renderer {
   /* instance */
   /* ====================================================================== */
   VkInstance instance;
-  VkDebugUtilsMessengerEXT debug;
+  VkDebugUtilsMessengerEXT debug_messenger;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -248,7 +247,7 @@ struct owl_renderer {
   VkDescriptorSet dynamic_pvm_sets[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
 
-#if 0
+#if 1
   /* ====================================================================== */
   /* irradiance cube texture */
   /* ====================================================================== */
@@ -278,12 +277,9 @@ struct owl_renderer {
 #endif
 };
 
-enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
-                                struct owl_renderer *r);
+enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info, struct owl_renderer *r);
 
-enum owl_code
-owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
-                              struct owl_renderer *r);
+enum owl_code owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info, struct owl_renderer *r);
 
 void owl_renderer_deinit(struct owl_renderer *r);
 
@@ -291,24 +287,16 @@ int owl_renderer_is_dynamic_buffer_clear(struct owl_renderer *r);
 
 void owl_renderer_clear_dynamic_offset(struct owl_renderer *r);
 
-owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
-                                      owl_u32 filter,
-                                      enum owl_memory_visibility vis);
+owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r, owl_u32 filter, enum owl_memory_visibility vis);
 
-void *
-owl_renderer_dynamic_buffer_alloc(struct owl_renderer *r, VkDeviceSize size,
-                                  struct owl_dynamic_buffer_reference *ref);
+void *owl_renderer_dynamic_buffer_alloc(struct owl_renderer *r, VkDeviceSize size,
+                                        struct owl_dynamic_buffer_reference *ref);
 
-enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
-                                         enum owl_pipeline_type type);
+enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r, enum owl_pipeline_type type);
 
-enum owl_code
-owl_renderer_alloc_single_use_command_buffer(struct owl_renderer const *r,
-                                             VkCommandBuffer *command);
+enum owl_code owl_renderer_alloc_single_use_command_buffer(struct owl_renderer const *r, VkCommandBuffer *command);
 
-enum owl_code
-owl_renderer_free_single_use_command_buffer(struct owl_renderer const *r,
-                                            VkCommandBuffer command);
+enum owl_code owl_renderer_free_single_use_command_buffer(struct owl_renderer const *r, VkCommandBuffer command);
 
 void owl_renderer_clear_dynamic_offset(struct owl_renderer *r);
 

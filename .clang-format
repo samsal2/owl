@@ -3,4 +3,5 @@ BasedOnStyle: LLVM
 SortIncludes: true
 AlignArrayOfStructures: Right
 AllowShortFunctionsOnASingleLine: None
+ColumnLimit: 120
 ...

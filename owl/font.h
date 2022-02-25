@@ -20,8 +20,7 @@ struct owl_font {
   struct owl_glyph glyphs[OWL_FONT_MAX_GLYPHS];
 };
 
-enum owl_code owl_font_init(struct owl_renderer *renderer, int size,
-                            char const *path, struct owl_font *font);
+enum owl_code owl_font_init(struct owl_renderer *renderer, int size, char const *path, struct owl_font *font);
 
 void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font);
 

@@ -53,12 +53,12 @@ void owl_debug_log_(char const *f, int l, char const *fmt, ...);
 
 #ifndef NDEBUG
 
-#define OWL_VK_CHECK(e)                                                        \
-  do {                                                                         \
-    VkResult const result_ = e;                                                \
-    if (VK_SUCCESS != result_)                                                 \
-      OWL_DEBUG_LOG("OWL_VK_CHECK(%i)\n", result_);                            \
-    OWL_ASSERT(VK_SUCCESS == result_);                                         \
+#define OWL_VK_CHECK(e)                                                                                                \
+  do {                                                                                                                 \
+    VkResult const result_ = e;                                                                                        \
+    if (VK_SUCCESS != result_)                                                                                         \
+      OWL_DEBUG_LOG("OWL_VK_CHECK(%i)\n", result_);                                                                    \
+    OWL_ASSERT(VK_SUCCESS == result_);                                                                                 \
   } while (0)
 
 #else /* NDEBUG */
