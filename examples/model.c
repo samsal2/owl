@@ -9,13 +9,13 @@ static struct owl_renderer renderer;
 static struct owl_camera camera;
 static struct owl_model model;
 
-#define TEST(fn)                                                                                                       \
-  do {                                                                                                                 \
-    enum owl_code code = (fn);                                                                                         \
-    if (OWL_SUCCESS != (code)) {                                                                                       \
-      printf("something went wrong in call: %s, code %i\n", (#fn), code);                                              \
-      return 0;                                                                                                        \
-    }                                                                                                                  \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    enum owl_code code = (fn);                                                 \
+    if (OWL_SUCCESS != (code)) {                                               \
+      printf("something went wrong in call: %s, code %i\n", (#fn), code);      \
+      return 0;                                                                \
+    }                                                                          \
   } while (0)
 
 int main(void) {

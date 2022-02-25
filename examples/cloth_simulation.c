@@ -65,7 +65,8 @@ static void init_cloth_(struct cloth *cloth) {
       if (j) {
         owl_u32 link = CLOTH_COORD(i, j - 1);
         p->links[0] = &cloth->particles[link];
-        p->rest_distances[0] = owl_v3_distance(p->position, p->links[0]->position);
+        p->rest_distances[0] =
+            owl_v3_distance(p->position, p->links[0]->position);
       } else {
         p->links[0] = NULL;
         p->rest_distances[0] = 0.0F;
@@ -74,7 +75,8 @@ static void init_cloth_(struct cloth *cloth) {
       if (i) {
         owl_u32 link = CLOTH_COORD(i - 1, j);
         p->links[1] = &cloth->particles[link];
-        p->rest_distances[1] = owl_v3_distance(p->position, p->links[1]->position);
+        p->rest_distances[1] =
+            owl_v3_distance(p->position, p->links[1]->position);
       } else {
         p->links[1] = NULL;
         p->rest_distances[1] = 0.0F;
@@ -83,7 +85,8 @@ static void init_cloth_(struct cloth *cloth) {
       if (j < CLOTH_H - 1) {
         owl_u32 link = CLOTH_COORD(i, j + 1);
         p->links[2] = &cloth->particles[link];
-        p->rest_distances[2] = owl_v3_distance(p->position, p->links[2]->position);
+        p->rest_distances[2] =
+            owl_v3_distance(p->position, p->links[2]->position);
       } else {
         p->links[2] = NULL;
         p->rest_distances[2] = 0.0F;
@@ -92,7 +95,8 @@ static void init_cloth_(struct cloth *cloth) {
       if (i < CLOTH_W - 1) {
         owl_u32 link = CLOTH_COORD(i + 1, j);
         p->links[3] = &cloth->particles[link];
-        p->rest_distances[3] = owl_v3_distance(p->position, p->links[3]->position);
+        p->rest_distances[3] =
+            owl_v3_distance(p->position, p->links[3]->position);
       } else {
         p->links[3] = NULL;
         p->rest_distances[3] = 0.0F;
@@ -169,7 +173,8 @@ static void update_cloth(float dt, struct cloth *cloth) {
     OWL_V3_COPY(cloth->particles[i].position, cloth->vertices_[i].position);
 }
 
-static void change_particle_position(owl_u32 id, owl_v2 const position, struct cloth *cloth) {
+static void change_particle_position(owl_u32 id, owl_v2 const position,
+                                     struct cloth *cloth) {
   struct particle *p = &cloth->particles[id];
 
   if (p->movable)
@@ -216,13 +221,13 @@ char const *fps_string(double time) {
   return buffer;
 }
 
-#define TEST(fn)                                                                                                       \
-  do {                                                                                                                 \
-    enum owl_code code = (fn);                                                                                         \
-    if (OWL_SUCCESS != (code)) {                                                                                       \
-      printf("something went wrong in call: %s, code %i\n", (#fn), code);                                              \
-      return 0;                                                                                                        \
-    }                                                                                                                  \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    enum owl_code code = (fn);                                                 \
+    if (OWL_SUCCESS != (code)) {                                               \
+      printf("something went wrong in call: %s, code %i\n", (#fn), code);      \
+      return 0;                                                                \
+    }                                                                          \
   } while (0)
 
 static struct owl_window_init_info window_info;
@@ -292,13 +297,15 @@ int main(void) {
   while (!owl_window_is_done(&window)) {
 #if 1
 
-    if (UNSELECTED == selected && OWL_BUTTON_STATE_PRESS == input->mouse[OWL_MOUSE_BUTTON_LEFT])
+    if (UNSELECTED == selected &&
+        OWL_BUTTON_STATE_PRESS == input->mouse[OWL_MOUSE_BUTTON_LEFT])
       selected = select_particle_at(input->cursor_position, &cloth);
 
     if (UNSELECTED != selected)
       change_particle_position(selected, input->cursor_position, &cloth);
 
-    if (UNSELECTED != selected && OWL_BUTTON_STATE_RELEASE == input->mouse[OWL_MOUSE_BUTTON_LEFT])
+    if (UNSELECTED != selected &&
+        OWL_BUTTON_STATE_RELEASE == input->mouse[OWL_MOUSE_BUTTON_LEFT])
       selected = UNSELECTED;
 
 #endif

@@ -12,7 +12,8 @@ enum owl_code owl_camera_init(struct owl_camera *cam) {
 #if 0
   owl_m4_ortho(-2.0F, 2.0F, -2.0F, 2.0F, 0.1F, 10.0F, pvm->projection);
 #else
-  owl_m4_perspective(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F, cam->projection);
+  owl_m4_perspective(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F,
+                     cam->projection);
 #endif
 
   OWL_V3_SET(0.0F, 0.0F, 2.0F, cam->eye);
@@ -23,8 +24,9 @@ enum owl_code owl_camera_init(struct owl_camera *cam) {
   return code;
 }
 
-OWL_INTERNAL enum owl_code owl_renderer_submit_vertices_(struct owl_renderer *r, owl_u32 count,
-                                                         struct owl_draw_vertex const *vertices) {
+OWL_INTERNAL enum owl_code
+owl_renderer_submit_vertices_(struct owl_renderer *r, owl_u32 count,
+                              struct owl_draw_vertex const *vertices) {
   owl_byte *data;
   VkDeviceSize size;
   struct owl_dynamic_buffer_reference ref;
@@ -35,12 +37,15 @@ OWL_INTERNAL enum owl_code owl_renderer_submit_vertices_(struct owl_renderer *r,
 
   OWL_MEMCPY(data, vertices, size);
 
-  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &ref.buffer, &ref.offset);
+  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &ref.buffer,
+                         &ref.offset);
 
   return code;
 }
 
-OWL_INTERNAL enum owl_code owl_renderer_submit_indices_(struct owl_renderer *r, owl_u32 count, owl_u32 const *indices) {
+OWL_INTERNAL enum owl_code
+owl_renderer_submit_indices_(struct owl_renderer *r, owl_u32 count,
+                             owl_u32 const *indices) {
   owl_byte *data;
   VkDeviceSize size;
   struct owl_dynamic_buffer_reference ref;
@@ -51,14 +56,16 @@ OWL_INTERNAL enum owl_code owl_renderer_submit_indices_(struct owl_renderer *r, 
 
   OWL_MEMCPY(data, indices, size);
 
-  vkCmdBindIndexBuffer(r->active_frame_command_buffer, ref.buffer, ref.offset, VK_INDEX_TYPE_UINT32);
+  vkCmdBindIndexBuffer(r->active_frame_command_buffer, ref.buffer, ref.offset,
+                       VK_INDEX_TYPE_UINT32);
 
   return code;
 }
 
-OWL_INTERNAL enum owl_code owl_renderer_submit_uniforms_(struct owl_renderer *r, owl_m4 const model,
-                                                         struct owl_camera const *cam,
-                                                         struct owl_texture const *texture) {
+OWL_INTERNAL enum owl_code
+owl_renderer_submit_uniforms_(struct owl_renderer *r, owl_m4 const model,
+                              struct owl_camera const *cam,
+                              struct owl_texture const *texture) {
   owl_byte *data;
   VkDescriptorSet sets[2];
   struct owl_draw_uniform uniform;
@@ -75,39 +82,49 @@ OWL_INTERNAL enum owl_code owl_renderer_submit_uniforms_(struct owl_renderer *r,
   sets[0] = ref.pvm_set;
   sets[1] = texture->set;
 
-  vkCmdBindDescriptorSets(r->active_frame_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, r->active_pipeline_layout, 0,
-                          OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
+  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
+                          sets, 1, &ref.offset32);
 
   return code;
 }
 
-enum owl_code owl_submit_draw_basic_command(struct owl_renderer *r, struct owl_camera const *cam,
-                                            struct owl_draw_basic_command const *command) {
+enum owl_code
+owl_submit_draw_basic_command(struct owl_renderer *r,
+                              struct owl_camera const *cam,
+                              struct owl_draw_basic_command const *command) {
   enum owl_code code = OWL_SUCCESS;
 
-  code = owl_renderer_submit_vertices_(r, command->vertices_count, command->vertices);
+  code = owl_renderer_submit_vertices_(r, command->vertices_count,
+                                       command->vertices);
 
   if (OWL_SUCCESS != code)
     goto end;
 
-  code = owl_renderer_submit_indices_(r, command->indices_count, command->indices);
+  code =
+      owl_renderer_submit_indices_(r, command->indices_count, command->indices);
 
   if (OWL_SUCCESS != code)
     goto end;
 
-  code = owl_renderer_submit_uniforms_(r, command->model, cam, command->texture);
+  code =
+      owl_renderer_submit_uniforms_(r, command->model, cam, command->texture);
 
   if (OWL_SUCCESS != code)
     goto end;
 
-  vkCmdDrawIndexed(r->active_frame_command_buffer, command->indices_count, 1, 0, 0, 0);
+  vkCmdDrawIndexed(r->active_frame_command_buffer, command->indices_count, 1, 0,
+                   0, 0);
 
 end:
   return code;
 }
 
-enum owl_code owl_submit_draw_quad_command(struct owl_renderer *r, struct owl_camera const *cam,
-                                           struct owl_draw_quad_command const *command) {
+enum owl_code
+owl_submit_draw_quad_command(struct owl_renderer *r,
+                             struct owl_camera const *cam,
+                             struct owl_draw_quad_command const *command) {
   enum owl_code code = OWL_SUCCESS;
   owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
 
@@ -121,7 +138,8 @@ enum owl_code owl_submit_draw_quad_command(struct owl_renderer *r, struct owl_ca
   if (OWL_SUCCESS != code)
     goto end;
 
-  code = owl_renderer_submit_uniforms_(r, command->model, cam, command->texture);
+  code =
+      owl_renderer_submit_uniforms_(r, command->model, cam, command->texture);
 
   if (OWL_SUCCESS != code)
     goto end;
@@ -132,10 +150,10 @@ end:
   return code;
 }
 
-OWL_INTERNAL enum owl_code owl_draw_text_command_fill_char_quad_(struct owl_draw_text_command const *text,
-                                                                 int framebuffer_width, int framebuffer_height,
-                                                                 owl_v3 const offset, char c,
-                                                                 struct owl_draw_quad_command *quad) {
+OWL_INTERNAL enum owl_code owl_draw_text_command_fill_char_quad_(
+    struct owl_draw_text_command const *text, int framebuffer_width,
+    int framebuffer_height, owl_v3 const offset, char c,
+    struct owl_draw_quad_command *quad) {
   float uv_offset;
   owl_v2 uv_bearing;
   owl_v2 current_position;
@@ -216,15 +234,19 @@ end:
   return code;
 }
 
-OWL_INTERNAL void owl_font_step_offset_(int framebuffer_width, int framebuffer_height, struct owl_font const *font,
+OWL_INTERNAL void owl_font_step_offset_(int framebuffer_width,
+                                        int framebuffer_height,
+                                        struct owl_font const *font,
                                         char const c, owl_v2 offset) {
   offset[0] += font->glyphs[(int)c].advance[0] / (float)framebuffer_width;
   /* FIXME(samuel): not sure if i should substract or add */
   offset[1] += font->glyphs[(int)c].advance[1] / (float)framebuffer_height;
 }
 
-enum owl_code owl_submit_draw_text_command(struct owl_renderer *r, struct owl_camera const *cam,
-                                           struct owl_draw_text_command const *command) {
+enum owl_code
+owl_submit_draw_text_command(struct owl_renderer *r,
+                             struct owl_camera const *cam,
+                             struct owl_draw_text_command const *command) {
   char const *c;
   owl_v2 offset;
   enum owl_code code = OWL_SUCCESS;
@@ -234,7 +256,8 @@ enum owl_code owl_submit_draw_text_command(struct owl_renderer *r, struct owl_ca
   for (c = command->text; '\0' != *c; ++c) {
     struct owl_draw_quad_command quad;
 
-    code = owl_draw_text_command_fill_char_quad_(command, r->width, r->height, offset, *c, &quad);
+    code = owl_draw_text_command_fill_char_quad_(command, r->width, r->height,
+                                                 offset, *c, &quad);
 
     if (OWL_SUCCESS != code)
       goto end;
@@ -297,8 +320,10 @@ OWL_LOCAL_PERSIST owl_v3 const g_skybox_vertices[] = {
     { 1.0f, -1.0f,  1.0f}
 };
 
-enum owl_code owl_submit_draw_skybox_command(struct owl_renderer *r, struct owl_camera const *cam,
-                                             struct owl_draw_skybox_command const *command) {
+enum owl_code
+owl_submit_draw_skybox_command(struct owl_renderer *r,
+                               struct owl_camera const *cam,
+                               struct owl_draw_skybox_command const *command) {
   owl_byte *data;
   VkDescriptorSet sets[2];
   struct owl_draw_uniform uniform;
@@ -308,7 +333,8 @@ enum owl_code owl_submit_draw_skybox_command(struct owl_renderer *r, struct owl_
   data = owl_renderer_dynamic_buffer_alloc(r, sizeof(g_skybox_vertices), &ref);
   OWL_MEMCPY(data, g_skybox_vertices, sizeof(g_skybox_vertices));
 
-  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &ref.buffer, &ref.offset);
+  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &ref.buffer,
+                         &ref.offset);
 
   OWL_M4_COPY(cam->projection, uniform.projection);
   OWL_M4_IDENTITY(uniform.view);
@@ -321,10 +347,13 @@ enum owl_code owl_submit_draw_skybox_command(struct owl_renderer *r, struct owl_
   sets[0] = ref.pvm_set;
   sets[1] = command->skybox->set;
 
-  vkCmdBindDescriptorSets(r->active_frame_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, r->active_pipeline_layout, 0,
-                          OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
+  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
+                          sets, 1, &ref.offset32);
 
-  vkCmdDraw(r->active_frame_command_buffer, OWL_ARRAY_SIZE(g_skybox_vertices), 1, 0, 0);
+  vkCmdDraw(r->active_frame_command_buffer, OWL_ARRAY_SIZE(g_skybox_vertices),
+            1, 0, 0);
 
   return code;
 }

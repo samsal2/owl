@@ -40,8 +40,10 @@ struct owl_draw_basic_command {
 
 enum owl_code owl_camera_init(struct owl_camera *cam);
 
-enum owl_code owl_submit_draw_basic_command(struct owl_renderer *r, struct owl_camera const *cam,
-                                            struct owl_draw_basic_command const *command);
+enum owl_code
+owl_submit_draw_basic_command(struct owl_renderer *r,
+                              struct owl_camera const *cam,
+                              struct owl_draw_basic_command const *command);
 
 struct owl_draw_quad_command {
   struct owl_texture const *texture;
@@ -49,8 +51,10 @@ struct owl_draw_quad_command {
   struct owl_draw_vertex vertices[4];
 };
 
-enum owl_code owl_submit_draw_quad_command(struct owl_renderer *r, struct owl_camera const *cam,
-                                           struct owl_draw_quad_command const *command);
+enum owl_code
+owl_submit_draw_quad_command(struct owl_renderer *r,
+                             struct owl_camera const *cam,
+                             struct owl_draw_quad_command const *command);
 
 struct owl_draw_text_command {
   owl_v3 color;
@@ -59,21 +63,27 @@ struct owl_draw_text_command {
   struct owl_font const *font;
 };
 
-enum owl_code owl_submit_draw_text_command(struct owl_renderer *r, struct owl_camera const *cam,
-                                           struct owl_draw_text_command const *command);
+enum owl_code
+owl_submit_draw_text_command(struct owl_renderer *r,
+                             struct owl_camera const *cam,
+                             struct owl_draw_text_command const *command);
 
 struct owl_draw_skybox_command {
   struct owl_skybox const *skybox;
 };
 
-enum owl_code owl_submit_draw_skybox_command(struct owl_renderer *r, struct owl_camera const *cam,
-                                             struct owl_draw_skybox_command const *command);
+enum owl_code
+owl_submit_draw_skybox_command(struct owl_renderer *r,
+                               struct owl_camera const *cam,
+                               struct owl_draw_skybox_command const *command);
 
 struct owl_draw_model_command {
   struct owl_model const *model;
 };
 
-enum owl_code owl_submit_draw_model_command(struct owl_renderer *r, struct owl_camera const *cam,
-                                            struct owl_draw_model_command const *command);
+enum owl_code
+owl_submit_draw_model_command(struct owl_renderer *r,
+                              struct owl_camera const *cam,
+                              struct owl_draw_model_command const *command);
 
 #endif
