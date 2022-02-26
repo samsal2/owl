@@ -290,7 +290,7 @@ int main(void) {
 
   text_command.font = &font;
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
-  OWL_V3_SET(0.0F, 0.0F, -1.0F, text_command.position);
+  OWL_V3_SET(-0.5F, -0.5F, -1.0F, text_command.position);
 
   skybox_command.skybox = &skybox;
 

@@ -3306,6 +3306,7 @@ owl_renderer_reinit_swapchain_(struct owl_renderer_init_info const *info,
   owl_renderer_deinit_attachments_(r);
   owl_renderer_deinit_main_render_pass_(r);
   owl_renderer_deinit_frame_sync_(r);
+  owl_renderer_deinit_swapchain_views_(r);
   owl_renderer_deinit_swapchain_(r);
 
   if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_(info, r)))
