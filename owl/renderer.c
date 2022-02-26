@@ -321,8 +321,7 @@ end:
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_select_surface_format_(struct owl_renderer *r,
-                                    VkSurfaceFormatKHR const *expected) {
+owl_renderer_ensure_surface_format_(struct owl_renderer const *r) {
   owl_u32 i;
   owl_u32 formats_count;
   VkSurfaceFormatKHR *formats;
@@ -340,14 +339,11 @@ owl_renderer_select_surface_format_(struct owl_renderer *r,
       r->physical_device, r->surface, &formats_count, formats));
 
   for (i = 0; i < formats_count; ++i) {
-    if (expected->format != formats[i].format)
+    if (r->surface_format.format != formats[i].format)
       continue;
 
-    if (expected->colorSpace != formats[i].colorSpace)
+    if (r->surface_format.colorSpace != formats[i].colorSpace)
       continue;
-
-    r->surface_format.format = expected->format;
-    r->surface_format.colorSpace = expected->colorSpace;
 
     code = OWL_SUCCESS;
     goto end_free_formats;
@@ -364,17 +360,20 @@ end:
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_select_sample_count_(struct owl_renderer *r) {
+owl_renderer_ensure_msaa_sample_count_(struct owl_renderer const *r) {
   enum owl_code code = OWL_SUCCESS;
-  VkSampleCountFlags const samples =
+  VkSampleCountFlags const supported_samples =
       r->device_properties.limits.framebufferColorSampleCounts &
       r->device_properties.limits.framebufferDepthSampleCounts;
 
-  if (VK_SAMPLE_COUNT_2_BIT & samples) {
-    r->msaa_sample_count = VK_SAMPLE_COUNT_2_BIT;
-  } else {
+  if (VK_SAMPLE_COUNT_1_BIT & r->msaa_sample_count) {
     OWL_ASSERT(0 && "disabling multisampling is not supported");
-    r->msaa_sample_count = VK_SAMPLE_COUNT_1_BIT;
+    code = OWL_ERROR_UNKNOWN;
+    goto end;
+  }
+
+  if (!(supported_samples & r->msaa_sample_count)) {
+    OWL_ASSERT(0 && "msaa_sample_count is not supported");
     code = OWL_ERROR_UNKNOWN;
     goto end;
   }
@@ -388,7 +387,6 @@ OWL_INTERNAL owl_u32 owl_get_queue_count_(struct owl_renderer const *r) {
 }
 
 OWL_INTERNAL enum owl_code owl_renderer_init_device_(struct owl_renderer *r) {
-  VkSurfaceFormatKHR format;
   VkDeviceCreateInfo device;
   VkDeviceQueueCreateInfo queues[2];
   float const priority = 1.0F;
@@ -400,13 +398,16 @@ OWL_INTERNAL enum owl_code owl_renderer_init_device_(struct owl_renderer *r) {
   if (OWL_SUCCESS != (code = owl_renderer_select_physical_device_(r)))
     goto end;
 
-  format.format = VK_FORMAT_B8G8R8A8_SRGB;
-  format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+  r->surface_format.format = VK_FORMAT_B8G8R8A8_SRGB;
+  r->surface_format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
-  if (OWL_SUCCESS != (code = owl_renderer_select_surface_format_(r, &format)))
+  if (OWL_SUCCESS != (code = owl_renderer_ensure_surface_format_(r)))
     goto end;
 
-  if (OWL_SUCCESS != (code = owl_renderer_select_sample_count_(r)))
+  /* TODO(samuel): add and option for choosing this */
+  r->msaa_sample_count = VK_SAMPLE_COUNT_2_BIT;
+
+  if (OWL_SUCCESS != (code = owl_renderer_ensure_msaa_sample_count_(r)))
     goto end;
 
   queues[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -2577,7 +2578,8 @@ owl_renderer_deinit_lutbrdf_resources_(struct owl_renderer *r) {
 #if 0
 
 enum owl_cubemap_target {
-  OWL_CUBEMAP_TARGET_IRRADIANCE 0 OWL_CUBEMAP_TARGET_PREFILTERED 1
+  OWL_CUBEMAP_TARGET_IRRADIANCE = 0, 
+  OWL_CUBEMAP_TARGET_PREFILTERED
 };
 
 #define OWL_CUBEMAP_TARGET_COUNT 2
