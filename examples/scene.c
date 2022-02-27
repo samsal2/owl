@@ -13,6 +13,8 @@ static struct owl_camera cam;
 static struct owl_skybox_init_info skybox_info;
 static struct owl_skybox skybox;
 static struct owl_draw_skybox_command skybox_command;
+static float xdirection = 0.05F;
+static float zdirection = 0.05F;
 
 #define SCENE_PATH "../../assets/Suzanne.gltf"
 
@@ -47,14 +49,19 @@ int main(void) {
   TEST(owl_scene_init(&renderer, SCENE_PATH, &scene));
 
   skybox_command.skybox = &skybox;
+
+  OWL_V3_SET(0.0F, 0.0F, 0.0F, scene_command.light);
   scene_command.scene = &scene;
 
   while (!owl_window_is_done(&window)) {
+    OWL_V2_COPY(input->cursor_position, scene_command.light);
+
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(&renderer)) {
       owl_window_fill_renderer_init_info(&window, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, &renderer);
       continue;
     }
+
 
     owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_SKYBOX);
     owl_submit_draw_skybox_command(&renderer, &cam, &skybox_command);

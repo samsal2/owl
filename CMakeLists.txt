@@ -79,6 +79,8 @@ set(OWL_C_CLANG_BASE_COMPILE_FLAGS
 		-Wunreachable-code-aggressive
     -Wframe-larger-than=10240
 
+    -fdiagnostics-color=always
+
     -Wno-format-nonliteral # owl_dbg_log_
 		-Wno-long-long       # C99 required extension
 		-Wno-variadic-macros # C99 required extension

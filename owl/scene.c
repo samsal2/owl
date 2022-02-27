@@ -68,11 +68,11 @@ OWL_INTERNAL enum owl_code owl_scene_load_materials_(struct owl_renderer *r,
                 material->base_color_factor);
 
     material->base_color_texture_index =
-        (owl_u32)(from->pbr_metallic_roughness.base_color_texture.texture -
+        (int)(from->pbr_metallic_roughness.base_color_texture.texture -
                   data->textures);
 
     material->normal_texture_index =
-        (owl_u32)(from->normal_texture.texture - data->textures);
+        (int)(from->normal_texture.texture - data->textures);
 
     material->alpha_mode = (enum owl_alpha_mode)from->alpha_mode;
     material->alpha_cutoff = from->alpha_cutoff;

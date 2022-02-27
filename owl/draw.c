@@ -22,9 +22,9 @@ enum owl_code owl_camera_init(struct owl_camera *cam) {
 #endif
 
   OWL_V3_SET(0.0F, 0.0F, 3.0F, cam->eye);
-  OWL_V3_SET(0.0F, 0.0F, -1.0F, cam->direction);
+  OWL_V3_SET(0.0F, 0.0F, 1.0F, cam->direction);
   OWL_V3_SET(0.0F, 1.0F, 0.0F, cam->up);
-  owl_m4_look(cam->eye, cam->eye, cam->up, cam->view);
+  owl_m4_look(cam->eye, cam->direction, cam->up, cam->view);
 
   return code;
 }
@@ -365,18 +365,18 @@ owl_submit_draw_skybox_command(struct owl_renderer *r,
 
 OWL_INTERNAL
 enum owl_code owl_scene_submit_node_(struct owl_renderer *r,
-                                     struct owl_camera const *cam,
-                                     struct owl_scene const *scene,
+                                     struct owl_camera *cam,
+                                     struct owl_draw_scene_command const *command,
                                      owl_scene_node node) {
 
   int i;
   struct owl_scene_push_constant push_constant;
   enum owl_code code = OWL_SUCCESS;
   owl_scene_node current = node;
-  struct owl_scene_node_data const *data = &scene->nodes[node];
+  struct owl_scene_node_data const *data = &command->scene->nodes[node];
 
   for (i = 0; i < data->children_count; ++i) {
-    code = owl_scene_submit_node_(r, cam, scene, data->children[node]);
+    code = owl_scene_submit_node_(r, cam, command, data->children[node]);
 
     if (OWL_SUCCESS != code)
       goto end;
@@ -385,17 +385,17 @@ enum owl_code owl_scene_submit_node_(struct owl_renderer *r,
   if (!data->mesh.primitives_count)
     goto end;
 
-  OWL_M4_COPY(data->matrix, push_constant.mvp);
+  OWL_M4_COPY(data->matrix, push_constant.model);
 
   while (OWL_SCENE_NODE_NO_PARENT != current) {
-    struct owl_scene_node_data const *current_data = &scene->nodes[current];
-    owl_m4_mul_rotation(push_constant.mvp, current_data->matrix,
-                        push_constant.mvp);
+    struct owl_scene_node_data const *current_data = &command->scene->nodes[current];
+    owl_m4_mul_rotation(push_constant.model, current_data->matrix,
+                        push_constant.model);
     current = current_data->parent;
   }
 
   // OWL_V3_SET(0.0F, 0.0F, -1.0F, position);
-  // owl_m4_translate(position, push_constant.mvp);
+  // owl_m4_translate(position, push_constant.model);
 
   vkCmdPushConstants(r->active_frame_command_buffer, r->active_pipeline_layout,
                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),
@@ -408,18 +408,18 @@ enum owl_code owl_scene_submit_node_(struct owl_renderer *r,
     struct owl_dynamic_buffer_reference ref;
     struct owl_scene_primitive const *primitive = &data->mesh.primitives[i];
     struct owl_scene_material const *material =
-        &scene->materials[primitive->material];
+        &command->scene->materials[primitive->material];
     owl_scene_texture base =
-        scene->textures[material->base_color_texture_index];
+        command->scene->textures[material->base_color_texture_index];
     owl_scene_texture normal =
-        scene->textures[material->base_color_texture_index];
-    struct owl_texture const *base_image = &scene->images[base];
-    struct owl_texture const *normal_image = &scene->images[normal];
+        command->scene->textures[material->base_color_texture_index];
+    struct owl_texture const *base_image = &command->scene->images[base];
+    struct owl_texture const *normal_image = &command->scene->images[normal];
 
     OWL_M4_COPY(cam->projection, uniform.projection);
     OWL_M4_COPY(cam->view, uniform.view);
     OWL_V4_ZERO(uniform.light);
-    OWL_V3_SET(0.5F, 0.5F, -1.0F, uniform.light);
+    OWL_V3_COPY(command->light, uniform.light);
 
     OWL_V4_ZERO(uniform.eye);
     OWL_V3_COPY(cam->eye, uniform.eye);
@@ -449,7 +449,7 @@ end:
 
 enum owl_code
 owl_submit_draw_scene_command(struct owl_renderer *r,
-                              struct owl_camera const *cam,
+                              struct owl_camera *cam,
                               struct owl_draw_scene_command const *command) {
   int i;
   VkDeviceSize offset = 0;
@@ -462,8 +462,7 @@ owl_submit_draw_scene_command(struct owl_renderer *r,
                        command->scene->indices_buffer, 0, VK_INDEX_TYPE_UINT32);
 
   for (i = 0; i < command->scene->roots_count; ++i) {
-    code = owl_scene_submit_node_(r, cam, command->scene,
-                                  command->scene->roots[i]);
+    code = owl_scene_submit_node_(r, cam, command, command->scene->roots[i]);
 
     if (OWL_SUCCESS != code)
       goto end;

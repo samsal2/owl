@@ -78,12 +78,13 @@ owl_submit_draw_skybox_command(struct owl_renderer *r,
                                struct owl_draw_skybox_command const *command);
 
 struct owl_draw_scene_command {
+  owl_v3 light;
   struct owl_scene const *scene;
 };
 
 enum owl_code
 owl_submit_draw_scene_command(struct owl_renderer *r,
-                              struct owl_camera const *cam,
+                              struct owl_camera *cam,
                               struct owl_draw_scene_command const *command);
 
 #endif

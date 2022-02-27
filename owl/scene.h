@@ -17,7 +17,7 @@
 struct owl_renderer;
 
 struct owl_scene_push_constant {
-  owl_m4 mvp;
+  owl_m4 model;
 };
 
 struct owl_scene_uniform {
@@ -40,7 +40,7 @@ struct owl_scene_vertex {
 struct owl_scene_primitive {
   owl_u32 first;
   owl_u32 count;
-  owl_i32 material;
+  int material;
 };
 
 struct owl_scene_mesh {
@@ -51,16 +51,20 @@ struct owl_scene_mesh {
 typedef int owl_scene_node;
 
 struct owl_scene_node_data {
-  owl_m4 matrix;
-
+  char name[OWL_SCENE_NODE_MAX_NAME_LENGTH];
   owl_scene_node parent;
 
-  int children_count;
-  owl_scene_node children[OWL_SCENE_NODE_MAX_CHILDREN];
+  owl_m4 matrix;
+  owl_v3 translation;
+  owl_v3 scale;
+  owl_v4 rotation;
+  
+  int skin;
 
   struct owl_scene_mesh mesh;
 
-  char name[OWL_SCENE_NODE_MAX_NAME_LENGTH];
+  int children_count;
+  owl_scene_node children[OWL_SCENE_NODE_MAX_CHILDREN];
 };
 
 enum owl_alpha_mode {
@@ -73,8 +77,8 @@ struct owl_scene_material {
   int double_sided;
   float alpha_cutoff;
   owl_v4 base_color_factor;
-  owl_u32 base_color_texture_index;
-  owl_u32 normal_texture_index;
+  int base_color_texture_index;
+  int normal_texture_index;
   enum owl_alpha_mode alpha_mode;
 };
 
