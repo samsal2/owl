@@ -32,6 +32,9 @@ enum owl_pipeline_type {
   OWL_PIPELINE_TYPE_COUNT
 };
 
+typedef enum owl_code (*owl_vk_surface_init_callback)(
+    struct owl_renderer const *r, void const *user_data, VkSurfaceKHR *surface);
+
 struct owl_renderer_init_info {
   char const *name;
 
@@ -42,8 +45,7 @@ struct owl_renderer_init_info {
   char const *const *instance_extensions;
 
   void const *surface_user_data;
-  enum owl_code (*create_surface)(struct owl_renderer const *r,
-                                  void const *user_data, VkSurfaceKHR *surface);
+  owl_vk_surface_init_callback create_surface;
 };
 
 struct owl_dynamic_buffer_reference {

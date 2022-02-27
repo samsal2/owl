@@ -7,7 +7,6 @@
 
 struct owl_renderer;
 struct owl_dynamic_buffer_reference;
-struct owl_model_texture_data;
 
 struct owl_texture {
   owl_u32 width;

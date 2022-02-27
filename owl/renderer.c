@@ -2,7 +2,9 @@
 
 #include "internal.h"
 #include "model.h"
+#include "owl/types.h"
 #include "skybox.h"
+#include "vulkan/vulkan_core.h"
 #include "window.h"
 
 OWL_GLOBAL char const *const g_required_device_extensions[] = {
@@ -548,7 +550,7 @@ owl_renderer_init_swapchain_(struct owl_renderer_init_info const *info,
     swapchain.queueFamilyIndexCount = 0;
     swapchain.pQueueFamilyIndices = NULL;
   } else {
-    swapchain.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    swapchain.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
     swapchain.queueFamilyIndexCount = owl_get_queue_count_(r);
     swapchain.pQueueFamilyIndices = families;
   }
@@ -2578,7 +2580,7 @@ owl_renderer_deinit_lutbrdf_resources_(struct owl_renderer *r) {
 #if 0
 
 enum owl_cubemap_target {
-  OWL_CUBEMAP_TARGET_IRRADIANCE = 0, 
+  OWL_CUBEMAP_TARGET_IRRADIANCE = 0,
   OWL_CUBEMAP_TARGET_PREFILTERED
 };
 
@@ -2587,22 +2589,81 @@ enum owl_cubemap_target {
 OWL_INTERNAL enum owl_code
 owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
   int i;
+  enum owl_code code = OWL_SUCCESS;
+  VkShaderModule prefiltered_cube_vertex_shader;
+  VkShaderModule prefiltered_cube_fragment_shader;
+  VkShaderModule irradiance_cube_fragment_shader;
+
+  OWL_LOCAL_PERSIST owl_u32 const prefiltered_cube_vertex_code[] = {
+#include "../shaders/prefiltered_cube_vertex.spv.u32"
+  };
+
+  OWL_LOCAL_PERSIST owl_u32 const prefiltered_cube_fragment_code[] = {
+#include "../shaders/prefiltered_cube_fragment.spv.u32"
+  };
+
+  OWL_LOCAL_PERSIST owl_u32 const irradiance_cube_fragment_code[] = {
+#include "../shaders/irradiance_cube_fragment.spv.u32"
+  };
+
+  {
+    VkShaderModuleCreateInfo shader;
+
+    shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader.pNext = NULL;
+    shader.flags = 0;
+    shader.codeSize = sizeof(prefiltered_cube_vertex_code);
+    shader.pCode = prefiltered_cube_vertex_code;
+
+    OWL_VK_CHECK(vkCreateShaderModule(r->device, &shader, NULL,
+                                      &prefiltered_cube_vertex_shader));
+  }
+
+  {
+    VkShaderModuleCreateInfo shader;
+
+    shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader.pNext = NULL;
+    shader.flags = 0;
+    shader.codeSize = sizeof(prefiltered_cube_fragment_code);
+    shader.pCode = prefiltered_cube_fragment_code;
+
+    OWL_VK_CHECK(vkCreateShaderModule(r->device, &shader, NULL,
+                                      &prefiltered_cube_fragment_shader));
+  }
+
+  {
+    VkShaderModuleCreateInfo shader;
+
+    shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader.pNext = NULL;
+    shader.flags = 0;
+    shader.codeSize = sizeof(irradiance_cube_fragment_code);
+    shader.pCode = irradiance_cube_fragment_code;
+
+    OWL_VK_CHECK(vkCreateShaderModule(r->device, &shader, NULL,
+                                      &irradiance_cube_fragment_shader));
+  }
 
   for (i = 0; i < OWL_CUBEMAP_TARGET_COUNT; ++i) {
     owl_u32 mips;
-    owl_i32 dim;
+    owl_u32 dim;
     VkFormat format;
     VkImage current_image;
-    VKMemory current_memory;
+    VkDeviceMemory current_memory;
     VkImageView current_view;
     VkSampler current_sampler;
     VkImage offscreen_image;
-    VkMemory offscreen_memory;
+    VkDeviceMemory offscreen_memory;
     VkImageView offscreen_view;
     VkFramebuffer offscreen_framebuffer;
     VkRenderPass current_render_pass;
     VkDescriptorSetLayout current_set_layout;
     VkPipelineLayout current_pipeline_layout;
+    VkPipeline current_pipeline;
+
+    dim = 0;
+    format = 0;
 
     switch (i) {
     case OWL_CUBEMAP_TARGET_IRRADIANCE:
@@ -2633,30 +2694,30 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
       image.arrayLayers = 6;
       image.samples = VK_SAMPLE_COUNT_1_BIT;
       image.tiling = VK_IMAGE_TILING_OPTIMAL;
-      image.usage = OWL_IMAGE_USAGE : image.sharingMode =
-          VK_SHARING_MODEL_EXCLUSIVE;
-      image.queueFamilyCount = 0;
+      image.usage = OWL_IMAGE_USAGE;
+      image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      image.queueFamilyIndexCount = 0;
       image.pQueueFamilyIndices = NULL;
       image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 #undef OWL_IMAGE_USAGE
 
-      OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &current_image)) :
+      OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &current_image));
     }
 
     {
       VkMemoryRequirements requirements;
       VkMemoryAllocateInfo memory;
 
-      vkGetImageMemoryRequirements(r->device, &current_image, &requirements);
+      vkGetImageMemoryRequirements(r->device, current_image, &requirements);
 
       memory.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
       memory.pNext = NULL;
       memory.allocationSize = requirements.size;
       memory.memoryTypeIndex = owl_renderer_find_memory_type(
-          r->device, &requirements, OWL_MEMORY_VISIBILITY_GPU_ONLY);
+          r, &requirements, OWL_MEMORY_VISIBILITY_GPU_ONLY);
 
-      OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &current_memory);
+      OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &current_memory));
     }
 
     {
@@ -2678,7 +2739,7 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
       view.subresourceRange.baseArrayLayer = 0;
       view.subresourceRange.layerCount = 6;
 
-      OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, current_view));
+      OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &current_view));
     }
 
     {
@@ -2704,7 +2765,7 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
       sampler.unnormalizedCoordinates = VK_FALSE;
 
       OWL_VK_CHECK(
-          vkCreateSampler(r->device, &sampler, NULL, &r->current_sampler));
+          vkCreateSampler(r->device, &sampler, NULL, &current_sampler));
     }
 
     {
@@ -2719,7 +2780,7 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
 
       attachment.flags = 0;
       attachment.format = format;
-      attachment.sampler = VK_SAMPLE_COUNT_1_BIT;
+      attachment.samples = VK_SAMPLE_COUNT_1_BIT;
       attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
       attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
       attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -2787,13 +2848,14 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
       image.arrayLayers = 1;
       image.samples = VK_SAMPLE_COUNT_1_BIT;
       image.tiling = VK_IMAGE_TILING_OPTIMAL;
-      image.usage = OWL_IMAGE_USAGE : image.sharingMode =
-          VK_SHARING_MODEL_EXCLUSIVE;
-      image.queueFamilyCount = 0;
+      image.usage = OWL_IMAGE_USAGE;
+      image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      image.queueFamilyIndexCount = 0;
       image.pQueueFamilyIndices = NULL;
       image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-      OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &offscreen_image)) :
+      OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &offscreen_image));
+
 #undef OWL_IMAGE_USAGE
     }
 
@@ -2801,15 +2863,16 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
       VkMemoryRequirements requirements;
       VkMemoryAllocateInfo memory;
 
-      vkGetImageMemoryRequirements(r->device, &offscreen_image, &requirements);
+      vkGetImageMemoryRequirements(r->device, offscreen_image, &requirements);
 
       memory.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
       memory.pNext = NULL;
       memory.allocationSize = requirements.size;
       memory.memoryTypeIndex = owl_renderer_find_memory_type(
-          r->device, &requirements, OWL_MEMORY_VISIBILITY_GPU_ONLY);
+          r, &requirements, OWL_MEMORY_VISIBILITY_GPU_ONLY);
 
-      OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &offscreen_memory);
+      OWL_VK_CHECK(
+          vkAllocateMemory(r->device, &memory, NULL, &offscreen_memory));
     }
 
     {
@@ -2843,11 +2906,11 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
       framebuffer.attachmentCount = 1;
       framebuffer.pAttachments = &offscreen_view;
       framebuffer.width = dim;
-      framebuffer.height = height;
+      framebuffer.height = dim;
       framebuffer.layers = 1;
 
-      OWL_VK_CHECK(vkCreateFramebuffer(r->device, &framebuffer,
-                                       NULL < &offscreen_framebuffer));
+      OWL_VK_CHECK(vkCreateFramebuffer(r->device, &framebuffer, NULL,
+                                       &offscreen_framebuffer));
     }
 
     {
@@ -2875,17 +2938,24 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
                            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0,
                            NULL, 1, &barrier);
 
-      owl_renderer_free_single_use_command_buffer(r, &command);
+      owl_renderer_free_single_use_command_buffer(r, command);
     }
 
     {
+      VkDescriptorSetLayoutBinding binding;
       VkDescriptorSetLayoutCreateInfo layout;
+
+      binding.binding = 0;
+      binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      binding.descriptorCount = 1;
+      binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+      binding.pImmutableSamplers = NULL;
 
       layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
       layout.pNext = NULL;
       layout.flags = 0;
-      layout.bindingCount = 0;
-      layout.pBindings = 0;
+      layout.bindingCount = 1;
+      layout.pBindings = &binding;
 
       OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
                                                &current_set_layout));
@@ -2945,8 +3015,8 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
 
       scissor.offset.x = 0;
       scissor.offset.y = 0;
-      scissor.extent.width = width;
-      scissor.extent.height = height;
+      scissor.extent.width = dim;
+      scissor.extent.height = dim;
 
       viewport_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -3003,7 +3073,7 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
       color_blend_state.logicOpEnable = VK_FALSE;
       color_blend_state.logicOp = VK_LOGIC_OP_COPY;
       color_blend_state.attachmentCount = 1;
-      color_blend_state.pAttachments = color_blend_attachment;
+      color_blend_state.pAttachments = &color_blend_attachment;
       color_blend_state.blendConstants[0] = 0.0F;
       color_blend_state.blendConstants[1] = 0.0F;
       color_blend_state.blendConstants[2] = 0.0F;
@@ -3026,27 +3096,79 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
       depth_stencil_state.minDepthBounds = 0.0F;
       depth_stencil_state.maxDepthBounds = 0.0F;
 
-      stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-      stages[0].pNext = NULL;
-      stages[0].flags = 0;
-      stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-      stages[0].module = r->basic_vertex_shader;
-      stages[0].pName = "main";
-      stages[0].pSpecializationInfo = NULL;
+      switch (i) {
+      case OWL_CUBEMAP_TARGET_IRRADIANCE:
+        stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        stages[0].pNext = NULL;
+        stages[0].flags = 0;
+        stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+        stages[0].module = prefiltered_cube_vertex_shader;
+        stages[0].pName = "main";
+        stages[0].pSpecializationInfo = NULL;
 
-      stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-      stages[1].pNext = NULL;
-      stages[1].flags = 0;
-      stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-      stages[1].module = r->basic_fragment_shader;
-      stages[1].pName = "main";
-      stages[1].pSpecializationInfo = NULL;
+        stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        stages[1].pNext = NULL;
+        stages[1].flags = 0;
+        stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        stages[1].module = irradiance_cube_fragment_shader;
+        stages[1].pName = "main";
+        stages[1].pSpecializationInfo = NULL;
+        break;
+
+      case OWL_CUBEMAP_TARGET_PREFILTERED:
+        stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        stages[0].pNext = NULL;
+        stages[0].flags = 0;
+        stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+        stages[0].module = prefiltered_cube_vertex_shader;
+        stages[0].pName = "main";
+        stages[0].pSpecializationInfo = NULL;
+
+        stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        stages[1].pNext = NULL;
+        stages[1].flags = 0;
+        stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        stages[1].module = prefiltered_cube_fragment_shader;
+        stages[1].pName = "main";
+        stages[1].pSpecializationInfo = NULL;
+        break;
+      }
+
+      pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+      pipeline.pNext = NULL;
+      pipeline.flags = 0;
+      pipeline.stageCount = OWL_ARRAY_SIZE(stages);
+      pipeline.pStages = stages;
+      pipeline.pVertexInputState = &vertex_input_state;
+      pipeline.pInputAssemblyState = &input_assembly_state;
+      pipeline.pTessellationState = NULL;
+      pipeline.pViewportState = &viewport_state;
+      pipeline.pRasterizationState = &rasterization_state;
+      pipeline.pMultisampleState = &multisample_state;
+      pipeline.pDepthStencilState = &depth_stencil_state;
+      pipeline.pColorBlendState = &color_blend_state;
+      pipeline.pDynamicState = NULL;
+      pipeline.layout = r->pipeline_layouts[i];
+      pipeline.renderPass = r->main_render_pass;
+      pipeline.subpass = 0;
+      pipeline.basePipelineHandle = VK_NULL_HANDLE;
+      pipeline.basePipelineIndex = -1;
+
+      OWL_VK_CHECK(vkCreateGraphicsPipelines(
+          r->device, VK_NULL_HANDLE, 1, &pipeline, NULL, &current_pipeline));
     }
 
 #undef OWL_CUBEMAP_TARGET_COUNT
 #undef OWL_CUBEMAP_TARGET_PREFILTERED
 #undef OWL_CUBEMAP_TARGET_IRRADIANCE
   }
+
+  vkDestroyShaderModule(r->device, irradiance_cube_fragment_shader, NULL);
+  vkDestroyShaderModule(r->device, prefiltered_cube_fragment_shader, NULL);
+  vkDestroyShaderModule(r->device, prefiltered_cube_vertex_shader, NULL);
+
+  return code;
+}
 #endif
 
 OWL_INTERNAL enum owl_code
