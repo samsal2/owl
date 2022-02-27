@@ -62,7 +62,6 @@ int main(void) {
       continue;
     }
 
-
     owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_SKYBOX);
     owl_submit_draw_skybox_command(&renderer, &cam, &skybox_command);
 

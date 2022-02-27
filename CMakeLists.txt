@@ -27,14 +27,12 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/external/glfw)
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/stb)
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/cgltf)
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/freetype)
-add_subdirectory(${PROJECT_SOURCE_DIR}/external/cimgui)
 
 if (OWL_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif (OWL_BUILD_EXAMPLES)
 
 # link libraries
-target_link_libraries(owl PRIVATE cimgui) 
 target_link_libraries(owl PRIVATE glfw) 
 target_link_libraries(owl PRIVATE stb)
 target_link_libraries(owl PRIVATE cgltf)
