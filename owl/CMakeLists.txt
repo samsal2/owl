@@ -6,8 +6,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   texture.h
   internal.c
   internal.h
-  model.c
-  model.h
   renderer.c
   renderer.h
   vector_math.c

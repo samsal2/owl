@@ -4,7 +4,6 @@
 #include "draw.h"
 #include "font.h"
 #include "internal.h"
-#include "model.h"
 #include "renderer.h"
 #include "skybox.h"
 #include "texture.h"

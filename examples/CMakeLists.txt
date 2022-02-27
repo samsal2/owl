@@ -4,5 +4,4 @@ macro(add_example name)
 endmacro()
 
 add_example(cloth_simulation)
-add_example(model)
 

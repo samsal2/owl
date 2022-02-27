@@ -28,7 +28,6 @@ enum owl_pipeline_type {
   OWL_PIPELINE_TYPE_WIRES,
   OWL_PIPELINE_TYPE_FONT,
   OWL_PIPELINE_TYPE_SKYBOX,
-  OWL_PIPELINE_TYPE_PBR,
   OWL_PIPELINE_TYPE_COUNT
 };
 
@@ -161,16 +160,12 @@ struct owl_renderer {
   /* ====================================================================== */
   VkDescriptorSetLayout pvm_set_layout;
   VkDescriptorSetLayout texture_set_layout;
-  VkDescriptorSetLayout scene_set_layout;
-  VkDescriptorSetLayout material_set_layout;
-  VkDescriptorSetLayout node_set_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */
   /* main pipeline layouts */
   /* ====================================================================== */
   VkPipelineLayout common_pipeline_layout;
-  VkPipelineLayout pbr_pipeline_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -181,8 +176,6 @@ struct owl_renderer {
   VkShaderModule font_fragment_shader;
   VkShaderModule skybox_vertex_shader;
   VkShaderModule skybox_fragment_shader;
-  VkShaderModule pbr_vertex_shader;
-  VkShaderModule pbr_fragment_shader;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -249,35 +242,6 @@ struct owl_renderer {
   VkBuffer dynamic_buffers[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkDescriptorSet dynamic_pvm_sets[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
-
-#if 0
-  /* ====================================================================== */
-  /* irradiance cube texture */
-  /* ====================================================================== */
-  VkImage irradiance_cube_image;
-  VkDeviceMemory irradiance_cube_memory;
-  VkImageView irradiance_cube_view;
-  VkSampler irradiance_cube_sampler;
-  /* ====================================================================== */
-
-  /* ====================================================================== */
-  /* prefiltered cube texture */
-  /* ====================================================================== */
-  VkImage prefiltered_cube_image;
-  VkDeviceMemory prefiltered_cube_memory;
-  VkImageView prefiltered_cube_view;
-  VkSampler prefiltered_cube_sampler;
-  /* ====================================================================== */
-
-  /* ====================================================================== */
-  /*  lutbrdf texture */
-  /* ====================================================================== */
-  VkImage lutbrdf_image;
-  VkDeviceMemory lutbrdf_memory;
-  VkImageView lutbrdf_view;
-  VkSampler lutbrdf_sampler;
-  /* ====================================================================== */
-#endif
 };
 
 enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,

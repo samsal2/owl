@@ -45,9 +45,9 @@ layout (push_constant) uniform Material {
 	float alphaMaskCutoff;
 } material;
 
-layout (set = 0, binding = 2) uniform samplerCube samplerIrradiance;
-layout (set = 0, binding = 3) uniform samplerCube prefilteredMap;
-layout (set = 0, binding = 4) uniform sampler2D samplerBRDFLUT;
+// layout (set = 0, binding = 2) uniform samplerCube samplerIrradiance;
+// layout (set = 0, binding = 3) uniform samplerCube prefilteredMap;
+// layout (set = 0, binding = 4) uniform sampler2D samplerBRDFLUT;
 
 // Material bindings
 
@@ -147,10 +147,10 @@ vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
 {
 	float lod = (pbrInputs.perceptualRoughness * uboParams.prefilteredCubeMipLevels);
 	// retrieve a scale and bias to F0. See [1], Figure 3
-	vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
-	vec3 diffuseLight = SRGBtoLINEAR(tonemap(texture(samplerIrradiance, n))).rgb;
+	vec3 brdf = vec3(1.0F, 1.0F, 1.0F); // (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
+	vec3 diffuseLight = vec3(1.0F, 1.0F, 1.0F); // SRGBtoLINEAR(tonemap(texture(samplerIrradiance, n))).rgb;
 
-	vec3 specularLight = SRGBtoLINEAR(tonemap(textureLod(prefilteredMap, reflection, lod))).rgb;
+	vec3 specularLight = vec3(1.0F, 1.0F, 1.0F); //SRGBtoLINEAR(tonemap(textureLod(prefilteredMap, reflection, lod))).rgb;
 
 	vec3 diffuse = diffuseLight * pbrInputs.diffuseColor;
 	vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y);

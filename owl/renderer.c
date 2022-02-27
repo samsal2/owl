@@ -1,11 +1,9 @@
 #include "renderer.h"
 
 #include "internal.h"
-#include "model.h"
-#include "owl/types.h"
 #include "skybox.h"
-#include "vulkan/vulkan_core.h"
 #include "window.h"
+#include "draw.h"
 
 OWL_GLOBAL char const *const g_required_device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -1031,122 +1029,10 @@ owl_renderer_init_set_layouts_(struct owl_renderer *r) {
                                              &r->texture_set_layout));
   }
 
-  {
-    VkDescriptorSetLayoutBinding bindings[5];
-    VkDescriptorSetLayoutCreateInfo layout;
-
-    bindings[0].binding = 0;
-    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    bindings[0].descriptorCount = 1;
-    bindings[0].stageFlags =
-        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[0].pImmutableSamplers = NULL;
-
-    bindings[1].binding = 1;
-    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    bindings[1].descriptorCount = 1;
-    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[1].pImmutableSamplers = NULL;
-
-    bindings[2].binding = 2;
-    bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[2].descriptorCount = 1;
-    bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[2].pImmutableSamplers = NULL;
-
-    bindings[3].binding = 3;
-    bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[3].descriptorCount = 1;
-    bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[3].pImmutableSamplers = NULL;
-
-    bindings[4].binding = 4;
-    bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[4].descriptorCount = 1;
-    bindings[4].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[4].pImmutableSamplers = NULL;
-
-    layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layout.pNext = NULL;
-    layout.flags = 0;
-    layout.bindingCount = OWL_ARRAY_SIZE(bindings);
-    layout.pBindings = bindings;
-
-    OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
-                                             &r->scene_set_layout));
-  }
-
-  {
-    VkDescriptorSetLayoutBinding bindings[5];
-    VkDescriptorSetLayoutCreateInfo layout;
-
-    bindings[0].binding = 0;
-    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[0].descriptorCount = 1;
-    bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[0].pImmutableSamplers = NULL;
-
-    bindings[1].binding = 1;
-    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[1].descriptorCount = 1;
-    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[1].pImmutableSamplers = NULL;
-
-    bindings[2].binding = 2;
-    bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[2].descriptorCount = 1;
-    bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[2].pImmutableSamplers = NULL;
-
-    bindings[3].binding = 3;
-    bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[3].descriptorCount = 1;
-    bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[3].pImmutableSamplers = NULL;
-
-    bindings[4].binding = 4;
-    bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[4].descriptorCount = 1;
-    bindings[4].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[4].pImmutableSamplers = NULL;
-
-    layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layout.pNext = NULL;
-    layout.flags = 0;
-    layout.bindingCount = OWL_ARRAY_SIZE(bindings);
-    layout.pBindings = bindings;
-
-    OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
-                                             &r->material_set_layout));
-  }
-
-  {
-    VkDescriptorSetLayoutBinding binding;
-    VkDescriptorSetLayoutCreateInfo layout;
-
-    binding.binding = 0;
-    binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    binding.descriptorCount = 1;
-    binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    binding.pImmutableSamplers = NULL;
-
-    layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layout.pNext = NULL;
-    layout.flags = 0;
-    layout.bindingCount = 1;
-    layout.pBindings = &binding;
-
-    OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
-                                             &r->node_set_layout));
-  }
-
   return code;
 }
 
 OWL_INTERNAL void owl_renderer_deinit_set_layouts_(struct owl_renderer *r) {
-  vkDestroyDescriptorSetLayout(r->device, r->node_set_layout, NULL);
-  vkDestroyDescriptorSetLayout(r->device, r->material_set_layout, NULL);
-  vkDestroyDescriptorSetLayout(r->device, r->scene_set_layout, NULL);
   vkDestroyDescriptorSetLayout(r->device, r->texture_set_layout, NULL);
   vkDestroyDescriptorSetLayout(r->device, r->pvm_set_layout, NULL);
 }
@@ -1177,37 +1063,11 @@ owl_renderer_init_pipelines_layouts_(struct owl_renderer *r) {
                                         &r->common_pipeline_layout));
   }
 
-  {
-    VkPushConstantRange range;
-    VkDescriptorSetLayout sets[3];
-    VkPipelineLayoutCreateInfo layout;
-
-    range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    range.offset = 0;
-    range.size = sizeof(struct owl_material_push_constant);
-
-    sets[0] = r->scene_set_layout;
-    sets[1] = r->material_set_layout;
-    sets[2] = r->node_set_layout;
-
-    layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    layout.pNext = NULL;
-    layout.flags = 0;
-    layout.setLayoutCount = OWL_ARRAY_SIZE(sets);
-    layout.pSetLayouts = sets;
-    layout.pushConstantRangeCount = 1;
-    layout.pPushConstantRanges = &range;
-
-    OWL_VK_CHECK(vkCreatePipelineLayout(r->device, &layout, NULL,
-                                        &r->pbr_pipeline_layout));
-  }
-
   return code;
 }
 
 OWL_INTERNAL void
 owl_renderer_deinit_pipeline_layouts_(struct owl_renderer *r) {
-  vkDestroyPipelineLayout(r->device, r->pbr_pipeline_layout, NULL);
   vkDestroyPipelineLayout(r->device, r->common_pipeline_layout, NULL);
 }
 
@@ -1300,46 +1160,10 @@ OWL_INTERNAL enum owl_code owl_renderer_init_shaders_(struct owl_renderer *r) {
                                       &r->skybox_fragment_shader));
   }
 
-  {
-    VkShaderModuleCreateInfo shader;
-
-    OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/pbr_vertex.spv.u32"
-    };
-
-    shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shader.pNext = NULL;
-    shader.flags = 0;
-    shader.codeSize = sizeof(code);
-    shader.pCode = code;
-
-    OWL_VK_CHECK(
-        vkCreateShaderModule(r->device, &shader, NULL, &r->pbr_vertex_shader));
-  }
-
-  {
-    VkShaderModuleCreateInfo shader;
-
-    OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/pbr_fragment.spv.u32"
-    };
-
-    shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shader.pNext = NULL;
-    shader.flags = 0;
-    shader.codeSize = sizeof(code);
-    shader.pCode = code;
-
-    OWL_VK_CHECK(vkCreateShaderModule(r->device, &shader, NULL,
-                                      &r->pbr_fragment_shader));
-  }
-
   return code;
 }
 
 OWL_INTERNAL void owl_renderer_deinit_shaders_(struct owl_renderer *r) {
-  vkDestroyShaderModule(r->device, r->pbr_fragment_shader, NULL);
-  vkDestroyShaderModule(r->device, r->pbr_vertex_shader, NULL);
   vkDestroyShaderModule(r->device, r->skybox_fragment_shader, NULL);
   vkDestroyShaderModule(r->device, r->skybox_vertex_shader, NULL);
   vkDestroyShaderModule(r->device, r->font_fragment_shader, NULL);
@@ -1410,42 +1234,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       vertex_attributes[0].offset =
           offsetof(struct owl_skybox_vertex, position);
       break;
-
-    case OWL_PIPELINE_TYPE_PBR:
-      vertex_bindings[0].binding = 0;
-      vertex_bindings[0].stride = sizeof(struct owl_model_vertex);
-      vertex_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-      vertex_attributes[0].binding = 0;
-      vertex_attributes[0].location = 0;
-      vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_attributes[0].offset = offsetof(struct owl_model_vertex, position);
-
-      vertex_attributes[1].binding = 0;
-      vertex_attributes[1].location = 1;
-      vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_attributes[1].offset = offsetof(struct owl_model_vertex, normal);
-
-      vertex_attributes[2].binding = 0;
-      vertex_attributes[2].location = 2;
-      vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-      vertex_attributes[2].offset = offsetof(struct owl_model_vertex, uv0);
-
-      vertex_attributes[3].binding = 0;
-      vertex_attributes[3].location = 3;
-      vertex_attributes[3].format = VK_FORMAT_R32G32_SFLOAT;
-      vertex_attributes[3].offset = offsetof(struct owl_model_vertex, uv1);
-
-      vertex_attributes[4].binding = 0;
-      vertex_attributes[4].location = 4;
-      vertex_attributes[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-      vertex_attributes[4].offset = offsetof(struct owl_model_vertex, joint0);
-
-      vertex_attributes[5].binding = 0;
-      vertex_attributes[5].location = 5;
-      vertex_attributes[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-      vertex_attributes[5].offset = offsetof(struct owl_model_vertex, weight0);
-      break;
     }
 
     switch (i) {
@@ -1472,17 +1260,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       vertex_input_state.vertexAttributeDescriptionCount = 1;
       vertex_input_state.pVertexAttributeDescriptions = vertex_attributes;
       break;
-
-    case OWL_PIPELINE_TYPE_PBR:
-      vertex_input_state.sType =
-          VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-      vertex_input_state.pNext = NULL;
-      vertex_input_state.flags = 0;
-      vertex_input_state.vertexBindingDescriptionCount = 1;
-      vertex_input_state.pVertexBindingDescriptions = vertex_bindings;
-      vertex_input_state.vertexAttributeDescriptionCount = 6;
-      vertex_input_state.pVertexAttributeDescriptions = vertex_attributes;
-      break;
     }
 
     switch (i) {
@@ -1490,7 +1267,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
     case OWL_PIPELINE_TYPE_SKYBOX:
-    case OWL_PIPELINE_TYPE_PBR:
       input_assembly_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
       input_assembly_state.pNext = NULL;
@@ -1505,7 +1281,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
     case OWL_PIPELINE_TYPE_SKYBOX:
-    case OWL_PIPELINE_TYPE_PBR:
       viewport.x = 0.0F;
       viewport.y = 0.0F;
       viewport.width = r->swapchain_extent.width;
@@ -1520,7 +1295,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
     case OWL_PIPELINE_TYPE_SKYBOX:
-    case OWL_PIPELINE_TYPE_PBR:
       scissor.offset.x = 0;
       scissor.offset.y = 0;
       scissor.extent = r->swapchain_extent;
@@ -1532,7 +1306,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
     case OWL_PIPELINE_TYPE_SKYBOX:
-    case OWL_PIPELINE_TYPE_PBR:
       viewport_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
       viewport_state.pNext = NULL;
@@ -1548,7 +1321,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_FONT:
     case OWL_PIPELINE_TYPE_SKYBOX:
-    case OWL_PIPELINE_TYPE_PBR:
       rasterization_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
       rasterization_state.pNext = NULL;
@@ -1588,7 +1360,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
     case OWL_PIPELINE_TYPE_SKYBOX:
-    case OWL_PIPELINE_TYPE_PBR:
       multisample_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
       multisample_state.pNext = NULL;
@@ -1609,7 +1380,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_SKYBOX:
-    case OWL_PIPELINE_TYPE_PBR:
       color_blend_attachments[0].blendEnable = VK_FALSE;
       color_blend_attachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
       color_blend_attachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -1642,7 +1412,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
     case OWL_PIPELINE_TYPE_SKYBOX:
-    case OWL_PIPELINE_TYPE_PBR:
       color_blend_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
       color_blend_state.pNext = NULL;
@@ -1662,7 +1431,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_PBR:
       depth_stencil_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
       depth_stencil_state.pNext = NULL;
@@ -1754,24 +1522,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       stages[1].pName = "main";
       stages[1].pSpecializationInfo = NULL;
       break;
-
-    case OWL_PIPELINE_TYPE_PBR:
-      stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-      stages[0].pNext = NULL;
-      stages[0].flags = 0;
-      stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-      stages[0].module = r->pbr_vertex_shader;
-      stages[0].pName = "main";
-      stages[0].pSpecializationInfo = NULL;
-
-      stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-      stages[1].pNext = NULL;
-      stages[1].flags = 0;
-      stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-      stages[1].module = r->pbr_fragment_shader;
-      stages[1].pName = "main";
-      stages[1].pSpecializationInfo = NULL;
-      break;
     }
 
     switch (i) {
@@ -1781,10 +1531,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_SKYBOX:
       r->pipeline_layouts[i] = r->common_pipeline_layout;
       break;
-
-    case OWL_PIPELINE_TYPE_PBR:
-      r->pipeline_layouts[i] = r->pbr_pipeline_layout;
-      break;
     }
 
     switch (i) {
@@ -1792,7 +1538,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
     case OWL_PIPELINE_TYPE_SKYBOX:
-    case OWL_PIPELINE_TYPE_PBR:
       pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
       pipeline.pNext = NULL;
       pipeline.flags = 0;
@@ -1827,7 +1572,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL void owl_renderer_deinit_pipelines_(struct owl_renderer *r) {
-  vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_PBR], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_SKYBOX], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_FONT], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_WIRES], NULL);
@@ -2659,6 +2403,7 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
     VkFramebuffer offscreen_framebuffer;
     VkRenderPass current_render_pass;
     VkDescriptorSetLayout current_set_layout;
+    VkDescriptorSet current_set;
     VkPipelineLayout current_pipeline_layout;
     VkPipeline current_pipeline;
 
@@ -2962,6 +2707,23 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
     }
 
     {
+      VkDescriptorSetAllocateInfo set;
+
+      set.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+      set.pNext = NULL;
+      set.descriptorPool = r->common_set_pool;
+      set.descriptorSetCount = 1;
+      set.pSetLayouts = &current_set_layout;
+
+      OWL_VK_CHECK(vkAllocateDescriptorSets(r->device, &set, &current_set));
+    }
+
+    {
+      VkDescriptorImageInfo image;
+      VkWriteDescriptorSet write;
+    }
+
+    {
       VkPipelineLayoutCreateInfo layout;
 
       layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -3157,6 +2919,9 @@ owl_renderer_init_irradiance_and_prefiltered_cubemaps_(struct owl_renderer *r) {
       OWL_VK_CHECK(vkCreateGraphicsPipelines(
           r->device, VK_NULL_HANDLE, 1, &pipeline, NULL, &current_pipeline));
     }
+
+    {
+    } 
 
 #undef OWL_CUBEMAP_TARGET_COUNT
 #undef OWL_CUBEMAP_TARGET_PREFILTERED
