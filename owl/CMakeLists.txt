@@ -18,3 +18,4 @@ target_sources(${PROJECT_NAME} PRIVATE
   scene.h
   skybox.c
   skybox.h)
+
