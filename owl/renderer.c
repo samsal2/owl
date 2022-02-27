@@ -2681,6 +2681,7 @@ OWL_INTERNAL void owl_renderer_update_frame_actives_(struct owl_renderer *r) {
   r->active_dynamic_data = r->dynamic_data[r->frame];
   r->active_dynamic_buffer = r->dynamic_buffers[r->frame];
   r->active_dynamic_pvm_set = r->dynamic_pvm_sets[r->frame];
+  r->active_dynamic_scene_set = r->dynamic_scene_sets[r->frame];
 }
 
 enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
