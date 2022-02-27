@@ -5,7 +5,7 @@
 
 struct owl_renderer;
 struct owl_skybox;
-struct owl_model;
+struct owl_scene;
 
 struct owl_camera {
   owl_v3 direction;
@@ -77,13 +77,13 @@ owl_submit_draw_skybox_command(struct owl_renderer *r,
                                struct owl_camera const *cam,
                                struct owl_draw_skybox_command const *command);
 
-struct owl_draw_model_command {
-  struct owl_model const *model;
+struct owl_draw_scene_command {
+  struct owl_scene const *scene;
 };
 
 enum owl_code
-owl_submit_draw_model_command(struct owl_renderer *r,
+owl_submit_draw_scene_command(struct owl_renderer *r,
                               struct owl_camera const *cam,
-                              struct owl_draw_model_command const *command);
+                              struct owl_draw_scene_command const *command);
 
 #endif

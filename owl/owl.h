@@ -5,6 +5,7 @@
 #include "font.h"
 #include "internal.h"
 #include "renderer.h"
+#include "scene.h"
 #include "skybox.h"
 #include "texture.h"
 #include "types.h"

@@ -28,6 +28,7 @@ enum owl_pipeline_type {
   OWL_PIPELINE_TYPE_WIRES,
   OWL_PIPELINE_TYPE_FONT,
   OWL_PIPELINE_TYPE_SKYBOX,
+  OWL_PIPELINE_TYPE_SCENE,
   OWL_PIPELINE_TYPE_COUNT
 };
 
@@ -52,6 +53,7 @@ struct owl_dynamic_buffer_reference {
   VkDeviceSize offset;
   VkBuffer buffer;
   VkDescriptorSet pvm_set;
+  VkDescriptorSet scene_set;
 };
 
 struct owl_renderer {
@@ -160,12 +162,14 @@ struct owl_renderer {
   /* ====================================================================== */
   VkDescriptorSetLayout pvm_set_layout;
   VkDescriptorSetLayout texture_set_layout;
+  VkDescriptorSetLayout scene_set_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */
-  /* main pipeline layouts */
+  /* pipeline layouts */
   /* ====================================================================== */
   VkPipelineLayout common_pipeline_layout;
+  VkPipelineLayout scene_pipeline_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -176,6 +180,8 @@ struct owl_renderer {
   VkShaderModule font_fragment_shader;
   VkShaderModule skybox_vertex_shader;
   VkShaderModule skybox_fragment_shader;
+  VkShaderModule scene_vertex_shader;
+  VkShaderModule scene_fragment_shader;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -222,6 +228,9 @@ struct owl_renderer {
 
   int garbage_pvm_sets_count;
   VkDescriptorSet garbage_pvm_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+
+  int garbage_scene_sets_count;
+  VkDescriptorSet garbage_scene_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -237,10 +246,12 @@ struct owl_renderer {
   owl_byte *active_dynamic_data;
   VkBuffer active_dynamic_buffer;
   VkDescriptorSet active_dynamic_pvm_set;
+  VkDescriptorSet active_dynamic_scene_set;
 
   owl_byte *dynamic_data[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkBuffer dynamic_buffers[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkDescriptorSet dynamic_pvm_sets[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
+  VkDescriptorSet dynamic_scene_sets[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
 };
 
