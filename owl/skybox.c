@@ -181,7 +181,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   struct owl_vk_image_transition_info transition;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dynamic_buffer_clear(r));
+  OWL_ASSERT(owl_renderer_is_dynamic_offset_clear(r));
 
   {
     struct owl_texture_init_info texture_info;

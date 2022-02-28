@@ -13,8 +13,6 @@ static struct owl_camera cam;
 static struct owl_skybox_init_info skybox_info;
 static struct owl_skybox skybox;
 static struct owl_draw_skybox_command skybox_command;
-static float xdirection = 0.05F;
-static float zdirection = 0.05F;
 
 #define SCENE_PATH "../../assets/Suzanne.gltf"
 
@@ -50,7 +48,7 @@ int main(void) {
 
   skybox_command.skybox = &skybox;
 
-  OWL_V3_SET(0.0F, 0.0F, 0.0F, scene_command.light);
+  OWL_V3_SET(0.0F, 0.0F, -1.5F, scene_command.light);
   scene_command.scene = &scene;
 
   while (!owl_window_is_done(&window)) {

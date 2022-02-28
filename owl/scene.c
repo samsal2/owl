@@ -69,7 +69,7 @@ OWL_INTERNAL enum owl_code owl_scene_load_materials_(struct owl_renderer *r,
 
     material->base_color_texture_index =
         (int)(from->pbr_metallic_roughness.base_color_texture.texture -
-                  data->textures);
+              data->textures);
 
     material->normal_texture_index =
         (int)(from->normal_texture.texture - data->textures);
@@ -458,7 +458,7 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   struct owl_scene_load_info load;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dynamic_buffer_clear(r));
+  OWL_ASSERT(owl_renderer_is_dynamic_offset_clear(r));
 
   OWL_MEMSET(&options, 0, sizeof(options));
   OWL_MEMSET(scene, 0, sizeof(*scene));

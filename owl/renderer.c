@@ -802,6 +802,7 @@ owl_renderer_init_attachments_(struct owl_renderer *r) {
   VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 
     VkImageCreateInfo image;
+
     image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     image.pNext = NULL;
     image.flags = 0;
@@ -2330,8 +2331,8 @@ end:
   return code;
 }
 
-OWL_INTERNAL enum owl_code
-owl_renderer_reinit_swapchain_(struct owl_renderer_init_info const *info,
+enum owl_code
+owl_renderer_resize_swapchain_(struct owl_renderer_init_info const *info,
                                struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
@@ -2390,13 +2391,7 @@ end:
   return code;
 }
 
-enum owl_code
-owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
-                              struct owl_renderer *r) {
-  return owl_renderer_reinit_swapchain_(info, r);
-}
-
-int owl_renderer_is_dynamic_buffer_clear(struct owl_renderer *r) {
+int owl_renderer_is_dynamic_buffer_clear(struct owl_renderer const *r) {
   return 0 == r->dynamic_offset;
 }
 

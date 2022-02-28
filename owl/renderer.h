@@ -264,7 +264,7 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
 
 void owl_renderer_deinit(struct owl_renderer *r);
 
-int owl_renderer_is_dynamic_buffer_clear(struct owl_renderer *r);
+int owl_renderer_is_dynamic_offset_clear(struct owl_renderer const *r);
 
 void owl_renderer_clear_dynamic_offset(struct owl_renderer *r);
 
@@ -292,4 +292,5 @@ void owl_renderer_clear_dynamic_offset(struct owl_renderer *r);
 enum owl_code owl_renderer_begin_frame(struct owl_renderer *r);
 
 enum owl_code owl_renderer_end_frame(struct owl_renderer *r);
+
 #endif

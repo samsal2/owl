@@ -1,5 +1,7 @@
 target_sources(${PROJECT_NAME} PRIVATE
   CMakeLists.txt
+  camera.c
+  camera.h
   font.c
   font.h
   texture.c

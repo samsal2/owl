@@ -1,6 +1,7 @@
 #ifndef OWL_OWL_H_
 #define OWL_OWL_H_
 
+#include "camera.h"
 #include "draw.h"
 #include "font.h"
 #include "internal.h"

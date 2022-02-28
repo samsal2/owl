@@ -450,7 +450,7 @@ owl_texture_init_from_data(struct owl_renderer *r,
   struct owl_dynamic_buffer_reference ref;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dynamic_buffer_clear(r));
+  OWL_ASSERT(owl_renderer_is_dynamic_offset_clear(r));
 
   size = owl_texture_init_info_required_size_(info);
 
@@ -474,7 +474,7 @@ enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
   owl_byte *data;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dynamic_buffer_clear(r));
+  OWL_ASSERT(owl_renderer_is_dynamic_offset_clear(r));
 
   if (!(data = owl_texture_data_from_file(path, info))) {
     code = OWL_ERROR_BAD_ALLOC;
@@ -506,6 +506,4 @@ owl_byte *owl_texture_data_from_file(char const *path,
   return stbi_load(path, &info->width, &info->height, &ch, STBI_rgb_alpha);
 }
 
-void owl_texture_free_data_from_file(owl_byte *data) {
-  stbi_image_free(data);
-}
+void owl_texture_free_data_from_file(owl_byte *data) { stbi_image_free(data); }
