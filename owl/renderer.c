@@ -2332,8 +2332,8 @@ end:
 }
 
 enum owl_code
-owl_renderer_resize_swapchain_(struct owl_renderer_init_info const *info,
-                               struct owl_renderer *r) {
+owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
+                              struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
@@ -2391,7 +2391,7 @@ end:
   return code;
 }
 
-int owl_renderer_is_dynamic_buffer_clear(struct owl_renderer const *r) {
+int owl_renderer_is_dynamic_offset_clear(struct owl_renderer const *r) {
   return 0 == r->dynamic_offset;
 }
 
