@@ -6,14 +6,7 @@
 struct owl_renderer;
 struct owl_skybox;
 struct owl_scene;
-
-struct owl_camera {
-  owl_v3 direction;
-  owl_v3 up;
-  owl_v3 eye;
-  owl_m4 projection;
-  owl_m4 view;
-};
+struct owl_camera;
 
 struct owl_draw_vertex {
   owl_v3 position;
@@ -37,8 +30,6 @@ struct owl_draw_basic_command {
   owl_u32 vertices_count;
   struct owl_draw_vertex const *vertices;
 };
-
-enum owl_code owl_camera_init(struct owl_camera *cam);
 
 enum owl_code
 owl_submit_draw_basic_command(struct owl_renderer *r,
@@ -83,8 +74,7 @@ struct owl_draw_scene_command {
 };
 
 enum owl_code
-owl_submit_draw_scene_command(struct owl_renderer *r,
-                              struct owl_camera *cam,
+owl_submit_draw_scene_command(struct owl_renderer *r, struct owl_camera *cam,
                               struct owl_draw_scene_command const *command);
 
 #endif

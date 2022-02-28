@@ -1,33 +1,12 @@
 #include "draw.h"
 
+#include "camera.h"
 #include "font.h"
 #include "internal.h"
 #include "renderer.h"
 #include "scene.h"
 #include "skybox.h"
 #include "vector_math.h"
-
-enum owl_code owl_camera_init(struct owl_camera *cam) {
-  enum owl_code code = OWL_SUCCESS;
-
-#if 0
-  owl_m4_ortho(-2.0F, 2.0F, -2.0F, 2.0F, 0.1F, 10.0F, pvm->projection);
-#else
-  owl_m4_perspective(OWL_DEG_TO_RAD(45.0F), 1.0F, 0.01F, 10.0F,
-                     cam->projection);
-#endif
-
-#if 0
-  cam->projection[1][1] *= -1.0F;
-#endif
-
-  OWL_V3_SET(0.0F, 0.0F, 3.0F, cam->eye);
-  OWL_V3_SET(0.0F, 0.0F, 1.0F, cam->direction);
-  OWL_V3_SET(0.0F, 1.0F, 0.0F, cam->up);
-  owl_m4_look(cam->eye, cam->direction, cam->up, cam->view);
-
-  return code;
-}
 
 OWL_INTERNAL enum owl_code
 owl_renderer_submit_vertices_(struct owl_renderer *r, owl_u32 count,
@@ -276,54 +255,29 @@ end:
 }
 
 OWL_GLOBAL owl_v3 const g_skybox_vertices[] = {
-    {-1.0f,  1.0f, -1.0f},
-    {-1.0f, -1.0f, -1.0f},
-    { 1.0f, -1.0f, -1.0f},
+    {-1.0f, 1.0f, -1.0f},  {-1.0f, -1.0f, -1.0f}, {1.0f, -1.0f, -1.0f},
 
-    { 1.0f, -1.0f, -1.0f},
-    { 1.0f,  1.0f, -1.0f},
-    {-1.0f,  1.0f, -1.0f},
+    {1.0f, -1.0f, -1.0f},  {1.0f, 1.0f, -1.0f},   {-1.0f, 1.0f, -1.0f},
 
-    {-1.0f, -1.0f,  1.0f},
-    {-1.0f, -1.0f, -1.0f},
-    {-1.0f,  1.0f, -1.0f},
+    {-1.0f, -1.0f, 1.0f},  {-1.0f, -1.0f, -1.0f}, {-1.0f, 1.0f, -1.0f},
 
-    {-1.0f,  1.0f, -1.0f},
-    {-1.0f,  1.0f,  1.0f},
-    {-1.0f, -1.0f,  1.0f},
+    {-1.0f, 1.0f, -1.0f},  {-1.0f, 1.0f, 1.0f},   {-1.0f, -1.0f, 1.0f},
 
-    { 1.0f, -1.0f, -1.0f},
-    { 1.0f, -1.0f,  1.0f},
-    { 1.0f,  1.0f,  1.0f},
+    {1.0f, -1.0f, -1.0f},  {1.0f, -1.0f, 1.0f},   {1.0f, 1.0f, 1.0f},
 
-    { 1.0f,  1.0f,  1.0f},
-    { 1.0f,  1.0f, -1.0f},
-    { 1.0f, -1.0f, -1.0f},
+    {1.0f, 1.0f, 1.0f},    {1.0f, 1.0f, -1.0f},   {1.0f, -1.0f, -1.0f},
 
-    {-1.0f, -1.0f, -1.0f},
-    {-1.0f,  1.0f, -1.0f},
-    { 1.0f,  1.0f, -1.0f},
+    {-1.0f, -1.0f, -1.0f}, {-1.0f, 1.0f, -1.0f},  {1.0f, 1.0f, -1.0f},
 
-    { 1.0f,  1.0f, -1.0f},
-    { 1.0f, -1.0f, -1.0f},
-    {-1.0f, -1.0f, -1.0f},
+    {1.0f, 1.0f, -1.0f},   {1.0f, -1.0f, -1.0f},  {-1.0f, -1.0f, -1.0f},
 
-    {-1.0f,  1.0f, -1.0f},
-    { 1.0f,  1.0f, -1.0f},
-    { 1.0f,  1.0f,  1.0f},
+    {-1.0f, 1.0f, -1.0f},  {1.0f, 1.0f, -1.0f},   {1.0f, 1.0f, 1.0f},
 
-    { 1.0f,  1.0f,  1.0f},
-    {-1.0f,  1.0f,  1.0f},
-    {-1.0f,  1.0f, -1.0f},
+    {1.0f, 1.0f, 1.0f},    {-1.0f, 1.0f, 1.0f},   {-1.0f, 1.0f, -1.0f},
 
-    {-1.0f, -1.0f, -1.0f},
-    {-1.0f, -1.0f,  1.0f},
-    { 1.0f, -1.0f, -1.0f},
+    {-1.0f, -1.0f, -1.0f}, {-1.0f, -1.0f, 1.0f},  {1.0f, -1.0f, -1.0f},
 
-    { 1.0f, -1.0f, -1.0f},
-    {-1.0f, -1.0f,  1.0f},
-    { 1.0f, -1.0f,  1.0f}
-};
+    {1.0f, -1.0f, -1.0f},  {-1.0f, -1.0f, 1.0f},  {1.0f, -1.0f, 1.0f}};
 
 enum owl_code
 owl_submit_draw_skybox_command(struct owl_renderer *r,
@@ -364,10 +318,10 @@ owl_submit_draw_skybox_command(struct owl_renderer *r,
 }
 
 OWL_INTERNAL
-enum owl_code owl_scene_submit_node_(struct owl_renderer *r,
-                                     struct owl_camera *cam,
-                                     struct owl_draw_scene_command const *command,
-                                     owl_scene_node node) {
+enum owl_code
+owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
+                       struct owl_draw_scene_command const *command,
+                       owl_scene_node node) {
 
   int i;
   struct owl_scene_push_constant push_constant;
@@ -388,7 +342,8 @@ enum owl_code owl_scene_submit_node_(struct owl_renderer *r,
   OWL_M4_COPY(data->matrix, push_constant.model);
 
   while (OWL_SCENE_NODE_NO_PARENT != current) {
-    struct owl_scene_node_data const *current_data = &command->scene->nodes[current];
+    struct owl_scene_node_data const *current_data =
+        &command->scene->nodes[current];
     owl_m4_mul_rotation(push_constant.model, current_data->matrix,
                         push_constant.model);
     current = current_data->parent;
@@ -448,8 +403,7 @@ end:
 }
 
 enum owl_code
-owl_submit_draw_scene_command(struct owl_renderer *r,
-                              struct owl_camera *cam,
+owl_submit_draw_scene_command(struct owl_renderer *r, struct owl_camera *cam,
                               struct owl_draw_scene_command const *command) {
   int i;
   VkDeviceSize offset = 0;
