@@ -53,8 +53,7 @@ static void init_cloth_(struct cloth *cloth) {
 
       OWL_V3_SET(w, h, 0.0F, cloth->vertices_[k].position);
       OWL_V3_SET(1.0F, 1.0F, 1.0F, cloth->vertices_[k].color);
-      OWL_V2_SET((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F,
-                 cloth->vertices_[k].uv);
+      OWL_V2_SET((w + 1.0F) / 2.0F, (h + 1.0F) / 2.0F, cloth->vertices_[k].uv);
     }
   }
 
@@ -222,13 +221,13 @@ char const *fps_string(double time) {
   return buffer;
 }
 
-#define TEST(fn)                                                             \
-  do {                                                                       \
-    enum owl_code code = (fn);                                               \
-    if (OWL_SUCCESS != (code)) {                                             \
-      printf("something went wrong in call: %s, code %i\n", (#fn), code);    \
-      return 0;                                                              \
-    }                                                                        \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    enum owl_code code = (fn);                                                 \
+    if (OWL_SUCCESS != (code)) {                                               \
+      printf("something went wrong in call: %s, code %i\n", (#fn), code);      \
+      return 0;                                                                \
+    }                                                                          \
   } while (0)
 
 static struct owl_window_init_info window_info;

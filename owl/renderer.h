@@ -8,12 +8,11 @@
 struct owl_window;
 struct owl_renderer;
 
-#define OWL_RENDERER_MAX_HEAP_MEMORY_BLOCKS 32
 #define OWL_MEMORY_TYPE_NONE (owl_u32) - 1
-#define OWL_RENDERER_MAX_SWAPCHAIN_IMAGES 8
-#define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT 2
-#define OWL_RENDERER_MAX_GARBAGE_ITEMS 8
-#define OWL_RENDERER_MAX_DEVICE_OPTIONS 8
+#define OWL_RENDERER_MAX_SWAPCHAIN_IMAGES_COUNT 8
+#define OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT 2
+#define OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT 8
+#define OWL_RENDERER_MAX_DEVICE_OPTIONS_COUNT 8
 #define OWL_RENDERER_CLEAR_VALUES_COUNT 2
 #define OWL_PIPELINE_TYPE_NONE OWL_PIPELINE_TYPE_COUNT
 
@@ -54,12 +53,6 @@ struct owl_dynamic_heap_reference {
   VkBuffer buffer;
   VkDescriptorSet pvm_set;
   VkDescriptorSet scene_set;
-};
-
-struct owl_static_heap_reference {
-  int slot;
-  VkDeviceSize offset;
-  VkDeviceMemory memory;
 };
 
 struct owl_renderer {
@@ -103,7 +96,7 @@ struct owl_renderer {
   VkQueue present_queue;
 
   owl_u32 device_options_count;
-  VkPhysicalDevice device_options[OWL_RENDERER_MAX_DEVICE_OPTIONS];
+  VkPhysicalDevice device_options[OWL_RENDERER_MAX_DEVICE_OPTIONS_COUNT];
 
   VkPhysicalDeviceFeatures device_features;
   VkPhysicalDeviceProperties device_properties;
@@ -123,8 +116,8 @@ struct owl_renderer {
   VkImage active_swapchain_image;
 
   owl_u32 swapchain_images_count;
-  VkImage swapchain_images[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES];
-  VkImageView swapchain_views[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES];
+  VkImage swapchain_images[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES_COUNT];
+  VkImageView swapchain_views[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -160,7 +153,7 @@ struct owl_renderer {
   /* main framebuffers */
   /* ====================================================================== */
   VkFramebuffer active_swapchain_framebuffer;
-  VkFramebuffer swapchain_framebuffers[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES];
+  VkFramebuffer swapchain_framebuffers[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -207,8 +200,8 @@ struct owl_renderer {
   VkCommandBuffer active_frame_command_buffer;
   VkCommandPool active_frame_command_pool;
 
-  VkCommandPool frame_command_pools[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
-  VkCommandBuffer frame_command_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkCommandPool frame_command_pools[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkCommandBuffer frame_command_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -218,29 +211,29 @@ struct owl_renderer {
   VkSemaphore active_render_done_semaphore;
   VkSemaphore active_image_available_semaphore;
 
-  VkFence in_flight_fences[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
-  VkSemaphore render_done_semaphores[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
-  VkSemaphore image_available_semaphores[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkFence in_flight_fences[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkSemaphore render_done_semaphores[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkSemaphore image_available_semaphores[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
-  /* double buffering garbage */
+  /* dynamic heap garbage */
   /* ====================================================================== */
   int garbage_memories_count;
-  VkDeviceMemory garbage_memories[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+  VkDeviceMemory garbage_memories[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
   int garbage_buffers_count;
-  VkBuffer garbage_buffers[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+  VkBuffer garbage_buffers[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
   int garbage_pvm_sets_count;
-  VkDescriptorSet garbage_pvm_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+  VkDescriptorSet garbage_pvm_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
   int garbage_scene_sets_count;
-  VkDescriptorSet garbage_scene_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS];
+  VkDescriptorSet garbage_scene_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
-  /* double buffering resources */
+  /* dynamic heap resources */
   /* ====================================================================== */
   VkDeviceMemory dynamic_heap_memory;
 
@@ -254,10 +247,10 @@ struct owl_renderer {
   VkDescriptorSet active_dynamic_heap_pvm_set;
   VkDescriptorSet active_dynamic_heap_scene_set;
 
-  owl_byte *dynamic_heap_datas[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
-  VkBuffer dynamic_heap_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
-  VkDescriptorSet dynamic_heap_pvm_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
-  VkDescriptorSet dynamic_heap_scene_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  owl_byte *dynamic_heap_datas[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkBuffer dynamic_heap_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkDescriptorSet dynamic_heap_pvm_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkDescriptorSet dynamic_heap_scene_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   /* ====================================================================== */
 };
 

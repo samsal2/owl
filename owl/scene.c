@@ -335,9 +335,9 @@ end:
 }
 
 OWL_INTERNAL void
-owl_scene_stage_buffers_(struct owl_renderer *r,
-                         struct owl_scene_load_info const *info,
-                         struct owl_scene *scene) {
+owl_scene_load_buffers_(struct owl_renderer *r,
+                        struct owl_scene_load_info const *info,
+                        struct owl_scene *scene) {
 
   OWL_ASSERT(info->vertices_count == info->vertices_capacity);
   OWL_ASSERT(info->indices_count == info->indices_capacity);
@@ -460,8 +460,6 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
 
   OWL_MEMSET(&options, 0, sizeof(options));
-  OWL_MEMSET(scene, 0, sizeof(*scene));
-  OWL_MEMSET(&load, 0, sizeof(load));
 
   if (cgltf_result_success != cgltf_parse_file(&options, path, &data)) {
     code = OWL_ERROR_UNKNOWN;
@@ -488,7 +486,7 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
     owl_scene_load_node_(r, data, &data->nodes[i], OWL_SCENE_NODE_NO_PARENT,
                          &load, scene);
 
-  owl_scene_stage_buffers_(r, &load, scene);
+  owl_scene_load_buffers_(r, &load, scene);
 
 end_err_free_data:
   cgltf_free(data);
