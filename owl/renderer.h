@@ -8,14 +8,14 @@
 struct owl_window;
 struct owl_renderer;
 
+#define OWL_RENDERER_MAX_HEAP_MEMORY_BLOCKS 32
 #define OWL_MEMORY_TYPE_NONE (owl_u32) - 1
 #define OWL_RENDERER_MAX_SWAPCHAIN_IMAGES 8
-#define OWL_RENDERER_DYNAMIC_BUFFER_COUNT 2
+#define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT 2
 #define OWL_RENDERER_MAX_GARBAGE_ITEMS 8
 #define OWL_RENDERER_MAX_DEVICE_OPTIONS 8
 #define OWL_RENDERER_CLEAR_VALUES_COUNT 2
 #define OWL_PIPELINE_TYPE_NONE OWL_PIPELINE_TYPE_COUNT
-#define OWL_RENDERER_MAX_TEXTURE_COUNT 64
 
 enum owl_memory_visibility {
   OWL_MEMORY_VISIBILITY_CPU_ONLY,
@@ -48,12 +48,18 @@ struct owl_renderer_init_info {
   owl_vk_surface_init_callback create_surface;
 };
 
-struct owl_dynamic_buffer_reference {
+struct owl_dynamic_heap_reference {
   owl_u32 offset32;
   VkDeviceSize offset;
   VkBuffer buffer;
   VkDescriptorSet pvm_set;
   VkDescriptorSet scene_set;
+};
+
+struct owl_static_heap_reference {
+  int slot;
+  VkDeviceSize offset;
+  VkDeviceMemory memory;
 };
 
 struct owl_renderer {
@@ -201,8 +207,8 @@ struct owl_renderer {
   VkCommandBuffer active_frame_command_buffer;
   VkCommandPool active_frame_command_pool;
 
-  VkCommandPool frame_command_pools[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  VkCommandBuffer frame_command_buffers[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
+  VkCommandPool frame_command_pools[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkCommandBuffer frame_command_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -212,9 +218,9 @@ struct owl_renderer {
   VkSemaphore active_render_done_semaphore;
   VkSemaphore active_image_available_semaphore;
 
-  VkFence in_flight_fences[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  VkSemaphore render_done_semaphores[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  VkSemaphore image_available_semaphores[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
+  VkFence in_flight_fences[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkSemaphore render_done_semaphores[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkSemaphore image_available_semaphores[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -236,22 +242,22 @@ struct owl_renderer {
   /* ====================================================================== */
   /* double buffering resources */
   /* ====================================================================== */
-  VkDeviceMemory dynamic_memory;
+  VkDeviceMemory dynamic_heap_memory;
 
-  VkDeviceSize dynamic_offset;
-  VkDeviceSize dynamic_buffer_size;
-  VkDeviceSize dynamic_buffer_alignment;
-  VkDeviceSize dynamic_buffer_aligned_size;
+  VkDeviceSize dynamic_heap_offset;
+  VkDeviceSize dynamic_heap_buffer_size;
+  VkDeviceSize dynamic_heap_buffer_alignment;
+  VkDeviceSize dynamic_heap_buffer_aligned_size;
 
-  owl_byte *active_dynamic_data;
-  VkBuffer active_dynamic_buffer;
-  VkDescriptorSet active_dynamic_pvm_set;
-  VkDescriptorSet active_dynamic_scene_set;
+  owl_byte *active_dynamic_heap_data;
+  VkBuffer active_dynamic_heap_buffer;
+  VkDescriptorSet active_dynamic_heap_pvm_set;
+  VkDescriptorSet active_dynamic_heap_scene_set;
 
-  owl_byte *dynamic_data[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  VkBuffer dynamic_buffers[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  VkDescriptorSet dynamic_pvm_sets[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
-  VkDescriptorSet dynamic_scene_sets[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
+  owl_byte *dynamic_heap_datas[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkBuffer dynamic_heap_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkDescriptorSet dynamic_heap_pvm_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkDescriptorSet dynamic_heap_scene_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
   /* ====================================================================== */
 };
 
@@ -264,17 +270,16 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
 
 void owl_renderer_deinit(struct owl_renderer *r);
 
-int owl_renderer_is_dynamic_offset_clear(struct owl_renderer const *r);
+int owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
 
-void owl_renderer_clear_dynamic_offset(struct owl_renderer *r);
+void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
 
 owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
                                       VkMemoryRequirements const *requirements,
                                       enum owl_memory_visibility vis);
 
-void *
-owl_renderer_dynamic_buffer_alloc(struct owl_renderer *r, VkDeviceSize size,
-                                  struct owl_dynamic_buffer_reference *ref);
+void *owl_renderer_dynamic_alloc(struct owl_renderer *r, VkDeviceSize size,
+                                 struct owl_dynamic_heap_reference *ref);
 
 enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
                                          enum owl_pipeline_type type);
@@ -287,7 +292,7 @@ enum owl_code
 owl_renderer_free_single_use_command_buffer(struct owl_renderer const *r,
                                             VkCommandBuffer command);
 
-void owl_renderer_clear_dynamic_offset(struct owl_renderer *r);
+void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
 
 enum owl_code owl_renderer_begin_frame(struct owl_renderer *r);
 

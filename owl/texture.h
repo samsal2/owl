@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.h>
 
 struct owl_renderer;
-struct owl_dynamic_buffer_reference;
+struct owl_dynamic_heap_reference;
 
 struct owl_texture {
   owl_u32 width;
@@ -63,7 +63,7 @@ void owl_texture_free_data_from_file(owl_byte *data);
 
 enum owl_code owl_texture_init_from_reference(
     struct owl_renderer *r, struct owl_texture_init_info const *info,
-    struct owl_dynamic_buffer_reference const *ref, struct owl_texture *tex);
+    struct owl_dynamic_heap_reference const *ref, struct owl_texture *tex);
 
 enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
                                          struct owl_texture_init_info *info,
@@ -75,8 +75,7 @@ owl_texture_init_from_data(struct owl_renderer *r,
                            struct owl_texture_init_info const *info,
                            owl_byte const *data, struct owl_texture *tex);
 
-void owl_texture_deinit(struct owl_renderer const *r,
-                        struct owl_texture *tex);
+void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *tex);
 
 struct owl_vk_image_transition_info {
   owl_u32 mips;
@@ -103,7 +102,7 @@ owl_vk_image_generate_mips(VkCommandBuffer command,
 
 VkFormat owl_as_vk_format_(enum owl_pixel_format format);
 
-VkDeviceSize owl_texture_init_info_required_size_(
-    struct owl_texture_init_info const *info);
+VkDeviceSize
+owl_texture_init_info_required_size_(struct owl_texture_init_info const *info);
 
 #endif
