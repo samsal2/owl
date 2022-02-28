@@ -69,8 +69,8 @@ OWL_INTERNAL void owl_cursor_position_callback_(GLFWwindow *glfw, double x,
       2.0F * ((float)y / (float)w->window_height) - 1.0F;
 }
 
-OWL_INTERNAL void owl_mouse_callback_(GLFWwindow *glfw, int button, int action,
-                                      int modifiers) {
+OWL_INTERNAL void owl_mouse_callback_(GLFWwindow *glfw, int button,
+                                      int action, int modifiers) {
   struct owl_window *w = glfwGetWindowUserPointer(glfw);
   enum owl_mouse_button b = owl_as_mouse_button_(button);
 

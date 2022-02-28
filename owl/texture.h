@@ -75,7 +75,8 @@ owl_texture_init_from_data(struct owl_renderer *r,
                            struct owl_texture_init_info const *info,
                            owl_byte const *data, struct owl_texture *tex);
 
-void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *tex);
+void owl_texture_deinit(struct owl_renderer const *r,
+                        struct owl_texture *tex);
 
 struct owl_vk_image_transition_info {
   owl_u32 mips;
@@ -102,7 +103,7 @@ owl_vk_image_generate_mips(VkCommandBuffer command,
 
 VkFormat owl_as_vk_format_(enum owl_pixel_format format);
 
-VkDeviceSize
-owl_texture_init_info_required_size_(struct owl_texture_init_info const *info);
+VkDeviceSize owl_texture_init_info_required_size_(
+    struct owl_texture_init_info const *info);
 
 #endif

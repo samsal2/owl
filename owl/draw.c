@@ -86,8 +86,8 @@ owl_submit_draw_basic_command(struct owl_renderer *r,
   if (OWL_SUCCESS != code)
     goto end;
 
-  code =
-      owl_renderer_submit_indices_(r, command->indices_count, command->indices);
+  code = owl_renderer_submit_indices_(r, command->indices_count,
+                                      command->indices);
 
   if (OWL_SUCCESS != code)
     goto end;
@@ -98,8 +98,8 @@ owl_submit_draw_basic_command(struct owl_renderer *r,
   if (OWL_SUCCESS != code)
     goto end;
 
-  vkCmdDrawIndexed(r->active_frame_command_buffer, command->indices_count, 1, 0,
-                   0, 0);
+  vkCmdDrawIndexed(r->active_frame_command_buffer, command->indices_count, 1,
+                   0, 0, 0);
 
 end:
   return code;
@@ -279,17 +279,17 @@ OWL_GLOBAL owl_v3 const g_skybox_vertices[] = {
 
     {1.0f, -1.0f, -1.0f},  {-1.0f, -1.0f, 1.0f},  {1.0f, -1.0f, 1.0f}};
 
-enum owl_code
-owl_submit_draw_skybox_command(struct owl_renderer *r,
-                               struct owl_camera const *cam,
-                               struct owl_draw_skybox_command const *command) {
+enum owl_code owl_submit_draw_skybox_command(
+    struct owl_renderer *r, struct owl_camera const *cam,
+    struct owl_draw_skybox_command const *command) {
   owl_byte *data;
   VkDescriptorSet sets[2];
   struct owl_draw_uniform uniform;
   struct owl_dynamic_buffer_reference ref;
   enum owl_code code = OWL_SUCCESS;
 
-  data = owl_renderer_dynamic_buffer_alloc(r, sizeof(g_skybox_vertices), &ref);
+  data =
+      owl_renderer_dynamic_buffer_alloc(r, sizeof(g_skybox_vertices), &ref);
   OWL_MEMCPY(data, g_skybox_vertices, sizeof(g_skybox_vertices));
 
   vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &ref.buffer,
@@ -352,9 +352,9 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
   // OWL_V3_SET(0.0F, 0.0F, -1.0F, position);
   // owl_m4_translate(position, push_constant.model);
 
-  vkCmdPushConstants(r->active_frame_command_buffer, r->active_pipeline_layout,
-                     VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),
-                     &push_constant);
+  vkCmdPushConstants(r->active_frame_command_buffer,
+                     r->active_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                     sizeof(push_constant), &push_constant);
 
   for (i = 0; i < data->mesh.primitives_count; ++i) {
     owl_byte *upload;
@@ -391,8 +391,8 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
 
     vkCmdBindDescriptorSets(r->active_frame_command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
-                            sets, 1, &ref.offset32);
+                            r->active_pipeline_layout, 0,
+                            OWL_ARRAY_SIZE(sets), sets, 1, &ref.offset32);
 
     vkCmdDrawIndexed(r->active_frame_command_buffer, primitive->count, 1,
                      primitive->first, 0, 0);
@@ -413,7 +413,8 @@ owl_submit_draw_scene_command(struct owl_renderer *r, struct owl_camera *cam,
                          &command->scene->vertices_buffer, &offset);
 
   vkCmdBindIndexBuffer(r->active_frame_command_buffer,
-                       command->scene->indices_buffer, 0, VK_INDEX_TYPE_UINT32);
+                       command->scene->indices_buffer, 0,
+                       VK_INDEX_TYPE_UINT32);
 
   for (i = 0; i < command->scene->roots_count; ++i) {
     code = owl_scene_submit_node_(r, cam, command, command->scene->roots[i]);

@@ -25,23 +25,19 @@ void owl_m4v4_mul(owl_m4 const m, owl_v4 const v, owl_v4 out) {
   owl_v4 tmp;
   OWL_V4_COPY(v, tmp);
 
-  out[0] =
-      m[0][0] * tmp[0] + m[1][0] * tmp[1] + m[2][0] * tmp[2] + m[3][0] * tmp[3];
-  out[1] =
-      m[0][1] * tmp[0] + m[1][1] * tmp[1] + m[2][1] * tmp[2] + m[3][1] * tmp[3];
-  out[2] =
-      m[0][2] * tmp[0] + m[1][2] * tmp[1] + m[2][2] * tmp[2] + m[3][2] * tmp[3];
-  out[3] =
-      m[0][3] * tmp[0] + m[1][3] * tmp[1] + m[2][3] * tmp[2] + m[3][3] * tmp[3];
+  out[0] = m[0][0] * tmp[0] + m[1][0] * tmp[1] + m[2][0] * tmp[2] +
+           m[3][0] * tmp[3];
+  out[1] = m[0][1] * tmp[0] + m[1][1] * tmp[1] + m[2][1] * tmp[2] +
+           m[3][1] * tmp[3];
+  out[2] = m[0][2] * tmp[0] + m[1][2] * tmp[1] + m[2][2] * tmp[2] +
+           m[3][2] * tmp[3];
+  out[3] = m[0][3] * tmp[0] + m[1][3] * tmp[1] + m[2][3] * tmp[2] +
+           m[3][3] * tmp[3];
 }
 
-float owl_v2_mag(owl_v2 const v) {
-  return OWL_SQRTF(OWL_V2_DOT(v, v));
-}
+float owl_v2_mag(owl_v2 const v) { return OWL_SQRTF(OWL_V2_DOT(v, v)); }
 
-float owl_v3_mag(owl_v3 const v) {
-  return OWL_SQRTF(OWL_V3_DOT(v, v));
-}
+float owl_v3_mag(owl_v3 const v) { return OWL_SQRTF(OWL_V3_DOT(v, v)); }
 
 void owl_v3_normalize(owl_v3 const v, owl_v3 out) {
   float const mag = 1 / owl_v3_mag(v);
@@ -99,8 +95,8 @@ void owl_m4_translate(owl_v3 const v, owl_m4 in_out) {
   OWL_V4_ADD(v3, in_out[3], in_out[3]);
 }
 
-void owl_m4_ortho(float left, float right, float bottom, float top, float near,
-                  float far, owl_m4 out) {
+void owl_m4_ortho(float left, float right, float bottom, float top,
+                  float near, float far, owl_m4 out) {
   float const right_left = 2.0F / (right - left);
   float const tobottom = 2.0F / (top - bottom);
   float const far_near = 1.0F / (far - near);
@@ -209,7 +205,8 @@ void owl_v3_direction(float pitch, float yaw, owl_v3 const up, owl_v3 out) {
   OWL_V3_COPY(direction, out); /* set out */
 }
 
-void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out) {
+void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis,
+                   owl_m4 out) {
   owl_m4 rotation;
   owl_m4_make_rotate(angle, axis, rotation);
   owl_m4_mul_rotation(m, rotation, out);
@@ -239,10 +236,14 @@ void owl_m4_mul_rotation(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out) {
   out[2][2] = a[0][2] * b[2][0] + a[1][2] * b[2][1] + a[2][2] * b[2][2];
   out[2][3] = a[0][3] * b[2][0] + a[1][3] * b[2][1] + a[2][3] * b[2][2];
 
-  out[3][0] = a[0][0] * c[0] + a[1][0] * c[1] + a[2][0] * c[2] + a[3][0] * c[3];
-  out[3][1] = a[0][1] * c[0] + a[1][1] * c[1] + a[2][1] * c[2] + a[3][1] * c[3];
-  out[3][2] = a[0][2] * c[0] + a[1][2] * c[1] + a[2][2] * c[2] + a[3][2] * c[3];
-  out[3][3] = a[0][3] * c[0] + a[1][3] * c[1] + a[2][3] * c[2] + a[3][3] * c[3];
+  out[3][0] =
+      a[0][0] * c[0] + a[1][0] * c[1] + a[2][0] * c[2] + a[3][0] * c[3];
+  out[3][1] =
+      a[0][1] * c[0] + a[1][1] * c[1] + a[2][1] * c[2] + a[3][1] * c[3];
+  out[3][2] =
+      a[0][2] * c[0] + a[1][2] * c[1] + a[2][2] * c[2] + a[3][2] * c[3];
+  out[3][3] =
+      a[0][3] * c[0] + a[1][3] * c[1] + a[2][3] * c[2] + a[3][3] * c[3];
 }
 
 float owl_v2_distance(owl_v2 const from, owl_v2 const to) {

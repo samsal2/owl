@@ -6,17 +6,17 @@
 
 void *owl_debug_malloc_(size_t s, char const *f, int l) {
   void *p = malloc(s);
-  printf(
-      "\033[1;32m[OWL_MALLOC]\033[0m \033[1;31m(f:%s l:%d)\033[0m p:%p s:%lu\n",
-      f, l, p, s);
+  printf("\033[1;32m[OWL_MALLOC]\033[0m \033[1;31m(f:%s l:%d)\033[0m p:%p "
+         "s:%lu\n",
+         f, l, p, s);
   return p;
 }
 
 void *owl_debug_calloc_(size_t c, size_t s, char const *f, int l) {
   void *p = calloc(c, s);
-  printf(
-      "\033[1;32m[OWL_CALLOC]\033[0m \033[1;31m(f:%s l:%d)\033[0m p:%p s:%lu\n",
-      f, l, p, s);
+  printf("\033[1;32m[OWL_CALLOC]\033[0m \033[1;31m(f:%s l:%d)\033[0m p:%p "
+         "s:%lu\n",
+         f, l, p, s);
   return p;
 }
 

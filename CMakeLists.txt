@@ -91,7 +91,8 @@ set(OWL_C_CLANG_DEBUG_COMPILE_FLAGS
 		-g
 		-fsanitize=address
 		-fsanitize=undefined
-		-fsanitize=bounds)
+		-fsanitize=bounds
+)
 
 set(OWL_C_CLANG_RELEASE_COMPILE_FLAGS
 		-O3)
@@ -99,7 +100,8 @@ set(OWL_C_CLANG_RELEASE_COMPILE_FLAGS
 set(OWL_C_CLANG_DEBUG_LINK_FLAGS
 		-fsanitize=address
 		-fsanitize=undefined
-		-fsanitize=bounds)
+		-fsanitize=bounds
+)
 	
 target_compile_features(owl PRIVATE c_std_90)
 

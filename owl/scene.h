@@ -58,7 +58,7 @@ struct owl_scene_node_data {
   owl_v3 translation;
   owl_v3 scale;
   owl_v4 rotation;
-  
+
   int skin;
 
   struct owl_scene_mesh mesh;

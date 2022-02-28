@@ -33,7 +33,8 @@ enum owl_pipeline_type {
 };
 
 typedef enum owl_code (*owl_vk_surface_init_callback)(
-    struct owl_renderer const *r, void const *user_data, VkSurfaceKHR *surface);
+    struct owl_renderer const *r, void const *user_data,
+    VkSurfaceKHR *surface);
 
 struct owl_renderer_init_info {
   char const *name;
@@ -253,6 +254,9 @@ struct owl_renderer {
   VkDescriptorSet dynamic_pvm_sets[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   VkDescriptorSet dynamic_scene_sets[OWL_RENDERER_DYNAMIC_BUFFER_COUNT];
   /* ====================================================================== */
+
+  owl_u32 heap_types;
+  VkDeviceMemory heap_memories;
 };
 
 enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
@@ -268,9 +272,10 @@ int owl_renderer_is_dynamic_offset_clear(struct owl_renderer const *r);
 
 void owl_renderer_clear_dynamic_offset(struct owl_renderer *r);
 
-owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
-                                      VkMemoryRequirements const *requirements,
-                                      enum owl_memory_visibility vis);
+owl_u32
+owl_renderer_find_memory_type(struct owl_renderer const *r,
+                              VkMemoryRequirements const *requirements,
+                              enum owl_memory_visibility vis);
 
 void *
 owl_renderer_dynamic_buffer_alloc(struct owl_renderer *r, VkDeviceSize size,

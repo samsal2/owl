@@ -50,9 +50,9 @@ OWL_INTERNAL enum owl_code owl_scene_load_textures_(struct owl_renderer *r,
   return code;
 }
 
-OWL_INTERNAL enum owl_code owl_scene_load_materials_(struct owl_renderer *r,
-                                                     cgltf_data const *data,
-                                                     struct owl_scene *scene) {
+OWL_INTERNAL enum owl_code
+owl_scene_load_materials_(struct owl_renderer *r, cgltf_data const *data,
+                          struct owl_scene *scene) {
   int i;
   enum owl_code code = OWL_SUCCESS;
 
@@ -142,9 +142,9 @@ owl_scene_find_load_info_capacities_(cgltf_node const *node,
   }
 }
 
-OWL_INTERNAL void owl_scene_setup_load_info_(struct owl_renderer *r,
-                                             cgltf_data const *data,
-                                             struct owl_scene_load_info *load) {
+OWL_INTERNAL void
+owl_scene_setup_load_info_(struct owl_renderer *r, cgltf_data const *data,
+                           struct owl_scene_load_info *load) {
   int i;
   VkDeviceSize size;
 
@@ -322,7 +322,8 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *cgltf,
 
       primitive->first = (owl_u32)load->indices_count;
       primitive->count = (owl_u32)indices_count;
-      primitive->material = (int)(from_primitive->material - cgltf->materials);
+      primitive->material =
+          (int)(from_primitive->material - cgltf->materials);
 
       load->indices_count += accessor->count;
       load->vertices_count += vertices_count;
