@@ -670,6 +670,35 @@ OWL_INTERNAL void owl_renderer_deinit_common_pools_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL enum owl_code
+owl_renderer_select_depth_stencil_format_(struct owl_renderer *r) {
+  VkFormatProperties d24_unorm_s8_uint_format_properties;
+  VkFormatProperties d32_sfloat_s8_uint_format_properties;
+  enum owl_code code = OWL_SUCCESS;
+
+  vkGetPhysicalDeviceFormatProperties(r->physical_device,
+                                      VK_FORMAT_D24_UNORM_S8_UINT,
+                                      &d24_unorm_s8_uint_format_properties);
+
+  vkGetPhysicalDeviceFormatProperties(r->physical_device,
+                                      VK_FORMAT_D32_SFLOAT_S8_UINT,
+                                      &d32_sfloat_s8_uint_format_properties);
+
+  if (d24_unorm_s8_uint_format_properties.optimalTilingFeatures &
+      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+    r->depth_stencil_format = VK_FORMAT_D24_UNORM_S8_UINT;
+  } else if (d32_sfloat_s8_uint_format_properties.optimalTilingFeatures &
+             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+    r->depth_stencil_format = VK_FORMAT_D32_SFLOAT_S8_UINT;
+  } else {
+    code = OWL_ERROR_UNKNOWN;
+    goto end;
+  }
+
+end:
+  return code;
+}
+
+OWL_INTERNAL enum owl_code
 owl_renderer_init_main_render_pass_(struct owl_renderer *r) {
   VkAttachmentReference references[3];
   VkAttachmentDescription attachments[3];
@@ -677,6 +706,9 @@ owl_renderer_init_main_render_pass_(struct owl_renderer *r) {
   VkSubpassDependency dependency;
   VkRenderPassCreateInfo render_pass;
   enum owl_code code = OWL_SUCCESS;
+
+  if (OWL_SUCCESS != (code = owl_renderer_select_depth_stencil_format_(r)))
+    goto end;
 
   references[0].attachment = 0;
   references[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -700,7 +732,7 @@ owl_renderer_init_main_render_pass_(struct owl_renderer *r) {
 
   /* depth */
   attachments[1].flags = 0;
-  attachments[1].format = VK_FORMAT_D32_SFLOAT;
+  attachments[1].format = r->depth_stencil_format;
   attachments[1].samples = r->msaa_sample_count;
   attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -755,6 +787,7 @@ owl_renderer_init_main_render_pass_(struct owl_renderer *r) {
   OWL_VK_CHECK(
       vkCreateRenderPass(r->device, &render_pass, NULL, &r->main_render_pass));
 
+end:
   return code;
 }
 
@@ -812,6 +845,7 @@ owl_renderer_init_attachments_(struct owl_renderer *r) {
 
   {
     VkImageViewCreateInfo view;
+
     view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view.pNext = NULL;
     view.flags = 0;
@@ -833,11 +867,12 @@ owl_renderer_init_attachments_(struct owl_renderer *r) {
 
   {
     VkImageCreateInfo image;
+
     image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     image.pNext = NULL;
     image.flags = 0;
     image.imageType = VK_IMAGE_TYPE_2D;
-    image.format = VK_FORMAT_D32_SFLOAT;
+    image.format = r->depth_stencil_format;
     image.extent.width = r->swapchain_extent.width;
     image.extent.height = r->swapchain_extent.height;
     image.extent.depth = 1;
@@ -845,7 +880,7 @@ owl_renderer_init_attachments_(struct owl_renderer *r) {
     image.arrayLayers = 1;
     image.samples = r->msaa_sample_count;
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
-    image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT; 
     image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image.queueFamilyIndexCount = 0;
     image.pQueueFamilyIndices = NULL;
@@ -876,12 +911,13 @@ owl_renderer_init_attachments_(struct owl_renderer *r) {
 
   {
     VkImageViewCreateInfo view;
+
     view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view.pNext = NULL;
     view.flags = 0;
     view.image = r->depth_stencil_image;
     view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view.format = VK_FORMAT_D32_SFLOAT;
+    view.format = r->depth_stencil_format;
     view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
     view.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     view.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;

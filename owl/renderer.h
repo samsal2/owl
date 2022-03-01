@@ -144,6 +144,7 @@ struct owl_renderer {
   /* ====================================================================== */
   /* depth attachment */
   /* ====================================================================== */
+  VkFormat depth_stencil_format;
   VkImage depth_stencil_image;
   VkImageView depth_stencil_view;
   VkDeviceMemory depth_stencil_memory;
