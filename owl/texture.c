@@ -234,12 +234,12 @@ owl_texture_init_info_required_size_(struct owl_texture_init_info const *info) {
 
 enum owl_code owl_texture_init_from_reference(
     struct owl_renderer *r, struct owl_texture_init_info const *info,
-    struct owl_dynamic_heap_reference const *ref, struct owl_texture *tex) {
+    struct owl_dynamic_heap_reference const *dhr, struct owl_texture *t) {
   enum owl_code code = OWL_SUCCESS;
   owl_u32 mips = owl_calc_mips((owl_u32)info->width, (owl_u32)info->height);
 
-  tex->width = (owl_u32)info->width;
-  tex->height = (owl_u32)info->height;
+  t->width = (owl_u32)info->width;
+  t->height = (owl_u32)info->height;
 
   {
 #define OWL_IMAGE_USAGE                                                        \
@@ -265,7 +265,7 @@ enum owl_code owl_texture_init_from_reference(
     image.pQueueFamilyIndices = NULL;
     image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &tex->image));
+    OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &t->image));
 
 #undef OWL_IMAGE_USAGE
   }
@@ -274,7 +274,7 @@ enum owl_code owl_texture_init_from_reference(
     VkMemoryAllocateInfo memory;
     VkMemoryRequirements requirements;
 
-    vkGetImageMemoryRequirements(r->device, tex->image, &requirements);
+    vkGetImageMemoryRequirements(r->device, t->image, &requirements);
 
     memory.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memory.pNext = NULL;
@@ -282,8 +282,8 @@ enum owl_code owl_texture_init_from_reference(
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
         r, &requirements, OWL_MEMORY_VISIBILITY_GPU_ONLY);
 
-    OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &tex->memory));
-    OWL_VK_CHECK(vkBindImageMemory(r->device, tex->image, tex->memory, 0));
+    OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &t->memory));
+    OWL_VK_CHECK(vkBindImageMemory(r->device, t->image, t->memory, 0));
   }
 
   {
@@ -291,7 +291,7 @@ enum owl_code owl_texture_init_from_reference(
     view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view.pNext = NULL;
     view.flags = 0;
-    view.image = tex->image;
+    view.image = t->image;
     view.viewType = VK_IMAGE_VIEW_TYPE_2D;
     view.format = owl_as_vk_format_(info->format);
     view.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -304,7 +304,7 @@ enum owl_code owl_texture_init_from_reference(
     view.subresourceRange.baseArrayLayer = 0;
     view.subresourceRange.layerCount = 1;
 
-    OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &tex->view));
+    OWL_VK_CHECK(vkCreateImageView(r->device, &view, NULL, &t->view));
   }
 
   {
@@ -316,12 +316,12 @@ enum owl_code owl_texture_init_from_reference(
     set.descriptorSetCount = 1;
     set.pSetLayouts = &r->texture_set_layout;
 
-    OWL_VK_CHECK(vkAllocateDescriptorSets(r->device, &set, &tex->set));
+    OWL_VK_CHECK(vkAllocateDescriptorSets(r->device, &set, &t->set));
   }
 
   {
-    VkCommandBuffer command;
-    owl_renderer_alloc_single_use_command_buffer(r, &command);
+    struct owl_single_use_command_buffer sucb;
+    owl_renderer_init_single_use_command_buffer(r, &sucb);
 
     {
       struct owl_vk_image_transition_info transition;
@@ -330,15 +330,15 @@ enum owl_code owl_texture_init_from_reference(
       transition.layers = 1;
       transition.from = VK_IMAGE_LAYOUT_UNDEFINED;
       transition.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-      transition.image = tex->image;
+      transition.image = t->image;
 
-      owl_vk_image_transition(command, &transition);
+      owl_vk_image_transition(sucb.command_buffer, &transition);
     }
 
     {
       VkBufferImageCopy copy;
 
-      copy.bufferOffset = ref->offset;
+      copy.bufferOffset = dhr->offset;
       copy.bufferRowLength = 0;
       copy.bufferImageHeight = 0;
       copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -352,7 +352,7 @@ enum owl_code owl_texture_init_from_reference(
       copy.imageExtent.height = (owl_u32)info->height;
       copy.imageExtent.depth = 1;
 
-      vkCmdCopyBufferToImage(command, ref->buffer, tex->image,
+      vkCmdCopyBufferToImage(sucb.command_buffer, dhr->buffer, t->image,
                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
     }
 
@@ -362,12 +362,12 @@ enum owl_code owl_texture_init_from_reference(
       mip.width = info->width;
       mip.height = info->height;
       mip.mips = mips;
-      mip.image = tex->image;
+      mip.image = t->image;
 
-      owl_vk_image_generate_mips(command, &mip);
+      owl_vk_image_generate_mips(sucb.command_buffer, &mip);
     }
 
-    owl_renderer_free_single_use_command_buffer(r, command);
+    owl_renderer_init_single_use_command_buffer(r, &sucb);
   }
 
   {
@@ -393,7 +393,7 @@ enum owl_code owl_texture_init_from_reference(
     sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     sampler.unnormalizedCoordinates = VK_FALSE;
 
-    OWL_VK_CHECK(vkCreateSampler(r->device, &sampler, NULL, &tex->sampler));
+    OWL_VK_CHECK(vkCreateSampler(r->device, &sampler, NULL, &t->sampler));
 
 #undef OWL_MAX_ANISOTROPY
   }
@@ -403,17 +403,17 @@ enum owl_code owl_texture_init_from_reference(
     VkDescriptorImageInfo sampler;
     VkWriteDescriptorSet writes[2];
 
-    sampler.sampler = tex->sampler;
+    sampler.sampler = t->sampler;
     sampler.imageView = VK_NULL_HANDLE;
     sampler.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     image.sampler = VK_NULL_HANDLE;
-    image.imageView = tex->view;
+    image.imageView = t->view;
     image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[0].pNext = NULL;
-    writes[0].dstSet = tex->set;
+    writes[0].dstSet = t->set;
     writes[0].dstBinding = 0;
     writes[0].dstArrayElement = 0;
     writes[0].descriptorCount = 1;
@@ -424,7 +424,7 @@ enum owl_code owl_texture_init_from_reference(
 
     writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[1].pNext = NULL;
-    writes[1].dstSet = tex->set;
+    writes[1].dstSet = t->set;
     writes[1].dstBinding = 1;
     writes[1].dstArrayElement = 0;
     writes[1].descriptorCount = 1;
@@ -444,24 +444,24 @@ enum owl_code owl_texture_init_from_reference(
 enum owl_code
 owl_texture_init_from_data(struct owl_renderer *r,
                            struct owl_texture_init_info const *info,
-                           owl_byte const *data, struct owl_texture *tex) {
+                           owl_byte const *data, struct owl_texture *t) {
   owl_byte *stage;
   VkDeviceSize size;
-  struct owl_dynamic_heap_reference ref;
+  struct owl_dynamic_heap_reference dhr;
   enum owl_code code = OWL_SUCCESS;
 
   OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
 
   size = owl_texture_init_info_required_size_(info);
 
-  if (!(stage = owl_renderer_dynamic_alloc(r, size, &ref))) {
+  if (!(stage = owl_renderer_dynamic_alloc(r, size, &dhr))) {
     code = OWL_ERROR_BAD_ALLOC;
     goto end;
   }
 
   OWL_MEMCPY(stage, data, size);
 
-  code = owl_texture_init_from_reference(r, info, &ref, tex);
+  code = owl_texture_init_from_reference(r, info, &dhr, t);
 
 end:
   return code;
@@ -470,7 +470,7 @@ end:
 enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
                                          struct owl_texture_init_info *info,
                                          char const *path,
-                                         struct owl_texture *tex) {
+                                         struct owl_texture *t) {
   owl_byte *data;
   enum owl_code code = OWL_SUCCESS;
 
@@ -481,21 +481,21 @@ enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
     goto end;
   }
 
-  code = owl_texture_init_from_data(r, info, data, tex);
+  code = owl_texture_init_from_data(r, info, data, t);
 
   owl_texture_free_data_from_file(data);
 end:
   return code;
 }
 
-void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *tex) {
+void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *t) {
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
-  vkDestroySampler(r->device, tex->sampler, NULL);
-  vkFreeDescriptorSets(r->device, r->common_set_pool, 1, &tex->set);
-  vkFreeMemory(r->device, tex->memory, NULL);
-  vkDestroyImageView(r->device, tex->view, NULL);
-  vkDestroyImage(r->device, tex->image, NULL);
+  vkDestroySampler(r->device, t->sampler, NULL);
+  vkFreeDescriptorSets(r->device, r->common_set_pool, 1, &t->set);
+  vkFreeMemory(r->device, t->memory, NULL);
+  vkDestroyImageView(r->device, t->view, NULL);
+  vkDestroyImage(r->device, t->image, NULL);
 }
 
 owl_byte *owl_texture_data_from_file(char const *path,

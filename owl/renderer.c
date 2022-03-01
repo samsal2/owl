@@ -2413,17 +2413,17 @@ void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r) {
 }
 
 void *owl_renderer_dynamic_alloc(struct owl_renderer *r, VkDeviceSize size,
-                                 struct owl_dynamic_heap_reference *ref) {
+                                 struct owl_dynamic_heap_reference *dhr) {
   owl_byte *data = NULL;
 
   if (OWL_SUCCESS != owl_renderer_reserve_dynamic_heap_memory_(r, size))
     goto end;
 
-  ref->offset32 = (owl_u32)r->dynamic_heap_offset;
-  ref->offset = r->dynamic_heap_offset;
-  ref->buffer = r->active_dynamic_heap_buffer;
-  ref->pvm_set = r->active_dynamic_heap_pvm_set;
-  ref->scene_set = r->active_dynamic_heap_scene_set;
+  dhr->offset32 = (owl_u32)r->dynamic_heap_offset;
+  dhr->offset = r->dynamic_heap_offset;
+  dhr->buffer = r->active_dynamic_heap_buffer;
+  dhr->pvm_set = r->active_dynamic_heap_pvm_set;
+  dhr->scene_set = r->active_dynamic_heap_scene_set;
 
   data = r->active_dynamic_heap_data + r->dynamic_heap_offset;
 
@@ -2480,9 +2480,8 @@ end:
   return code;
 }
 
-enum owl_code
-owl_renderer_alloc_single_use_command_buffer(struct owl_renderer const *r,
-                                             VkCommandBuffer *out) {
+enum owl_code owl_renderer_init_single_use_command_buffer(
+    struct owl_renderer const *r, struct owl_single_use_command_buffer *sucb) {
   enum owl_code code = OWL_SUCCESS;
 
   {
@@ -2494,7 +2493,8 @@ owl_renderer_alloc_single_use_command_buffer(struct owl_renderer const *r,
     command.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     command.commandBufferCount = 1;
 
-    OWL_VK_CHECK(vkAllocateCommandBuffers(r->device, &command, out));
+    OWL_VK_CHECK(
+        vkAllocateCommandBuffers(r->device, &command, &sucb->command_buffer));
   }
 
   {
@@ -2505,19 +2505,18 @@ owl_renderer_alloc_single_use_command_buffer(struct owl_renderer const *r,
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin.pInheritanceInfo = NULL;
 
-    OWL_VK_CHECK(vkBeginCommandBuffer(*out, &begin));
+    OWL_VK_CHECK(vkBeginCommandBuffer(sucb->command_buffer, &begin));
   }
 
   return code;
 }
 
-enum owl_code
-owl_renderer_free_single_use_command_buffer(struct owl_renderer const *r,
-                                            VkCommandBuffer command) {
+enum owl_code owl_renderer_deinit_single_use_command_buffer(
+    struct owl_renderer const *r, struct owl_single_use_command_buffer *sucb) {
   VkSubmitInfo submit;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_VK_CHECK(vkEndCommandBuffer(command));
+  OWL_VK_CHECK(vkEndCommandBuffer(sucb->command_buffer));
 
   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit.pNext = NULL;
@@ -2525,13 +2524,14 @@ owl_renderer_free_single_use_command_buffer(struct owl_renderer const *r,
   submit.pWaitSemaphores = NULL;
   submit.pWaitDstStageMask = NULL;
   submit.commandBufferCount = 1;
-  submit.pCommandBuffers = &command;
+  submit.pCommandBuffers = &sucb->command_buffer;
   submit.signalSemaphoreCount = 0;
   submit.pSignalSemaphores = NULL;
 
   OWL_VK_CHECK(vkQueueSubmit(r->graphics_queue, 1, &submit, NULL));
   OWL_VK_CHECK(vkQueueWaitIdle(r->graphics_queue));
-  vkFreeCommandBuffers(r->device, r->transient_command_pool, 1, &command);
+  vkFreeCommandBuffers(r->device, r->transient_command_pool, 1,
+                       &sucb->command_buffer);
 
   return code;
 }

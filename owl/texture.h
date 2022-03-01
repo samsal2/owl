@@ -63,19 +63,19 @@ void owl_texture_free_data_from_file(owl_byte *data);
 
 enum owl_code owl_texture_init_from_reference(
     struct owl_renderer *r, struct owl_texture_init_info const *info,
-    struct owl_dynamic_heap_reference const *ref, struct owl_texture *tex);
+    struct owl_dynamic_heap_reference const *dhr, struct owl_texture *t);
 
 enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
                                          struct owl_texture_init_info *info,
                                          char const *path,
-                                         struct owl_texture *tex);
+                                         struct owl_texture *t);
 
 enum owl_code
 owl_texture_init_from_data(struct owl_renderer *r,
                            struct owl_texture_init_info const *info,
-                           owl_byte const *data, struct owl_texture *tex);
+                           owl_byte const *data, struct owl_texture *t);
 
-void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *tex);
+void owl_texture_deinit(struct owl_renderer const *r, struct owl_texture *t);
 
 struct owl_vk_image_transition_info {
   owl_u32 mips;

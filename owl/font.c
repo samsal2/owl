@@ -67,7 +67,7 @@ OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face, int x_offset,
 
 OWL_INTERNAL enum owl_code
 owl_font_init_atlas_(struct owl_renderer *r,
-                     struct owl_dynamic_heap_reference const *ref,
+                     struct owl_dynamic_heap_reference const *dhr,
                      struct owl_font *font) {
   enum owl_code code = OWL_SUCCESS;
   struct owl_texture_init_info info;
@@ -82,7 +82,7 @@ owl_font_init_atlas_(struct owl_renderer *r,
   info.wrap_v = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
   info.wrap_w = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
 
-  code = owl_texture_init_from_reference(r, &info, ref, &font->atlas);
+  code = owl_texture_init_from_reference(r, &info, dhr, &font->atlas);
 
   return code;
 }
@@ -94,7 +94,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
   owl_byte *data;
   FT_Face face;
   VkDeviceSize alloc_size;
-  struct owl_dynamic_heap_reference ref;
+  struct owl_dynamic_heap_reference dhr;
   enum owl_code code = OWL_SUCCESS;
 
   owl_ensure_ft_library_();
@@ -114,7 +114,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
   owl_calc_dims_(face, &font->atlas_width, &font->atlas_height);
 
   alloc_size = (VkDeviceSize)(font->atlas_width * font->atlas_height);
-  data = owl_renderer_dynamic_alloc(r, alloc_size, &ref);
+  data = owl_renderer_dynamic_alloc(r, alloc_size, &dhr);
 
   if (!data) {
     code = OWL_ERROR_BAD_ALLOC;
@@ -146,7 +146,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
     x += (int)face->glyph->bitmap.width;
   }
 
-  code = owl_font_init_atlas_(r, &ref, font);
+  code = owl_font_init_atlas_(r, &dhr, font);
 
   if (OWL_SUCCESS != code)
     goto end_err_done_face;

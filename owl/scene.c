@@ -338,11 +338,13 @@ OWL_INTERNAL void
 owl_scene_load_buffers_(struct owl_renderer *r,
                         struct owl_scene_load_info const *info,
                         struct owl_scene *scene) {
-
   OWL_ASSERT(info->vertices_count == info->vertices_capacity);
   OWL_ASSERT(info->indices_count == info->indices_capacity);
 
   {
+#define OWL_BUFFER_USAGE                                                       \
+  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
     VkBufferCreateInfo buffer;
 
     buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -350,14 +352,15 @@ owl_scene_load_buffers_(struct owl_renderer *r,
     buffer.flags = 0;
     buffer.size =
         (owl_u64)info->vertices_count * sizeof(struct owl_scene_vertex);
-    buffer.usage =
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    buffer.usage = OWL_BUFFER_USAGE;
     buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     buffer.queueFamilyIndexCount = 0;
     buffer.pQueueFamilyIndices = 0;
 
     OWL_VK_CHECK(
         vkCreateBuffer(r->device, &buffer, NULL, &scene->vertices_buffer));
+
+#undef OWL_BUFFER_USAGE
   }
 
   {
@@ -416,8 +419,8 @@ owl_scene_load_buffers_(struct owl_renderer *r,
   }
 
   {
-    VkCommandBuffer command;
-    owl_renderer_alloc_single_use_command_buffer(r, &command);
+    struct owl_single_use_command_buffer sucb;
+    owl_renderer_init_single_use_command_buffer(r, &sucb);
 
     {
       VkBufferCopy copy;
@@ -427,7 +430,7 @@ owl_scene_load_buffers_(struct owl_renderer *r,
       copy.size =
           (owl_u64)info->vertices_count * sizeof(struct owl_scene_vertex);
 
-      vkCmdCopyBuffer(command, info->vertices_reference.buffer,
+      vkCmdCopyBuffer(sucb.command_buffer, info->vertices_reference.buffer,
                       scene->vertices_buffer, 1, &copy);
     }
 
@@ -438,11 +441,11 @@ owl_scene_load_buffers_(struct owl_renderer *r,
       copy.dstOffset = 0;
       copy.size = (owl_u64)info->indices_count * sizeof(owl_u32);
 
-      vkCmdCopyBuffer(command, info->indices_reference.buffer,
+      vkCmdCopyBuffer(sucb.command_buffer, info->indices_reference.buffer,
                       scene->indices_buffer, 1, &copy);
     }
 
-    owl_renderer_free_single_use_command_buffer(r, command);
+    owl_renderer_deinit_single_use_command_buffer(r, &sucb);
   }
 
   owl_renderer_clear_dynamic_heap_offset(r);

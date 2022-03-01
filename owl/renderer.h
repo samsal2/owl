@@ -235,7 +235,7 @@ struct owl_renderer {
   /* ====================================================================== */
   /* dynamic heap resources */
   /* ====================================================================== */
-  VkDeviceMemory dynamic_heap_memory;
+  VkDeviceMemory dynamic_heap_memory; /* memory holding the n dynamic buffers */
 
   VkDeviceSize dynamic_heap_offset;
   VkDeviceSize dynamic_heap_buffer_size;
@@ -272,18 +272,22 @@ owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
                                       enum owl_memory_visibility vis);
 
 void *owl_renderer_dynamic_alloc(struct owl_renderer *r, VkDeviceSize size,
-                                 struct owl_dynamic_heap_reference *ref);
+                                 struct owl_dynamic_heap_reference *dhr);
 
 enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
                                          enum owl_pipeline_type type);
 
-enum owl_code
-owl_renderer_alloc_single_use_command_buffer(struct owl_renderer const *r,
-                                             VkCommandBuffer *command);
+struct owl_single_use_command_buffer {
+  VkCommandBuffer command_buffer;
+};
 
-enum owl_code
-owl_renderer_free_single_use_command_buffer(struct owl_renderer const *r,
-                                            VkCommandBuffer command);
+enum owl_code owl_renderer_init_single_use_command_buffer(
+    struct owl_renderer const *r,
+    struct owl_single_use_command_buffer *command);
+
+enum owl_code owl_renderer_deinit_single_use_command_buffer(
+    struct owl_renderer const *r,
+    struct owl_single_use_command_buffer *command);
 
 void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
 
