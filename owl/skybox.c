@@ -177,27 +177,34 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   owl_u32 i;
   VkDeviceSize size;
   struct owl_single_use_command_buffer sucb;
-  struct owl_vk_image_transition_info transition;
   enum owl_code code = OWL_SUCCESS;
 
   OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
 
   {
     struct owl_texture_init_info tii;
+
     tii.width = (int)sli->width;
     tii.height = (int)sli->height;
     tii.format = sli->format;
+
     size = owl_texture_init_info_required_size_(&tii);
   }
 
-  transition.mips = sli->mips;
-  transition.layers = OWL_SKYBOX_FACE_COUNT;
-  transition.from = VK_IMAGE_LAYOUT_UNDEFINED;
-  transition.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  transition.image = box->image;
-
   owl_renderer_init_single_use_command_buffer(r, &sucb);
-  owl_vk_image_transition(sucb.command_buffer, &transition);
+
+  {
+    struct owl_vk_image_transition_info iti;
+
+    iti.mips = sli->mips;
+    iti.layers = OWL_SKYBOX_FACE_COUNT;
+    iti.from = VK_IMAGE_LAYOUT_UNDEFINED;
+    iti.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    iti.image = box->image;
+    iti.command_buffer = sucb.command_buffer;
+
+    owl_vk_image_transition(&iti);
+  }
 
   {
     struct owl_dynamic_heap_reference dhr;
@@ -265,12 +272,20 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
                                 i, &dhr, box);
   }
 
-  transition.from = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  transition.to = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  {
+    struct owl_vk_image_transition_info iti;
 
-  owl_vk_image_transition(sucb.command_buffer, &transition);
+    iti.mips = sli->mips;
+    iti.layers = OWL_SKYBOX_FACE_COUNT;
+    iti.from = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    iti.to = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    iti.image = box->image;
+    iti.command_buffer = sucb.command_buffer;
+
+    owl_vk_image_transition(&iti);
+  }
+
   owl_renderer_deinit_single_use_command_buffer(r, &sucb);
-
   owl_renderer_clear_dynamic_heap_offset(r);
 
   return code;

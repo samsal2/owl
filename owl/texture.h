@@ -83,22 +83,22 @@ struct owl_vk_image_transition_info {
   VkImageLayout from;
   VkImageLayout to;
   VkImage image;
+  VkCommandBuffer command_buffer;
 };
 
 enum owl_code
-owl_vk_image_transition(VkCommandBuffer command,
-                        struct owl_vk_image_transition_info const *iti);
+owl_vk_image_transition(struct owl_vk_image_transition_info const *iti);
 
 struct owl_vk_image_mip_info {
   owl_i32 width;
   owl_i32 height;
   owl_u32 mips;
   VkImage image;
+  VkCommandBuffer command_buffer;
 };
 
 enum owl_code
-owl_vk_image_generate_mips(VkCommandBuffer command,
-                           struct owl_vk_image_mip_info const *imi);
+owl_vk_image_generate_mips(struct owl_vk_image_mip_info const *imi);
 
 VkFormat owl_as_vk_format_(enum owl_pixel_format format);
 

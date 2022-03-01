@@ -31,8 +31,7 @@ OWL_INTERNAL VkDeviceSize owl_sizeof_format_(enum owl_pixel_format format) {
 }
 
 enum owl_code
-owl_vk_image_transition(VkCommandBuffer command,
-                        struct owl_vk_image_transition_info const *info) {
+owl_vk_image_transition(struct owl_vk_image_transition_info const *iti) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst = VK_PIPELINE_STAGE_NONE_KHR;
@@ -42,32 +41,32 @@ owl_vk_image_transition(VkCommandBuffer command,
   barrier.pNext = NULL;
   /* image_memory_barrier.srcAccessMask = Defined later */
   /* image_memory_barrier.dstAccessMask = Defined later */
-  barrier.oldLayout = info->from;
-  barrier.newLayout = info->to;
+  barrier.oldLayout = iti->from;
+  barrier.newLayout = iti->to;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = info->image;
+  barrier.image = iti->image;
   barrier.subresourceRange.baseMipLevel = 0;
-  barrier.subresourceRange.levelCount = info->mips;
+  barrier.subresourceRange.levelCount = iti->mips;
   barrier.subresourceRange.baseArrayLayer = 0;
-  barrier.subresourceRange.layerCount = info->layers;
+  barrier.subresourceRange.layerCount = iti->layers;
 
-  if (VK_IMAGE_LAYOUT_UNDEFINED == info->from &&
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == info->to) {
+  if (VK_IMAGE_LAYOUT_UNDEFINED == iti->from &&
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == iti->to) {
     barrier.srcAccessMask = VK_ACCESS_NONE_KHR;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
     src = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
-  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == info->from &&
-             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == info->to) {
+  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == iti->from &&
+             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == iti->to) {
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
     src = VK_PIPELINE_STAGE_TRANSFER_BIT;
     dst = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-  } else if (VK_IMAGE_LAYOUT_UNDEFINED == info->from &&
-             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == info->to) {
+  } else if (VK_IMAGE_LAYOUT_UNDEFINED == iti->from &&
+             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == iti->to) {
     barrier.srcAccessMask = VK_ACCESS_NONE_KHR;
     barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
@@ -80,11 +79,11 @@ owl_vk_image_transition(VkCommandBuffer command,
     goto end;
   }
 
-  if (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == info->to) {
+  if (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == iti->to) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == info->to) {
+  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == iti->to) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  } else if (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == info->to) {
+  } else if (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == iti->to) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   } else {
     OWL_ASSERT(0 && "Invalid arguments");
@@ -92,26 +91,26 @@ owl_vk_image_transition(VkCommandBuffer command,
     goto end;
   }
 
-  vkCmdPipelineBarrier(command, src, dst, 0, 0, NULL, 0, NULL, 1, &barrier);
+  vkCmdPipelineBarrier(iti->command_buffer, src, dst, 0, 0, NULL, 0, NULL, 1,
+                       &barrier);
 
 end:
   return code;
 }
 
 enum owl_code
-owl_vk_image_generate_mips(VkCommandBuffer command,
-                           struct owl_vk_image_mip_info const *info) {
+owl_vk_image_generate_mips(struct owl_vk_image_mip_info const *imi) {
   owl_u32 i;
   owl_i32 width;
   owl_i32 height;
   VkImageMemoryBarrier barrier;
   enum owl_code code = OWL_SUCCESS;
 
-  if (1 == info->mips || 0 == info->mips)
+  if (1 == imi->mips || 0 == imi->mips)
     goto end;
 
-  width = info->width;
-  height = info->height;
+  width = imi->width;
+  height = imi->height;
 
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
   barrier.pNext = NULL;
@@ -121,20 +120,20 @@ owl_vk_image_generate_mips(VkCommandBuffer command,
   /* image_memory_barrier.newLayout =  later */
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = info->image;
+  barrier.image = imi->image;
   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount = 1;
   barrier.subresourceRange.levelCount = 1;
 
-  for (i = 0; i < (info->mips - 1); ++i) {
+  for (i = 0; i < (imi->mips - 1); ++i) {
     barrier.subresourceRange.baseMipLevel = i;
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-    vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    vkCmdPipelineBarrier(imi->command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                          VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1,
                          &barrier);
     {
@@ -160,9 +159,10 @@ owl_vk_image_generate_mips(VkCommandBuffer command,
       blit.dstSubresource.baseArrayLayer = 0;
       blit.dstSubresource.layerCount = 1;
 
-      vkCmdBlitImage(command, info->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                     info->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-                     &blit, VK_FILTER_LINEAR);
+      vkCmdBlitImage(imi->command_buffer, imi->image,
+                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imi->image,
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
+                     VK_FILTER_LINEAR);
     }
 
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
@@ -170,18 +170,18 @@ owl_vk_image_generate_mips(VkCommandBuffer command,
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    vkCmdPipelineBarrier(imi->command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0,
                          NULL, 1, &barrier);
   }
 
-  barrier.subresourceRange.baseMipLevel = info->mips - 1;
+  barrier.subresourceRange.baseMipLevel = imi->mips - 1;
   barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
   barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
   barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-  vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_TRANSFER_BIT,
+  vkCmdPipelineBarrier(imi->command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0,
                        NULL, 1, &barrier);
 end:
@@ -331,8 +331,9 @@ enum owl_code owl_texture_init_from_reference(
       iti.from = VK_IMAGE_LAYOUT_UNDEFINED;
       iti.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
       iti.image = t->image;
+      iti.command_buffer = sucb.command_buffer;
 
-      owl_vk_image_transition(sucb.command_buffer, &iti);
+      owl_vk_image_transition(&iti);
     }
 
     {
@@ -363,11 +364,12 @@ enum owl_code owl_texture_init_from_reference(
       imi.height = tii->height;
       imi.mips = mips;
       imi.image = t->image;
+      imi.command_buffer = sucb.command_buffer;
 
-      owl_vk_image_generate_mips(sucb.command_buffer, &imi);
+      owl_vk_image_generate_mips(&imi);
     }
 
-    owl_renderer_init_single_use_command_buffer(r, &sucb);
+    owl_renderer_deinit_single_use_command_buffer(r, &sucb);
   }
 
   {
