@@ -4,6 +4,7 @@
 #include "renderer.h"
 #include "texture.h"
 
+#define OWL_MAX_ANISOTROPY 16
 #define OWL_SKYBOX_FACE_COUNT 6
 #define OWL_SKYBOX_NO_DIM (owl_u32) - 1
 
@@ -303,10 +304,6 @@ enum owl_code owl_skybox_init(struct owl_renderer *r,
     goto end;
 
   {
-#define OWL_IMAGE_USAGE                                                        \
-  VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |          \
-      VK_IMAGE_USAGE_SAMPLED_BIT;
-
     VkImageCreateInfo image;
 
     image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -321,15 +318,14 @@ enum owl_code owl_skybox_init(struct owl_renderer *r,
     image.arrayLayers = OWL_SKYBOX_FACE_COUNT;
     image.samples = VK_SAMPLE_COUNT_1_BIT;
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
-    image.usage = OWL_IMAGE_USAGE;
+    image.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                  VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image.queueFamilyIndexCount = 0;
     image.pQueueFamilyIndices = NULL;
     image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &box->image));
-
-#undef OWL_IMAGE_USAGE
   }
 
   {
@@ -351,8 +347,6 @@ enum owl_code owl_skybox_init(struct owl_renderer *r,
   owl_skybox_copy_loading_info_to_image_(r, &sli, box);
 
   {
-#define OWL_MAX_ANISOTROPY 16
-
     VkSamplerCreateInfo sampler;
     sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     sampler.pNext = NULL;
@@ -374,8 +368,6 @@ enum owl_code owl_skybox_init(struct owl_renderer *r,
     sampler.unnormalizedCoordinates = VK_FALSE;
 
     OWL_VK_CHECK(vkCreateSampler(r->device, &sampler, NULL, &box->sampler));
-
-#undef OWL_MAX_ANISOTROPY
   }
 
   {

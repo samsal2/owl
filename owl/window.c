@@ -195,6 +195,7 @@ void owl_window_deinit(struct owl_window *w) {
 }
 
 #ifdef OWL_ENABLE_VALIDATION
+
 #define OWL_MAX_EXTENSIONS 64
 
 OWL_INTERNAL char const *const *
@@ -213,7 +214,6 @@ owl_get_debug_instance_extensions_(owl_u32 *count) {
   return names;
 }
 
-#undef OWL_MAX_EXTENSIONS
 #endif /* OWL_ENABLE_VALIDATION */
 
 enum owl_code

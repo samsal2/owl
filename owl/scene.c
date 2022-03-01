@@ -342,9 +342,6 @@ owl_scene_load_buffers_(struct owl_renderer *r,
   OWL_ASSERT(info->indices_count == info->indices_capacity);
 
   {
-#define OWL_BUFFER_USAGE                                                       \
-  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
     VkBufferCreateInfo buffer;
 
     buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -352,15 +349,14 @@ owl_scene_load_buffers_(struct owl_renderer *r,
     buffer.flags = 0;
     buffer.size =
         (owl_u64)info->vertices_count * sizeof(struct owl_scene_vertex);
-    buffer.usage = OWL_BUFFER_USAGE;
+    buffer.usage =
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     buffer.queueFamilyIndexCount = 0;
     buffer.pQueueFamilyIndices = 0;
 
     OWL_VK_CHECK(
         vkCreateBuffer(r->device, &buffer, NULL, &scene->vertices_buffer));
-
-#undef OWL_BUFFER_USAGE
   }
 
   {

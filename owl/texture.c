@@ -6,6 +6,8 @@
 #include <math.h>
 #include <stb/stb_image.h>
 
+#define OWL_MAX_ANISOTROPY 16
+
 owl_u32 owl_calc_mips(owl_u32 width, owl_u32 height) {
   return (owl_u32)(floor(log2(OWL_MAX(width, height))) + 1);
 }
@@ -242,10 +244,6 @@ enum owl_code owl_texture_init_from_reference(
   t->height = (owl_u32)tii->height;
 
   {
-#define OWL_IMAGE_USAGE                                                        \
-  VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |          \
-      VK_IMAGE_USAGE_SAMPLED_BIT;
-
     VkImageCreateInfo image;
     image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     image.pNext = NULL;
@@ -259,15 +257,14 @@ enum owl_code owl_texture_init_from_reference(
     image.arrayLayers = 1;
     image.samples = VK_SAMPLE_COUNT_1_BIT;
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
-    image.usage = OWL_IMAGE_USAGE;
+    image.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                  VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image.queueFamilyIndexCount = 0;
     image.pQueueFamilyIndices = NULL;
     image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     OWL_VK_CHECK(vkCreateImage(r->device, &image, NULL, &t->image));
-
-#undef OWL_IMAGE_USAGE
   }
 
   {
@@ -373,8 +370,6 @@ enum owl_code owl_texture_init_from_reference(
   }
 
   {
-#define OWL_MAX_ANISOTROPY 16
-
     VkSamplerCreateInfo sampler;
 
     sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -397,8 +392,6 @@ enum owl_code owl_texture_init_from_reference(
     sampler.unnormalizedCoordinates = VK_FALSE;
 
     OWL_VK_CHECK(vkCreateSampler(r->device, &sampler, NULL, &t->sampler));
-
-#undef OWL_MAX_ANISOTROPY
   }
 
   {
