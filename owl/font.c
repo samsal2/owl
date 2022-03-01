@@ -70,19 +70,19 @@ owl_font_init_atlas_(struct owl_renderer *r,
                      struct owl_dynamic_heap_reference const *dhr,
                      struct owl_font *font) {
   enum owl_code code = OWL_SUCCESS;
-  struct owl_texture_init_info info;
+  struct owl_texture_init_info tii;
 
-  info.width = font->atlas_width;
-  info.height = font->atlas_height;
-  info.format = OWL_PIXEL_FORMAT_R8_UNORM;
-  info.mip_mode = OWL_SAMPLER_MIP_MODE_NEAREST;
-  info.min_filter = OWL_SAMPLER_FILTER_NEAREST;
-  info.mag_filter = OWL_SAMPLER_FILTER_NEAREST;
-  info.wrap_u = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  info.wrap_v = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  info.wrap_w = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  tii.width = font->atlas_width;
+  tii.height = font->atlas_height;
+  tii.format = OWL_PIXEL_FORMAT_R8_UNORM;
+  tii.mip_mode = OWL_SAMPLER_MIP_MODE_NEAREST;
+  tii.min_filter = OWL_SAMPLER_FILTER_NEAREST;
+  tii.mag_filter = OWL_SAMPLER_FILTER_NEAREST;
+  tii.wrap_u = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  tii.wrap_v = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  tii.wrap_w = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
 
-  code = owl_texture_init_from_reference(r, &info, dhr, &font->atlas);
+  code = owl_texture_init_from_reference(r, &tii, dhr, &font->atlas);
 
   return code;
 }

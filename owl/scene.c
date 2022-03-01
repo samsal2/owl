@@ -17,12 +17,12 @@ OWL_INTERNAL enum owl_code owl_scene_load_images_(struct owl_renderer *r,
 
   for (i = 0; i < (int)data->images_count; ++i) {
     char uri[128];
-    struct owl_texture_init_info info;
+    struct owl_texture_init_info tii;
     struct owl_texture *t = &scene->images[i];
 
     snprintf(uri, sizeof(uri), "../../assets/%s", data->images[i].uri);
 
-    if (OWL_SUCCESS != (code = owl_texture_init_from_file(r, &info, uri, t)))
+    if (OWL_SUCCESS != (code = owl_texture_init_from_file(r, &tii, uri, t)))
       goto end;
   }
 

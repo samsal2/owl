@@ -254,11 +254,11 @@ struct owl_renderer {
   /* ====================================================================== */
 };
 
-enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
+enum owl_code owl_renderer_init(struct owl_renderer_init_info const *rii,
                                 struct owl_renderer *r);
 
 enum owl_code
-owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
+owl_renderer_resize_swapchain(struct owl_renderer_init_info const *rii,
                               struct owl_renderer *r);
 
 void owl_renderer_deinit(struct owl_renderer *r);

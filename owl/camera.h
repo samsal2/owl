@@ -11,12 +11,7 @@ struct owl_camera {
   owl_m4 view;
 };
 
-/**
- * @brief
- *
- * @param cam
- * @return enum owl_code
- */
-enum owl_code owl_camera_init(struct owl_camera *cam);
+enum owl_code owl_camera_init(struct owl_camera *c);
+void owl_camera_deinit(struct owl_camera *c);
 
 #endif

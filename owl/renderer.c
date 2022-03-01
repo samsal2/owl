@@ -18,7 +18,7 @@ OWL_GLOBAL char const *const g_debug_validation_layers[] = {
 #endif /* OWL_ENABLE_VALIDATION */
 
 OWL_INTERNAL enum owl_code
-owl_renderer_init_instance_(struct owl_renderer_init_info const *info,
+owl_renderer_init_instance_(struct owl_renderer_init_info const *rii,
                             struct owl_renderer *r) {
   VkApplicationInfo app;
   VkInstanceCreateInfo instance;
@@ -26,7 +26,7 @@ owl_renderer_init_instance_(struct owl_renderer_init_info const *info,
 
   app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app.pNext = NULL;
-  app.pApplicationName = info->name;
+  app.pApplicationName = rii->name;
   app.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   app.pEngineName = "No Engine";
   app.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -43,8 +43,8 @@ owl_renderer_init_instance_(struct owl_renderer_init_info const *info,
   instance.enabledLayerCount = 0;
   instance.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
-  instance.enabledExtensionCount = (owl_u32)info->instance_extensions_count;
-  instance.ppEnabledExtensionNames = info->instance_extensions;
+  instance.enabledExtensionCount = (owl_u32)rii->instance_extensions_count;
+  instance.ppEnabledExtensionNames = rii->instance_extensions;
 
   OWL_VK_CHECK(vkCreateInstance(&instance, NULL, &r->instance));
 
@@ -142,9 +142,9 @@ OWL_INTERNAL void owl_renderer_deinit_debug_(struct owl_renderer *r) {
 #endif /* OWL_ENABLE_VALIDATION */
 
 OWL_INTERNAL enum owl_code
-owl_renderer_init_surface_(struct owl_renderer_init_info const *info,
+owl_renderer_init_surface_(struct owl_renderer_init_info const *rii,
                            struct owl_renderer *r) {
-  return info->create_surface(r, info->surface_user_data, &r->surface);
+  return rii->create_surface(r, rii->surface_user_data, &r->surface);
 }
 
 OWL_INTERNAL void owl_renderer_deinit_surface_(struct owl_renderer *r) {
@@ -506,7 +506,7 @@ end:
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_init_swapchain_(struct owl_renderer_init_info const *info,
+owl_renderer_init_swapchain_(struct owl_renderer_init_info const *rii,
                              struct owl_renderer *r) {
   owl_u32 families[2];
   VkSurfaceCapabilitiesKHR capabilities;
@@ -516,8 +516,8 @@ owl_renderer_init_swapchain_(struct owl_renderer_init_info const *info,
   families[0] = r->graphics_family_index;
   families[1] = r->present_family_index;
 
-  r->swapchain_extent.width = (owl_u32)info->framebuffer_width;
-  r->swapchain_extent.height = (owl_u32)info->framebuffer_height;
+  r->swapchain_extent.width = (owl_u32)rii->framebuffer_width;
+  r->swapchain_extent.height = (owl_u32)rii->framebuffer_height;
   owl_renderer_clamp_swapchain_extent_(r);
 
   r->swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
@@ -2146,21 +2146,21 @@ end:
   return code;
 }
 
-enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
+enum owl_code owl_renderer_init(struct owl_renderer_init_info const *rii,
                                 struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
-  r->width = info->framebuffer_width;
-  r->height = info->framebuffer_height;
+  r->width = rii->framebuffer_width;
+  r->height = rii->framebuffer_height;
 
-  if (OWL_SUCCESS != (code = owl_renderer_init_instance_(info, r)))
+  if (OWL_SUCCESS != (code = owl_renderer_init_instance_(rii, r)))
     goto end;
 
 #ifdef OWL_ENABLE_VALIDATION
   if (OWL_SUCCESS != (code = owl_renderer_init_debug_(r)))
     goto end_err_deinit_instance;
 
-  if (OWL_SUCCESS != (code = owl_renderer_init_surface_(info, r)))
+  if (OWL_SUCCESS != (code = owl_renderer_init_surface_(rii, r)))
     goto end_err_deinit_debug;
 #else  /* OWL_ENABLE_VALIDATION */
   if (OWL_SUCCESS != (code = owl_renderer_init_surface_(info, r)))
@@ -2170,7 +2170,7 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
   if (OWL_SUCCESS != (code = owl_renderer_init_device_(r)))
     goto end_err_deinit_surface;
 
-  if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_(info, r)))
+  if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_(rii, r)))
     goto end_err_deinit_device;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_views_(r)))
@@ -2336,7 +2336,7 @@ end:
 }
 
 enum owl_code
-owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
+owl_renderer_resize_swapchain(struct owl_renderer_init_info const *rii,
                               struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
@@ -2350,7 +2350,7 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_info const *info,
   owl_renderer_deinit_swapchain_views_(r);
   owl_renderer_deinit_swapchain_(r);
 
-  if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_(info, r)))
+  if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_(rii, r)))
     goto end;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_swapchain_views_(r)))

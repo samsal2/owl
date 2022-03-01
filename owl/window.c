@@ -131,9 +131,9 @@ OWL_INTERNAL enum owl_code owl_window_ensure_glfw_(void) {
 }
 
 OWL_INTERNAL void *
-owl_window_create_handle_(struct owl_window_init_info const *info) {
+owl_window_create_handle_(struct owl_window_init_info const *wii) {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  return glfwCreateWindow(info->width, info->height, info->title, NULL, NULL);
+  return glfwCreateWindow(wii->width, wii->height, wii->title, NULL, NULL);
 }
 
 OWL_INTERNAL void owl_window_setup_callbacks_(struct owl_window *w) {
@@ -162,7 +162,7 @@ OWL_INTERNAL void owl_window_init_input_(struct owl_window *w) {
     w->input.keyboard[i] = OWL_BUTTON_STATE_NONE;
 }
 
-enum owl_code owl_window_init(struct owl_window_init_info const *info,
+enum owl_code owl_window_init(struct owl_window_init_info const *wii,
                               struct owl_input_state **input,
                               struct owl_window *w) {
   enum owl_code code = OWL_SUCCESS;
@@ -174,14 +174,14 @@ enum owl_code owl_window_init(struct owl_window_init_info const *info,
     goto end;
   }
 
-  w->data = owl_window_create_handle_(info);
+  w->data = owl_window_create_handle_(wii);
 
   owl_window_setup_callbacks_(w);
   owl_window_init_input_(w);
   owl_window_init_timer_(w);
 
   *input = &w->input;
-  w->title = info->title;
+  w->title = wii->title;
 
 end:
   return code;
@@ -218,23 +218,23 @@ owl_get_debug_instance_extensions_(owl_u32 *count) {
 
 enum owl_code
 owl_window_fill_renderer_init_info(struct owl_window const *w,
-                                   struct owl_renderer_init_info *info) {
+                                   struct owl_renderer_init_info *rii) {
   owl_u32 count;
   enum owl_code code = OWL_SUCCESS;
 
-  info->framebuffer_width = w->framebuffer_width;
-  info->framebuffer_height = w->framebuffer_height;
-  info->surface_user_data = w;
-  info->create_surface = owl_vk_surface_init_callback_;
+  rii->framebuffer_width = w->framebuffer_width;
+  rii->framebuffer_height = w->framebuffer_height;
+  rii->surface_user_data = w;
+  rii->create_surface = owl_vk_surface_init_callback_;
 
 #ifdef OWL_ENABLE_VALIDATION
-  info->instance_extensions = owl_get_debug_instance_extensions_(&count);
+  rii->instance_extensions = owl_get_debug_instance_extensions_(&count);
 #else  /* OWL_ENABLE_VALIDATION */
   info->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
 #endif /* OWL_ENABLE_VALIDATION */
 
-  info->instance_extensions_count = (int)count;
-  info->name = w->title;
+  rii->instance_extensions_count = (int)count;
+  rii->name = w->title;
 
   return code;
 }

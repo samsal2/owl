@@ -176,7 +176,7 @@ struct owl_window {
   struct owl_input_state input;
 };
 
-enum owl_code owl_window_init(struct owl_window_init_info const *info,
+enum owl_code owl_window_init(struct owl_window_init_info const *wii,
                               struct owl_input_state **input,
                               struct owl_window *w);
 
@@ -184,7 +184,7 @@ void owl_window_deinit(struct owl_window *w);
 
 enum owl_code
 owl_window_fill_renderer_init_info(struct owl_window const *w,
-                                   struct owl_renderer_init_info *info);
+                                   struct owl_renderer_init_info *wii);
 
 void owl_window_poll(struct owl_window *w);
 

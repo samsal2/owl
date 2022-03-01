@@ -75,6 +75,7 @@ int main(void) {
     owl_window_poll(&window);
   }
 
+  owl_camera_deinit(&cam);
   owl_scene_deinit(&renderer, &scene);
   owl_skybox_deinit(&renderer, &skybox);
   owl_renderer_deinit(&renderer);

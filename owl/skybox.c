@@ -47,113 +47,112 @@ owl_skybox_copy_to_image_(VkCommandBuffer command, owl_u32 base_width,
 }
 
 OWL_INTERNAL enum owl_code
-owl_skybox_init_loading_info_(struct owl_skybox_init_info const *info,
-                              struct owl_skybox_loading_info *loading_info) {
+owl_skybox_init_loading_info_(struct owl_skybox_init_info const *sii,
+                              struct owl_skybox_loading_info *sli) {
 
-  struct owl_texture_init_info texture_info;
+  struct owl_texture_init_info tii;
   enum owl_code code = OWL_SUCCESS;
 
-  loading_info->right = owl_texture_data_from_file(info->right, &texture_info);
+  sli->right = owl_texture_data_from_file(sii->right, &tii);
 
-  if (!info->right)
+  if (!sii->right)
     goto end_err;
 
-  loading_info->width = (owl_u32)texture_info.width;
-  loading_info->height = (owl_u32)texture_info.height;
-  loading_info->format = (owl_u32)texture_info.format;
+  sli->width = (owl_u32)tii.width;
+  sli->height = (owl_u32)tii.height;
+  sli->format = (owl_u32)tii.format;
 
-  loading_info->left = owl_texture_data_from_file(info->left, &texture_info);
+  sli->left = owl_texture_data_from_file(sii->left, &tii);
 
-  if (!loading_info->left)
+  if (!sli->left)
     goto end_err_free_right;
 
-  if (loading_info->width != (owl_u32)texture_info.width)
+  if (sli->width != (owl_u32)tii.width)
     goto end_err_free_left;
 
-  if (loading_info->height != (owl_u32)texture_info.height)
+  if (sli->height != (owl_u32)tii.height)
     goto end_err_free_left;
 
-  if (loading_info->format != (owl_u32)texture_info.format)
+  if (sli->format != (owl_u32)tii.format)
     goto end_err_free_left;
 
-  loading_info->top = owl_texture_data_from_file(info->top, &texture_info);
+  sli->top = owl_texture_data_from_file(sii->top, &tii);
 
-  if (!loading_info->top)
+  if (!sli->top)
     goto end_err_free_left;
 
-  if (loading_info->width != (owl_u32)texture_info.width)
+  if (sli->width != (owl_u32)tii.width)
     goto end_err_free_top;
 
-  if (loading_info->height != (owl_u32)texture_info.height)
+  if (sli->height != (owl_u32)tii.height)
     goto end_err_free_top;
 
-  if (loading_info->format != (owl_u32)texture_info.format)
+  if (sli->format != (owl_u32)tii.format)
     goto end_err_free_top;
 
-  loading_info->bottom =
-      owl_texture_data_from_file(info->bottom, &texture_info);
+  sli->bottom = owl_texture_data_from_file(sii->bottom, &tii);
 
-  if (!loading_info->bottom)
+  if (!sli->bottom)
     goto end_err_free_top;
 
-  if (loading_info->width != (owl_u32)texture_info.width)
+  if (sli->width != (owl_u32)tii.width)
     goto end_err_free_bottom;
 
-  if (loading_info->height != (owl_u32)texture_info.height)
+  if (sli->height != (owl_u32)tii.height)
     goto end_err_free_bottom;
 
-  if (loading_info->format != (owl_u32)texture_info.format)
+  if (sli->format != (owl_u32)tii.format)
     goto end_err_free_bottom;
 
-  loading_info->back = owl_texture_data_from_file(info->back, &texture_info);
+  sli->back = owl_texture_data_from_file(sii->back, &tii);
 
-  if (!loading_info->back)
+  if (!sli->back)
     goto end_err_free_bottom;
 
-  if (loading_info->width != (owl_u32)texture_info.width)
+  if (sli->width != (owl_u32)tii.width)
     goto end_err_free_back;
 
-  if (loading_info->height != (owl_u32)texture_info.height)
+  if (sli->height != (owl_u32)tii.height)
     goto end_err_free_back;
 
-  if (loading_info->format != (owl_u32)texture_info.format)
+  if (sli->format != (owl_u32)tii.format)
     goto end_err_free_back;
 
-  loading_info->front = owl_texture_data_from_file(info->front, &texture_info);
+  sli->front = owl_texture_data_from_file(sii->front, &tii);
 
-  if (!loading_info->front)
+  if (!sli->front)
     goto end_err_free_back;
 
-  if (loading_info->width != (owl_u32)texture_info.width)
+  if (sli->width != (owl_u32)tii.width)
     goto end_err_free_front;
 
-  if (loading_info->height != (owl_u32)texture_info.height)
+  if (sli->height != (owl_u32)tii.height)
     goto end_err_free_front;
 
-  if (loading_info->format != (owl_u32)texture_info.format)
+  if (sli->format != (owl_u32)tii.format)
     goto end_err_free_front;
 
-  loading_info->mips = owl_calc_mips(loading_info->width, loading_info->height);
+  sli->mips = owl_calc_mips(sli->width, sli->height);
 
   goto end;
 
 end_err_free_front:
-  owl_texture_free_data_from_file(loading_info->front);
+  owl_texture_free_data_from_file(sli->front);
 
 end_err_free_back:
-  owl_texture_free_data_from_file(loading_info->back);
+  owl_texture_free_data_from_file(sli->back);
 
 end_err_free_bottom:
-  owl_texture_free_data_from_file(loading_info->bottom);
+  owl_texture_free_data_from_file(sli->bottom);
 
 end_err_free_top:
-  owl_texture_free_data_from_file(loading_info->top);
+  owl_texture_free_data_from_file(sli->top);
 
 end_err_free_left:
-  owl_texture_free_data_from_file(loading_info->left);
+  owl_texture_free_data_from_file(sli->left);
 
 end_err_free_right:
-  owl_texture_free_data_from_file(loading_info->right);
+  owl_texture_free_data_from_file(sli->right);
 
 end_err:
   code = OWL_ERROR_UNKNOWN;
@@ -173,7 +172,7 @@ owl_skybox_deinit_loading_info_(struct owl_skybox_loading_info *info) {
 }
 
 OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
-    struct owl_renderer *r, struct owl_skybox_loading_info const *info,
+    struct owl_renderer *r, struct owl_skybox_loading_info const *sli,
     struct owl_skybox const *box) {
   owl_u32 i;
   VkDeviceSize size;
@@ -184,14 +183,14 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
 
   {
-    struct owl_texture_init_info texture_info;
-    texture_info.width = (int)info->width;
-    texture_info.height = (int)info->height;
-    texture_info.format = info->format;
-    size = owl_texture_init_info_required_size_(&texture_info);
+    struct owl_texture_init_info tii;
+    tii.width = (int)sli->width;
+    tii.height = (int)sli->height;
+    tii.format = sli->format;
+    size = owl_texture_init_info_required_size_(&tii);
   }
 
-  transition.mips = info->mips;
+  transition.mips = sli->mips;
   transition.layers = OWL_SKYBOX_FACE_COUNT;
   transition.from = VK_IMAGE_LAYOUT_UNDEFINED;
   transition.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -204,66 +203,66 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
     struct owl_dynamic_heap_reference dhr;
     owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
 
-    OWL_MEMCPY(staging, info->right, size);
+    OWL_MEMCPY(staging, sli->right, size);
 
-    for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(sucb.command_buffer, info->width, info->height,
-                                0, i, &dhr, box);
+    for (i = 0; i < sli->mips; ++i)
+      owl_skybox_copy_to_image_(sucb.command_buffer, sli->width, sli->height, 0,
+                                i, &dhr, box);
   }
 
   {
     struct owl_dynamic_heap_reference dhr;
     owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
 
-    OWL_MEMCPY(staging, info->left, size);
+    OWL_MEMCPY(staging, sli->left, size);
 
-    for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(sucb.command_buffer, info->width, info->height,
-                                1, i, &dhr, box);
+    for (i = 0; i < sli->mips; ++i)
+      owl_skybox_copy_to_image_(sucb.command_buffer, sli->width, sli->height, 1,
+                                i, &dhr, box);
   }
 
   {
     struct owl_dynamic_heap_reference dhr;
     owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
 
-    OWL_MEMCPY(staging, info->bottom, size);
+    OWL_MEMCPY(staging, sli->bottom, size);
 
-    for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(sucb.command_buffer, info->width, info->height,
-                                2, i, &dhr, box);
+    for (i = 0; i < sli->mips; ++i)
+      owl_skybox_copy_to_image_(sucb.command_buffer, sli->width, sli->height, 2,
+                                i, &dhr, box);
   }
 
   {
     struct owl_dynamic_heap_reference dhr;
     owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
 
-    OWL_MEMCPY(staging, info->top, size);
+    OWL_MEMCPY(staging, sli->top, size);
 
-    for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(sucb.command_buffer, info->width, info->height,
-                                3, i, &dhr, box);
+    for (i = 0; i < sli->mips; ++i)
+      owl_skybox_copy_to_image_(sucb.command_buffer, sli->width, sli->height, 3,
+                                i, &dhr, box);
   }
 
   {
     struct owl_dynamic_heap_reference dhr;
     owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
 
-    OWL_MEMCPY(staging, info->back, size);
+    OWL_MEMCPY(staging, sli->back, size);
 
-    for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(sucb.command_buffer, info->width, info->height,
-                                4, i, &dhr, box);
+    for (i = 0; i < sli->mips; ++i)
+      owl_skybox_copy_to_image_(sucb.command_buffer, sli->width, sli->height, 4,
+                                i, &dhr, box);
   }
 
   {
     struct owl_dynamic_heap_reference dhr;
     owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
 
-    OWL_MEMCPY(staging, info->front, size);
+    OWL_MEMCPY(staging, sli->front, size);
 
-    for (i = 0; i < info->mips; ++i)
-      owl_skybox_copy_to_image_(sucb.command_buffer, info->width, info->height,
-                                5, i, &dhr, box);
+    for (i = 0; i < sli->mips; ++i)
+      owl_skybox_copy_to_image_(sucb.command_buffer, sli->width, sli->height, 5,
+                                i, &dhr, box);
   }
 
   transition.from = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -278,12 +277,12 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
 }
 
 enum owl_code owl_skybox_init(struct owl_renderer *r,
-                              struct owl_skybox_init_info const *info,
+                              struct owl_skybox_init_info const *sii,
                               struct owl_skybox *box) {
-  struct owl_skybox_loading_info loading_info;
+  struct owl_skybox_loading_info sli;
   enum owl_code code = OWL_SUCCESS;
 
-  code = owl_skybox_init_loading_info_(info, &loading_info);
+  code = owl_skybox_init_loading_info_(sii, &sli);
 
   if (OWL_SUCCESS != code)
     goto end;
@@ -299,11 +298,11 @@ enum owl_code owl_skybox_init(struct owl_renderer *r,
     image.pNext = NULL;
     image.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     image.imageType = VK_IMAGE_TYPE_2D;
-    image.format = owl_as_vk_format_(loading_info.format);
-    image.extent.width = (owl_u32)loading_info.width;
-    image.extent.height = (owl_u32)loading_info.height;
+    image.format = owl_as_vk_format_(sli.format);
+    image.extent.width = (owl_u32)sli.width;
+    image.extent.height = (owl_u32)sli.height;
     image.extent.depth = 1;
-    image.mipLevels = loading_info.mips;
+    image.mipLevels = sli.mips;
     image.arrayLayers = OWL_SKYBOX_FACE_COUNT;
     image.samples = VK_SAMPLE_COUNT_1_BIT;
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -334,7 +333,7 @@ enum owl_code owl_skybox_init(struct owl_renderer *r,
     OWL_VK_CHECK(vkBindImageMemory(r->device, box->image, box->memory, 0));
   }
 
-  owl_skybox_copy_loading_info_to_image_(r, &loading_info, box);
+  owl_skybox_copy_loading_info_to_image_(r, &sli, box);
 
   {
 #define OWL_MAX_ANISOTROPY 16
@@ -355,7 +354,7 @@ enum owl_code owl_skybox_init(struct owl_renderer *r,
     sampler.compareEnable = VK_FALSE;
     sampler.compareOp = VK_COMPARE_OP_ALWAYS;
     sampler.minLod = 0.0F;
-    sampler.maxLod = loading_info.mips; /* VK_LOD_CLAMP_NONE */
+    sampler.maxLod = sli.mips; /* VK_LOD_CLAMP_NONE */
     sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     sampler.unnormalizedCoordinates = VK_FALSE;
 
@@ -371,14 +370,14 @@ enum owl_code owl_skybox_init(struct owl_renderer *r,
     view.flags = 0;
     view.image = box->image;
     view.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-    view.format = owl_as_vk_format_(loading_info.format);
+    view.format = owl_as_vk_format_(sli.format);
     view.components.r = VK_COMPONENT_SWIZZLE_R;
     view.components.g = VK_COMPONENT_SWIZZLE_G;
     view.components.b = VK_COMPONENT_SWIZZLE_B;
     view.components.a = VK_COMPONENT_SWIZZLE_A;
     view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     view.subresourceRange.baseMipLevel = 0;
-    view.subresourceRange.levelCount = loading_info.mips;
+    view.subresourceRange.levelCount = sli.mips;
     view.subresourceRange.baseArrayLayer = 0;
     view.subresourceRange.layerCount = OWL_SKYBOX_FACE_COUNT;
 
@@ -437,7 +436,7 @@ enum owl_code owl_skybox_init(struct owl_renderer *r,
     vkUpdateDescriptorSets(r->device, OWL_ARRAY_SIZE(writes), writes, 0, NULL);
   }
 
-  owl_skybox_deinit_loading_info_(&loading_info);
+  owl_skybox_deinit_loading_info_(&sli);
 
 end:
   return code;
