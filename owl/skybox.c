@@ -209,7 +209,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
 
   {
     struct owl_dynamic_heap_reference dhr;
-    owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
+    owl_byte *staging = owl_renderer_dynamic_heap_alloc(r, size, &dhr);
 
     OWL_MEMCPY(staging, sli->right, size);
 
@@ -220,7 +220,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
 
   {
     struct owl_dynamic_heap_reference dhr;
-    owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
+    owl_byte *staging = owl_renderer_dynamic_heap_alloc(r, size, &dhr);
 
     OWL_MEMCPY(staging, sli->left, size);
 
@@ -231,7 +231,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
 
   {
     struct owl_dynamic_heap_reference dhr;
-    owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
+    owl_byte *staging = owl_renderer_dynamic_heap_alloc(r, size, &dhr);
 
     OWL_MEMCPY(staging, sli->bottom, size);
 
@@ -242,7 +242,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
 
   {
     struct owl_dynamic_heap_reference dhr;
-    owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
+    owl_byte *staging = owl_renderer_dynamic_heap_alloc(r, size, &dhr);
 
     OWL_MEMCPY(staging, sli->top, size);
 
@@ -253,7 +253,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
 
   {
     struct owl_dynamic_heap_reference dhr;
-    owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
+    owl_byte *staging = owl_renderer_dynamic_heap_alloc(r, size, &dhr);
 
     OWL_MEMCPY(staging, sli->back, size);
 
@@ -264,7 +264,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
 
   {
     struct owl_dynamic_heap_reference dhr;
-    owl_byte *staging = owl_renderer_dynamic_alloc(r, size, &dhr);
+    owl_byte *staging = owl_renderer_dynamic_heap_alloc(r, size, &dhr);
 
     OWL_MEMCPY(staging, sli->front, size);
 

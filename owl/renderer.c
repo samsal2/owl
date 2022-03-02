@@ -2044,8 +2044,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
   return code;
 }
 
-OWL_INTERNAL void
-owl_renderer_deinit_dynamic_heap_buffer_(struct owl_renderer *r) {
+OWL_INTERNAL void owl_renderer_deinit_dynamic_heap_(struct owl_renderer *r) {
   int i;
 
   vkFreeDescriptorSets(r->device, r->common_set_pool,
@@ -2063,7 +2062,7 @@ owl_renderer_deinit_dynamic_heap_buffer_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_move_dynamic_to_garbage_(struct owl_renderer *r) {
+owl_renderer_dynamic_heap_move_to_garbage_(struct owl_renderer *r) {
   int i;
   enum owl_code code = OWL_SUCCESS;
 
@@ -2199,17 +2198,8 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *rii,
   if (OWL_SUCCESS != (code = owl_renderer_init_dynamic_heap_(r, 1024 * 1024)))
     goto end_err_deinit_garbage;
 
-#if 0
-    if (OWL_SUCCESS != (code = owl_renderer_init_lutbrdf_resources_(r)))
-      goto end_err_deinit_dynamic_heap_buffer;
-#endif
-
   goto end;
 
-#if 0
-  end_err_deinit_dynamic_heap_buffer:
-    owl_renderer_deinit_dynamic_heap_buffer_(r);
-#endif
 end_err_deinit_garbage:
   owl_renderer_deinit_garbage_(r);
 
@@ -2270,11 +2260,7 @@ end:
 void owl_renderer_deinit(struct owl_renderer *r) {
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
-#if 0
-    owl_renderer_deinit_lutbrdf_resources_(r);
-#endif
-
-  owl_renderer_deinit_dynamic_heap_buffer_(r);
+  owl_renderer_deinit_dynamic_heap_(r);
   owl_renderer_deinit_garbage_(r);
   owl_renderer_deinit_frame_sync_(r);
   owl_renderer_deinit_frame_commands_(r);
@@ -2304,19 +2290,20 @@ owl_renderer_reserve_dynamic_heap_memory_(struct owl_renderer *r,
   enum owl_code code = OWL_SUCCESS;
   VkDeviceSize required = r->dynamic_heap_offset + size;
 
-  if (required > r->dynamic_heap_buffer_size) {
-    vkUnmapMemory(r->device, r->dynamic_heap_memory);
+  if (required > r->dynamic_heap_buffer_size)
+    goto end;
 
-    code = owl_renderer_move_dynamic_to_garbage_(r);
+  vkUnmapMemory(r->device, r->dynamic_heap_memory);
 
-    if (OWL_SUCCESS != code)
-      goto end;
+  code = owl_renderer_dynamic_heap_move_to_garbage_(r);
 
-    code = owl_renderer_init_dynamic_heap_(r, 2 * required);
+  if (OWL_SUCCESS != code)
+    goto end;
 
-    if (OWL_SUCCESS != code)
-      goto end;
-  }
+  code = owl_renderer_init_dynamic_heap_(r, 2 * required);
+
+  if (OWL_SUCCESS != code)
+    goto end;
 
 end:
   return code;
@@ -2399,8 +2386,8 @@ void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r) {
   r->dynamic_heap_offset = 0;
 }
 
-void *owl_renderer_dynamic_alloc(struct owl_renderer *r, VkDeviceSize size,
-                                 struct owl_dynamic_heap_reference *dhr) {
+void *owl_renderer_dynamic_heap_alloc(struct owl_renderer *r, VkDeviceSize size,
+                                      struct owl_dynamic_heap_reference *dhr) {
   owl_byte *data = NULL;
 
   if (OWL_SUCCESS != owl_renderer_reserve_dynamic_heap_memory_(r, size))

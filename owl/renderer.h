@@ -55,6 +55,12 @@ struct owl_dynamic_heap_reference {
   VkDescriptorSet scene_set;
 };
 
+struct owl_static_heap_reference {
+  int slot;
+  VkDeviceSize offset;
+  VkDeviceMemory memory;
+};
+
 struct owl_renderer {
   /* ====================================================================== */
   /* dims */
@@ -236,7 +242,7 @@ struct owl_renderer {
   /* ====================================================================== */
   /* dynamic heap resources */
   /* ====================================================================== */
-  VkDeviceMemory dynamic_heap_memory; /* memory holding the n dynamic buffers */
+  VkDeviceMemory dynamic_heap_memory;
 
   VkDeviceSize dynamic_heap_offset;
   VkDeviceSize dynamic_heap_buffer_size;
@@ -264,16 +270,24 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_info const *rii,
 
 void owl_renderer_deinit(struct owl_renderer *r);
 
-int owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
-
-void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
-
 owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
                                       VkMemoryRequirements const *requirements,
                                       enum owl_memory_visibility vis);
 
-void *owl_renderer_dynamic_alloc(struct owl_renderer *r, VkDeviceSize size,
-                                 struct owl_dynamic_heap_reference *dhr);
+int owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
+
+void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
+
+void *owl_renderer_dynamic_heap_alloc(struct owl_renderer *r, VkDeviceSize size,
+                                      struct owl_dynamic_heap_reference *dhr);
+
+enum owl_code
+owl_renderer_static_heap_alloc(struct owl_renderer *r, VkDeviceSize size,
+                               VkDeviceSize alignment, owl_u32 type,
+                               struct owl_static_heap_reference *shr);
+
+void owl_renderer_static_heap_free(struct owl_renderer *r,
+                                   struct owl_static_heap_reference *shr);
 
 enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
                                          enum owl_pipeline_type type);

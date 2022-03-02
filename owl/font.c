@@ -114,7 +114,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
   owl_calc_dims_(face, &font->atlas_width, &font->atlas_height);
 
   alloc_size = (VkDeviceSize)(font->atlas_width * font->atlas_height);
-  data = owl_renderer_dynamic_alloc(r, alloc_size, &dhr);
+  data = owl_renderer_dynamic_heap_alloc(r, alloc_size, &dhr);
 
   if (!data) {
     code = OWL_ERROR_BAD_ALLOC;

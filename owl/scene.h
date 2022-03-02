@@ -7,12 +7,13 @@
 #define OWL_SCENE_NODE_NO_PARENT -1
 #define OWL_SCENE_MESH_MAX_PRIMITIVES 128
 #define OWL_SCENE_NODE_MAX_NAME_LENGTH 128
-#define OWL_SCENE_MAX_IMAGES 8
-#define OWL_SCENE_MAX_NODE_ROOTS 128
-#define OWL_SCENE_MAX_NODES 128
-#define OWL_SCENE_MAX_TEXTURES 16
+#define OWL_SCENE_MAX_IMAGES 16
+#define OWL_SCENE_MAX_NODE_ROOTS 32
+#define OWL_SCENE_MAX_NODES 32
+#define OWL_SCENE_MAX_TEXTURES 8
 #define OWL_SCENE_MAX_MATERIALS 8
 #define OWL_SCENE_NODE_MAX_CHILDREN 32
+#define OWL_SCENE_MAX_MESHES 32
 
 struct owl_renderer;
 
@@ -43,28 +44,28 @@ struct owl_scene_primitive {
   int material;
 };
 
-struct owl_scene_mesh {
+struct owl_scene_mesh_data {
   int primitives_count;
   struct owl_scene_primitive primitives[OWL_SCENE_MESH_MAX_PRIMITIVES];
 };
 
 typedef int owl_scene_node;
+typedef int owl_scene_mesh;
 
 struct owl_scene_node_data {
   char name[OWL_SCENE_NODE_MAX_NAME_LENGTH];
-  owl_scene_node parent;
 
-  owl_m4 matrix;
   owl_v3 translation;
   owl_v3 scale;
   owl_v4 rotation;
+  owl_m4 matrix;
 
-  int skin;
-
-  struct owl_scene_mesh mesh;
+  owl_scene_node parent;
+  owl_scene_mesh mesh;
 
   int children_count;
   owl_scene_node children[OWL_SCENE_NODE_MAX_CHILDREN];
+
 };
 
 enum owl_alpha_mode {
@@ -73,16 +74,17 @@ enum owl_alpha_mode {
   OWL_ALPHA_MODE_BLEND
 };
 
+typedef int owl_scene_texture;
+
 struct owl_scene_material {
-  int double_sided;
-  float alpha_cutoff;
-  owl_v4 base_color_factor;
-  int base_color_texture_index;
-  int normal_texture_index;
   enum owl_alpha_mode alpha_mode;
+  float alpha_cutoff;
+  int double_sided;
+  owl_scene_texture base_color_texture;
+  owl_scene_texture normal_texture;
+  owl_v4 base_color_factor;
 };
 
-typedef int owl_scene_texture;
 
 struct owl_scene {
   VkBuffer vertices_buffer;
@@ -105,6 +107,9 @@ struct owl_scene {
 
   int materials_count;
   struct owl_scene_material materials[OWL_SCENE_MAX_MATERIALS];
+
+  int meshes_count;
+  struct owl_scene_mesh_data meshes[OWL_SCENE_MAX_MESHES];
 };
 
 enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,

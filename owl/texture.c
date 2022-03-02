@@ -450,7 +450,7 @@ owl_texture_init_from_data(struct owl_renderer *r,
 
   size = owl_texture_init_info_required_size_(tii);
 
-  if (!(stage = owl_renderer_dynamic_alloc(r, size, &dhr))) {
+  if (!(stage = owl_renderer_dynamic_heap_alloc(r, size, &dhr))) {
     code = OWL_ERROR_BAD_ALLOC;
     goto end;
   }
