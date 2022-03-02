@@ -1886,6 +1886,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
   owl_u32 i;
   enum owl_code code = OWL_SUCCESS;
 
+  r->dynamic_heap_offset = 0;
   r->dynamic_heap_buffer_size = size;
 
   /* init buffers */
@@ -2290,7 +2291,7 @@ owl_renderer_reserve_dynamic_heap_memory_(struct owl_renderer *r,
   enum owl_code code = OWL_SUCCESS;
   VkDeviceSize required = r->dynamic_heap_offset + size;
 
-  if (required > r->dynamic_heap_buffer_size)
+  if (required < r->dynamic_heap_buffer_size)
     goto end;
 
   vkUnmapMemory(r->device, r->dynamic_heap_memory);

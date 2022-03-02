@@ -71,7 +71,7 @@ OWL_INTERNAL enum owl_code owl_scene_load_materials_(struct owl_renderer *r,
 
   OWL_UNUSED(r);
 
-  if (OWL_SCENE_MAX_MATERIALS <= (int)data->materials_count) {
+  if (OWL_SCENE_MAX_MATERIALS_COUNT <= (int)data->materials_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
@@ -215,7 +215,7 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *cgltf,
       goto end;
   }
 
-  if (OWL_SCENE_MAX_MESHES <= (node->mesh = scene->meshes_count++)) {
+  if (OWL_SCENE_MAX_MESHES_COUNT <= (node->mesh = scene->meshes_count++)) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }

@@ -5,15 +5,15 @@
 #include "types.h"
 
 #define OWL_SCENE_NODE_NO_PARENT -1
-#define OWL_SCENE_MESH_MAX_PRIMITIVES 128
+#define OWL_SCENE_MESH_MAX_PRIMITIVES_COUNT 128
 #define OWL_SCENE_NODE_MAX_NAME_LENGTH 128
-#define OWL_SCENE_MAX_IMAGES 16
-#define OWL_SCENE_MAX_NODE_ROOTS 32
-#define OWL_SCENE_MAX_NODES 32
-#define OWL_SCENE_MAX_TEXTURES 8
-#define OWL_SCENE_MAX_MATERIALS 8
-#define OWL_SCENE_NODE_MAX_CHILDREN 32
-#define OWL_SCENE_MAX_MESHES 32
+#define OWL_SCENE_MAX_IMAGES_COUNT 16
+#define OWL_SCENE_MAX_NODE_ROOTS_COUNT 32
+#define OWL_SCENE_MAX_NODES_COUNT 32
+#define OWL_SCENE_MAX_TEXTURES_COUNT 8
+#define OWL_SCENE_MAX_MATERIALS_COUNT 8
+#define OWL_SCENE_NODE_MAX_CHILDREN_COUNT 32
+#define OWL_SCENE_MAX_MESHES_COUNT 32
 
 struct owl_renderer;
 
@@ -46,7 +46,7 @@ struct owl_scene_primitive {
 
 struct owl_scene_mesh_data {
   int primitives_count;
-  struct owl_scene_primitive primitives[OWL_SCENE_MESH_MAX_PRIMITIVES];
+  struct owl_scene_primitive primitives[OWL_SCENE_MESH_MAX_PRIMITIVES_COUNT];
 };
 
 typedef int owl_scene_node;
@@ -64,8 +64,7 @@ struct owl_scene_node_data {
   owl_scene_mesh mesh;
 
   int children_count;
-  owl_scene_node children[OWL_SCENE_NODE_MAX_CHILDREN];
-
+  owl_scene_node children[OWL_SCENE_NODE_MAX_CHILDREN_COUNT];
 };
 
 enum owl_alpha_mode {
@@ -94,22 +93,22 @@ struct owl_scene {
   VkDeviceMemory indices_memory;
 
   int roots_count;
-  owl_scene_node roots[OWL_SCENE_MAX_NODE_ROOTS];
+  owl_scene_node roots[OWL_SCENE_MAX_NODE_ROOTS_COUNT];
 
   int nodes_count;
-  struct owl_scene_node_data nodes[OWL_SCENE_MAX_NODES];
+  struct owl_scene_node_data nodes[OWL_SCENE_MAX_NODES_COUNT];
 
   int images_count;
-  struct owl_texture images[OWL_SCENE_MAX_IMAGES];
+  struct owl_texture images[OWL_SCENE_MAX_IMAGES_COUNT];
 
   int textures_count;
-  owl_scene_texture textures[OWL_SCENE_MAX_TEXTURES];
+  owl_scene_texture textures[OWL_SCENE_MAX_TEXTURES_COUNT];
 
   int materials_count;
-  struct owl_scene_material materials[OWL_SCENE_MAX_MATERIALS];
+  struct owl_scene_material materials[OWL_SCENE_MAX_MATERIALS_COUNT];
 
   int meshes_count;
-  struct owl_scene_mesh_data meshes[OWL_SCENE_MAX_MESHES];
+  struct owl_scene_mesh_data meshes[OWL_SCENE_MAX_MESHES_COUNT];
 };
 
 enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
