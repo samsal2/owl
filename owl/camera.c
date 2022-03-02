@@ -20,4 +20,14 @@ enum owl_code owl_camera_init(struct owl_camera *c) {
   return code;
 }
 
+void owl_camera_set_direction(struct owl_camera *c, owl_v3 direction) {
+  OWL_V3_COPY(direction, c->direction);
+  owl_m4_look(c->eye, c->direction, c->up, c->view);
+}
+
+void owl_camera_set_pitch_yaw(struct owl_camera *c, float pitch, float yaw) {
+  owl_v3_direction(pitch, yaw, c->up, c->direction);
+  owl_m4_look(c->eye, c->direction, c->up, c->view);
+}
+
 void owl_camera_deinit(struct owl_camera *c) { OWL_UNUSED(c); }

@@ -12,6 +12,11 @@ struct owl_camera {
 };
 
 enum owl_code owl_camera_init(struct owl_camera *c);
+
+void owl_camera_set_direction(struct owl_camera *c, owl_v3 direction);
+
+void owl_camera_set_pitch_yaw(struct owl_camera *c, float pitch, float yaw);
+
 void owl_camera_deinit(struct owl_camera *c);
 
 #endif

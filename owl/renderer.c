@@ -77,22 +77,20 @@ static VKAPI_ATTR VKAPI_CALL VkBool32 owl_vk_debug_callback_(
   OWL_UNUSED(user_data);
 
   if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
-    fprintf(
-        stderr,
-        "\033[1;32m[VALIDATION_LAYER]\033[0m \033[1;36m(VERBOSE)\033[0m %s\n",
-        data->pMessage);
+    fprintf(stderr,
+            "\033[32m[VALIDATION_LAYER]\033[0m \033[34m(VERBOSE)\033[0m %s\n",
+            data->pMessage);
   else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
     fprintf(stderr,
-            "\033[1;32m[VALIDATION_LAYER]\033[0m \033[1;34m(INFO)\033[0m %s\n",
+            "\033[32m[VALIDATION_LAYER]\033[0m \033[33m(INFO)\033[0m %s\n",
             data->pMessage);
   else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-    fprintf(
-        stderr,
-        "\033[1;32m[VALIDATION_LAYER]\033[0m \033[1;33m(WARNING)\033[0m %s\n",
-        data->pMessage);
+    fprintf(stderr,
+            "\033[32m[VALIDATION_LAYER]\033[0m \033[33m(WARNING)\033[0m %s\n",
+            data->pMessage);
   else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
     fprintf(stderr,
-            "\033[1;32m[VALIDATION_LAYER]\033[0m \033[1;31m(ERROR)\033[0m %s\n",
+            "\033[32m[VALIDATION_LAYER]\033[0m \033[31m(ERROR)\033[0m %s\n",
             data->pMessage);
 
   return VK_FALSE;
@@ -880,7 +878,7 @@ owl_renderer_init_attachments_(struct owl_renderer *r) {
     image.arrayLayers = 1;
     image.samples = r->msaa_sample_count;
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
-    image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT; 
+    image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image.queueFamilyIndexCount = 0;
     image.pQueueFamilyIndices = NULL;

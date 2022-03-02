@@ -95,12 +95,12 @@ struct owl_renderer {
   owl_u32 present_family_index;
   VkQueue present_queue;
 
-  owl_u32 device_options_count;
-  VkPhysicalDevice device_options[OWL_RENDERER_MAX_DEVICE_OPTIONS_COUNT];
-
   VkPhysicalDeviceFeatures device_features;
   VkPhysicalDeviceProperties device_properties;
   VkPhysicalDeviceMemoryProperties device_memory_properties;
+
+  owl_u32 device_options_count;
+  VkPhysicalDevice device_options[OWL_RENDERER_MAX_DEVICE_OPTIONS_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */

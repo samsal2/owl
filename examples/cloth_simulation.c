@@ -274,7 +274,7 @@ int main(void) {
   texture_info.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
   TEST(owl_texture_init_from_file(&renderer, &texture_info, TPATH, &texture));
 
-  TEST(owl_font_init(&renderer, 64, FONTPATH, &font));
+  TEST(owl_font_init(&renderer, 128, FONTPATH, &font));
 
   skybox_info.right = "../../assets/skybox/right.jpg";
   skybox_info.left = "../../assets/skybox/left.jpg";
