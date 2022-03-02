@@ -2370,7 +2370,7 @@ end:
   return code;
 }
 
-int owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r) {
+int owl_renderer_dynamic_heap_is_offset_clear(struct owl_renderer const *r) {
   return 0 == r->dynamic_heap_offset;
 }
 
@@ -2383,7 +2383,7 @@ OWL_INTERNAL void owl_renderer_clear_garbage_(struct owl_renderer *r) {
 #endif
 }
 
-void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r) {
+void owl_renderer_dynamic_heap_clear_offset(struct owl_renderer *r) {
   r->dynamic_heap_offset = 0;
 }
 
@@ -2661,7 +2661,7 @@ enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
   if (OWL_SUCCESS != (code = owl_renderer_present_swapchain_(r)))
     goto end;
 
-  owl_renderer_clear_dynamic_heap_offset(r);
+  owl_renderer_dynamic_heap_clear_offset(r);
   owl_renderer_update_frame_actives_(r);
   owl_renderer_clear_garbage_(r);
 

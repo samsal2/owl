@@ -469,7 +469,7 @@ OWL_INTERNAL void owl_scene_load_buffers_(struct owl_renderer *r,
     owl_renderer_deinit_single_use_command_buffer(r, &sucb);
   }
 
-  owl_renderer_clear_dynamic_heap_offset(r);
+  owl_renderer_dynamic_heap_clear_offset(r);
 }
 
 enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
@@ -481,7 +481,7 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   struct owl_scene_load_info sli;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
+  OWL_ASSERT(owl_renderer_dynamic_heap_is_offset_clear(r));
 
   scene->roots_count = 0;
   scene->nodes_count = 0;
@@ -522,7 +522,7 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
 end_err_free_data:
   cgltf_free(data);
 
-  owl_renderer_clear_dynamic_heap_offset(r);
+  owl_renderer_dynamic_heap_clear_offset(r);
 
 end:
   return code;

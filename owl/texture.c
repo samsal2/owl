@@ -432,7 +432,7 @@ enum owl_code owl_texture_init_from_reference(
     vkUpdateDescriptorSets(r->device, OWL_ARRAY_SIZE(writes), writes, 0, NULL);
   }
 
-  owl_renderer_clear_dynamic_heap_offset(r);
+  owl_renderer_dynamic_heap_clear_offset(r);
 
   return code;
 }
@@ -446,7 +446,7 @@ owl_texture_init_from_data(struct owl_renderer *r,
   struct owl_dynamic_heap_reference dhr;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
+  OWL_ASSERT(owl_renderer_dynamic_heap_is_offset_clear(r));
 
   size = owl_texture_init_info_required_size_(tii);
 
@@ -470,7 +470,7 @@ enum owl_code owl_texture_init_from_file(struct owl_renderer *r,
   owl_byte *data;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
+  OWL_ASSERT(owl_renderer_dynamic_heap_is_offset_clear(r));
 
   if (!(data = owl_texture_data_from_file(path, tii))) {
     code = OWL_ERROR_BAD_ALLOC;

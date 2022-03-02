@@ -180,7 +180,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   struct owl_single_use_command_buffer sucb;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
+  OWL_ASSERT(owl_renderer_dynamic_heap_is_offset_clear(r));
 
   {
     struct owl_texture_init_info tii;
@@ -287,7 +287,7 @@ OWL_INTERNAL enum owl_code owl_skybox_copy_loading_info_to_image_(
   }
 
   owl_renderer_deinit_single_use_command_buffer(r, &sucb);
-  owl_renderer_clear_dynamic_heap_offset(r);
+  owl_renderer_dynamic_heap_clear_offset(r);
 
   return code;
 }
