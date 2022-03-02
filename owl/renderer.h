@@ -274,7 +274,7 @@ owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
                                       VkMemoryRequirements const *requirements,
                                       enum owl_memory_visibility vis);
 
-int owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
+int owl_renderer_dynamic_heap_is_offset_clear(struct owl_renderer const *r);
 
 void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
 
@@ -304,7 +304,7 @@ enum owl_code owl_renderer_deinit_single_use_command_buffer(
     struct owl_renderer const *r,
     struct owl_single_use_command_buffer *command);
 
-void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
+void owl_renderer_dynamic_heap_clear_offset(struct owl_renderer *r);
 
 enum owl_code owl_renderer_begin_frame(struct owl_renderer *r);
 
