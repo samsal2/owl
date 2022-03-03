@@ -231,9 +231,9 @@ char const *fps_string(double time) {
   } while (0)
 
 static struct owl_client_init_info client_info;
-static struct owl_client client;
+static struct owl_client *client;
 static struct owl_renderer_init_info renderer_info;
-static struct owl_renderer renderer;
+static struct owl_renderer *renderer;
 static struct owl_image_init_info image_info;
 static struct owl_image image;
 static struct cloth cloth;
@@ -256,11 +256,12 @@ int main(void) {
   client_info.height = 600;
   client_info.width = 600;
   client_info.title = "cloth-sim";
-  TEST(owl_client_init(&client_info, &client));
+  client = OWL_MALLOC(sizeof(*client));
+  TEST(owl_client_init(&client_info, client));
 
-  TEST(owl_client_fill_renderer_init_info(&client, &renderer_info));
-
-  TEST(owl_renderer_init(&renderer_info, &renderer));
+  TEST(owl_client_fill_renderer_init_info(client, &renderer_info));
+  renderer = OWL_MALLOC(sizeof(*renderer));
+  TEST(owl_renderer_init(&renderer_info, renderer));
 
   image_info.source_type = OWL_IMAGE_SOURCE_TYPE_FILE;
   image_info.path = TPATH;
@@ -271,9 +272,9 @@ int main(void) {
   image_info.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
   image_info.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
   image_info.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  TEST(owl_image_init(&renderer, &image_info, &image));
+  TEST(owl_image_init(renderer, &image_info, &image));
 
-  TEST(owl_font_init(&renderer, 128, FONTPATH, &font));
+  TEST(owl_font_init(renderer, 128, FONTPATH, &font));
 
   TEST(owl_camera_init(&camera));
 
@@ -283,52 +284,52 @@ int main(void) {
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
   OWL_V3_SET(-0.5F, -0.5F, -1.0F, text_command.position);
 
-  while (!owl_client_is_done(&client)) {
+  while (!owl_client_is_done(client)) {
 #if 1
 
     if (UNSELECTED == selected &&
-        OWL_BUTTON_STATE_PRESS == client.mouse_keys[OWL_MOUSE_KEY_LEFT])
-      selected = select_particle_at(client.cursor_position, &cloth);
+        OWL_BUTTON_STATE_PRESS == client->mouse_keys[OWL_MOUSE_KEY_LEFT])
+      selected = select_particle_at(client->cursor_position, &cloth);
 
     if (UNSELECTED != selected)
-      change_particle_position(selected, client.cursor_position, &cloth);
+      change_particle_position(selected, client->cursor_position, &cloth);
 
     if (UNSELECTED != selected &&
-        OWL_BUTTON_STATE_RELEASE == client.mouse_keys[OWL_MOUSE_KEY_LEFT])
+        OWL_BUTTON_STATE_RELEASE == client->mouse_keys[OWL_MOUSE_KEY_LEFT])
       selected = UNSELECTED;
 
 #endif
 
     update_cloth(1.0F / 60.0F, &cloth);
 
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(&renderer)) {
-      owl_client_fill_renderer_init_info(&client, &renderer_info);
-      owl_renderer_resize_swapchain(&renderer_info, &renderer);
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
+      owl_client_fill_renderer_init_info(client, &renderer_info);
+      owl_renderer_resize_swapchain(&renderer_info, renderer);
       continue;
     }
 
 #if 1
-    owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_MAIN);
+    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
 #else
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_WIRES);
 #endif
-    owl_submit_draw_basic_command(&renderer, &camera, &cloth.command_);
+    owl_submit_draw_basic_command(renderer, &camera, &cloth.command_);
 
-    owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_FONT);
-    text_command.text = fps_string(client.dt_time_stamp);
-    owl_submit_draw_text_command(&renderer, &camera, &text_command);
+    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
+    text_command.text = fps_string(client->dt_time_stamp);
+    owl_submit_draw_text_command(renderer, &camera, &text_command);
 
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(&renderer)) {
-      owl_client_fill_renderer_init_info(&client, &renderer_info);
-      owl_renderer_resize_swapchain(&renderer_info, &renderer);
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
+      owl_client_fill_renderer_init_info(client, &renderer_info);
+      owl_renderer_resize_swapchain(&renderer_info, renderer);
       continue;
     }
 
-    owl_client_poll_events(&client);
+    owl_client_poll_events(client);
   }
 
-  owl_font_deinit(&renderer, &font);
-  owl_image_deinit(&renderer, &image);
-  owl_renderer_deinit(&renderer);
-  owl_client_deinit(&client);
+  owl_font_deinit(renderer, &font);
+  owl_image_deinit(renderer, &image);
+  owl_renderer_deinit(renderer);
+  owl_client_deinit(client);
 }

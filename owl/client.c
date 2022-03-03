@@ -1,7 +1,6 @@
 #include "client.h"
 
 #include "internal.h"
-#include "owl/types.h"
 #include "renderer.h"
 #include "vector_math.h"
 

@@ -262,9 +262,6 @@ struct owl_renderer {
   /* image manager resources */
   /* ====================================================================== */
   int image_manager_slots[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
-  owl_u32 image_manager_mips[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
-  owl_u32 image_manager_layers[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
-  VkExtent2D image_manager_extents[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkImage image_manager_images[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkDeviceMemory image_manager_memories[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkImageView image_manager_views[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];

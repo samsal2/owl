@@ -29,7 +29,7 @@ OWL_INTERNAL enum owl_code owl_scene_load_images_(struct owl_renderer *r,
   for (i = 0; i < (int)data->images_count; ++i) {
     char uri[128];
     struct owl_image_init_info iii;
-    struct owl_image *image = &scene->images[i];
+    struct owl_scene_image_data *image = &scene->images[i];
 
     if (OWL_SUCCESS != (code = owl_fix_uri_(data->images[i].uri, uri)))
       goto end;
@@ -38,7 +38,7 @@ OWL_INTERNAL enum owl_code owl_scene_load_images_(struct owl_renderer *r,
     iii.path = uri;
     iii.use_default_sampler = 1;
 
-    if (OWL_SUCCESS != (code = owl_image_init(r, &iii, image)))
+    if (OWL_SUCCESS != (code = owl_image_init(r, &iii, &image->image)))
       goto end;
   }
 
@@ -57,8 +57,8 @@ OWL_INTERNAL enum owl_code owl_scene_load_textures_(struct owl_renderer *r,
   OWL_UNUSED(r);
 
   for (i = 0; i < (int)data->textures_count; ++i) {
-    cgltf_texture const *from = &data->textures[i];
-    scene->textures[i] = (int)(from->image - data->images);
+    cgltf_texture const *from_texture = &data->textures[i];
+    scene->textures[i].image.slot = (int)(from_texture->image - data->images);
   }
 
   scene->textures_count = (int)data->textures_count;
@@ -80,25 +80,32 @@ OWL_INTERNAL enum owl_code owl_scene_load_materials_(struct owl_renderer *r,
   }
 
   for (i = 0; i < (int)data->materials_count; ++i) {
-    cgltf_material const *from = &data->materials[i];
-    struct owl_scene_material *material = &scene->materials[i];
+    cgltf_material const *from_material = &data->materials[i];
+    struct owl_scene_material_data *material_data = &scene->materials[i];
 
-    OWL_ASSERT(from->has_pbr_metallic_roughness);
+    OWL_ASSERT(from_material->has_pbr_metallic_roughness);
 
-    OWL_V4_COPY(from->pbr_metallic_roughness.base_color_factor,
-                material->base_color_factor);
+    OWL_V4_COPY(from_material->pbr_metallic_roughness.base_color_factor,
+                material_data->base_color_factor);
 
-    material->base_color_texture =
-        (int)(from->pbr_metallic_roughness.base_color_texture.texture -
+    material_data->base_color_texture.slot =
+        (int)(from_material->pbr_metallic_roughness.base_color_texture.texture -
               data->textures);
 
-    material->normal_texture =
-        (int)(from->normal_texture.texture - data->textures);
+#if 0
+    OWL_ASSERT(from_material->normal_texture.texture);
+
+    material_data->normal_texture.slot =
+        (int)(from_material->normal_texture.texture - data->textures);
+#else
+    /* HACK(samuel): currently we don't check for the normal texture */
+    material_data->normal_texture.slot = material_data->base_color_texture.slot;
+#endif
 
     /* FIXME(samuel): make sure this is right */
-    material->alpha_mode = (enum owl_alpha_mode)from->alpha_mode;
-    material->alpha_cutoff = from->alpha_cutoff;
-    material->double_sided = from->double_sided;
+    material_data->alpha_mode = (enum owl_alpha_mode)from_material->alpha_mode;
+    material_data->alpha_cutoff = from_material->alpha_cutoff;
+    material_data->double_sided = from_material->double_sided;
   }
 
   scene->materials_count = (int)data->materials_count;
@@ -108,25 +115,25 @@ end:
 }
 
 struct owl_scene_load_info {
-  struct owl_dynamic_heap_reference vertices_reference;
   int vertices_capacity;
   int vertices_count;
   struct owl_scene_vertex *vertices;
+  struct owl_dynamic_heap_reference vertices_reference;
 
-  struct owl_dynamic_heap_reference indices_reference;
   int indices_capacity;
   int indices_count;
   owl_u32 *indices;
+  struct owl_dynamic_heap_reference indices_reference;
 };
 
 OWL_INTERNAL cgltf_attribute const *
-owl_find_cgltf_attribute_(cgltf_primitive const *primitive,
+owl_find_cgltf_attribute_(cgltf_primitive const *from_primitive,
                           char const *attribute_name) {
   int i;
   cgltf_attribute const *attribute = NULL;
 
-  for (i = 0; i < (int)primitive->attributes_count; ++i) {
-    cgltf_attribute const *tmp = &primitive->attributes[i];
+  for (i = 0; i < (int)from_primitive->attributes_count; ++i) {
+    cgltf_attribute const *tmp = &from_primitive->attributes[i];
 
     if (!strcmp(tmp->name, attribute_name)) {
       attribute = tmp;
@@ -190,46 +197,53 @@ OWL_INTERNAL void owl_scene_setup_load_info_(struct owl_renderer *r,
 
 OWL_INTERNAL enum owl_code
 owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *cgltf,
-                     cgltf_node const *from_node, owl_scene_node parent,
+                     cgltf_node const *from_node,
+                     struct owl_scene_node const *parent,
                      struct owl_scene_load_info *sli, struct owl_scene *scene) {
 
   int i;
+  struct owl_scene_node node;
+  struct owl_scene_node_data *node_data;
   enum owl_code code = OWL_SUCCESS;
-  owl_scene_node node_index = scene->nodes_count++;
-  struct owl_scene_node_data *node = &scene->nodes[node_index];
 
-  node->parent = parent;
+  node.slot = scene->nodes_count++;
+  node_data = &scene->nodes[node.slot];
 
-  if (OWL_SCENE_NODE_NO_PARENT == parent) {
-    scene->roots[scene->roots_count++] = node_index;
+  node_data->parent.slot = parent->slot;
+
+  if (OWL_SCENE_NODE_NO_PARENT_SLOT == parent->slot) {
+    scene->roots[scene->roots_count++].slot = node.slot;
   } else {
-    struct owl_scene_node_data *parent_data = &scene->nodes[parent];
-    parent_data->children[parent_data->children_count++] = node_index;
+    struct owl_scene_node_data *parent_data = &scene->nodes[parent->slot];
+    parent_data->children[parent_data->children_count++].slot = node.slot;
   }
 
   if (from_node->has_matrix)
-    OWL_M4_COPY_V16(from_node->matrix, node->matrix);
+    OWL_M4_COPY_V16(from_node->matrix, node_data->matrix);
   else
-    OWL_M4_IDENTITY(node->matrix);
+    OWL_M4_IDENTITY(node_data->matrix);
 
   for (i = 0; i < (int)from_node->children_count; ++i) {
-    code = owl_scene_load_node_(r, cgltf, from_node->children[i], node_index,
-                                sli, scene);
+    code = owl_scene_load_node_(r, cgltf, from_node->children[i], &node, sli,
+                                scene);
 
     if (OWL_SUCCESS != code)
       goto end;
   }
 
-  if (OWL_SCENE_MAX_MESHES_COUNT <= (node->mesh = scene->meshes_count++)) {
+  node_data->mesh.slot = scene->meshes_count++;
+
+  if (OWL_SCENE_MAX_MESHES_COUNT <= node_data->mesh.slot) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
 
-  scene->meshes[node->mesh].primitives_count = 0;
+  scene->meshes[node_data->mesh.slot].primitives_count = 0;
 
   if (from_node->mesh) {
     cgltf_mesh const *from_mesh = from_node->mesh;
-    struct owl_scene_mesh_data *mesh = &scene->meshes[node->mesh];
+    struct owl_scene_mesh_data *mesh_data =
+        &scene->meshes[node_data->mesh.slot];
 
     for (i = 0; i < (int)from_mesh->primitives_count; ++i) {
       int j;
@@ -243,8 +257,19 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *cgltf,
       cgltf_buffer_view const *view = NULL;
       cgltf_accessor const *accessor = NULL;
       cgltf_attribute const *attribute = NULL;
-      struct owl_scene_primitive *primitive = &mesh->primitives[i];
+      struct owl_scene_primitive *primitive = NULL;
+      struct owl_scene_primitive_data *primitive_data = NULL;
       cgltf_primitive const *from_primitive = &from_mesh->primitives[i];
+
+      primitive = &mesh_data->primitives[i];
+      primitive->slot = scene->primitives_count++;
+
+      if (OWL_SCENE_MAX_PRIMITIVES_COUNT <= primitive->slot) {
+        code = OWL_ERROR_OUT_OF_BOUNDS;
+        goto end;
+      }
+
+      primitive_data = &scene->primitives[primitive->slot];
 
       attribute = owl_find_cgltf_attribute_(from_primitive, "POSITION");
 
@@ -350,15 +375,16 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *cgltf,
         goto end;
       }
 
-      primitive->first = (owl_u32)sli->indices_count;
-      primitive->count = (owl_u32)indices_count;
-      primitive->material = (int)(from_primitive->material - cgltf->materials);
+      primitive_data->first = (owl_u32)sli->indices_count;
+      primitive_data->count = (owl_u32)indices_count;
+      primitive_data->material.slot =
+          (int)(from_primitive->material - cgltf->materials);
 
       sli->indices_count += accessor->count;
       sli->vertices_count += vertices_count;
     }
 
-    mesh->primitives_count = (int)from_mesh->primitives_count;
+    mesh_data->primitives_count = (int)from_mesh->primitives_count;
   }
 
 end:
@@ -483,6 +509,7 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   int i;
   cgltf_options options;
   cgltf_data *data = NULL;
+  struct owl_scene_node root;
   struct owl_scene_load_info sli;
   enum owl_code code = OWL_SUCCESS;
 
@@ -494,6 +521,9 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   scene->textures_count = 0;
   scene->materials_count = 0;
   scene->meshes_count = 0;
+  scene->primitives_count = 0;
+
+  root.slot = OWL_SCENE_NODE_NO_PARENT_SLOT;
 
   OWL_MEMSET(&options, 0, sizeof(options));
 
@@ -519,8 +549,7 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   owl_scene_setup_load_info_(r, data, &sli);
 
   for (i = 0; i < (int)data->nodes_count; ++i)
-    owl_scene_load_node_(r, data, &data->nodes[i], OWL_SCENE_NODE_NO_PARENT,
-                         &sli, scene);
+    owl_scene_load_node_(r, data, &data->nodes[i], &root, &sli, scene);
 
   owl_scene_load_buffers_(r, &sli, scene);
 
@@ -544,5 +573,5 @@ void owl_scene_deinit(struct owl_renderer *r, struct owl_scene *scene) {
   vkDestroyBuffer(r->device, scene->vertices_buffer, NULL);
 
   for (i = 0; i < scene->images_count; ++i)
-    owl_image_deinit(r, &scene->images[i]);
+    owl_image_deinit(r, &scene->images[i].image);
 }

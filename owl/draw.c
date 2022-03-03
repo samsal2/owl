@@ -255,33 +255,39 @@ OWL_INTERNAL
 enum owl_code
 owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
                        struct owl_draw_scene_command const *command,
-                       owl_scene_node node_index) {
+                       struct owl_scene_node const *node) {
 
   int i;
   struct owl_scene_push_constant push_constant;
   enum owl_code code = OWL_SUCCESS;
-  owl_scene_node current = node_index;
-  struct owl_scene_node_data const *node = &command->scene->nodes[node_index];
-  struct owl_scene_mesh_data const *mesh = &command->scene->meshes[node->mesh];
+  struct owl_scene_node current;
+  struct owl_scene const *scene = command->scene;
+  struct owl_scene_node_data const *node_data = &scene->nodes[node->slot];
+  struct owl_scene_mesh_data const *mesh_data =
+      &scene->meshes[node_data->mesh.slot];
 
-  for (i = 0; i < node->children_count; ++i) {
-    code = owl_scene_submit_node_(r, cam, command, node->children[node_index]);
+  for (i = 0; i < node_data->children_count; ++i) {
+    code = owl_scene_submit_node_(r, cam, command, &node_data->children[i]);
 
     if (OWL_SUCCESS != code)
       goto end;
   }
 
-  if (!mesh->primitives_count)
+  if (!mesh_data->primitives_count)
     goto end;
 
-  OWL_M4_COPY(node->matrix, push_constant.model);
+  OWL_M4_COPY(node_data->matrix, push_constant.model);
 
-  while (OWL_SCENE_NODE_NO_PARENT != current) {
+  current.slot = node->slot;
+
+  while (OWL_SCENE_NODE_NO_PARENT_SLOT != current.slot) {
     struct owl_scene_node_data const *current_data =
-        &command->scene->nodes[current];
+        &scene->nodes[current.slot];
+
     owl_m4_mul_rotation(push_constant.model, current_data->matrix,
                         push_constant.model);
-    current = current_data->parent;
+
+    current.slot = current_data->parent.slot;
   }
 
   // OWL_V3_SET(0.0F, 0.0F, -1.0F, position);
@@ -291,22 +297,24 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),
                      &push_constant);
 
-  for (i = 0; i < mesh->primitives_count; ++i) {
+  for (i = 0; i < mesh_data->primitives_count; ++i) {
     owl_byte *upload;
     VkDescriptorSet sets[3];
     struct owl_scene_uniform uniform;
     struct owl_dynamic_heap_reference dhr;
-    struct owl_scene_primitive const *primitive = &mesh->primitives[i];
-    struct owl_scene_material const *material =
-        &command->scene->materials[primitive->material];
-    owl_scene_texture base_image_index =
-        command->scene->textures[material->base_color_texture];
-    owl_scene_texture normal_image_index =
-        command->scene->textures[material->base_color_texture];
-    struct owl_image const *base_image =
-        &command->scene->images[base_image_index];
-    struct owl_image const *normal_image =
-        &command->scene->images[normal_image_index];
+    struct owl_scene_primitive const *primitive = &mesh_data->primitives[i];
+    struct owl_scene_primitive_data const *primitive_data =
+        &scene->primitives[primitive->slot];
+    struct owl_scene_material_data const *material_data =
+        &scene->materials[primitive_data->material.slot];
+    struct owl_scene_texture_data const *base_color_texture_data =
+        &scene->textures[material_data->base_color_texture.slot];
+    struct owl_scene_texture_data const *normal_texture_data =
+        &scene->textures[material_data->normal_texture.slot];
+    struct owl_scene_image_data const *base_image_data =
+        &scene->images[base_color_texture_data->image.slot];
+    struct owl_scene_image_data const *normal_image_data =
+        &scene->images[normal_texture_data->image.slot];
 
     OWL_M4_COPY(cam->projection, uniform.projection);
     OWL_M4_COPY(cam->view, uniform.view);
@@ -316,23 +324,23 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
     OWL_V4_ZERO(uniform.eye);
     OWL_V3_COPY(cam->eye, uniform.eye);
 
-    uniform.enable_alpha_mask = (int)material->alpha_mode;
-    uniform.alpha_cutoff = material->alpha_cutoff;
+    uniform.enable_alpha_mask = (int)material_data->alpha_mode;
+    uniform.alpha_cutoff = material_data->alpha_cutoff;
 
     upload = owl_renderer_dynamic_heap_alloc(r, sizeof(uniform), &dhr);
     OWL_MEMCPY(upload, &uniform, sizeof(uniform));
 
     sets[0] = dhr.scene_set;
-    sets[1] = r->image_manager_sets[base_image->slot];
-    sets[2] = r->image_manager_sets[normal_image->slot];
+    sets[1] = r->image_manager_sets[base_image_data->image.slot];
+    sets[2] = r->image_manager_sets[normal_image_data->image.slot];
 
     vkCmdBindDescriptorSets(r->active_frame_command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
                             sets, 1, &dhr.offset32);
 
-    vkCmdDrawIndexed(r->active_frame_command_buffer, primitive->count, 1,
-                     primitive->first, 0, 0);
+    vkCmdDrawIndexed(r->active_frame_command_buffer, primitive_data->count, 1,
+                     primitive_data->first, 0, 0);
   }
 
 end:
@@ -353,7 +361,7 @@ owl_submit_draw_scene_command(struct owl_renderer *r, struct owl_camera *cam,
                        command->scene->indices_buffer, 0, VK_INDEX_TYPE_UINT32);
 
   for (i = 0; i < command->scene->roots_count; ++i) {
-    code = owl_scene_submit_node_(r, cam, command, command->scene->roots[i]);
+    code = owl_scene_submit_node_(r, cam, command, &command->scene->roots[i]);
 
     if (OWL_SUCCESS != code)
       goto end;
