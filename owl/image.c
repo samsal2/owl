@@ -3,6 +3,7 @@
 #include "internal.h"
 #include "renderer.h"
 #include "types.h"
+#include "vulkan/vulkan_core.h"
 
 #include <math.h>
 #include <stb/stb_image.h>
@@ -399,6 +400,7 @@ end:
 }
 
 void owl_image_deinit(struct owl_renderer *r, struct owl_image *i) {
+  OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
   OWL_ASSERT(r->image_manager_slots[i->slot]);
 
   r->image_manager_slots[i->slot] = 0;

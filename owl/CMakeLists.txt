@@ -1,7 +1,8 @@
 target_sources(${PROJECT_NAME} PRIVATE
-  CMakeLists.txt
   camera.c
   camera.h
+  client.c
+  client.h
   font.c
   font.h
   internal.c
@@ -12,8 +13,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   renderer.h
   vector_math.c
   vector_math.h
-  window.c
-  window.h
   draw.c
   draw.h
   scene.c

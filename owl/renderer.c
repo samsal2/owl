@@ -1,9 +1,9 @@
 #include "renderer.h"
 
+#include "client.h"
 #include "draw.h"
 #include "internal.h"
 #include "scene.h"
-#include "window.h"
 
 #define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
 #define OWL_MAX_VERTEX_INPUT_ATTRIBUTES_COUNT 8

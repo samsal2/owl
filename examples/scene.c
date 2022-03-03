@@ -2,9 +2,8 @@
 
 #include <stdio.h>
 
-static struct owl_window_init_info window_info;
-static struct owl_window window;
-static struct owl_input_state *input;
+static struct owl_client_init_info client_info;
+static struct owl_client client;
 static struct owl_renderer_init_info renderer_info;
 static struct owl_renderer renderer;
 static struct owl_scene scene;
@@ -23,12 +22,12 @@ static struct owl_camera cam;
   } while (0)
 
 int main(void) {
-  window_info.height = 600;
-  window_info.width = 600;
-  window_info.title = "scene";
-  TEST(owl_window_init(&window_info, &input, &window));
+  client_info.height = 600;
+  client_info.width = 600;
+  client_info.title = "scene";
+  TEST(owl_client_init(&client_info, &client));
 
-  TEST(owl_window_fill_renderer_init_info(&window, &renderer_info));
+  TEST(owl_client_fill_renderer_init_info(&client, &renderer_info));
   TEST(owl_renderer_init(&renderer_info, &renderer));
 
   TEST(owl_camera_init(&cam));
@@ -38,11 +37,11 @@ int main(void) {
   OWL_V3_SET(0.0F, 0.0F, -1.5F, scene_command.light);
   scene_command.scene = &scene;
 
-  while (!owl_window_is_done(&window)) {
-    OWL_V2_COPY(input->cursor_position, scene_command.light);
+  while (!owl_client_is_done(&client)) {
+    OWL_V2_COPY(client.cursor_position, scene_command.light);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(&renderer)) {
-      owl_window_fill_renderer_init_info(&window, &renderer_info);
+      owl_client_fill_renderer_init_info(&client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, &renderer);
       continue;
     }
@@ -51,16 +50,16 @@ int main(void) {
     owl_submit_draw_scene_command(&renderer, &cam, &scene_command);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(&renderer)) {
-      owl_window_fill_renderer_init_info(&window, &renderer_info);
+      owl_client_fill_renderer_init_info(&client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, &renderer);
       continue;
     }
 
-    owl_window_poll(&window);
+    owl_client_poll_events(&client);
   }
 
   owl_camera_deinit(&cam);
   owl_scene_deinit(&renderer, &scene);
   owl_renderer_deinit(&renderer);
-  owl_window_deinit(&window);
+  owl_client_deinit(&client);
 }

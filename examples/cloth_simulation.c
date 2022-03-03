@@ -230,9 +230,8 @@ char const *fps_string(double time) {
     }                                                                          \
   } while (0)
 
-static struct owl_window_init_info window_info;
-static struct owl_window window;
-static struct owl_input_state *input;
+static struct owl_client_init_info client_info;
+static struct owl_client client;
 static struct owl_renderer_init_info renderer_info;
 static struct owl_renderer renderer;
 static struct owl_image_init_info image_info;
@@ -254,12 +253,12 @@ int main(void) {
   owl_v3 color;
   owl_u32 selected = UNSELECTED;
 
-  window_info.height = 600;
-  window_info.width = 600;
-  window_info.title = "cloth-sim";
-  TEST(owl_window_init(&window_info, &input, &window));
+  client_info.height = 600;
+  client_info.width = 600;
+  client_info.title = "cloth-sim";
+  TEST(owl_client_init(&client_info, &client));
 
-  TEST(owl_window_fill_renderer_init_info(&window, &renderer_info));
+  TEST(owl_client_fill_renderer_init_info(&client, &renderer_info));
 
   TEST(owl_renderer_init(&renderer_info, &renderer));
 
@@ -284,18 +283,18 @@ int main(void) {
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
   OWL_V3_SET(-0.5F, -0.5F, -1.0F, text_command.position);
 
-  while (!owl_window_is_done(&window)) {
+  while (!owl_client_is_done(&client)) {
 #if 1
 
     if (UNSELECTED == selected &&
-        OWL_BUTTON_STATE_PRESS == input->mouse[OWL_MOUSE_BUTTON_LEFT])
-      selected = select_particle_at(input->cursor_position, &cloth);
+        OWL_BUTTON_STATE_PRESS == client.mouse_keys[OWL_MOUSE_KEY_LEFT])
+      selected = select_particle_at(client.cursor_position, &cloth);
 
     if (UNSELECTED != selected)
-      change_particle_position(selected, input->cursor_position, &cloth);
+      change_particle_position(selected, client.cursor_position, &cloth);
 
     if (UNSELECTED != selected &&
-        OWL_BUTTON_STATE_RELEASE == input->mouse[OWL_MOUSE_BUTTON_LEFT])
+        OWL_BUTTON_STATE_RELEASE == client.mouse_keys[OWL_MOUSE_KEY_LEFT])
       selected = UNSELECTED;
 
 #endif
@@ -303,7 +302,7 @@ int main(void) {
     update_cloth(1.0F / 60.0F, &cloth);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(&renderer)) {
-      owl_window_fill_renderer_init_info(&window, &renderer_info);
+      owl_client_fill_renderer_init_info(&client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, &renderer);
       continue;
     }
@@ -316,20 +315,20 @@ int main(void) {
     owl_submit_draw_basic_command(&renderer, &camera, &cloth.command_);
 
     owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_FONT);
-    text_command.text = fps_string(input->dt_time);
+    text_command.text = fps_string(client.dt_time_stamp);
     owl_submit_draw_text_command(&renderer, &camera, &text_command);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(&renderer)) {
-      owl_window_fill_renderer_init_info(&window, &renderer_info);
+      owl_client_fill_renderer_init_info(&client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, &renderer);
       continue;
     }
 
-    owl_window_poll(&window);
+    owl_client_poll_events(&client);
   }
 
   owl_font_deinit(&renderer, &font);
   owl_image_deinit(&renderer, &image);
   owl_renderer_deinit(&renderer);
-  owl_window_deinit(&window);
+  owl_client_deinit(&client);
 }

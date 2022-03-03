@@ -1,9 +1,15 @@
-#ifndef OWL_WINDOW_H_
-#define OWL_WINDOW_H_
+#ifndef OWL_CLIENT_H_
+#define OWL_CLIENT_H_
 
 #include "types.h"
 
 struct owl_renderer_init_info;
+
+struct owl_client_init_info {
+  char const *title;
+  int width;
+  int height;
+};
 
 enum owl_button_state {
   OWL_BUTTON_STATE_NONE,
@@ -12,14 +18,13 @@ enum owl_button_state {
   OWL_BUTTON_STATE_REPEAT
 };
 
-enum owl_mouse_button {
-  OWL_MOUSE_BUTTON_LEFT,
-  OWL_MOUSE_BUTTON_MIDDLE,
-  OWL_MOUSE_BUTTON_RIGHT,
-  OWL_MOUSE_BUTTON_COUNT
+enum owl_mouse_key {
+  OWL_MOUSE_KEY_LEFT,
+  OWL_MOUSE_KEY_MIDDLE,
+  OWL_MOUSE_KEY_RIGHT,
+  OWL_MOUSE_KEY_COUNT
 };
 
-/* taken from GLFW/glfw3.h */
 enum owl_keyboard_key {
   /* Printable keys */
   OWL_KEYBOARD_KEY_SPACE = 32,
@@ -147,47 +152,33 @@ enum owl_keyboard_key {
 
 #define OWL_KEYBOARD_KEY_LAST OWL_KEYBOARD_KEY_MENU
 
-struct owl_input_state {
-  double dt_time;
-  double previous_time_stamp;
-  double time_stamp;
-  owl_v2 cursor_position;
-  owl_v2 previous_cursor_position;
-  enum owl_button_state mouse[OWL_MOUSE_BUTTON_COUNT];
-  enum owl_button_state keyboard[OWL_KEYBOARD_KEY_LAST];
-};
-
-struct owl_window_init_info {
-  int width;
-  int height;
+struct owl_client {
   char const *title;
-};
-
-struct owl_window {
-  char const *title;
-
-  void *data;
-
-  int window_width;
-  int window_height;
+  void *window;
   int framebuffer_width;
   int framebuffer_height;
-
-  struct owl_input_state input;
+  int window_width;
+  int window_height;
+  double dt_time_stamp;
+  double time_stamp;
+  double previous_time_stamp;
+  owl_v2 cursor_position;
+  owl_v2 previous_cursor_position;
+  enum owl_button_state mouse_keys[OWL_MOUSE_KEY_COUNT];
+  enum owl_button_state keyboard_keys[OWL_KEYBOARD_KEY_LAST];
 };
 
-enum owl_code owl_window_init(struct owl_window_init_info const *wii,
-                              struct owl_input_state **input,
-                              struct owl_window *w);
+enum owl_code owl_client_init(struct owl_client_init_info const *cii,
+                              struct owl_client *c);
 
-void owl_window_deinit(struct owl_window *w);
+void owl_client_deinit(struct owl_client *c);
 
 enum owl_code
-owl_window_fill_renderer_init_info(struct owl_window const *w,
-                                   struct owl_renderer_init_info *wii);
+owl_client_fill_renderer_init_info(struct owl_client const *c,
+                                   struct owl_renderer_init_info *rii);
 
-void owl_window_poll(struct owl_window *w);
+void owl_client_poll_events(struct owl_client *c);
 
-int owl_window_is_done(struct owl_window *w);
+int owl_client_is_done(struct owl_client *c);
 
 #endif
