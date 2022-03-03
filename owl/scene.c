@@ -2,9 +2,8 @@
 #include "scene.h"
 
 #include "internal.h"
-#include "owl/types.h"
 #include "renderer.h"
-#include "texture.h"
+#include "types.h"
 #include "vector_math.h"
 
 #include <cgltf/cgltf.h>
@@ -29,13 +28,17 @@ OWL_INTERNAL enum owl_code owl_scene_load_images_(struct owl_renderer *r,
 
   for (i = 0; i < (int)data->images_count; ++i) {
     char uri[128];
-    struct owl_texture_init_info tii;
-    struct owl_texture *t = &scene->images[i];
+    struct owl_image_init_info iii;
+    struct owl_image *image = &scene->images[i];
 
     if (OWL_SUCCESS != (code = owl_fix_uri_(data->images[i].uri, uri)))
       goto end;
 
-    if (OWL_SUCCESS != (code = owl_texture_init_from_file(r, &tii, uri, t)))
+    iii.source_type = OWL_IMAGE_SOURCE_TYPE_FILE;
+    iii.path = uri;
+    iii.use_default_sampler = 1;
+
+    if (OWL_SUCCESS != (code = owl_image_init(r, &iii, image)))
       goto end;
   }
 
@@ -177,10 +180,12 @@ OWL_INTERNAL void owl_scene_setup_load_info_(struct owl_renderer *r,
     owl_scene_find_load_info_capacities_(&data->nodes[i], sli);
 
   size = (owl_u64)sli->vertices_capacity * sizeof(struct owl_scene_vertex);
-  sli->vertices = owl_renderer_dynamic_heap_alloc(r, size, &sli->vertices_reference);
+  sli->vertices =
+      owl_renderer_dynamic_heap_alloc(r, size, &sli->vertices_reference);
 
   size = (owl_u64)sli->indices_capacity * sizeof(owl_u32);
-  sli->indices = owl_renderer_dynamic_heap_alloc(r, size, &sli->indices_reference);
+  sli->indices =
+      owl_renderer_dynamic_heap_alloc(r, size, &sli->indices_reference);
 }
 
 OWL_INTERNAL enum owl_code
@@ -481,7 +486,7 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   struct owl_scene_load_info sli;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_dynamic_heap_is_offset_clear(r));
+  OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
 
   scene->roots_count = 0;
   scene->nodes_count = 0;
@@ -539,5 +544,5 @@ void owl_scene_deinit(struct owl_renderer *r, struct owl_scene *scene) {
   vkDestroyBuffer(r->device, scene->vertices_buffer, NULL);
 
   for (i = 0; i < scene->images_count; ++i)
-    owl_texture_deinit(r, &scene->images[i]);
+    owl_image_deinit(r, &scene->images[i]);
 }

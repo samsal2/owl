@@ -4,10 +4,10 @@ target_sources(${PROJECT_NAME} PRIVATE
   camera.h
   font.c
   font.h
-  texture.c
-  texture.h
   internal.c
   internal.h
+  image.c
+  image.h
   renderer.c
   renderer.h
   vector_math.c
@@ -17,7 +17,5 @@ target_sources(${PROJECT_NAME} PRIVATE
   draw.c
   draw.h
   scene.c
-  scene.h
-  skybox.c
-  skybox.h)
+  scene.h)
 

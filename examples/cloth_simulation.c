@@ -199,12 +199,12 @@ static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
   return current;
 }
 
-void init_cloth(struct cloth *cloth, struct owl_texture *texture) {
+void init_cloth(struct cloth *cloth, struct owl_image *image) {
   owl_v3 position;
 
   init_cloth_(cloth);
 
-  cloth->command_.texture = texture;
+  cloth->command_.image.slot = image->slot;
   cloth->command_.indices_count = IDXS_COUNT;
   cloth->command_.indices = cloth->indices_;
   cloth->command_.vertices_count = PARTICLE_COUNT;
@@ -235,15 +235,12 @@ static struct owl_window window;
 static struct owl_input_state *input;
 static struct owl_renderer_init_info renderer_info;
 static struct owl_renderer renderer;
-static struct owl_texture_init_info texture_info;
-static struct owl_texture texture;
+static struct owl_image_init_info image_info;
+static struct owl_image image;
 static struct cloth cloth;
 static struct owl_font font;
 static struct owl_draw_text_command text_command;
 static struct owl_camera camera;
-static struct owl_skybox_init_info skybox_info;
-static struct owl_skybox skybox;
-static struct owl_draw_skybox_command skybox_command;
 
 #define UNSELECTED (owl_u32) - 1
 #define TPATH "../../assets/cloth.jpeg"
@@ -266,33 +263,26 @@ int main(void) {
 
   TEST(owl_renderer_init(&renderer_info, &renderer));
 
-  texture_info.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-  texture_info.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-  texture_info.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-  texture_info.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  texture_info.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  texture_info.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  TEST(owl_texture_init_from_file(&renderer, &texture_info, TPATH, &texture));
+  image_info.source_type = OWL_IMAGE_SOURCE_TYPE_FILE;
+  image_info.path = TPATH;
+  image_info.use_default_sampler = 0;
+  image_info.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
+  image_info.min_filter = OWL_SAMPLER_FILTER_LINEAR;
+  image_info.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
+  image_info.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  image_info.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  image_info.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  TEST(owl_image_init(&renderer, &image_info, &image));
 
   TEST(owl_font_init(&renderer, 128, FONTPATH, &font));
 
-  skybox_info.right = "../../assets/skybox/right.jpg";
-  skybox_info.left = "../../assets/skybox/left.jpg";
-  skybox_info.top = "../../assets/skybox/top.jpg";
-  skybox_info.bottom = "../../assets/skybox/bottom.jpg";
-  skybox_info.front = "../../assets/skybox/front.jpg";
-  skybox_info.back = "../../assets/skybox/back.jpg";
-  TEST(owl_skybox_init(&renderer, &skybox_info, &skybox));
-
   TEST(owl_camera_init(&camera));
 
-  init_cloth(&cloth, &texture);
+  init_cloth(&cloth, &image);
 
   text_command.font = &font;
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
   OWL_V3_SET(-0.5F, -0.5F, -1.0F, text_command.position);
-
-  skybox_command.skybox = &skybox;
 
   while (!owl_window_is_done(&window)) {
 #if 1
@@ -318,9 +308,6 @@ int main(void) {
       continue;
     }
 
-    owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_SKYBOX);
-    owl_submit_draw_skybox_command(&renderer, &camera, &skybox_command);
-
 #if 1
     owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_MAIN);
 #else
@@ -341,9 +328,8 @@ int main(void) {
     owl_window_poll(&window);
   }
 
-  owl_skybox_deinit(&renderer, &skybox);
   owl_font_deinit(&renderer, &font);
-  owl_texture_deinit(&renderer, &texture);
+  owl_image_deinit(&renderer, &image);
   owl_renderer_deinit(&renderer);
   owl_window_deinit(&window);
 }

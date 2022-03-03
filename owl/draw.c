@@ -5,7 +5,6 @@
 #include "internal.h"
 #include "renderer.h"
 #include "scene.h"
-#include "skybox.h"
 #include "vector_math.h"
 
 OWL_INTERNAL enum owl_code
@@ -49,7 +48,7 @@ owl_renderer_submit_indices_(struct owl_renderer *r, owl_u32 count,
 OWL_INTERNAL enum owl_code
 owl_renderer_submit_uniforms_(struct owl_renderer *r, owl_m4 const model,
                               struct owl_camera const *cam,
-                              struct owl_texture const *texture) {
+                              struct owl_image const *image) {
   owl_byte *data;
   VkDescriptorSet sets[2];
   struct owl_draw_uniform uniform;
@@ -64,7 +63,7 @@ owl_renderer_submit_uniforms_(struct owl_renderer *r, owl_m4 const model,
   OWL_MEMCPY(data, &uniform, sizeof(uniform));
 
   sets[0] = dhr.pvm_set;
-  sets[1] = texture->set;
+  sets[1] = r->image_manager_sets[image->slot];
 
   vkCmdBindDescriptorSets(r->active_frame_command_buffer,
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -92,8 +91,7 @@ owl_submit_draw_basic_command(struct owl_renderer *r,
   if (OWL_SUCCESS != code)
     goto end;
 
-  code =
-      owl_renderer_submit_uniforms_(r, command->model, cam, command->texture);
+  code = owl_renderer_submit_uniforms_(r, command->model, cam, &command->image);
 
   if (OWL_SUCCESS != code)
     goto end;
@@ -122,8 +120,7 @@ owl_submit_draw_quad_command(struct owl_renderer *r,
   if (OWL_SUCCESS != code)
     goto end;
 
-  code =
-      owl_renderer_submit_uniforms_(r, command->model, cam, command->texture);
+  code = owl_renderer_submit_uniforms_(r, command->model, cam, &command->image);
 
   if (OWL_SUCCESS != code)
     goto end;
@@ -152,7 +149,7 @@ OWL_INTERNAL enum owl_code owl_draw_text_command_fill_char_quad_(
     goto end;
   }
 
-  quad->texture = &text->font->atlas;
+  quad->image = text->font->atlas;
 
   OWL_M4_IDENTITY(quad->model);
   owl_m4_translate(text->position, quad->model);
@@ -254,69 +251,6 @@ end:
   return code;
 }
 
-OWL_GLOBAL owl_v3 const g_skybox_vertices[] = {
-    {-1.0f, 1.0f, -1.0f},  {-1.0f, -1.0f, -1.0f}, {1.0f, -1.0f, -1.0f},
-
-    {1.0f, -1.0f, -1.0f},  {1.0f, 1.0f, -1.0f},   {-1.0f, 1.0f, -1.0f},
-
-    {-1.0f, -1.0f, 1.0f},  {-1.0f, -1.0f, -1.0f}, {-1.0f, 1.0f, -1.0f},
-
-    {-1.0f, 1.0f, -1.0f},  {-1.0f, 1.0f, 1.0f},   {-1.0f, -1.0f, 1.0f},
-
-    {1.0f, -1.0f, -1.0f},  {1.0f, -1.0f, 1.0f},   {1.0f, 1.0f, 1.0f},
-
-    {1.0f, 1.0f, 1.0f},    {1.0f, 1.0f, -1.0f},   {1.0f, -1.0f, -1.0f},
-
-    {-1.0f, -1.0f, -1.0f}, {-1.0f, 1.0f, -1.0f},  {1.0f, 1.0f, -1.0f},
-
-    {1.0f, 1.0f, -1.0f},   {1.0f, -1.0f, -1.0f},  {-1.0f, -1.0f, -1.0f},
-
-    {-1.0f, 1.0f, -1.0f},  {1.0f, 1.0f, -1.0f},   {1.0f, 1.0f, 1.0f},
-
-    {1.0f, 1.0f, 1.0f},    {-1.0f, 1.0f, 1.0f},   {-1.0f, 1.0f, -1.0f},
-
-    {-1.0f, -1.0f, -1.0f}, {-1.0f, -1.0f, 1.0f},  {1.0f, -1.0f, -1.0f},
-
-    {1.0f, -1.0f, -1.0f},  {-1.0f, -1.0f, 1.0f},  {1.0f, -1.0f, 1.0f}};
-
-enum owl_code
-owl_submit_draw_skybox_command(struct owl_renderer *r,
-                               struct owl_camera const *cam,
-                               struct owl_draw_skybox_command const *command) {
-  owl_byte *data;
-  VkDescriptorSet sets[2];
-  struct owl_draw_uniform uniform;
-  struct owl_dynamic_heap_reference dhr;
-  enum owl_code code = OWL_SUCCESS;
-
-  data = owl_renderer_dynamic_heap_alloc(r, sizeof(g_skybox_vertices), &dhr);
-  OWL_MEMCPY(data, g_skybox_vertices, sizeof(g_skybox_vertices));
-
-  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &dhr.buffer,
-                         &dhr.offset);
-
-  OWL_M4_COPY(cam->projection, uniform.projection);
-  OWL_M4_IDENTITY(uniform.view);
-  OWL_M3_COPY(cam->view, uniform.view);
-  OWL_M4_IDENTITY(uniform.model);
-
-  data = owl_renderer_dynamic_heap_alloc(r, sizeof(uniform), &dhr);
-  OWL_MEMCPY(data, &uniform, sizeof(uniform));
-
-  sets[0] = dhr.pvm_set;
-  sets[1] = command->skybox->set;
-
-  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
-                          VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
-                          sets, 1, &dhr.offset32);
-
-  vkCmdDraw(r->active_frame_command_buffer, OWL_ARRAY_SIZE(g_skybox_vertices),
-            1, 0, 0);
-
-  return code;
-}
-
 OWL_INTERNAL
 enum owl_code
 owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
@@ -369,8 +303,10 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
         command->scene->textures[material->base_color_texture];
     owl_scene_texture normal_image_index =
         command->scene->textures[material->base_color_texture];
-    struct owl_texture const *base_image = &command->scene->images[base_image_index];
-    struct owl_texture const *normal_image = &command->scene->images[normal_image_index];
+    struct owl_image const *base_image =
+        &command->scene->images[base_image_index];
+    struct owl_image const *normal_image =
+        &command->scene->images[normal_image_index];
 
     OWL_M4_COPY(cam->projection, uniform.projection);
     OWL_M4_COPY(cam->view, uniform.view);
@@ -387,8 +323,8 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
     OWL_MEMCPY(upload, &uniform, sizeof(uniform));
 
     sets[0] = dhr.scene_set;
-    sets[1] = base_image->set;
-    sets[2] = normal_image->set;
+    sets[1] = r->image_manager_sets[base_image->slot];
+    sets[2] = r->image_manager_sets[normal_image->slot];
 
     vkCmdBindDescriptorSets(r->active_frame_command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,

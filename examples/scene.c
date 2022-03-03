@@ -10,9 +10,6 @@ static struct owl_renderer renderer;
 static struct owl_scene scene;
 static struct owl_draw_scene_command scene_command;
 static struct owl_camera cam;
-static struct owl_skybox_init_info skybox_info;
-static struct owl_skybox skybox;
-static struct owl_draw_skybox_command skybox_command;
 
 #define SCENE_PATH "../../assets/Suzanne.gltf"
 
@@ -34,19 +31,9 @@ int main(void) {
   TEST(owl_window_fill_renderer_init_info(&window, &renderer_info));
   TEST(owl_renderer_init(&renderer_info, &renderer));
 
-  skybox_info.right = "../../assets/skybox/right.jpg";
-  skybox_info.left = "../../assets/skybox/left.jpg";
-  skybox_info.top = "../../assets/skybox/top.jpg";
-  skybox_info.bottom = "../../assets/skybox/bottom.jpg";
-  skybox_info.front = "../../assets/skybox/front.jpg";
-  skybox_info.back = "../../assets/skybox/back.jpg";
-  TEST(owl_skybox_init(&renderer, &skybox_info, &skybox));
-
   TEST(owl_camera_init(&cam));
 
   TEST(owl_scene_init(&renderer, SCENE_PATH, &scene));
-
-  skybox_command.skybox = &skybox;
 
   OWL_V3_SET(0.0F, 0.0F, -1.5F, scene_command.light);
   scene_command.scene = &scene;
@@ -59,9 +46,6 @@ int main(void) {
       owl_renderer_resize_swapchain(&renderer_info, &renderer);
       continue;
     }
-
-    owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_SKYBOX);
-    owl_submit_draw_skybox_command(&renderer, &cam, &skybox_command);
 
     owl_renderer_bind_pipeline(&renderer, OWL_PIPELINE_TYPE_SCENE);
     owl_submit_draw_scene_command(&renderer, &cam, &scene_command);
@@ -77,7 +61,6 @@ int main(void) {
 
   owl_camera_deinit(&cam);
   owl_scene_deinit(&renderer, &scene);
-  owl_skybox_deinit(&renderer, &skybox);
   owl_renderer_deinit(&renderer);
   owl_window_deinit(&window);
 }

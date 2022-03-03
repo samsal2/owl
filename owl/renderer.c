@@ -3,7 +3,6 @@
 #include "draw.h"
 #include "internal.h"
 #include "scene.h"
-#include "skybox.h"
 #include "window.h"
 
 #define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
@@ -1028,7 +1027,7 @@ owl_renderer_init_set_layouts_(struct owl_renderer *r) {
     layout.pBindings = bindings;
 
     OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
-                                             &r->texture_set_layout));
+                                             &r->image_set_layout));
   }
 
   {
@@ -1057,7 +1056,7 @@ owl_renderer_init_set_layouts_(struct owl_renderer *r) {
 
 OWL_INTERNAL void owl_renderer_deinit_set_layouts_(struct owl_renderer *r) {
   vkDestroyDescriptorSetLayout(r->device, r->scene_set_layout, NULL);
-  vkDestroyDescriptorSetLayout(r->device, r->texture_set_layout, NULL);
+  vkDestroyDescriptorSetLayout(r->device, r->image_set_layout, NULL);
   vkDestroyDescriptorSetLayout(r->device, r->pvm_set_layout, NULL);
 }
 
@@ -1073,7 +1072,7 @@ owl_renderer_init_pipelines_layouts_(struct owl_renderer *r) {
     VkPipelineLayoutCreateInfo layout;
 
     sets[0] = r->pvm_set_layout;
-    sets[1] = r->texture_set_layout;
+    sets[1] = r->image_set_layout;
 
     layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layout.pNext = NULL;
@@ -1097,8 +1096,8 @@ owl_renderer_init_pipelines_layouts_(struct owl_renderer *r) {
     push_constant.size = sizeof(struct owl_scene_push_constant);
 
     sets[0] = r->scene_set_layout;
-    sets[1] = r->texture_set_layout;
-    sets[2] = r->texture_set_layout;
+    sets[1] = r->image_set_layout;
+    sets[2] = r->image_set_layout;
 
     layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layout.pNext = NULL;
@@ -1179,40 +1178,6 @@ OWL_INTERNAL enum owl_code owl_renderer_init_shaders_(struct owl_renderer *r) {
   {
     VkShaderModuleCreateInfo shader;
 
-    OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/skybox_vertex.spv.u32"
-    };
-
-    shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shader.pNext = NULL;
-    shader.flags = 0;
-    shader.codeSize = sizeof(code);
-    shader.pCode = code;
-
-    OWL_VK_CHECK(vkCreateShaderModule(r->device, &shader, NULL,
-                                      &r->skybox_vertex_shader));
-  }
-
-  {
-    VkShaderModuleCreateInfo shader;
-
-    OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/skybox_fragment.spv.u32"
-    };
-
-    shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shader.pNext = NULL;
-    shader.flags = 0;
-    shader.codeSize = sizeof(code);
-    shader.pCode = code;
-
-    OWL_VK_CHECK(vkCreateShaderModule(r->device, &shader, NULL,
-                                      &r->skybox_fragment_shader));
-  }
-
-  {
-    VkShaderModuleCreateInfo shader;
-
     /* TODO(samuel): Properly load code at runtime */
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
 #include "../shaders/scene_vertex.spv.u32"
@@ -1251,8 +1216,6 @@ OWL_INTERNAL enum owl_code owl_renderer_init_shaders_(struct owl_renderer *r) {
 OWL_INTERNAL void owl_renderer_deinit_shaders_(struct owl_renderer *r) {
   vkDestroyShaderModule(r->device, r->scene_fragment_shader, NULL);
   vkDestroyShaderModule(r->device, r->scene_vertex_shader, NULL);
-  vkDestroyShaderModule(r->device, r->skybox_fragment_shader, NULL);
-  vkDestroyShaderModule(r->device, r->skybox_vertex_shader, NULL);
   vkDestroyShaderModule(r->device, r->font_fragment_shader, NULL);
   vkDestroyShaderModule(r->device, r->basic_fragment_shader, NULL);
   vkDestroyShaderModule(r->device, r->basic_vertex_shader, NULL);
@@ -1307,18 +1270,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       vertex_attributes[2].offset = offsetof(struct owl_draw_vertex, uv);
       break;
 
-    case OWL_PIPELINE_TYPE_SKYBOX:
-      vertex_bindings[0].binding = 0;
-      vertex_bindings[0].stride = sizeof(struct owl_skybox_vertex);
-      vertex_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-      vertex_attributes[0].binding = 0;
-      vertex_attributes[0].location = 0;
-      vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_attributes[0].offset =
-          offsetof(struct owl_skybox_vertex, position);
-      break;
-
     case OWL_PIPELINE_TYPE_SCENE:
       vertex_bindings[0].binding = 0;
       vertex_bindings[0].stride = sizeof(struct owl_scene_vertex);
@@ -1369,17 +1320,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       vertex_input_state.pVertexAttributeDescriptions = vertex_attributes;
       break;
 
-    case OWL_PIPELINE_TYPE_SKYBOX:
-      vertex_input_state.sType =
-          VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-      vertex_input_state.pNext = NULL;
-      vertex_input_state.flags = 0;
-      vertex_input_state.vertexBindingDescriptionCount = 1;
-      vertex_input_state.pVertexBindingDescriptions = vertex_bindings;
-      vertex_input_state.vertexAttributeDescriptionCount = 1;
-      vertex_input_state.pVertexAttributeDescriptions = vertex_attributes;
-      break;
-
     case OWL_PIPELINE_TYPE_SCENE:
       vertex_input_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -1396,7 +1336,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SKYBOX:
     case OWL_PIPELINE_TYPE_SCENE:
       input_assembly_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -1411,7 +1350,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SKYBOX:
     case OWL_PIPELINE_TYPE_SCENE:
       viewport.x = 0.0F;
       viewport.y = 0.0F;
@@ -1426,7 +1364,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SKYBOX:
     case OWL_PIPELINE_TYPE_SCENE:
       scissor.offset.x = 0;
       scissor.offset.y = 0;
@@ -1438,7 +1375,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SKYBOX:
     case OWL_PIPELINE_TYPE_SCENE:
       viewport_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -1454,7 +1390,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     switch (i) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SKYBOX:
     case OWL_PIPELINE_TYPE_SCENE:
       rasterization_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -1494,7 +1429,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SKYBOX:
     case OWL_PIPELINE_TYPE_SCENE:
       multisample_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -1512,7 +1446,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     switch (i) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
-    case OWL_PIPELINE_TYPE_SKYBOX:
     case OWL_PIPELINE_TYPE_SCENE:
       color_blend_attachments[0].blendEnable = VK_FALSE;
       color_blend_attachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
@@ -1548,7 +1481,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SKYBOX:
     case OWL_PIPELINE_TYPE_SCENE:
       color_blend_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -1576,24 +1508,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       depth_stencil_state.flags = 0;
       depth_stencil_state.depthTestEnable = VK_TRUE;
       depth_stencil_state.depthWriteEnable = VK_TRUE;
-      depth_stencil_state.depthCompareOp = VK_COMPARE_OP_LESS;
-      depth_stencil_state.depthBoundsTestEnable = VK_FALSE;
-      depth_stencil_state.stencilTestEnable = VK_FALSE;
-      OWL_MEMSET(&depth_stencil_state.front, 0,
-                 sizeof(depth_stencil_state.front));
-      OWL_MEMSET(&depth_stencil_state.back, 0,
-                 sizeof(depth_stencil_state.back));
-      depth_stencil_state.minDepthBounds = 0.0F;
-      depth_stencil_state.maxDepthBounds = 1.0F;
-      break;
-
-    case OWL_PIPELINE_TYPE_SKYBOX:
-      depth_stencil_state.sType =
-          VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-      depth_stencil_state.pNext = NULL;
-      depth_stencil_state.flags = 0;
-      depth_stencil_state.depthTestEnable = VK_FALSE;
-      depth_stencil_state.depthWriteEnable = VK_FALSE;
       depth_stencil_state.depthCompareOp = VK_COMPARE_OP_LESS;
       depth_stencil_state.depthBoundsTestEnable = VK_FALSE;
       depth_stencil_state.stencilTestEnable = VK_FALSE;
@@ -1644,24 +1558,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       stages[1].pSpecializationInfo = NULL;
       break;
 
-    case OWL_PIPELINE_TYPE_SKYBOX:
-      stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-      stages[0].pNext = NULL;
-      stages[0].flags = 0;
-      stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-      stages[0].module = r->skybox_vertex_shader;
-      stages[0].pName = "main";
-      stages[0].pSpecializationInfo = NULL;
-
-      stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-      stages[1].pNext = NULL;
-      stages[1].flags = 0;
-      stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-      stages[1].module = r->skybox_fragment_shader;
-      stages[1].pName = "main";
-      stages[1].pSpecializationInfo = NULL;
-      break;
-
     case OWL_PIPELINE_TYPE_SCENE:
       stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
       stages[0].pNext = NULL;
@@ -1685,7 +1581,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SKYBOX:
       r->pipeline_layouts[i] = r->common_pipeline_layout;
       break;
 
@@ -1698,7 +1593,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SKYBOX:
     case OWL_PIPELINE_TYPE_SCENE:
       pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
       pipeline.pNext = NULL;
@@ -1731,7 +1625,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
 
 OWL_INTERNAL void owl_renderer_deinit_pipelines_(struct owl_renderer *r) {
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_SCENE], NULL);
-  vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_SKYBOX], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_FONT], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_WIRES], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_MAIN], NULL);
@@ -2063,7 +1956,7 @@ OWL_INTERNAL void owl_renderer_deinit_dynamic_heap_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_dynamic_heap_move_to_garbage_(struct owl_renderer *r) {
+owl_renderer_move_dynamic_heap_to_garbage_(struct owl_renderer *r) {
   int i;
   enum owl_code code = OWL_SUCCESS;
 
@@ -2133,6 +2026,37 @@ end:
   return code;
 }
 
+OWL_INTERNAL enum owl_code
+owl_renderer_init_image_manager_(struct owl_renderer *r) {
+  int i;
+  enum owl_code code = OWL_SUCCESS;
+
+  for (i = 0; i < OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT; ++i)
+    r->image_manager_slots[i] = 0;
+
+  return code;
+}
+
+OWL_INTERNAL void owl_renderer_deinit_image_manager_(struct owl_renderer *r) {
+  int i;
+
+  for (i = 0; i < OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT; ++i) {
+    if (!r->image_manager_slots[i])
+      continue;
+
+    OWL_DEBUG_LOG("(owl_image: %i) ayo? free your resources man", i);
+
+    r->image_manager_slots[i] = 0;
+
+    vkFreeDescriptorSets(r->device, r->common_set_pool, 1,
+                         &r->image_manager_sets[i]);
+    vkDestroySampler(r->device, r->image_manager_samplers[i], NULL);
+    vkDestroyImageView(r->device, r->image_manager_views[i], NULL);
+    vkFreeMemory(r->device, r->image_manager_memories[i], NULL);
+    vkDestroyImage(r->device, r->image_manager_images[i], NULL);
+  }
+}
+
 enum owl_code owl_renderer_init(struct owl_renderer_init_info const *rii,
                                 struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
@@ -2199,7 +2123,13 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *rii,
   if (OWL_SUCCESS != (code = owl_renderer_init_dynamic_heap_(r, 1024 * 1024)))
     goto end_err_deinit_garbage;
 
+  if (OWL_SUCCESS != (code = owl_renderer_init_image_manager_(r)))
+    goto end_err_deinit_dynamic_heap;
+
   goto end;
+
+end_err_deinit_dynamic_heap:
+  owl_renderer_deinit_dynamic_heap_(r);
 
 end_err_deinit_garbage:
   owl_renderer_deinit_garbage_(r);
@@ -2261,6 +2191,7 @@ end:
 void owl_renderer_deinit(struct owl_renderer *r) {
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
+  owl_renderer_deinit_image_manager_(r);
   owl_renderer_deinit_dynamic_heap_(r);
   owl_renderer_deinit_garbage_(r);
   owl_renderer_deinit_frame_sync_(r);
@@ -2296,7 +2227,7 @@ owl_renderer_reserve_dynamic_heap_memory_(struct owl_renderer *r,
 
   vkUnmapMemory(r->device, r->dynamic_heap_memory);
 
-  code = owl_renderer_dynamic_heap_move_to_garbage_(r);
+  code = owl_renderer_move_dynamic_heap_to_garbage_(r);
 
   if (OWL_SUCCESS != code)
     goto end;
@@ -2370,7 +2301,7 @@ end:
   return code;
 }
 
-int owl_renderer_dynamic_heap_is_offset_clear(struct owl_renderer const *r) {
+int owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r) {
   return 0 == r->dynamic_heap_offset;
 }
 

@@ -1,7 +1,7 @@
 #ifndef OWL_SCENE_H_
 #define OWL_SCENE_H_
 
-#include "texture.h"
+#include "image.h"
 #include "types.h"
 
 #define OWL_SCENE_NODE_NO_PARENT -1
@@ -84,7 +84,6 @@ struct owl_scene_material {
   owl_v4 base_color_factor;
 };
 
-
 struct owl_scene {
   VkBuffer vertices_buffer;
   VkDeviceMemory vertices_memory;
@@ -99,7 +98,7 @@ struct owl_scene {
   struct owl_scene_node_data nodes[OWL_SCENE_MAX_NODES_COUNT];
 
   int images_count;
-  struct owl_texture images[OWL_SCENE_MAX_IMAGES_COUNT];
+  struct owl_image images[OWL_SCENE_MAX_IMAGES_COUNT];
 
   int textures_count;
   owl_scene_texture textures[OWL_SCENE_MAX_TEXTURES_COUNT];

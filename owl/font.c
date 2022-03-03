@@ -70,19 +70,22 @@ owl_font_init_atlas_(struct owl_renderer *r,
                      struct owl_dynamic_heap_reference const *dhr,
                      struct owl_font *font) {
   enum owl_code code = OWL_SUCCESS;
-  struct owl_texture_init_info tii;
+  struct owl_image_init_info iii;
 
-  tii.width = font->atlas_width;
-  tii.height = font->atlas_height;
-  tii.format = OWL_PIXEL_FORMAT_R8_UNORM;
-  tii.mip_mode = OWL_SAMPLER_MIP_MODE_NEAREST;
-  tii.min_filter = OWL_SAMPLER_FILTER_NEAREST;
-  tii.mag_filter = OWL_SAMPLER_FILTER_NEAREST;
-  tii.wrap_u = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  tii.wrap_v = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  tii.wrap_w = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  iii.source_type = OWL_IMAGE_SOURCE_TYPE_DYNAMIC_HEAP_REFERENCE;
+  iii.reference = dhr;
+  iii.width = font->atlas_width;
+  iii.height = font->atlas_height;
+  iii.format = OWL_PIXEL_FORMAT_R8_UNORM;
+  iii.use_default_sampler = 0;
+  iii.mip_mode = OWL_SAMPLER_MIP_MODE_NEAREST;
+  iii.min_filter = OWL_SAMPLER_FILTER_NEAREST;
+  iii.mag_filter = OWL_SAMPLER_FILTER_NEAREST;
+  iii.wrap_u = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  iii.wrap_v = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  iii.wrap_w = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
 
-  code = owl_texture_init_from_reference(r, &tii, dhr, &font->atlas);
+  code = owl_image_init(r, &iii, &font->atlas);
 
   return code;
 }
@@ -163,6 +166,6 @@ end:
 }
 
 void owl_font_deinit(struct owl_renderer *r, struct owl_font *font) {
-  owl_texture_deinit(r, &font->atlas);
+  owl_image_deinit(r, &font->atlas);
   owl_decrement_ft_library_count_();
 }

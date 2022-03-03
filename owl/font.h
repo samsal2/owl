@@ -1,7 +1,7 @@
 #ifndef OWL_FONT_H_
 #define OWL_FONT_H_
 
-#include "texture.h"
+#include "image.h"
 
 #define OWL_FONT_MAX_GLYPHS 128
 
@@ -16,7 +16,7 @@ struct owl_font {
   int size;
   int atlas_width;
   int atlas_height;
-  struct owl_texture atlas;
+  struct owl_image atlas;
   struct owl_glyph glyphs[OWL_FONT_MAX_GLYPHS];
 };
 
