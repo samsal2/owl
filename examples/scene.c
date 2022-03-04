@@ -91,7 +91,7 @@ int main(void) {
     owl_submit_draw_text_command(renderer, &cam, &text_command);
 #endif
 
-#if 0
+#if 1
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_SCENE);
     owl_submit_draw_scene_command(renderer, &cam, &scene_command);
 #endif

@@ -3,7 +3,6 @@
 #include "internal.h"
 #include "renderer.h"
 #include "types.h"
-#include "vulkan/vulkan_core.h"
 
 #include <math.h>
 #include <stb/stb_image.h>
@@ -93,6 +92,8 @@ end:
   return code;
 }
 
+
+
 enum owl_code owl_image_init(struct owl_renderer *r,
                              struct owl_image_init_info const *iii,
                              struct owl_image *i) {
@@ -103,9 +104,7 @@ enum owl_code owl_image_init(struct owl_renderer *r,
   struct owl_dynamic_heap_reference dhr;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(
-      owl_renderer_is_dynamic_heap_offset_clear(r) ||
-      (OWL_IMAGE_SOURCE_TYPE_DYNAMIC_HEAP_REFERENCE == iii->source_type));
+  OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
 
   if (!r || !iii || !i) {
     code = OWL_ERROR_BAD_PTR;
@@ -133,6 +132,7 @@ enum owl_code owl_image_init(struct owl_renderer *r,
     }
 
     OWL_MEMCPY(data, ii.data, size);
+    owl_image_free_info(&ii);
 
   } break;
 
@@ -151,18 +151,6 @@ enum owl_code owl_image_init(struct owl_renderer *r,
     }
 
     OWL_MEMCPY(data, iii->data, size);
-  } break;
-
-  case OWL_IMAGE_SOURCE_TYPE_DYNAMIC_HEAP_REFERENCE: {
-    format = iii->format;
-    width = (owl_u32)iii->width;
-    height = (owl_u32)iii->height;
-    /*dhr = *iii->reference; this works, but ill rather be explicit*/
-    dhr.offset32 = iii->reference->offset32;
-    dhr.offset = iii->reference->offset;
-    dhr.buffer = iii->reference->buffer;
-    dhr.pvm_set = iii->reference->pvm_set;
-    dhr.scene_set = iii->reference->scene_set;
   } break;
   }
 

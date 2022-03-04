@@ -36,19 +36,17 @@ enum owl_sampler_addr_mode {
 
 enum owl_image_source_type {
   OWL_IMAGE_SOURCE_TYPE_FILE,
-  OWL_IMAGE_SOURCE_TYPE_DATA,
-  OWL_IMAGE_SOURCE_TYPE_DYNAMIC_HEAP_REFERENCE
+  OWL_IMAGE_SOURCE_TYPE_DATA
 };
 
 struct owl_image_init_info {
   enum owl_image_source_type source_type;
   char const *path;
-  owl_byte const *data;
-  struct owl_dynamic_heap_reference const *reference;
 
   int width;
   int height;
   enum owl_pixel_format format;
+  owl_byte const *data;
 
   int use_default_sampler;
   enum owl_sampler_mip_mode mip_mode;
