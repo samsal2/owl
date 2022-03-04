@@ -3,7 +3,7 @@
 
 #include "image.h"
 
-#define OWL_FONT_MAX_GLYPHS 128
+#define OWL_FONT_GLYPHS_COUNT 128
 
 struct owl_glyph {
   int offset;
@@ -17,7 +17,7 @@ struct owl_font {
   int atlas_width;
   int atlas_height;
   struct owl_image atlas;
-  struct owl_glyph glyphs[OWL_FONT_MAX_GLYPHS];
+  struct owl_glyph glyphs[OWL_FONT_GLYPHS_COUNT];
 };
 
 enum owl_code owl_font_init(struct owl_renderer *renderer, int size,

@@ -667,29 +667,42 @@ OWL_INTERNAL void owl_renderer_deinit_common_pools_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_select_depth_stencil_format_(struct owl_renderer *r) {
-  VkFormatProperties d24_unorm_s8_uint_format_properties;
-  VkFormatProperties d32_sfloat_s8_uint_format_properties;
+owl_renderer_test_depth_stencil_format_(struct owl_renderer *r,
+                                        VkFormat format) {
+  VkFormatProperties properties;
   enum owl_code code = OWL_SUCCESS;
 
-  vkGetPhysicalDeviceFormatProperties(r->physical_device,
-                                      VK_FORMAT_D24_UNORM_S8_UINT,
-                                      &d24_unorm_s8_uint_format_properties);
+  vkGetPhysicalDeviceFormatProperties(r->physical_device, format, &properties);
 
-  vkGetPhysicalDeviceFormatProperties(r->physical_device,
-                                      VK_FORMAT_D32_SFLOAT_S8_UINT,
-                                      &d32_sfloat_s8_uint_format_properties);
-
-  if (d24_unorm_s8_uint_format_properties.optimalTilingFeatures &
+  if (properties.optimalTilingFeatures &
       VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-    r->depth_stencil_format = VK_FORMAT_D24_UNORM_S8_UINT;
-  } else if (d32_sfloat_s8_uint_format_properties.optimalTilingFeatures &
-             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-    r->depth_stencil_format = VK_FORMAT_D32_SFLOAT_S8_UINT;
-  } else {
-    code = OWL_ERROR_UNKNOWN;
+    r->depth_stencil_format = format;
     goto end;
   }
+
+  code = OWL_ERROR_UNKNOWN;
+
+end:
+  return code;
+}
+
+OWL_INTERNAL enum owl_code
+owl_renderer_select_depth_stencil_format_(struct owl_renderer *r) {
+  enum owl_code code = OWL_SUCCESS;
+
+  code =
+      owl_renderer_test_depth_stencil_format_(r, VK_FORMAT_D24_UNORM_S8_UINT);
+
+  if (OWL_SUCCESS == code)
+    goto end;
+
+  code =
+      owl_renderer_test_depth_stencil_format_(r, VK_FORMAT_D32_SFLOAT_S8_UINT);
+
+  if (OWL_SUCCESS == code)
+    goto end;
+
+  code = OWL_ERROR_UNKNOWN;
 
 end:
   return code;
@@ -1739,12 +1752,6 @@ OWL_INTERNAL enum owl_code owl_renderer_init_garbage_(struct owl_renderer *r) {
   r->garbage_pvm_sets_count = 0;
   r->garbage_scene_sets_count = 0;
 
-#ifndef NDEBUG
-  OWL_MEMSET(r->garbage_buffers, 0, sizeof(r->garbage_buffers));
-  OWL_MEMSET(r->garbage_memories, 0, sizeof(r->garbage_memories));
-  OWL_MEMSET(r->garbage_pvm_sets, 0, sizeof(r->garbage_pvm_sets));
-#endif /* NDEBUG */
-
   return code;
 }
 
@@ -1841,7 +1848,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i)
       r->dynamic_heap_datas[i] =
-          (owl_byte *)data + i * r->dynamic_heap_buffer_aligned_size;
+          &((owl_byte *)data)[i * r->dynamic_heap_buffer_aligned_size];
   }
 
   /* init pvm descriptor sets */
@@ -2044,7 +2051,7 @@ OWL_INTERNAL void owl_renderer_deinit_image_manager_(struct owl_renderer *r) {
     if (!r->image_manager_slots[i])
       continue;
 
-    OWL_DEBUG_LOG("(owl_image: %i) ayo? free your resources man", i);
+    OWL_DEBUG_LOG("(owl_image: %i) ayo? free your resources man\n", i);
 
     r->image_manager_slots[i] = 0;
 

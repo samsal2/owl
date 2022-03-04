@@ -12,6 +12,7 @@
 /* clang-format on */
 
 #define OWL_FIRST_CHAR 32
+#define OWL_FONT_X_OFFSET_PAD 2
 
 OWL_GLOBAL int g_ft_library_reference_count = 0;
 OWL_GLOBAL FT_Library g_ft_library;
@@ -38,11 +39,11 @@ OWL_INTERNAL void owl_font_calc_dims_(FT_Face face, int *width, int *height) {
   *width = 0;
   *height = 0;
 
-  for (i = OWL_FIRST_CHAR; i < OWL_FONT_MAX_GLYPHS; ++i) {
+  for (i = OWL_FIRST_CHAR; i < OWL_FONT_GLYPHS_COUNT; ++i) {
     FT_Load_Char(face, (unsigned)i, FT_LOAD_RENDER);
 
     /* HACK(samuel): add 2 to avoid bleeding */
-    *width += (int)face->glyph->bitmap.width + 2;
+    *width += (int)face->glyph->bitmap.width + OWL_FONT_X_OFFSET_PAD;
     *height = OWL_MAX(*height, (int)face->glyph->bitmap.rows);
   }
 }
@@ -109,7 +110,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
   }
 
   if (FT_Err_Ok != FT_Set_Char_Size(face, 0, size << 6, 96, 96)) {
-    code = OWL_ERROR_UNKNOWN;
+    code = OWL_ERROR_BAD_INIT;
     goto end_err_done_face;
   }
 
@@ -124,7 +125,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
 
   x = 0;
 
-  for (i = OWL_FIRST_CHAR; i < OWL_FONT_MAX_GLYPHS; ++i) {
+  for (i = OWL_FIRST_CHAR; i < OWL_FONT_GLYPHS_COUNT; ++i) {
     if (FT_Err_Ok != FT_Load_Char(face, (unsigned)i, FT_LOAD_RENDER)) {
       code = OWL_ERROR_UNKNOWN;
       goto end_err_free_data;
@@ -145,7 +146,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
     font->glyphs[i].bearing[1] = face->glyph->bitmap_top;
 
     /* HACK(samuel): add 2 to avoid bleeding */
-    x += (int)face->glyph->bitmap.width + 2;
+    x += (int)face->glyph->bitmap.width + OWL_FONT_X_OFFSET_PAD;
   }
 
   code = owl_font_init_atlas_(r, data, font);
