@@ -8,14 +8,14 @@
 #include "vector_math.h"
 
 OWL_INTERNAL enum owl_code
-owl_renderer_submit_vertices_(struct owl_renderer *r, owl_u32 count,
+owl_renderer_submit_vertices_(struct owl_renderer *r, owl_u32 vertices_size,
                               struct owl_draw_vertex const *vertices) {
   owl_byte *data;
   VkDeviceSize size;
   struct owl_dynamic_heap_reference dhr;
   enum owl_code code = OWL_SUCCESS;
 
-  size = sizeof(*vertices) * (VkDeviceSize)count;
+  size = sizeof(*vertices) * (VkDeviceSize)vertices_size;
   data = owl_renderer_dynamic_heap_alloc(r, size, &dhr);
 
   OWL_MEMCPY(data, vertices, size);
@@ -27,14 +27,14 @@ owl_renderer_submit_vertices_(struct owl_renderer *r, owl_u32 count,
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_submit_indices_(struct owl_renderer *r, owl_u32 count,
+owl_renderer_submit_indices_(struct owl_renderer *r, owl_u32 indices_size,
                              owl_u32 const *indices) {
   owl_byte *data;
   VkDeviceSize size;
   struct owl_dynamic_heap_reference dhr;
   enum owl_code code = OWL_SUCCESS;
 
-  size = sizeof(*indices) * (VkDeviceSize)count;
+  size = sizeof(*indices) * (VkDeviceSize)indices_size;
   data = owl_renderer_dynamic_heap_alloc(r, size, &dhr);
 
   OWL_MEMCPY(data, indices, size);
@@ -79,14 +79,14 @@ owl_submit_draw_basic_command(struct owl_renderer *r,
                               struct owl_draw_basic_command const *command) {
   enum owl_code code = OWL_SUCCESS;
 
-  code = owl_renderer_submit_vertices_(r, command->vertices_count,
+  code = owl_renderer_submit_vertices_(r, command->vertices_size,
                                        command->vertices);
 
   if (OWL_SUCCESS != code)
     goto end;
 
   code =
-      owl_renderer_submit_indices_(r, command->indices_count, command->indices);
+      owl_renderer_submit_indices_(r, command->indices_size, command->indices);
 
   if (OWL_SUCCESS != code)
     goto end;
@@ -96,7 +96,7 @@ owl_submit_draw_basic_command(struct owl_renderer *r,
   if (OWL_SUCCESS != code)
     goto end;
 
-  vkCmdDrawIndexed(r->active_frame_command_buffer, command->indices_count, 1, 0,
+  vkCmdDrawIndexed(r->active_frame_command_buffer, command->indices_size, 1, 0,
                    0, 0);
 
 end:
@@ -266,14 +266,14 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
   struct owl_scene_mesh_data const *mesh_data =
       &scene->meshes[node_data->mesh.slot];
 
-  for (i = 0; i < node_data->children_count; ++i) {
+  for (i = 0; i < node_data->children_size; ++i) {
     code = owl_scene_submit_node_(r, cam, command, &node_data->children[i]);
 
     if (OWL_SUCCESS != code)
       goto end;
   }
 
-  if (!mesh_data->primitives_count)
+  if (!mesh_data->primitives_size)
     goto end;
 
   OWL_M4_COPY(node_data->matrix, push_constant.model);
@@ -297,7 +297,7 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),
                      &push_constant);
 
-  for (i = 0; i < mesh_data->primitives_count; ++i) {
+  for (i = 0; i < mesh_data->primitives_size; ++i) {
     owl_byte *upload;
     VkDescriptorSet sets[3];
     struct owl_scene_uniform uniform;
@@ -339,7 +339,7 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
                             r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
                             sets, 1, &dhr.offset32);
 
-    vkCmdDrawIndexed(r->active_frame_command_buffer, primitive_data->count, 1,
+    vkCmdDrawIndexed(r->active_frame_command_buffer, primitive_data->size, 1,
                      primitive_data->first, 0, 0);
   }
 
@@ -360,7 +360,7 @@ owl_submit_draw_scene_command(struct owl_renderer *r, struct owl_camera *cam,
   vkCmdBindIndexBuffer(r->active_frame_command_buffer,
                        command->scene->indices_buffer, 0, VK_INDEX_TYPE_UINT32);
 
-  for (i = 0; i < command->scene->roots_count; ++i) {
+  for (i = 0; i < command->scene->roots_size; ++i) {
     code = owl_scene_submit_node_(r, cam, command, &command->scene->roots[i]);
 
     if (OWL_SUCCESS != code)

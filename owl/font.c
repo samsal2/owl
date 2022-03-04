@@ -12,22 +12,22 @@
 
 #define OWL_FIRST_CHAR 32
 
-OWL_GLOBAL int g_ft_library_reference_count = 0;
+OWL_GLOBAL int g_ft_library_reference_size = 0;
 OWL_GLOBAL FT_Library g_ft_library;
 
 OWL_INTERNAL void owl_ensure_ft_library_(void) {
   FT_Error err = FT_Err_Ok;
 
-  if (!(g_ft_library_reference_count++))
+  if (!(g_ft_library_reference_size++))
     err = FT_Init_FreeType(&g_ft_library);
 
   OWL_ASSERT(FT_Err_Ok == err);
 }
 
-OWL_INTERNAL void owl_decrement_ft_library_count_(void) {
-  OWL_ASSERT(g_ft_library_reference_count);
+OWL_INTERNAL void owl_decrement_ft_library_size_(void) {
+  OWL_ASSERT(g_ft_library_reference_size);
 
-  if (!--g_ft_library_reference_count)
+  if (!--g_ft_library_reference_size)
     FT_Done_FreeType(g_ft_library);
 }
 
@@ -172,5 +172,5 @@ end:
 
 void owl_font_deinit(struct owl_renderer *r, struct owl_font *font) {
   owl_image_deinit(r, &font->atlas);
-  owl_decrement_ft_library_count_();
+  owl_decrement_ft_library_size_();
 }

@@ -128,7 +128,7 @@ enum owl_code owl_client_init(struct owl_client_init_info const *cii,
   OWL_V2_ZERO(c->previous_cursor_position);
   OWL_V2_ZERO(c->cursor_position);
 
-  for (i = 0; i < OWL_MOUSE_KEY_COUNT; ++i)
+  for (i = 0; i < OWL_MOUSE_KEY_SIZE; ++i)
     c->mouse_keys[i] = OWL_BUTTON_STATE_NONE;
 
   for (i = 0; i < OWL_KEYBOARD_KEY_LAST; ++i)
@@ -153,17 +153,17 @@ void owl_client_deinit(struct owl_client *c) {
 #define OWL_MAX_EXTENSIONS 64
 
 OWL_INTERNAL char const *const *
-owl_get_debug_instance_extensions_(owl_u32 *count) {
+owl_get_debug_instance_extensions_(owl_u32 *size) {
   char const *const *extensions;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 
-  extensions = glfwGetRequiredInstanceExtensions(count);
+  extensions = glfwGetRequiredInstanceExtensions(size);
 
-  OWL_ASSERT(OWL_MAX_EXTENSIONS > *count);
+  OWL_ASSERT(OWL_MAX_EXTENSIONS > *size);
 
-  OWL_MEMCPY(names, extensions, *count * sizeof(char const *));
+  OWL_MEMCPY(names, extensions, *size * sizeof(char const *));
 
-  names[(*count)++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+  names[(*size)++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 
   return names;
 }
@@ -173,7 +173,7 @@ owl_get_debug_instance_extensions_(owl_u32 *count) {
 enum owl_code
 owl_client_fill_renderer_init_info(struct owl_client const *c,
                                    struct owl_renderer_init_info *rii) {
-  owl_u32 count;
+  owl_u32 size;
   enum owl_code code = OWL_SUCCESS;
 
   rii->framebuffer_width = c->framebuffer_width;
@@ -182,12 +182,12 @@ owl_client_fill_renderer_init_info(struct owl_client const *c,
   rii->create_surface = owl_vk_surface_init_callback_;
 
 #ifdef OWL_ENABLE_VALIDATION
-  rii->instance_extensions = owl_get_debug_instance_extensions_(&count);
+  rii->instance_extensions = owl_get_debug_instance_extensions_(&size);
 #else  /* OWL_ENABLE_VALIDATION */
-  info->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
+  info->instance_extensions = glfwGetRequiredInstanceExtensions(&size);
 #endif /* OWL_ENABLE_VALIDATION */
 
-  rii->instance_extensions_count = (int)count;
+  rii->instance_extensions_size = (int)size;
   rii->name = c->title;
 
   return code;
