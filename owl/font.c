@@ -2,8 +2,8 @@
 
 #include "draw.h"
 #include "internal.h"
-#include "types.h"
 #include "renderer.h"
+#include "types.h"
 #include "vector_math.h"
 
 /* clang-format off */
@@ -67,10 +67,9 @@ OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face, int x_offset,
   }
 }
 
-OWL_INTERNAL enum owl_code
-owl_font_init_atlas_(struct owl_renderer *r,
-                     owl_byte const *data,
-                     struct owl_font *font) {
+OWL_INTERNAL enum owl_code owl_font_init_atlas_(struct owl_renderer *r,
+                                                owl_byte const *data,
+                                                struct owl_font *font) {
   enum owl_code code = OWL_SUCCESS;
   struct owl_image_init_info iii;
 

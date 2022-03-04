@@ -149,7 +149,7 @@ OWL_INTERNAL enum owl_code owl_draw_text_command_fill_char_quad_(
     goto end;
   }
 
-  quad->image = text->font->atlas;
+  quad->image.slot = text->font->atlas.slot;
 
   OWL_M4_IDENTITY(quad->model);
   owl_m4_translate(text->position, quad->model);
@@ -221,7 +221,7 @@ OWL_INTERNAL void owl_font_step_offset_(int framebuffer_width,
                                         char const c, owl_v2 offset) {
   offset[0] += font->glyphs[(int)c].advance[0] / (float)framebuffer_width;
   /* FIXME(samuel): not sure if i should substract or add */
-  offset[1] += font->glyphs[(int)c].advance[1] / (float)framebuffer_height;
+  offset[1] -= font->glyphs[(int)c].advance[1] / (float)framebuffer_height;
 }
 
 enum owl_code

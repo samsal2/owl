@@ -2246,6 +2246,9 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_info const *rii,
                               struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
+  r->width = rii->framebuffer_width;
+  r->height = rii->framebuffer_height;
+
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
   owl_renderer_deinit_pipelines_(r);

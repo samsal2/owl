@@ -92,8 +92,6 @@ end:
   return code;
 }
 
-
-
 enum owl_code owl_image_init(struct owl_renderer *r,
                              struct owl_image_init_info const *iii,
                              struct owl_image *i) {

@@ -1,3 +1,5 @@
+#include "owl/camera.h"
+#include "owl/renderer.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -47,35 +49,9 @@ int main(void) {
   TEST(owl_font_init(renderer, 80, FONT_PATH, font));
 
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
-  OWL_V3_SET(-0.5F, -0.4F, 0.0F, text_command.position);
+  OWL_V3_SET(-0.1F, -0.1F, 0.90, text_command.position);
   text_command.text = "HELLO WORLD!";
   text_command.font = font;
-
-#if 0
-  quad_command.image.slot = font->image.slot;
-  OWL_M4_IDENTITY(quad_command.model);
-  owl_m4_translate(text_command.position, quad_command.model);
-
-  OWL_V3_SET(-1.0F, -1.0F, 0.0F, quad_command.vertices[0].position);
-  OWL_V3_SET(1.0F, 1.0F, 1.0F,  quad_command.vertices[0].color);
-  OWL_V2_SET(1.0F, 1.0F, quad_command.vertices[0].uv);
-
-  OWL_V3_SET(-1.0F, -1.0F, 0.0F, quad_command.vertices[1].position);
-  OWL_V3_SET(1.0F, 1.0F, 1.0F,  quad_command.vertices[1].color);
-  OWL_V2_SET(1.0F, 1.0F, quad_command.vertices[1].uv);
-
-  OWL_V3_SET(-1.0F, -1.0F, 0.0F, quad_command.vertices[0].position);
-  OWL_V3_SET(1.0F, 1.0F, 1.0F,  quad_command.vertices[0].color);
-  OWL_V2_SET(1.0F, 1.0F, quad_command.vertices[0].uv);
-
-  OWL_V3_SET(-1.0F, -1.0F, 0.0F, quad_command.vertices[0].position);
-  OWL_V3_SET(1.0F, 1.0F, 1.0F,  quad_command.vertices[0].color);
-  OWL_V2_SET(1.0F, 1.0F, quad_command.vertices[0].uv);
-  
-  struct owl_image image;
-  owl_m4 model;
-  struct owl_draw_vertex vertices[4];
-#endif
 
   while (!owl_client_is_done(client)) {
     OWL_V2_COPY(client->cursor_position, scene_command.light);
@@ -83,22 +59,22 @@ int main(void) {
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);
+      owl_camera_set_ratio(&cam,
+                           (float)renderer->width / (float)renderer->height);
       continue;
     }
 
-#if 1
-    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
-    owl_submit_draw_text_command(renderer, &cam, &text_command);
-#endif
-
-#if 1
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_SCENE);
     owl_submit_draw_scene_command(renderer, &cam, &scene_command);
-#endif
+
+    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
+    owl_submit_draw_text_command(renderer, &cam, &text_command);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);
+      owl_camera_set_ratio(&cam,
+                           (float)renderer->width / (float)renderer->height);
       continue;
     }
 
