@@ -97,7 +97,6 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
   int x;
   owl_byte *data;
   FT_Face face;
-  VkDeviceSize alloc_size;
   struct owl_dynamic_heap_reference dhr;
   enum owl_code code = OWL_SUCCESS;
 
@@ -117,9 +116,12 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
 
   owl_font_calc_dims_(face, &font->atlas_width, &font->atlas_height);
 
-  alloc_size = (VkDeviceSize)(font->atlas_width * font->atlas_height);
-  data = owl_renderer_dynamic_heap_alloc(r, alloc_size, &dhr);
-  OWL_MEMSET(data, 0, alloc_size);
+  {
+    VkDeviceSize atlas_size;
+    atlas_size = (VkDeviceSize)(font->atlas_width * font->atlas_height);
+    data = owl_renderer_dynamic_heap_alloc(r, atlas_size, &dhr);
+    OWL_MEMSET(data, 0, atlas_size);
+  }
 
   if (!data) {
     code = OWL_ERROR_BAD_ALLOC;
