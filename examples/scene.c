@@ -66,6 +66,7 @@ int main(void) {
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
     owl_submit_draw_text_command(renderer, &cam, &text_command);
 
+
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);

@@ -24,10 +24,10 @@ struct owl_draw_basic_command {
   struct owl_image image;
   owl_m4 model;
 
-  owl_u32 indices_size;
+  owl_u32 indices_count;
   owl_u32 const *indices;
 
-  owl_u32 vertices_size;
+  owl_u32 vertices_count;
   struct owl_draw_vertex const *vertices;
 };
 

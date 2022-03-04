@@ -22,7 +22,7 @@ enum owl_mouse_key {
   OWL_MOUSE_KEY_LEFT,
   OWL_MOUSE_KEY_MIDDLE,
   OWL_MOUSE_KEY_RIGHT,
-  OWL_MOUSE_KEY_SIZE
+  OWL_MOUSE_KEY_COUNT
 };
 
 enum owl_keyboard_key {
@@ -164,7 +164,7 @@ struct owl_client {
   double previous_time_stamp;
   owl_v2 cursor_position;
   owl_v2 previous_cursor_position;
-  enum owl_button_state mouse_keys[OWL_MOUSE_KEY_SIZE];
+  enum owl_button_state mouse_keys[OWL_MOUSE_KEY_COUNT];
   enum owl_button_state keyboard_keys[OWL_KEYBOARD_KEY_LAST];
 };
 

@@ -78,7 +78,7 @@ owl_renderer_find_image_manager_slot_(struct owl_renderer *r,
   int j;
   enum owl_code code = OWL_SUCCESS;
 
-  for (j = 0; j < OWL_RENDERER_IMAGE_MANAGER_SLOTS_SIZE; ++j) {
+  for (j = 0; j < OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT; ++j) {
     if (!r->image_manager_slots[j]) {
       i->slot = j;
       r->image_manager_slots[j] = 1;
@@ -87,7 +87,7 @@ owl_renderer_find_image_manager_slot_(struct owl_renderer *r,
   }
 
   code = OWL_ERROR_UNKNOWN;
-  i->slot = OWL_RENDERER_IMAGE_MANAGER_SLOTS_SIZE;
+  i->slot = OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT;
 
 end:
   return code;

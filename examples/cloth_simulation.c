@@ -205,9 +205,9 @@ void init_cloth(struct cloth *cloth, struct owl_image *image) {
   init_cloth_(cloth);
 
   cloth->command_.image.slot = image->slot;
-  cloth->command_.indices_size = IDXS_COUNT;
+  cloth->command_.indices_count = IDXS_COUNT;
   cloth->command_.indices = cloth->indices_;
-  cloth->command_.vertices_size = PARTICLE_COUNT;
+  cloth->command_.vertices_count = PARTICLE_COUNT;
   cloth->command_.vertices = cloth->vertices_;
 
   OWL_V3_SET(0.0F, 0.0F, -2.0F, position);
