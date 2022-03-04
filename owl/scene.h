@@ -173,10 +173,12 @@ struct owl_scene_animation_data {
   float end;
 
   int samplers_count;
-  struct owl_scene_animation_sampler samplers[OWL_SCENE_ANIMATION_MAX_SAMPLERS_COUNT];
+  struct owl_scene_animation_sampler
+      samplers[OWL_SCENE_ANIMATION_MAX_SAMPLERS_COUNT];
 
   int channels_count;
-  struct owl_scene_animation_channel channels[OWL_SCENE_ANIMATION_MAX_CHANNELS_COUNT];
+  struct owl_scene_animation_channel
+      channels[OWL_SCENE_ANIMATION_MAX_CHANNELS_COUNT];
 };
 
 struct owl_scene {
@@ -211,10 +213,12 @@ struct owl_scene {
   struct owl_scene_skin_data skins[OWL_SCENE_MAX_SKINS_COUNT];
 
   int animation_samplers_count;
-  struct owl_scene_animation_sampler_data animation_samplers[OWL_SCENE_MAX_SAMPLERS_COUNT];
+  struct owl_scene_animation_sampler_data
+      animation_samplers[OWL_SCENE_MAX_SAMPLERS_COUNT];
 
   int animation_channels_count;
-  struct owl_scene_animation_channel_data animation_channels[OWL_SCENE_MAX_CHANNELS_COUNT];
+  struct owl_scene_animation_channel_data
+      animation_channels[OWL_SCENE_MAX_CHANNELS_COUNT];
 
   int animations_count;
   struct owl_scene_animation_data animations[OWL_SCENE_MAX_ANIMATIONS_COUNT];

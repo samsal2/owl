@@ -503,7 +503,8 @@ OWL_INTERNAL void owl_scene_load_buffers_(struct owl_renderer *r,
   owl_renderer_clear_dynamic_heap_offset(r);
 }
 
-OWL_INTERNAL enum owl_code owl_scene_init_skins_(struct owl_renderer *r,
+#if 0
+OWL_INTERNAL enum owl_code owl_scene_load_skins_(struct owl_renderer *r,
                                                  cgltf_data const *gltf,
                                                  struct owl_scene *scene) {
   int i;
@@ -831,6 +832,7 @@ OWL_INTERNAL enum owl_code owl_scene_load_animations_(struct owl_renderer *r,
 end:
   return code;
 }
+#endif
 
 enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
                              struct owl_scene *scene) {

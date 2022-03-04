@@ -9,8 +9,11 @@ static struct owl_renderer *renderer;
 static struct owl_scene *scene;
 static struct owl_draw_scene_command scene_command;
 static struct owl_camera cam;
+static struct owl_font *font;
+static struct owl_draw_text_command text_command;
 
 #define SCENE_PATH "../../assets/Suzanne.gltf"
+#define FONT_PATH "../../assets/Inconsolata-Regular.ttf"
 
 #define TEST(fn)                                                               \
   do {                                                                         \
@@ -40,6 +43,40 @@ int main(void) {
   OWL_V3_SET(0.0F, 0.0F, -1.5F, scene_command.light);
   scene_command.scene = scene;
 
+  font = OWL_MALLOC(sizeof(*font));
+  TEST(owl_font_init(renderer, 80, FONT_PATH, font));
+
+  OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
+  OWL_V3_SET(-0.5F, -0.4F, 0.0F, text_command.position);
+  text_command.text = "HELLO WORLD!";
+  text_command.font = font;
+
+#if 0
+  quad_command.image.slot = font->image.slot;
+  OWL_M4_IDENTITY(quad_command.model);
+  owl_m4_translate(text_command.position, quad_command.model);
+
+  OWL_V3_SET(-1.0F, -1.0F, 0.0F, quad_command.vertices[0].position);
+  OWL_V3_SET(1.0F, 1.0F, 1.0F,  quad_command.vertices[0].color);
+  OWL_V2_SET(1.0F, 1.0F, quad_command.vertices[0].uv);
+
+  OWL_V3_SET(-1.0F, -1.0F, 0.0F, quad_command.vertices[1].position);
+  OWL_V3_SET(1.0F, 1.0F, 1.0F,  quad_command.vertices[1].color);
+  OWL_V2_SET(1.0F, 1.0F, quad_command.vertices[1].uv);
+
+  OWL_V3_SET(-1.0F, -1.0F, 0.0F, quad_command.vertices[0].position);
+  OWL_V3_SET(1.0F, 1.0F, 1.0F,  quad_command.vertices[0].color);
+  OWL_V2_SET(1.0F, 1.0F, quad_command.vertices[0].uv);
+
+  OWL_V3_SET(-1.0F, -1.0F, 0.0F, quad_command.vertices[0].position);
+  OWL_V3_SET(1.0F, 1.0F, 1.0F,  quad_command.vertices[0].color);
+  OWL_V2_SET(1.0F, 1.0F, quad_command.vertices[0].uv);
+  
+  struct owl_image image;
+  owl_m4 model;
+  struct owl_draw_vertex vertices[4];
+#endif
+
   while (!owl_client_is_done(client)) {
     OWL_V2_COPY(client->cursor_position, scene_command.light);
 
@@ -49,8 +86,15 @@ int main(void) {
       continue;
     }
 
+#if 1
+    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
+    owl_submit_draw_text_command(renderer, &cam, &text_command);
+#endif
+
+#if 0
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_SCENE);
     owl_submit_draw_scene_command(renderer, &cam, &scene_command);
+#endif
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
@@ -60,6 +104,9 @@ int main(void) {
 
     owl_client_poll_events(client);
   }
+
+  owl_font_deinit(renderer, font);
+  OWL_FREE(font);
 
   owl_camera_deinit(&cam);
 

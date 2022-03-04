@@ -31,7 +31,7 @@ OWL_INTERNAL void owl_decrement_ft_library_count_(void) {
     FT_Done_FreeType(g_ft_library);
 }
 
-OWL_INTERNAL void owl_calc_dims_(FT_Face face, int *width, int *height) {
+OWL_INTERNAL void owl_font_calc_dims_(FT_Face face, int *width, int *height) {
   int i;
 
   *width = 0;
@@ -40,7 +40,8 @@ OWL_INTERNAL void owl_calc_dims_(FT_Face face, int *width, int *height) {
   for (i = OWL_FIRST_CHAR; i < OWL_FONT_MAX_GLYPHS; ++i) {
     FT_Load_Char(face, (unsigned)i, FT_LOAD_RENDER);
 
-    *width += (int)face->glyph->bitmap.width;
+    /* HACK(samuel): add 2 to avoid bleeding */
+    *width += (int)face->glyph->bitmap.width + 2;
     *height = OWL_MAX(*height, (int)face->glyph->bitmap.rows);
   }
 }
@@ -78,9 +79,9 @@ owl_font_init_atlas_(struct owl_renderer *r,
   iii.height = font->atlas_height;
   iii.format = OWL_PIXEL_FORMAT_R8_UNORM;
   iii.use_default_sampler = 0;
-  iii.mip_mode = OWL_SAMPLER_MIP_MODE_NEAREST;
-  iii.min_filter = OWL_SAMPLER_FILTER_NEAREST;
-  iii.mag_filter = OWL_SAMPLER_FILTER_NEAREST;
+  iii.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
+  iii.min_filter = OWL_SAMPLER_FILTER_LINEAR;
+  iii.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
   iii.wrap_u = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
   iii.wrap_v = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
   iii.wrap_w = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
@@ -114,10 +115,11 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
     goto end_err_done_face;
   }
 
-  owl_calc_dims_(face, &font->atlas_width, &font->atlas_height);
+  owl_font_calc_dims_(face, &font->atlas_width, &font->atlas_height);
 
   alloc_size = (VkDeviceSize)(font->atlas_width * font->atlas_height);
   data = owl_renderer_dynamic_heap_alloc(r, alloc_size, &dhr);
+  OWL_MEMSET(data, 0, alloc_size);
 
   if (!data) {
     code = OWL_ERROR_BAD_ALLOC;
@@ -146,7 +148,8 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
     font->glyphs[i].bearing[0] = face->glyph->bitmap_left;
     font->glyphs[i].bearing[1] = face->glyph->bitmap_top;
 
-    x += (int)face->glyph->bitmap.width;
+    /* HACK(samuel): add 2 to avoid bleeding */
+    x += (int)face->glyph->bitmap.width + 2;
   }
 
   code = owl_font_init_atlas_(r, &dhr, font);
