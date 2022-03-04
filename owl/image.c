@@ -394,7 +394,7 @@ enum owl_code owl_image_init(struct owl_renderer *r,
     vkUpdateDescriptorSets(r->device, OWL_ARRAY_SIZE(writes), writes, 0, NULL);
   }
 
-  owl_renderer_dynamic_heap_clear_offset(r);
+  owl_renderer_clear_dynamic_heap_offset(r);
 end:
   return code;
 }

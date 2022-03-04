@@ -1855,7 +1855,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
     sets.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     sets.pNext = NULL;
     sets.descriptorPool = r->common_set_pool;
-    sets.descriptorSetCount = OWL_ARRAY_SIZE(layouts);
+    sets.descriptorSetCount = OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
     sets.pSetLayouts = layouts;
 
     OWL_VK_CHECK(
@@ -1873,7 +1873,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
     sets.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     sets.pNext = NULL;
     sets.descriptorPool = r->common_set_pool;
-    sets.descriptorSetCount = OWL_ARRAY_SIZE(layouts);
+    sets.descriptorSetCount = OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
     sets.pSetLayouts = layouts;
 
     OWL_VK_CHECK(
@@ -1942,11 +1942,11 @@ OWL_INTERNAL void owl_renderer_deinit_dynamic_heap_(struct owl_renderer *r) {
   int i;
 
   vkFreeDescriptorSets(r->device, r->common_set_pool,
-                       OWL_ARRAY_SIZE(r->dynamic_heap_scene_sets),
+                       OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
                        r->dynamic_heap_scene_sets);
 
   vkFreeDescriptorSets(r->device, r->common_set_pool,
-                       OWL_ARRAY_SIZE(r->dynamic_heap_pvm_sets),
+                       OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
                        r->dynamic_heap_pvm_sets);
 
   vkFreeMemory(r->device, r->dynamic_heap_memory, NULL);
@@ -2314,7 +2314,7 @@ OWL_INTERNAL void owl_renderer_clear_garbage_(struct owl_renderer *r) {
 #endif
 }
 
-void owl_renderer_dynamic_heap_clear_offset(struct owl_renderer *r) {
+void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r) {
   r->dynamic_heap_offset = 0;
 }
 
@@ -2496,7 +2496,7 @@ OWL_INTERNAL void owl_renderer_begin_recording_(struct owl_renderer *r) {
     begin.renderArea.offset.x = 0;
     begin.renderArea.offset.y = 0;
     begin.renderArea.extent = r->swapchain_extent;
-    begin.clearValueCount = OWL_ARRAY_SIZE(r->swapchain_clear_values);
+    begin.clearValueCount = OWL_RENDERER_CLEAR_VALUES_COUNT;
     begin.pClearValues = r->swapchain_clear_values;
 
     vkCmdBeginRenderPass(r->active_frame_command_buffer, &begin,
@@ -2592,7 +2592,7 @@ enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
   if (OWL_SUCCESS != (code = owl_renderer_present_swapchain_(r)))
     goto end;
 
-  owl_renderer_dynamic_heap_clear_offset(r);
+  owl_renderer_clear_dynamic_heap_offset(r);
   owl_renderer_update_frame_actives_(r);
   owl_renderer_clear_garbage_(r);
 

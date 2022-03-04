@@ -47,6 +47,9 @@ owl_submit_draw_quad_command(struct owl_renderer *r,
                              struct owl_camera const *cam,
                              struct owl_draw_quad_command const *command);
 
+/* FIXME(samuel): the current draw text and font implementation sucks balls,
+ * can't seem to be able to fix the bleeding */
+
 struct owl_draw_text_command {
   owl_v3 color;
   owl_v3 position;

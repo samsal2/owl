@@ -169,6 +169,7 @@ struct owl_renderer {
   VkDescriptorSetLayout pvm_set_layout;
   VkDescriptorSetLayout image_set_layout;
   VkDescriptorSetLayout scene_set_layout;
+  VkDescriptorSetLayout scene_ssbo_set_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -302,8 +303,6 @@ enum owl_code owl_renderer_init_single_use_command_buffer(
 
 enum owl_code owl_renderer_deinit_single_use_command_buffer(
     struct owl_renderer const *r, struct owl_single_use_command_buffer *sucb);
-
-void owl_renderer_dynamic_heap_clear_offset(struct owl_renderer *r);
 
 enum owl_code owl_renderer_begin_frame(struct owl_renderer *r);
 
