@@ -863,8 +863,12 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
 
   owl_scene_setup_load_info_(r, data, &sli);
 
-  for (i = 0; i < (int)data->nodes_count; ++i)
-    owl_scene_load_node_(r, data, &data->nodes[i], &root, &sli, scene);
+  for (i = 0; i < (int)data->nodes_count; ++i) {
+    code = owl_scene_load_node_(r, data, &data->nodes[i], &root, &sli, scene);
+
+    if (OWL_SUCCESS != code)
+      goto end;
+  }
 
   owl_scene_load_buffers_(r, &sli, scene);
 
