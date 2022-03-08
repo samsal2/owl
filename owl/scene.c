@@ -11,6 +11,13 @@
 
 #define OWL_MAX_URI_SIZE 128
 
+OWL_INTERNAL void const *
+owl_resolve_gltf_accessor_(cgltf_accessor const *accessor) {
+  cgltf_buffer_view const *view = accessor->buffer_view;
+  owl_byte const *data = view->buffer->data;
+  return &data[accessor->offset + view->offset];
+}
+
 OWL_INTERNAL enum owl_code owl_fix_uri_(char const *uri,
                                         char fixed[OWL_MAX_URI_SIZE]) {
   enum owl_code code = OWL_SUCCESS;
@@ -255,9 +262,6 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
       float const *normal = NULL;
       float const *uv = NULL;
       float const *tangent = NULL;
-      owl_byte const *b = NULL;
-      cgltf_buffer_view const *view = NULL;
-      cgltf_accessor const *accessor = NULL;
       cgltf_attribute const *attribute = NULL;
       struct owl_scene_primitive *primitive = NULL;
       struct owl_scene_primitive_data *primitive_data = NULL;
@@ -273,42 +277,21 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
 
       primitive_data = &scene->primitives[primitive->slot];
 
-      attribute = owl_find_gltf_attribute_(from_primitive, "POSITION");
-
-      if (attribute) {
-        accessor = attribute->data;
-        view = accessor->buffer_view;
-        b = (owl_byte *)view->buffer->data;
-        position = (float const *)(&b[accessor->offset + view->offset]);
-        vertices_count = (int)accessor->count;
+      if ((attribute = owl_find_gltf_attribute_(from_primitive, "POSITION"))) {
+        position = owl_resolve_gltf_accessor_(attribute->data);
+        vertices_count = (int)attribute->data->count;
       }
 
-      attribute = owl_find_gltf_attribute_(from_primitive, "NORMAL");
+      if ((attribute = owl_find_gltf_attribute_(from_primitive, "NORMAL")))
+        normal = owl_resolve_gltf_accessor_(attribute->data);
 
-      if (attribute) {
-        accessor = attribute->data;
-        view = accessor->buffer_view;
-        b = (owl_byte *)view->buffer->data;
-        normal = (float const *)(&b[accessor->offset + view->offset]);
-      }
 
-      attribute = owl_find_gltf_attribute_(from_primitive, "TEXCOORD_0");
+      if ((attribute = owl_find_gltf_attribute_(from_primitive, "TEXCOORD_0"))) 
+        uv = owl_resolve_gltf_accessor_(attribute->data);
 
-      if (attribute) {
-        accessor = attribute->data;
-        view = accessor->buffer_view;
-        b = (owl_byte *)view->buffer->data;
-        uv = (float const *)(&b[accessor->offset + view->offset]);
-      }
 
-      attribute = owl_find_gltf_attribute_(from_primitive, "TANGENT");
-
-      if (attribute) {
-        accessor = attribute->data;
-        view = accessor->buffer_view;
-        b = (owl_byte *)view->buffer->data;
-        tangent = (float const *)(&b[accessor->offset + view->offset]);
-      }
+      if ((attribute = owl_find_gltf_attribute_(from_primitive, "TANGENT")))
+        tangent = owl_resolve_gltf_accessor_(attribute->data);
 
       for (j = 0; j < vertices_count; ++j) {
         int offset = sli->vertices_count;
@@ -328,7 +311,7 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
         else
           OWL_V2_ZERO(vertex->uv);
 
-        OWL_V3_SET(0.0F, 1.0F, 1.0F, vertex->color);
+        OWL_V3_SET(1.0F, 1.0F, 1.0F, vertex->color);
 
         if (tangent)
           OWL_V4_COPY(&tangent[j * 4], vertex->tangent);
@@ -336,17 +319,14 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
           OWL_V4_ZERO(vertex->tangent);
       }
 
-      accessor = from_primitive->indices;
-      view = accessor->buffer_view;
+      indices_count = (int)from_primitive->indices->count;
 
-      indices_count = (int)accessor->count;
-
-      switch (accessor->component_type) {
+      switch (from_primitive->indices->component_type) {
       case cgltf_component_type_r_32u: {
         int offset = sli->indices_count;
-        owl_u32 const *indices =
-            (owl_u32 const *)(&b[view->offset + accessor->offset]);
-        for (j = 0; j < (int)accessor->count; ++j) {
+        owl_u32 const *indices = 
+          owl_resolve_gltf_accessor_(from_primitive->indices);
+        for (j = 0; j < (int)from_primitive->indices->count; ++j) {
           sli->indices[offset + j] = indices[sli->vertices_count + j];
         }
       } break;
@@ -354,8 +334,8 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
       case cgltf_component_type_r_16u: {
         int offset = sli->indices_count;
         owl_u16 const *indices =
-            (owl_u16 const *)(&b[view->offset + accessor->offset]);
-        for (j = 0; j < (int)accessor->count; ++j) {
+          owl_resolve_gltf_accessor_(from_primitive->indices);
+        for (j = 0; j < (int)from_primitive->indices->count; ++j) {
           sli->indices[offset + j] = indices[sli->vertices_count + j];
         }
       } break;
@@ -363,8 +343,8 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
       case cgltf_component_type_r_8u: {
         int offset = sli->indices_count;
         owl_u8 const *indices =
-            (owl_u8 const *)(&b[view->offset + accessor->offset]);
-        for (j = 0; j < (int)accessor->count; ++j) {
+          owl_resolve_gltf_accessor_(from_primitive->indices);
+        for (j = 0; j < (int)from_primitive->indices->count; ++j) {
           sli->indices[offset + j] = indices[sli->vertices_count + j];
         }
       } break;
@@ -382,7 +362,7 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
       primitive_data->material.slot =
           (int)(from_primitive->material - gltf->materials);
 
-      sli->indices_count += accessor->count;
+      sli->indices_count += indices_count;
       sli->vertices_count += vertices_count;
     }
   }
@@ -910,3 +890,4 @@ void owl_scene_deinit(struct owl_renderer *r, struct owl_scene *scene) {
   for (i = 0; i < scene->images_count; ++i)
     owl_image_deinit(r, &scene->images[i].image);
 }
+
