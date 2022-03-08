@@ -105,7 +105,7 @@ OWL_INTERNAL enum owl_code owl_scene_load_materials_(struct owl_renderer *r,
     OWL_ASSERT(from_material->normal_texture.texture);
 
     material_data->normal_texture.slot =
-        (int)(from_material->normal_texture.texture - data->textures);
+        (int)(from_material->normal_texture.texture - gltf->textures);
 #else
     /* HACK(samuel): currently we don't check for the normal texture */
     material_data->normal_texture.slot = material_data->base_color_texture.slot;
