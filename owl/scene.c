@@ -225,7 +225,16 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
   node_data->parent.slot = parent->slot;
 
   if (OWL_SCENE_NODE_NO_PARENT_SLOT == parent->slot) {
-    scene->roots[scene->roots_count++].slot = node.slot;
+    struct owl_scene_node root;
+
+    root.slot = scene->roots_count++;
+
+    if (OWL_SCENE_MAX_NODE_ROOTS_COUNT <= root.slot) {
+      code = OWL_ERROR_OUT_OF_BOUNDS;
+      goto end;
+    }
+
+    scene->roots[root.slot].slot = node.slot;
   } else {
     struct owl_scene_node child;
     struct owl_scene_node_data *parent_data = &scene->nodes[parent->slot];
