@@ -4,7 +4,6 @@
 #include "renderer.h"
 #include "types.h"
 #include "vector_math.h"
-#include "vulkan/vulkan_core.h"
 
 #include <cgltf/cgltf.h>
 #include <float.h>
@@ -141,10 +140,10 @@ owl_find_gltf_attribute_(cgltf_primitive const *from_primitive,
   cgltf_attribute const *attribute = NULL;
 
   for (i = 0; i < (int)from_primitive->attributes_count; ++i) {
-    cgltf_attribute const *tmp = &from_primitive->attributes[i];
+    cgltf_attribute const *current = &from_primitive->attributes[i];
 
-    if (!strcmp(tmp->name, attribute_name)) {
-      attribute = tmp;
+    if (!strcmp(current->name, attribute_name)) {
+      attribute = current;
       goto end;
     }
   }
