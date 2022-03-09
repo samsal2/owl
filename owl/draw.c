@@ -237,14 +237,16 @@ owl_submit_draw_text_command(struct owl_renderer *r,
   for (c = command->text; '\0' != *c; ++c) {
     struct owl_draw_quad_command quad;
 
-    code = owl_draw_text_command_fill_char_quad_(command, r->framebuffer_width, r->framebuffer_height,
-                                                 offset, *c, &quad);
+    code = owl_draw_text_command_fill_char_quad_(command, r->framebuffer_width,
+                                                 r->framebuffer_height, offset,
+                                                 *c, &quad);
 
     if (OWL_SUCCESS != code)
       goto end;
 
     owl_submit_draw_quad_command(r, cam, &quad);
-    owl_font_step_offset_(r->framebuffer_width, r->framebuffer_height, command->font, *c, offset);
+    owl_font_step_offset_(r->framebuffer_width, r->framebuffer_height,
+                          command->font, *c, offset);
   }
 
 end:
@@ -299,7 +301,7 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
 
   for (i = 0; i < mesh_data->primitives_count; ++i) {
     owl_byte *upload;
-    VkDescriptorSet sets[3];
+    VkDescriptorSet sets[4];
     struct owl_scene_uniform uniform;
     struct owl_dynamic_heap_reference dhr;
     struct owl_scene_primitive const *primitive = &mesh_data->primitives[i];
@@ -321,18 +323,13 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
     OWL_V4_ZERO(uniform.light);
     OWL_V3_COPY(command->light, uniform.light);
 
-    OWL_V4_ZERO(uniform.eye);
-    OWL_V3_COPY(cam->eye, uniform.eye);
-
-    uniform.enable_alpha_mask = (int)material_data->alpha_mode;
-    uniform.alpha_cutoff = material_data->alpha_cutoff;
-
     upload = owl_renderer_dynamic_heap_alloc(r, sizeof(uniform), &dhr);
     OWL_MEMCPY(upload, &uniform, sizeof(uniform));
 
-    sets[0] = dhr.scene_set;
+    sets[0] = dhr.pvl_set;
     sets[1] = r->image_manager_sets[base_image_data->image.slot];
     sets[2] = r->image_manager_sets[normal_image_data->image.slot];
+    sets[3] = scene->skins[node_data->skin.slot].ssbo_set;
 
     vkCmdBindDescriptorSets(r->active_frame_command_buffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,

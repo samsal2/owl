@@ -629,7 +629,7 @@ owl_renderer_init_common_pools_(struct owl_renderer *r) {
   }
 
   {
-    VkDescriptorPoolSize sizes[5];
+    VkDescriptorPoolSize sizes[6];
     VkDescriptorPoolCreateInfo pool;
 
     sizes[0].descriptorCount = 16;
@@ -646,6 +646,9 @@ owl_renderer_init_common_pools_(struct owl_renderer *r) {
 
     sizes[4].descriptorCount = 16;
     sizes[4].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+    sizes[5].descriptorCount = 16;
+    sizes[5].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
     pool.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool.pNext = NULL;
@@ -1050,8 +1053,7 @@ owl_renderer_init_set_layouts_(struct owl_renderer *r) {
     binding.binding = 0;
     binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     binding.descriptorCount = 1;
-    binding.stageFlags =
-        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     binding.pImmutableSamplers = NULL;
 
     layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -1061,14 +1063,35 @@ owl_renderer_init_set_layouts_(struct owl_renderer *r) {
     layout.pBindings = &binding;
 
     OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
-                                             &r->scene_set_layout));
+                                             &r->pvl_set_layout));
+  }
+
+  {
+    VkDescriptorSetLayoutBinding binding;
+    VkDescriptorSetLayoutCreateInfo layout;
+
+    binding.binding = 0;
+    binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    binding.descriptorCount = 1;
+    binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    binding.pImmutableSamplers = NULL;
+
+    layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layout.pNext = NULL;
+    layout.flags = 0;
+    layout.bindingCount = 1;
+    layout.pBindings = &binding;
+
+    OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &layout, NULL,
+                                             &r->joints_set_layout));
   }
 
   return code;
 }
 
 OWL_INTERNAL void owl_renderer_deinit_set_layouts_(struct owl_renderer *r) {
-  vkDestroyDescriptorSetLayout(r->device, r->scene_set_layout, NULL);
+  vkDestroyDescriptorSetLayout(r->device, r->joints_set_layout, NULL);
+  vkDestroyDescriptorSetLayout(r->device, r->pvl_set_layout, NULL);
   vkDestroyDescriptorSetLayout(r->device, r->image_set_layout, NULL);
   vkDestroyDescriptorSetLayout(r->device, r->pvm_set_layout, NULL);
 }
@@ -1101,16 +1124,17 @@ owl_renderer_init_pipelines_layouts_(struct owl_renderer *r) {
 
   {
     VkPushConstantRange push_constant;
-    VkDescriptorSetLayout sets[3];
+    VkDescriptorSetLayout sets[4];
     VkPipelineLayoutCreateInfo layout;
 
     push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     push_constant.offset = 0;
     push_constant.size = sizeof(struct owl_scene_push_constant);
 
-    sets[0] = r->scene_set_layout;
+    sets[0] = r->pvl_set_layout;
     sets[1] = r->image_set_layout;
     sets[2] = r->image_set_layout;
+    sets[3] = r->joints_set_layout;
 
     layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layout.pNext = NULL;
@@ -1193,7 +1217,7 @@ OWL_INTERNAL enum owl_code owl_renderer_init_shaders_(struct owl_renderer *r) {
 
     /* TODO(samuel): Properly load code at runtime */
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/scene_vertex.spv.u32"
+#include "../shaders/skin_vertex.spv.u32"
     };
 
     shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1210,7 +1234,7 @@ OWL_INTERNAL enum owl_code owl_renderer_init_shaders_(struct owl_renderer *r) {
     VkShaderModuleCreateInfo shader;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/scene_fragment.spv.u32"
+#include "../shaders/skin_fragment.spv.u32"
     };
 
     shader.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1315,7 +1339,12 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       vertex_attributes[4].binding = 0;
       vertex_attributes[4].location = 4;
       vertex_attributes[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-      vertex_attributes[4].offset = offsetof(struct owl_scene_vertex, tangent);
+      vertex_attributes[4].offset = offsetof(struct owl_scene_vertex, joints0);
+
+      vertex_attributes[5].binding = 0;
+      vertex_attributes[5].location = 5;
+      vertex_attributes[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+      vertex_attributes[5].offset = offsetof(struct owl_scene_vertex, weights0);
       break;
     }
 
@@ -1340,7 +1369,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       vertex_input_state.flags = 0;
       vertex_input_state.vertexBindingDescriptionCount = 1;
       vertex_input_state.pVertexBindingDescriptions = vertex_bindings;
-      vertex_input_state.vertexAttributeDescriptionCount = 5;
+      vertex_input_state.vertexAttributeDescriptionCount = 6;
       vertex_input_state.pVertexAttributeDescriptions = vertex_attributes;
       break;
     }
@@ -1750,7 +1779,7 @@ OWL_INTERNAL enum owl_code owl_renderer_init_garbage_(struct owl_renderer *r) {
   r->garbage_buffers_count = 0;
   r->garbage_memories_count = 0;
   r->garbage_pvm_sets_count = 0;
-  r->garbage_scene_sets_count = 0;
+  r->garbage_pvl_sets_count = 0;
 
   return code;
 }
@@ -1758,11 +1787,11 @@ OWL_INTERNAL enum owl_code owl_renderer_init_garbage_(struct owl_renderer *r) {
 OWL_INTERNAL void owl_renderer_deinit_garbage_(struct owl_renderer *r) {
   int i;
 
-  for (i = 0; i < r->garbage_scene_sets_count; ++i)
+  for (i = 0; i < r->garbage_pvl_sets_count; ++i)
     vkFreeDescriptorSets(r->device, r->common_set_pool, 1,
-                         &r->garbage_scene_sets[i]);
+                         &r->garbage_pvl_sets[i]);
 
-  r->garbage_scene_sets_count = 0;
+  r->garbage_pvl_sets_count = 0;
 
   for (i = 0; i < r->garbage_pvm_sets_count; ++i)
     vkFreeDescriptorSets(r->device, r->common_set_pool, 1,
@@ -1875,7 +1904,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
     VkDescriptorSetLayout layouts[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i)
-      layouts[i] = r->scene_set_layout;
+      layouts[i] = r->pvl_set_layout;
 
     sets.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     sets.pNext = NULL;
@@ -1884,7 +1913,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
     sets.pSetLayouts = layouts;
 
     OWL_VK_CHECK(
-        vkAllocateDescriptorSets(r->device, &sets, r->dynamic_heap_scene_sets));
+        vkAllocateDescriptorSets(r->device, &sets, r->dynamic_heap_pvl_sets));
   }
 
   /* write the pvm descriptor sets */
@@ -1924,7 +1953,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
-      write.dstSet = r->dynamic_heap_scene_sets[i];
+      write.dstSet = r->dynamic_heap_pvl_sets[i];
       write.dstBinding = 0;
       write.dstArrayElement = 0;
       write.descriptorCount = 1;
@@ -1940,7 +1969,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
   r->active_dynamic_heap_data = r->dynamic_heap_datas[r->frame];
   r->active_dynamic_heap_buffer = r->dynamic_heap_buffers[r->frame];
   r->active_dynamic_heap_pvm_set = r->dynamic_heap_pvm_sets[r->frame];
-  r->active_dynamic_heap_scene_set = r->dynamic_heap_scene_sets[r->frame];
+  r->active_dynamic_heap_pvl_set = r->dynamic_heap_pvl_sets[r->frame];
 
   return code;
 }
@@ -1950,7 +1979,7 @@ OWL_INTERNAL void owl_renderer_deinit_dynamic_heap_(struct owl_renderer *r) {
 
   vkFreeDescriptorSets(r->device, r->common_set_pool,
                        OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
-                       r->dynamic_heap_scene_sets);
+                       r->dynamic_heap_pvl_sets);
 
   vkFreeDescriptorSets(r->device, r->common_set_pool,
                        OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
@@ -1998,7 +2027,7 @@ owl_renderer_move_dynamic_heap_to_garbage_(struct owl_renderer *r) {
   }
 
   {
-    int previous_count = r->garbage_scene_sets_count;
+    int previous_count = r->garbage_pvl_sets_count;
     int new_count = previous_count + OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT <= new_count) {
@@ -2007,9 +2036,9 @@ owl_renderer_move_dynamic_heap_to_garbage_(struct owl_renderer *r) {
     }
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i)
-      r->garbage_scene_sets[previous_count + i] = r->dynamic_heap_scene_sets[i];
+      r->garbage_pvl_sets[previous_count + i] = r->dynamic_heap_pvl_sets[i];
 
-    r->garbage_scene_sets_count = new_count;
+    r->garbage_pvl_sets_count = new_count;
   }
 
   {
@@ -2343,7 +2372,7 @@ void *owl_renderer_dynamic_heap_alloc(struct owl_renderer *r, VkDeviceSize size,
   dhr->offset = r->dynamic_heap_offset;
   dhr->buffer = r->active_dynamic_heap_buffer;
   dhr->pvm_set = r->active_dynamic_heap_pvm_set;
-  dhr->scene_set = r->active_dynamic_heap_scene_set;
+  dhr->pvl_set = r->active_dynamic_heap_pvl_set;
 
   data = r->active_dynamic_heap_data + r->dynamic_heap_offset;
 
@@ -2594,7 +2623,7 @@ OWL_INTERNAL void owl_renderer_update_frame_actives_(struct owl_renderer *r) {
   r->active_dynamic_heap_data = r->dynamic_heap_datas[r->frame];
   r->active_dynamic_heap_buffer = r->dynamic_heap_buffers[r->frame];
   r->active_dynamic_heap_pvm_set = r->dynamic_heap_pvm_sets[r->frame];
-  r->active_dynamic_heap_scene_set = r->dynamic_heap_scene_sets[r->frame];
+  r->active_dynamic_heap_pvl_set = r->dynamic_heap_pvl_sets[r->frame];
 }
 
 enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {

@@ -2,6 +2,8 @@
 
 layout (set = 1, binding = 0) uniform sampler sampler0;
 layout (set = 1, binding = 1) uniform texture2D samplerColorMap;
+layout (set = 2, binding = 0) uniform sampler sampler1;
+layout (set = 2, binding = 1) uniform texture2D samplerNormalMap;
 
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec3 inColor;

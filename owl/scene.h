@@ -5,7 +5,7 @@
 #include "types.h"
 
 #define OWL_SCENE_NODE_NO_PARENT_SLOT -1
-#define OWL_SCENE_MAX_PRIMITIVES_COUNT 256
+#define OWL_SCENE_MAX_PRIMITIVES_COUNT 128
 #define OWL_SCENE_MESH_MAX_PRIMITIVES_COUNT 128
 #define OWL_SCENE_MAX_NAME_LENGTH 128
 #define OWL_SCENE_MAX_IMAGES_COUNT 16
@@ -16,7 +16,7 @@
 #define OWL_SCENE_NODE_MAX_CHILDREN_COUNT 128
 #define OWL_SCENE_MAX_MESHES_COUNT 128
 #define OWL_SCENE_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT 128
-#define OWL_SCENE_SKIN_MAX_JOINTS_COUNT 8
+#define OWL_SCENE_SKIN_MAX_JOINTS_COUNT 128
 #define OWL_SCENE_ANIMATION_SAMPLER_MAX_INPUTS_COUNT 128
 #define OWL_SCENE_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT 128
 #define OWL_SCENE_MAX_SKINS_COUNT 128
@@ -72,9 +72,6 @@ struct owl_scene_uniform {
   owl_m4 projection;
   owl_m4 view;
   owl_v4 light;
-  owl_v4 eye;
-  int enable_alpha_mask;
-  float alpha_cutoff;
 };
 
 struct owl_scene_vertex {
@@ -82,7 +79,8 @@ struct owl_scene_vertex {
   owl_v3 normal;
   owl_v2 uv;
   owl_v3 color;
-  owl_v4 tangent;
+  owl_v4 joints0;
+  owl_v4 weights0;
 };
 
 struct owl_scene_primitive_data {
@@ -106,6 +104,7 @@ struct owl_scene_node_data {
 
   struct owl_scene_node parent;
   struct owl_scene_mesh mesh;
+  struct owl_scene_skin skin;
 
   int children_count;
   struct owl_scene_node children[OWL_SCENE_NODE_MAX_CHILDREN_COUNT];
@@ -138,6 +137,7 @@ struct owl_scene_skin_data {
   char name[OWL_SCENE_MAX_NAME_LENGTH];
   struct owl_scene_node skeleton_root;
 
+  void *ssbo_data;
   VkBuffer ssbo_buffer;
   VkDeviceMemory ssbo_memory;
   VkDescriptorSet ssbo_set;

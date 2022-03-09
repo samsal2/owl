@@ -18,7 +18,7 @@ layout(push_constant) uniform PushConsts {
 	mat4 model;
 } primitive;
 
-layout(std430, set = 2, binding = 0) readonly buffer JointMatrices {
+layout(std430, set = 3, binding = 0) readonly buffer JointMatrices {
 	mat4 jointMatrices[];
 };
 

@@ -54,13 +54,7 @@ struct owl_dynamic_heap_reference {
   VkDeviceSize offset;
   VkBuffer buffer;
   VkDescriptorSet pvm_set;
-  VkDescriptorSet scene_set;
-};
-
-struct owl_static_heap_reference {
-  int slot;
-  VkDeviceSize offset;
-  VkDeviceMemory memory;
+  VkDescriptorSet pvl_set;
 };
 
 struct owl_renderer {
@@ -172,8 +166,8 @@ struct owl_renderer {
   /* ====================================================================== */
   VkDescriptorSetLayout pvm_set_layout;
   VkDescriptorSetLayout image_set_layout;
-  VkDescriptorSetLayout scene_set_layout;
-  VkDescriptorSetLayout scene_ssbo_set_layout;
+  VkDescriptorSetLayout pvl_set_layout;
+  VkDescriptorSetLayout joints_set_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -238,8 +232,8 @@ struct owl_renderer {
   int garbage_pvm_sets_count;
   VkDescriptorSet garbage_pvm_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
-  int garbage_scene_sets_count;
-  VkDescriptorSet garbage_scene_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
+  int garbage_pvl_sets_count;
+  VkDescriptorSet garbage_pvl_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -255,12 +249,12 @@ struct owl_renderer {
   owl_byte *active_dynamic_heap_data;
   VkBuffer active_dynamic_heap_buffer;
   VkDescriptorSet active_dynamic_heap_pvm_set;
-  VkDescriptorSet active_dynamic_heap_scene_set;
+  VkDescriptorSet active_dynamic_heap_pvl_set;
 
   owl_byte *dynamic_heap_datas[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkBuffer dynamic_heap_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkDescriptorSet dynamic_heap_pvm_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-  VkDescriptorSet dynamic_heap_scene_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkDescriptorSet dynamic_heap_pvl_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
