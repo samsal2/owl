@@ -309,10 +309,8 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
       if ((attribute = owl_find_gltf_attribute_(from_primitive, "NORMAL")))
         normal = owl_resolve_gltf_accessor_(attribute->data);
 
-
-      if ((attribute = owl_find_gltf_attribute_(from_primitive, "TEXCOORD_0"))) 
+      if ((attribute = owl_find_gltf_attribute_(from_primitive, "TEXCOORD_0")))
         uv = owl_resolve_gltf_accessor_(attribute->data);
-
 
       if ((attribute = owl_find_gltf_attribute_(from_primitive, "TANGENT")))
         tangent = owl_resolve_gltf_accessor_(attribute->data);
@@ -348,8 +346,8 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
       switch (from_primitive->indices->component_type) {
       case cgltf_component_type_r_32u: {
         int offset = sli->indices_count;
-        owl_u32 const *indices = 
-          owl_resolve_gltf_accessor_(from_primitive->indices);
+        owl_u32 const *indices =
+            owl_resolve_gltf_accessor_(from_primitive->indices);
         for (j = 0; j < (int)from_primitive->indices->count; ++j) {
           sli->indices[offset + j] = indices[sli->vertices_count + j];
         }
@@ -358,7 +356,7 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
       case cgltf_component_type_r_16u: {
         int offset = sli->indices_count;
         owl_u16 const *indices =
-          owl_resolve_gltf_accessor_(from_primitive->indices);
+            owl_resolve_gltf_accessor_(from_primitive->indices);
         for (j = 0; j < (int)from_primitive->indices->count; ++j) {
           sli->indices[offset + j] = indices[sli->vertices_count + j];
         }
@@ -367,7 +365,7 @@ owl_scene_load_node_(struct owl_renderer *r, cgltf_data const *gltf,
       case cgltf_component_type_r_8u: {
         int offset = sli->indices_count;
         owl_u8 const *indices =
-          owl_resolve_gltf_accessor_(from_primitive->indices);
+            owl_resolve_gltf_accessor_(from_primitive->indices);
         for (j = 0; j < (int)from_primitive->indices->count; ++j) {
           sli->indices[offset + j] = indices[sli->vertices_count + j];
         }
@@ -507,7 +505,6 @@ OWL_INTERNAL void owl_scene_load_buffers_(struct owl_renderer *r,
   owl_renderer_clear_dynamic_heap_offset(r);
 }
 
-
 enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
                              struct owl_scene *scene) {
 
@@ -589,4 +586,3 @@ void owl_scene_deinit(struct owl_renderer *r, struct owl_scene *scene) {
   for (i = 0; i < scene->images_count; ++i)
     owl_image_deinit(r, &scene->images[i].image);
 }
-
