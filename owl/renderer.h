@@ -39,6 +39,8 @@ struct owl_renderer_init_info {
 
   int framebuffer_width;
   int framebuffer_height;
+  int window_width;
+  int window_height;
 
   int instance_extensions_count;
   char const *const *instance_extensions;
@@ -65,8 +67,10 @@ struct owl_renderer {
   /* ====================================================================== */
   /* dims */
   /* ====================================================================== */
-  int width;
-  int height;
+  int framebuffer_width;
+  int framebuffer_height;
+  int window_width;
+  int window_height;
   /* ====================================================================== */
 
   /* ====================================================================== */

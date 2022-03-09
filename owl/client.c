@@ -176,6 +176,8 @@ owl_client_fill_renderer_init_info(struct owl_client const *c,
   owl_u32 count;
   enum owl_code code = OWL_SUCCESS;
 
+  rii->window_width = c->window_width;
+  rii->window_height = c->window_height;
   rii->framebuffer_width = c->framebuffer_width;
   rii->framebuffer_height = c->framebuffer_height;
   rii->surface_user_data = c;

@@ -2068,8 +2068,10 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *rii,
                                 struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
-  r->width = rii->framebuffer_width;
-  r->height = rii->framebuffer_height;
+  r->window_width = rii->window_width;
+  r->window_height = rii->window_height;
+  r->framebuffer_width = rii->framebuffer_width;
+  r->framebuffer_height = rii->framebuffer_height;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_instance_(rii, r)))
     goto end;
@@ -2253,8 +2255,10 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_info const *rii,
                               struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
-  r->width = rii->framebuffer_width;
-  r->height = rii->framebuffer_height;
+  r->window_width = rii->window_width;
+  r->window_height = rii->window_height;
+  r->framebuffer_width = rii->framebuffer_width;
+  r->framebuffer_height = rii->framebuffer_height;
 
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 

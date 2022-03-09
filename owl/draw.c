@@ -237,14 +237,14 @@ owl_submit_draw_text_command(struct owl_renderer *r,
   for (c = command->text; '\0' != *c; ++c) {
     struct owl_draw_quad_command quad;
 
-    code = owl_draw_text_command_fill_char_quad_(command, r->width, r->height,
+    code = owl_draw_text_command_fill_char_quad_(command, r->framebuffer_width, r->framebuffer_height,
                                                  offset, *c, &quad);
 
     if (OWL_SUCCESS != code)
       goto end;
 
     owl_submit_draw_quad_command(r, cam, &quad);
-    owl_font_step_offset_(r->width, r->height, command->font, *c, offset);
+    owl_font_step_offset_(r->framebuffer_width, r->framebuffer_height, command->font, *c, offset);
   }
 
 end:
