@@ -59,8 +59,8 @@ int main(void) {
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);
-      owl_camera_set_ratio(&cam,
-                           (float)renderer->framebuffer_width / (float)renderer->framebuffer_height);
+      owl_camera_set_ratio(&cam, (float)renderer->framebuffer_width /
+                                     (float)renderer->framebuffer_height);
       continue;
     }
 
@@ -73,8 +73,8 @@ int main(void) {
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);
-      owl_camera_set_ratio(&cam,
-                           (float)renderer->framebuffer_width / (float)renderer->framebuffer_height);
+      owl_camera_set_ratio(&cam, (float)renderer->framebuffer_width /
+                                     (float)renderer->framebuffer_height);
       continue;
     }
 

@@ -253,6 +253,22 @@ float owl_v3_distance(owl_v3 const from, owl_v3 const to) {
   return owl_v3_mag(diff);
 }
 
+/* https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/mix.xhtml */
+void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out) {
+  owl_v4 x;
+  owl_v4 y;
+
+  OWL_V4_COPY(from, x);
+  OWL_V4_COPY(to, y);
+
+  /* x * (1 - a) + y * a */
+  /* (x - y) * a + x */
+  OWL_V4_COPY(x, out);
+  OWL_V4_SUB(y, to, out);
+  OWL_V4_SCALE(out, weight, out);
+  OWL_V4_ADD(out, x, out);
+}
+
 #ifndef NDEBUG
 
 #include <stdio.h>

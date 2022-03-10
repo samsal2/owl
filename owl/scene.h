@@ -4,6 +4,8 @@
 #include "image.h"
 #include "types.h"
 
+#define OWL_SCENE_NO_ANIMATION_SLOT -1
+#define OWL_SCENE_NODE_NO_SKIN_SLOT -1
 #define OWL_SCENE_NODE_NO_PARENT_SLOT -1
 #define OWL_SCENE_MAX_PRIMITIVES_COUNT 128
 #define OWL_SCENE_MESH_MAX_PRIMITIVES_COUNT 128
@@ -169,6 +171,7 @@ struct owl_scene_animation_channel_data {
 struct owl_scene_animation_data {
   char name[OWL_SCENE_MAX_NAME_LENGTH];
 
+  float current_time;
   float begin;
   float end;
 
@@ -187,6 +190,8 @@ struct owl_scene {
 
   VkBuffer indices_buffer;
   VkDeviceMemory indices_memory;
+
+  struct owl_scene_animation active_animation;
 
   int roots_count;
   struct owl_scene_node roots[OWL_SCENE_MAX_NODE_ROOTS_COUNT];

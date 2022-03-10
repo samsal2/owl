@@ -276,6 +276,8 @@ float owl_v2_distance(owl_v2 const from, owl_v2 const to);
 
 float owl_v3_distance(owl_v3 const from, owl_v3 const to);
 
+void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out);
+
 void owl_complex_mul(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out);
 
 #ifndef NDEBUG
