@@ -260,6 +260,30 @@ end:
 }
 
 OWL_INTERNAL void
+owl_scene_resolve_local_node_matrix_(struct owl_scene const *scene,
+                                     struct owl_scene_node const *node,
+                                     owl_m4 matrix) {
+  owl_m4 tmp;
+  struct owl_scene_node_data const *node_data;
+
+  node_data = &scene->nodes[node->slot];
+
+  OWL_M4_IDENTITY(matrix);
+
+  OWL_M4_IDENTITY(tmp);
+  owl_m4_translate(node_data->translation, tmp);
+  owl_m4_mul_rotation(matrix, tmp, matrix);
+
+  OWL_M4_IDENTITY(tmp);
+  owl_v4_quat_as_m4(node_data->rotation, tmp);
+  owl_m4_mul_rotation(matrix, tmp, matrix);
+
+  OWL_M4_IDENTITY(tmp);
+  owl_m4_scale(tmp, node_data->scale, tmp);
+  owl_m4_mul_rotation(matrix, tmp, matrix);
+}
+
+OWL_INTERNAL void
 owl_scene_resolve_node_matrix_(struct owl_scene const *scene,
                                struct owl_scene_node const *node,
                                owl_m4 matrix) {
@@ -270,44 +294,84 @@ owl_scene_resolve_node_matrix_(struct owl_scene const *scene,
   OWL_M4_IDENTITY(matrix);
 
   while (OWL_SCENE_NODE_NO_PARENT_SLOT != current.slot) {
-    struct owl_scene_node_data const *node_data; 
+    owl_m4 local;
+    struct owl_scene_node_data const *node_data;
+
     node_data = &scene->nodes[current.slot];
 
-    owl_m4_mul_rotation(node_data->matrix, matrix,  matrix);
+    owl_scene_resolve_local_node_matrix_(scene, node, local);
+    owl_m4_mul_rotation(matrix, local, matrix);
 
     current.slot = node_data->parent.slot;
   }
 }
 
 #define OWL_FIXME_LINEAR_INTERPOLATION_VALUE 0
-#define OWL_FIXME_TRANSLATION_PATH_VALUE 0
-#define OWL_FIXME_ROTATION_PATH_VALUE 0
-#define OWL_FIXME_SCALE_PATH_VALUE 0
+#define OWL_FIXME_TRANSLATION_PATH_VALUE 1
+#define OWL_FIXME_ROTATION_PATH_VALUE 2
+#define OWL_FIXME_SCALE_PATH_VALUE 3
 
-OWL_INTERNAL void
-owl_scene_update_animation_(struct owl_scene const *scene, float dt) {
+#if 1
+
+OWL_INTERNAL void owl_scene_update_joints_(struct owl_scene *scene,
+                                           struct owl_scene_node const *node) {
   int i;
-  struct owl_scene_animation_data const *animation_data;
-  enum owl_code code = OWL_SUCCESS;
+  owl_m4 *out;
+  owl_m4 tmp;
+  owl_m4 inverse;
+  struct owl_scene_skin_data const *skin_data;
+  struct owl_scene_node_data const *node_data;
+
+  node_data = &scene->nodes[node->slot];
+
+  if (OWL_SCENE_NODE_NO_SKIN_SLOT == node_data->skin.slot)
+    goto end;
+
+  skin_data = &scene->skins[node_data->skin.slot];
+  out = skin_data->ssbo_data;
+
+  owl_scene_resolve_local_node_matrix_(scene, node, tmp);
+  owl_m4_inverse(tmp, inverse);
+
+  for (i = 0; i < skin_data->joints_count; ++i) {
+    owl_scene_resolve_local_node_matrix_(scene, &skin_data->joints[i], tmp);
+    owl_m4_mul_rotation(tmp, skin_data->inverse_bind_matrices[i], tmp);
+    owl_m4_mul_rotation(tmp, inverse, tmp);
+    OWL_M4_COPY(tmp, out[i]);
+  }
+
+  for (i = 0; i < node_data->children_count; ++i)
+    owl_scene_update_joints_(scene, &node_data->children[i]);
+
+end:
+  (void)0;
+}
+
+void owl_scene_update_animation(struct owl_scene *scene, float dt) {
+  int i;
+  struct owl_scene_animation_data *animation_data;
 
   /* no error */
-  if (OWL_SCENE_NO_ANIMATION_SLOT = scene->active_animation.slot)
+  if (OWL_SCENE_NO_ANIMATION_SLOT == scene->active_animation.slot)
     goto end;
-  
+
   animation_data = &scene->animations[scene->active_animation.slot];
-  
+
   if (animation_data->end < (animation_data->current_time += dt))
     animation_data->current_time -= animation_data->end;
- 
+
   for (i = 0; i < animation_data->channels_count; ++i) {
     int j;
     struct owl_scene_animation_channel channel;
+    struct owl_scene_node_data *node_data;
     struct owl_scene_animation_channel_data const *channel_data;
     struct owl_scene_animation_sampler_data const *sampler_data;
 
     channel.slot = animation_data->channels[i].slot;
-    channel_data = &scene->channels[channel.slot];
-    sampler_data = &scene->samplers[channel_data->animation_sampler.slot];
+    channel_data = &scene->animation_channels[channel.slot];
+    sampler_data =
+        &scene->animation_samplers[channel_data->animation_sampler.slot];
+    node_data = &scene->nodes[channel_data->node.slot];
 
     if (OWL_FIXME_LINEAR_INTERPOLATION_VALUE != sampler_data->interpolation)
       continue;
@@ -317,39 +381,58 @@ owl_scene_update_animation_(struct owl_scene const *scene, float dt) {
     for (j = 0; j < sampler_data->inputs_count - 1; ++j) {
       float const i0 = sampler_data->inputs[j];
       float const i1 = sampler_data->inputs[j + 1];
+      float const ct = animation_data->current_time;
+      float const a = (ct - i0) / (i1 - i0);
 
       if (animation_data->current_time < i0)
-        continue; 
+        continue;
 
       if (animation_data->current_time > i1)
-        continue; 
+        continue;
 
       switch (channel_data->path) {
       case OWL_FIXME_TRANSLATION_PATH_VALUE: {
         owl_v4 x;
         owl_v4 y;
-        float t = animation_data->current_time;
 
         OWL_V4_COPY(sampler_data->outputs[j], x);
         OWL_V4_COPY(sampler_data->outputs[j + 1], y);
 
-        owl_v4_mix(x, y, weight,  
+        owl_v4_mix(x, y, a, node_data->translation);
       } break;
 
       case OWL_FIXME_ROTATION_PATH_VALUE: {
+        owl_v4 q1;
+        owl_v4 q2;
+
+        OWL_V4_COPY(sampler_data->outputs[j], q1);
+        OWL_V4_COPY(sampler_data->outputs[j + 1], q2);
+
+        owl_v4_quat_slerp(q1, q2, a, node_data->rotation);
+        owl_v4_normalize(node_data->rotation, node_data->rotation);
       } break;
-  
+
       case OWL_FIXME_SCALE_PATH_VALUE: {
+        owl_v4 x;
+        owl_v4 y;
+
+        OWL_V4_COPY(sampler_data->outputs[j], x);
+        OWL_V4_COPY(sampler_data->outputs[j + 1], y);
+
+        owl_v4_mix(x, y, a, node_data->scale);
       } break;
-
       }
-
     }
-  } 
+  }
+
+  for (i = 0; i < scene->nodes_count; ++i)
+    owl_scene_update_joints_(scene, &scene->roots[i]);
 
 end:
-  return code;
+  (void)0;
 }
+
+#endif
 
 OWL_INTERNAL
 enum owl_code
@@ -359,7 +442,7 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
 
   int i;
   struct owl_scene const *scene;
-  struct owl_scene_node_data const *node_data; 
+  struct owl_scene_node_data const *node_data;
   struct owl_scene_mesh_data const *mesh_data;
   struct owl_scene_push_constant push_constant;
   enum owl_code code = OWL_SUCCESS;
@@ -392,7 +475,7 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
     VkDescriptorSet sets[4];
     struct owl_scene_uniform uniform;
     struct owl_dynamic_heap_reference dhr;
-    struct owl_scene_primitive const *primitive; 
+    struct owl_scene_primitive const *primitive;
     struct owl_scene_primitive_data const *primitive_data;
     struct owl_scene_material_data const *material_data;
     struct owl_scene_texture_data const *base_texture_data;
@@ -402,8 +485,8 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
 
     primitive = &mesh_data->primitives[i];
     primitive_data = &scene->primitives[primitive->slot];
-    material_data =  &scene->materials[primitive_data->material.slot];
-    base_texture_data = 
+    material_data = &scene->materials[primitive_data->material.slot];
+    base_texture_data =
         &scene->textures[material_data->base_color_texture.slot];
     normal_texture_data = &scene->textures[material_data->normal_texture.slot];
     base_image_data = &scene->images[base_texture_data->image.slot];

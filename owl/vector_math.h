@@ -147,6 +147,9 @@
 #define OWL_V3_DOT(lhs, rhs)                                                   \
   ((lhs)[0] * (rhs)[0] + (lhs)[1] * (rhs)[1] + (lhs)[2] * (rhs)[2])
 
+#define OWL_V4_DOT(lhs, rhs)                                                   \
+  ((lhs)[0] * (rhs)[0] + (lhs)[1] * (rhs)[1] + (lhs)[2] * (rhs)[2] + (lhs)[3] * (rhs)[3])
+
 #define OWL_V3_SCALE(v, scale, out)                                            \
   do {                                                                         \
     (out)[0] = (scale) * (v)[0];                                               \
@@ -195,7 +198,7 @@
     (out)[0] = -(v)[0];                                                        \
     (out)[1] = -(v)[1];                                                        \
     (out)[2] = -(v)[2];                                                        \
-    (out)[3] = -(v)[4];                                                        \
+    (out)[3] = -(v)[3];                                                        \
   } while (0)
 
 #define OWL_V2_ADD(lhs, rhs, out)                                              \
@@ -240,6 +243,14 @@
     (out)[3] = (lhs)[3] - (rhs)[3];                                            \
   } while (0)
 
+#define OWL_V4_MUL(lhs, rhs, out)                                              \
+  do {                                                                         \
+    (out)[0] = (lhs)[0] * (rhs)[0];                                            \
+    (out)[1] = (lhs)[1] * (rhs)[1];                                            \
+    (out)[2] = (lhs)[2] * (rhs)[2];                                            \
+    (out)[3] = (lhs)[3] * (rhs)[3];                                            \
+  } while (0)
+
 void owl_v3_cross(owl_v3 const lhs, owl_v3 const rhs, owl_v3 out);
 
 void owl_m4v4_mul(owl_m4 const m, owl_v4 const v, owl_v4 out);
@@ -248,7 +259,11 @@ float owl_v2_mag(owl_v2 const v);
 
 float owl_v3_mag(owl_v3 const v);
 
+float owl_v4_mag(owl_v3 const v);
+
 void owl_v3_normalize(owl_v3 const v, owl_v3 out);
+
+void owl_v4_normalize(owl_v4 const v, owl_v4 out);
 
 void owl_m4_make_rotate(float angle, owl_v3 const axis, owl_m4 out);
 
@@ -278,7 +293,15 @@ float owl_v3_distance(owl_v3 const from, owl_v3 const to);
 
 void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out);
 
+void owl_v4_quat_as_m4(owl_v4 const from, owl_m4 out);
+
+void owl_m4_scale(owl_m4 const from, owl_v3 const scale, owl_m4 out);
+
 void owl_complex_mul(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out);
+
+void owl_v4_quat_slerp(owl_v4 const from, owl_v4 const to, float t, owl_v4 out);
+
+void owl_m4_inverse(owl_m4 const mat, owl_m4 dest);
 
 #ifndef NDEBUG
 

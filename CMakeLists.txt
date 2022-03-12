@@ -77,7 +77,7 @@ set(OWL_C_CLANG_BASE_COMPILE_FLAGS
 		-Wswitch-enum 
 		-Wtautological-constant-in-range-compare 
 		-Wunreachable-code-aggressive
-    -Wframe-larger-than=10240
+    -Wframe-larger-than=20480
 
     -fdiagnostics-color=always
 

@@ -1,5 +1,7 @@
 #include "owl/camera.h"
+#include "owl/draw.h"
 #include "owl/renderer.h"
+#include "owl/vector_math.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -10,7 +12,7 @@ static struct owl_renderer_init_info renderer_info;
 static struct owl_renderer *renderer;
 static struct owl_scene *scene;
 static struct owl_draw_scene_command scene_command;
-static struct owl_camera cam;
+static struct owl_camera camera;
 static struct owl_font *font;
 static struct owl_draw_text_command text_command;
 
@@ -37,7 +39,7 @@ int main(void) {
   renderer = OWL_MALLOC(sizeof(*renderer));
   TEST(owl_renderer_init(&renderer_info, renderer));
 
-  TEST(owl_camera_init(&cam));
+  TEST(owl_camera_init(&camera));
 
   scene = OWL_MALLOC(sizeof(*scene));
   TEST(owl_scene_init(renderer, SCENE_PATH, scene));
@@ -59,22 +61,26 @@ int main(void) {
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);
-      owl_camera_set_ratio(&cam, (float)renderer->framebuffer_width /
-                                     (float)renderer->framebuffer_height);
+      owl_camera_set_ratio(&camera, (float)renderer->framebuffer_width /
+                                        (float)renderer->framebuffer_height);
       continue;
     }
 
+#if 1
+    owl_scene_update_animation(scene, client->dt_time_stamp);
+#endif
+
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_SCENE);
-    owl_submit_draw_scene_command(renderer, &cam, &scene_command);
+    owl_submit_draw_scene_command(renderer, &camera, &scene_command);
 
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
-    owl_submit_draw_text_command(renderer, &cam, &text_command);
+    owl_submit_draw_text_command(renderer, &camera, &text_command);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);
-      owl_camera_set_ratio(&cam, (float)renderer->framebuffer_width /
-                                     (float)renderer->framebuffer_height);
+      owl_camera_set_ratio(&camera, (float)renderer->framebuffer_width /
+                                        (float)renderer->framebuffer_height);
       continue;
     }
 
@@ -84,7 +90,7 @@ int main(void) {
   owl_font_deinit(renderer, font);
   OWL_FREE(font);
 
-  owl_camera_deinit(&cam);
+  owl_camera_deinit(&camera);
 
   owl_scene_deinit(renderer, scene);
   OWL_FREE(scene);

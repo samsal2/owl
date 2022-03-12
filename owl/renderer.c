@@ -258,7 +258,7 @@ owl_renderer_select_physical_device_(struct owl_renderer *r) {
 
   for (i = 0; i < r->device_options_count; ++i) {
     owl_u32 has_formats;
-    owl_u32 has_modes;
+    owl_u32 has_present_modes;
     owl_u32 extension_count;
     VkExtensionProperties *extensions;
 
@@ -271,9 +271,9 @@ owl_renderer_select_physical_device_(struct owl_renderer *r) {
       continue;
 
     OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-        r->physical_device, r->surface, &has_modes, NULL));
+        r->physical_device, r->surface, &has_present_modes, NULL));
 
-    if (!has_modes)
+    if (!has_present_modes)
       continue;
 
     if (!owl_renderer_query_families_(r, &r->graphics_family_index,
@@ -2112,7 +2112,7 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *rii,
   if (OWL_SUCCESS != (code = owl_renderer_init_surface_(rii, r)))
     goto end_err_deinit_debug;
 #else  /* OWL_ENABLE_VALIDATION */
-  if (OWL_SUCCESS != (code = owl_renderer_init_surface_(info, r)))
+  if (OWL_SUCCESS != (code = owl_renderer_init_surface_(rii, r)))
     goto end_err_deinit_instance;
 #endif /* OWL_ENABLE_VALIDATION */
 

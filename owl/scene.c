@@ -249,6 +249,21 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
     parent_data->children[child.slot].slot = node.slot;
   }
 
+  if (from_node->has_translation)
+    OWL_V3_COPY(from_node->translation, node_data->translation);
+  else
+    OWL_V3_ZERO(node_data->translation);
+
+  if (from_node->has_rotation)
+    OWL_V4_COPY(from_node->rotation, node_data->rotation);
+  else
+    OWL_V4_ZERO(node_data->rotation);
+
+  if (from_node->has_scale)
+    OWL_V3_COPY(from_node->scale, node_data->scale);
+  else
+    OWL_V3_SET(1.0F, 1.0F, 1.0F, node_data->scale);
+
   if (from_node->has_matrix)
     OWL_M4_COPY_V16(from_node->matrix, node_data->matrix);
   else
@@ -519,6 +534,38 @@ OWL_INTERNAL void owl_scene_load_buffers_(struct owl_renderer *r,
   }
 
   owl_renderer_clear_dynamic_heap_offset(r);
+}
+
+OWL_INTERNAL enum owl_code owl_scene_load_nodes_(struct owl_renderer *r,
+                                                 struct cgltf_data const *gltf,
+                                                 struct owl_scene *scene) {
+  int i;
+  struct owl_scene_node root;
+  struct owl_scene_load_info sli;
+  enum owl_code code = OWL_SUCCESS;
+
+  root.slot = OWL_SCENE_NODE_NO_PARENT_SLOT;
+
+  owl_scene_setup_load_info_(r, gltf, &sli);
+
+  for (i = 0; i < OWL_SCENE_MAX_NODES_COUNT; ++i) {
+    scene->nodes[i].mesh.slot = -1;
+    scene->nodes[i].parent.slot = -1;
+    scene->nodes[i].mesh.slot = -1;
+    scene->nodes[i].skin.slot = -1;
+  }
+
+  for (i = 0; i < (int)gltf->nodes_count; ++i) {
+    code = owl_scene_load_node_(r, gltf, &gltf->nodes[i], &root, &sli, scene);
+
+    if (OWL_SUCCESS != code)
+      goto end;
+  }
+
+  owl_scene_load_buffers_(r, &sli, scene);
+
+end:
+  return code;
 }
 
 OWL_INTERNAL enum owl_code owl_scene_load_skins_(struct owl_renderer *r,
@@ -831,12 +878,8 @@ end:
 
 enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
                              struct owl_scene *scene) {
-
-  int i;
   struct cgltf_options options;
   struct cgltf_data *data = NULL;
-  struct owl_scene_node root;
-  struct owl_scene_load_info sli;
   enum owl_code code = OWL_SUCCESS;
 
   OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
@@ -852,9 +895,7 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   scene->animation_samplers_count = 0;
   scene->animation_channels_count = 0;
   scene->animations_count = 0;
-  scene->active_animation = OWL_SCENE_NO_ANIMATION_SLOT;
-
-  root.slot = OWL_SCENE_NODE_NO_PARENT_SLOT;
+  scene->active_animation.slot = OWL_SCENE_NO_ANIMATION_SLOT;
 
   /* HACK(samuel): a lot of stuff requires to be 0 at the start, just lazy */
   OWL_MEMSET(scene, 0, sizeof(*scene));
@@ -885,16 +926,8 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   if (OWL_SUCCESS != (code = owl_scene_load_animations_(r, data, scene)))
     goto end_err_free_data;
 
-  owl_scene_setup_load_info_(r, data, &sli);
-
-  for (i = 0; i < (int)data->nodes_count; ++i) {
-    code = owl_scene_load_node_(r, data, &data->nodes[i], &root, &sli, scene);
-
-    if (OWL_SUCCESS != code)
-      goto end_err_free_data;
-  }
-
-  owl_scene_load_buffers_(r, &sli, scene);
+  if (OWL_SUCCESS != (code = owl_scene_load_nodes_(r, data, scene)))
+    goto end_err_free_data;
 
 end_err_free_data:
   cgltf_free(data);

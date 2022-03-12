@@ -66,6 +66,10 @@ struct owl_scene_animation_channel {
   int slot;
 };
 
+struct owl_scene_animation {
+  int slot;
+};
+
 struct owl_scene_push_constant {
   owl_m4 model;
 };
