@@ -380,7 +380,7 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
         owl_u32 const *indices =
             owl_resolve_gltf_accessor_(from_primitive->indices);
         for (j = 0; j < (int)from_primitive->indices->count; ++j) {
-          sli->indices[offset + j] = indices[sli->vertices_count + j];
+          sli->indices[offset + j] = indices[j] + (owl_u32)sli->vertices_count;
         }
       } break;
 
@@ -389,7 +389,7 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
         owl_u16 const *indices =
             owl_resolve_gltf_accessor_(from_primitive->indices);
         for (j = 0; j < (int)from_primitive->indices->count; ++j) {
-          sli->indices[offset + j] = indices[sli->vertices_count + j];
+          sli->indices[offset + j] = indices[j] + (owl_u16)sli->vertices_count;
         }
       } break;
 
@@ -398,7 +398,7 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
         owl_u8 const *indices =
             owl_resolve_gltf_accessor_(from_primitive->indices);
         for (j = 0; j < (int)from_primitive->indices->count; ++j) {
-          sli->indices[offset + j] = indices[sli->vertices_count + j];
+          sli->indices[offset + j] = indices[j] + (owl_u8)sli->vertices_count;
         }
       } break;
 
