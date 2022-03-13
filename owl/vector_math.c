@@ -219,10 +219,10 @@ void owl_v3_direction(float pitch, float yaw, owl_v3 const up, owl_v3 out) {
 void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out) {
   owl_m4 rotation;
   owl_m4_make_rotate(angle, axis, rotation);
-  owl_m4_mul_rotation(m, rotation, out);
+  owl_m4_multiply(m, rotation, out);
 }
 
-void owl_m4_mul_rotation(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out) {
+void owl_m4_multiply(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out) {
   owl_m4 a;
   owl_m3 b;
   owl_v4 c;
@@ -284,7 +284,7 @@ void owl_v4_quat_as_m4(owl_v4 const from, owl_m4 out) {
   float w, x, y, z;
   float xx, yy, zz;
   float xy, yz, xz;
-  float wx, wy, wz; 
+  float wx, wy, wz;
   float n, s;
 
   n = owl_v4_mag(from);
@@ -295,9 +295,15 @@ void owl_v4_quat_as_m4(owl_v4 const from, owl_m4 out) {
   z = from[2];
   w = from[3];
 
-  xx = s * x * x;   xy = s * x * y;   wx = s * w * x;
-  yy = s * y * y;   yz = s * y * z;   wy = s * w * y;
-  zz = s * z * z;   xz = s * x * z;   wz = s * w * z;
+  xx = s * x * x;
+  xy = s * x * y;
+  wx = s * w * x;
+  yy = s * y * y;
+  yz = s * y * z;
+  wy = s * w * y;
+  zz = s * z * z;
+  xz = s * x * z;
+  wz = s * w * z;
 
   out[0][0] = 1.0F - yy - zz;
   out[1][1] = 1.0F - xx - zz;
@@ -323,7 +329,7 @@ void owl_v4_quat_as_m4(owl_v4 const from, owl_m4 out) {
 void owl_m4_scale(owl_m4 const from, owl_v3 const scale, owl_m4 out) {
   owl_m4 m;
   owl_v3 s;
-  
+
   OWL_M4_COPY(from, m);
   OWL_V3_COPY(scale, s);
 
@@ -332,10 +338,10 @@ void owl_m4_scale(owl_m4 const from, owl_v3 const scale, owl_m4 out) {
   OWL_V4_SCALE(m[2], s[2], out[2]);
 
   OWL_V4_COPY(m[3], out[3]);
-} 
+}
 
-OWL_INTERNAL void
-owl_v4_quat_lerp(owl_v4 const from, owl_v4 const to, float t, owl_v4 dest) {
+OWL_INTERNAL void owl_v4_quat_lerp(owl_v4 const from, owl_v4 const to, float t,
+                                   owl_v4 dest) {
   owl_v4 s, v;
 
   /* from + s * (to - from) */
@@ -345,8 +351,8 @@ owl_v4_quat_lerp(owl_v4 const from, owl_v4 const to, float t, owl_v4 dest) {
   OWL_V4_ADD(from, v, dest);
 }
 
-void 
-owl_v4_quat_slerp(owl_v4 const from, owl_v4 const to, float t, owl_v4 out) {
+void owl_v4_quat_slerp(owl_v4 const from, owl_v4 const to, float t,
+                       owl_v4 out) {
   owl_v4 q1, q2;
   float cosTheta, sinTheta, angle;
 
@@ -380,12 +386,23 @@ owl_v4_quat_slerp(owl_v4 const from, owl_v4 const to, float t, owl_v4 out) {
   OWL_V4_SCALE(q1, 1.0F / sinTheta, out);
 }
 
-OWL_INTERNAL void
-owl_m4_scale_p(owl_m4 m, float s) {
-  m[0][0] *= s; m[0][1] *= s; m[0][2] *= s; m[0][3] *= s;
-  m[1][0] *= s; m[1][1] *= s; m[1][2] *= s; m[1][3] *= s;
-  m[2][0] *= s; m[2][1] *= s; m[2][2] *= s; m[2][3] *= s;
-  m[3][0] *= s; m[3][1] *= s; m[3][2] *= s; m[3][3] *= s;
+OWL_INTERNAL void owl_m4_scale_p(owl_m4 m, float s) {
+  m[0][0] *= s;
+  m[0][1] *= s;
+  m[0][2] *= s;
+  m[0][3] *= s;
+  m[1][0] *= s;
+  m[1][1] *= s;
+  m[1][2] *= s;
+  m[1][3] *= s;
+  m[2][0] *= s;
+  m[2][1] *= s;
+  m[2][2] *= s;
+  m[2][3] *= s;
+  m[3][0] *= s;
+  m[3][1] *= s;
+  m[3][2] *= s;
+  m[3][3] *= s;
 }
 
 void owl_m4_inverse(owl_m4 const mat, owl_m4 dest) {
@@ -396,37 +413,49 @@ void owl_m4_inverse(owl_m4 const mat, owl_m4 dest) {
         i = mat[2][0], j = mat[2][1], k = mat[2][2], l = mat[2][3],
         m = mat[3][0], n = mat[3][1], o = mat[3][2], p = mat[3][3];
 
-  t[0] = k * p - o * l; t[1] = j * p - n * l; t[2] = j * o - n * k;
-  t[3] = i * p - m * l; t[4] = i * o - m * k; t[5] = i * n - m * j;
+  t[0] = k * p - o * l;
+  t[1] = j * p - n * l;
+  t[2] = j * o - n * k;
+  t[3] = i * p - m * l;
+  t[4] = i * o - m * k;
+  t[5] = i * n - m * j;
 
-  dest[0][0] =  f * t[0] - g * t[1] + h * t[2];
-  dest[1][0] =-(e * t[0] - g * t[3] + h * t[4]);
-  dest[2][0] =  e * t[1] - f * t[3] + h * t[5];
-  dest[3][0] =-(e * t[2] - f * t[4] + g * t[5]);
+  dest[0][0] = f * t[0] - g * t[1] + h * t[2];
+  dest[1][0] = -(e * t[0] - g * t[3] + h * t[4]);
+  dest[2][0] = e * t[1] - f * t[3] + h * t[5];
+  dest[3][0] = -(e * t[2] - f * t[4] + g * t[5]);
 
-  dest[0][1] =-(b * t[0] - c * t[1] + d * t[2]);
-  dest[1][1] =  a * t[0] - c * t[3] + d * t[4];
-  dest[2][1] =-(a * t[1] - b * t[3] + d * t[5]);
-  dest[3][1] =  a * t[2] - b * t[4] + c * t[5];
+  dest[0][1] = -(b * t[0] - c * t[1] + d * t[2]);
+  dest[1][1] = a * t[0] - c * t[3] + d * t[4];
+  dest[2][1] = -(a * t[1] - b * t[3] + d * t[5]);
+  dest[3][1] = a * t[2] - b * t[4] + c * t[5];
 
-  t[0] = g * p - o * h; t[1] = f * p - n * h; t[2] = f * o - n * g;
-  t[3] = e * p - m * h; t[4] = e * o - m * g; t[5] = e * n - m * f;
+  t[0] = g * p - o * h;
+  t[1] = f * p - n * h;
+  t[2] = f * o - n * g;
+  t[3] = e * p - m * h;
+  t[4] = e * o - m * g;
+  t[5] = e * n - m * f;
 
-  dest[0][2] =  b * t[0] - c * t[1] + d * t[2];
-  dest[1][2] =-(a * t[0] - c * t[3] + d * t[4]);
-  dest[2][2] =  a * t[1] - b * t[3] + d * t[5];
-  dest[3][2] =-(a * t[2] - b * t[4] + c * t[5]);
+  dest[0][2] = b * t[0] - c * t[1] + d * t[2];
+  dest[1][2] = -(a * t[0] - c * t[3] + d * t[4]);
+  dest[2][2] = a * t[1] - b * t[3] + d * t[5];
+  dest[3][2] = -(a * t[2] - b * t[4] + c * t[5]);
 
-  t[0] = g * l - k * h; t[1] = f * l - j * h; t[2] = f * k - j * g;
-  t[3] = e * l - i * h; t[4] = e * k - i * g; t[5] = e * j - i * f;
+  t[0] = g * l - k * h;
+  t[1] = f * l - j * h;
+  t[2] = f * k - j * g;
+  t[3] = e * l - i * h;
+  t[4] = e * k - i * g;
+  t[5] = e * j - i * f;
 
-  dest[0][3] =-(b * t[0] - c * t[1] + d * t[2]);
-  dest[1][3] =  a * t[0] - c * t[3] + d * t[4];
-  dest[2][3] =-(a * t[1] - b * t[3] + d * t[5]);
-  dest[3][3] =  a * t[2] - b * t[4] + c * t[5];
+  dest[0][3] = -(b * t[0] - c * t[1] + d * t[2]);
+  dest[1][3] = a * t[0] - c * t[3] + d * t[4];
+  dest[2][3] = -(a * t[1] - b * t[3] + d * t[5]);
+  dest[3][3] = a * t[2] - b * t[4] + c * t[5];
 
-  det = 1.0f / (a * dest[0][0] + b * dest[1][0]
-              + c * dest[2][0] + d * dest[3][0]);
+  det = 1.0f /
+        (a * dest[0][0] + b * dest[1][0] + c * dest[2][0] + d * dest[3][0]);
 
   owl_m4_scale_p(dest, det);
 }

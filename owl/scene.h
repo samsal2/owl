@@ -4,6 +4,7 @@
 #include "image.h"
 #include "types.h"
 
+#define OWL_SCENE_NODE_NO_MESH_SLOT -1
 #define OWL_SCENE_NO_ANIMATION_SLOT -1
 #define OWL_SCENE_NODE_NO_SKIN_SLOT -1
 #define OWL_SCENE_NODE_NO_PARENT_SLOT -1

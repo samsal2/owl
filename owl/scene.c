@@ -125,12 +125,10 @@ struct owl_scene_load_info {
   int vertices_capacity;
   int vertices_count;
   struct owl_scene_vertex *vertices;
-  struct owl_dynamic_heap_reference vertices_reference;
 
   int indices_capacity;
   int indices_count;
   owl_u32 *indices;
-  struct owl_dynamic_heap_reference indices_reference;
 };
 
 OWL_INTERNAL struct cgltf_attribute const *
@@ -179,11 +177,14 @@ owl_scene_find_load_info_capacities_(struct cgltf_node const *node,
   }
 }
 
-OWL_INTERNAL void owl_scene_setup_load_info_(struct owl_renderer *r,
-                                             struct cgltf_data const *gltf,
-                                             struct owl_scene_load_info *sli) {
+OWL_INTERNAL enum owl_code
+owl_scene_init_load_info_(struct owl_renderer *r, struct cgltf_data const *gltf,
+                          struct owl_scene_load_info *sli) {
   int i;
   VkDeviceSize size;
+  enum owl_code code = OWL_SUCCESS;
+
+  OWL_UNUSED(r);
 
   sli->vertices_capacity = 0;
   sli->indices_capacity = 0;
@@ -193,13 +194,33 @@ OWL_INTERNAL void owl_scene_setup_load_info_(struct owl_renderer *r,
   for (i = 0; i < (int)gltf->nodes_count; ++i)
     owl_scene_find_load_info_capacities_(&gltf->nodes[i], sli);
 
-  size = (owl_u64)sli->vertices_capacity * sizeof(struct owl_scene_vertex);
-  sli->vertices =
-      owl_renderer_dynamic_heap_alloc(r, size, &sli->vertices_reference);
+  size = (owl_u64)sli->vertices_capacity * sizeof(*sli->vertices);
+  if (!(sli->vertices = OWL_MALLOC(size))) {
+    code = OWL_ERROR_BAD_ALLOC;
+    goto end;
+  }
 
   size = (owl_u64)sli->indices_capacity * sizeof(owl_u32);
-  sli->indices =
-      owl_renderer_dynamic_heap_alloc(r, size, &sli->indices_reference);
+  if (!(sli->indices = OWL_MALLOC(size))) {
+    code = OWL_ERROR_BAD_ALLOC;
+    goto end_err_free_vertices;
+  }
+
+  goto end;
+
+end_err_free_vertices:
+  OWL_FREE(sli->vertices);
+
+end:
+  return code;
+}
+
+OWL_INTERNAL void owl_scene_deinit_load_info_(struct owl_renderer *r,
+                                              struct owl_scene_load_info *sli) {
+  OWL_UNUSED(r);
+
+  OWL_FREE(sli->indices);
+  OWL_FREE(sli->vertices);
 }
 
 OWL_INTERNAL enum owl_code
@@ -282,18 +303,16 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
   else
     node_data->skin.slot = OWL_SCENE_NODE_NO_SKIN_SLOT;
 
-  node_data->mesh.slot = scene->meshes_count++;
-
-  if (OWL_SCENE_MAX_MESHES_COUNT <= node_data->mesh.slot) {
-    code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto end;
-  }
-
-  scene->meshes[node_data->mesh.slot].primitives_count = 0;
-
   if (from_node->mesh) {
     struct cgltf_mesh const *from_mesh;
     struct owl_scene_mesh_data *mesh_data;
+
+    node_data->mesh.slot = scene->meshes_count++;
+
+    if (OWL_SCENE_MAX_MESHES_COUNT <= node_data->mesh.slot) {
+      code = OWL_ERROR_OUT_OF_BOUNDS;
+      goto end;
+    }
 
     from_mesh = from_node->mesh;
     mesh_data = &scene->meshes[node_data->mesh.slot];
@@ -346,8 +365,10 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
         struct owl_scene_vertex *vertex = &sli->vertices[offset + j];
 
         OWL_V3_COPY(&position[j * 3], vertex->position);
+#if 0
         /* HACK(flipping the model Y coordinate */
         vertex->position[1] *= -1.0F;
+#endif
 
         if (normal)
           OWL_V3_COPY(&normal[j * 3], vertex->normal);
@@ -427,8 +448,25 @@ end:
 OWL_INTERNAL void owl_scene_load_buffers_(struct owl_renderer *r,
                                           struct owl_scene_load_info const *sli,
                                           struct owl_scene *scene) {
+  struct owl_dynamic_heap_reference vdhr;
+  struct owl_dynamic_heap_reference idhr;
+
+  OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
   OWL_ASSERT(sli->vertices_count == sli->vertices_capacity);
   OWL_ASSERT(sli->indices_count == sli->indices_capacity);
+
+  {
+    owl_byte *data;
+    VkDeviceSize size;
+
+    size = (owl_u64)sli->vertices_capacity * sizeof(struct owl_scene_vertex);
+    data = owl_renderer_dynamic_heap_alloc(r, size, &vdhr);
+    OWL_MEMCPY(data, sli->vertices, size);
+
+    size = (owl_u64)sli->indices_capacity * sizeof(owl_u32);
+    data = owl_renderer_dynamic_heap_alloc(r, size, &idhr);
+    OWL_MEMCPY(data, sli->indices, size);
+  }
 
   {
     VkBufferCreateInfo buffer;
@@ -510,24 +548,24 @@ OWL_INTERNAL void owl_scene_load_buffers_(struct owl_renderer *r,
     {
       VkBufferCopy copy;
 
-      copy.srcOffset = sli->vertices_reference.offset;
+      copy.srcOffset = vdhr.offset;
       copy.dstOffset = 0;
       copy.size =
           (owl_u64)sli->vertices_count * sizeof(struct owl_scene_vertex);
 
-      vkCmdCopyBuffer(sucb.command_buffer, sli->vertices_reference.buffer,
-                      scene->vertices_buffer, 1, &copy);
+      vkCmdCopyBuffer(sucb.command_buffer, vdhr.buffer, scene->vertices_buffer,
+                      1, &copy);
     }
 
     {
       VkBufferCopy copy;
 
-      copy.srcOffset = sli->indices_reference.offset;
+      copy.srcOffset = idhr.offset;
       copy.dstOffset = 0;
       copy.size = (owl_u64)sli->indices_count * sizeof(owl_u32);
 
-      vkCmdCopyBuffer(sucb.command_buffer, sli->indices_reference.buffer,
-                      scene->indices_buffer, 1, &copy);
+      vkCmdCopyBuffer(sucb.command_buffer, idhr.buffer, scene->indices_buffer,
+                      1, &copy);
     }
 
     owl_renderer_deinit_single_use_command_buffer(r, &sucb);
@@ -546,7 +584,8 @@ OWL_INTERNAL enum owl_code owl_scene_load_nodes_(struct owl_renderer *r,
 
   root.slot = OWL_SCENE_NODE_NO_PARENT_SLOT;
 
-  owl_scene_setup_load_info_(r, gltf, &sli);
+  if (OWL_SUCCESS != (code = owl_scene_init_load_info_(r, gltf, &sli)))
+    goto end;
 
   for (i = 0; i < OWL_SCENE_MAX_NODES_COUNT; ++i) {
     scene->nodes[i].mesh.slot = -1;
@@ -559,10 +598,13 @@ OWL_INTERNAL enum owl_code owl_scene_load_nodes_(struct owl_renderer *r,
     code = owl_scene_load_node_(r, gltf, &gltf->nodes[i], &root, &sli, scene);
 
     if (OWL_SUCCESS != code)
-      goto end;
+      goto end_err_deinit_load_info;
   }
 
   owl_scene_load_buffers_(r, &sli, scene);
+
+end_err_deinit_load_info:
+  owl_scene_deinit_load_info_(r, &sli);
 
 end:
   return code;
@@ -884,6 +926,9 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
 
   OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
 
+  OWL_MEMSET(&options, 0, sizeof(options));
+  OWL_MEMSET(scene, 0, sizeof(*scene));
+
   scene->roots_count = 0;
   scene->nodes_count = 0;
   scene->images_count = 0;
@@ -895,11 +940,11 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   scene->animation_samplers_count = 0;
   scene->animation_channels_count = 0;
   scene->animations_count = 0;
+#if 0
   scene->active_animation.slot = OWL_SCENE_NO_ANIMATION_SLOT;
-
-  /* HACK(samuel): a lot of stuff requires to be 0 at the start, just lazy */
-  OWL_MEMSET(scene, 0, sizeof(*scene));
-  OWL_MEMSET(&options, 0, sizeof(options));
+#else
+  scene->active_animation.slot = 0;
+#endif
 
   if (cgltf_result_success != cgltf_parse_file(&options, path, &data)) {
     code = OWL_ERROR_UNKNOWN;

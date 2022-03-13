@@ -272,15 +272,18 @@ owl_scene_resolve_local_node_matrix_(struct owl_scene const *scene,
 
   OWL_M4_IDENTITY(tmp);
   owl_m4_translate(node_data->translation, tmp);
-  owl_m4_mul_rotation(matrix, tmp, matrix);
+  owl_m4_multiply(matrix, tmp, matrix);
 
   OWL_M4_IDENTITY(tmp);
   owl_v4_quat_as_m4(node_data->rotation, tmp);
-  owl_m4_mul_rotation(matrix, tmp, matrix);
+  owl_m4_multiply(matrix, tmp, matrix);
 
   OWL_M4_IDENTITY(tmp);
   owl_m4_scale(tmp, node_data->scale, tmp);
-  owl_m4_mul_rotation(matrix, tmp, matrix);
+  owl_m4_multiply(matrix, tmp, matrix);
+
+  OWL_M4_COPY(node_data->matrix, tmp);
+  owl_m4_multiply(matrix, tmp, matrix);
 }
 
 OWL_INTERNAL void
@@ -294,13 +297,11 @@ owl_scene_resolve_node_matrix_(struct owl_scene const *scene,
   OWL_M4_IDENTITY(matrix);
 
   while (OWL_SCENE_NODE_NO_PARENT_SLOT != current.slot) {
-    owl_m4 local;
     struct owl_scene_node_data const *node_data;
 
     node_data = &scene->nodes[current.slot];
 
-    owl_scene_resolve_local_node_matrix_(scene, node, local);
-    owl_m4_mul_rotation(matrix, local, matrix);
+    owl_m4_multiply(matrix, node_data->matrix, matrix);
 
     current.slot = node_data->parent.slot;
   }
@@ -335,8 +336,8 @@ OWL_INTERNAL void owl_scene_update_joints_(struct owl_scene *scene,
 
   for (i = 0; i < skin_data->joints_count; ++i) {
     owl_scene_resolve_local_node_matrix_(scene, &skin_data->joints[i], tmp);
-    owl_m4_mul_rotation(tmp, skin_data->inverse_bind_matrices[i], tmp);
-    owl_m4_mul_rotation(tmp, inverse, tmp);
+    owl_m4_multiply(tmp, skin_data->inverse_bind_matrices[i], tmp);
+    owl_m4_multiply(tmp, inverse, tmp);
     OWL_M4_COPY(tmp, out[i]);
   }
 
@@ -449,7 +450,6 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
 
   scene = command->scene;
   node_data = &scene->nodes[node->slot];
-  mesh_data = &scene->meshes[node_data->mesh.slot];
 
   for (i = 0; i < node_data->children_count; ++i) {
     code = owl_scene_submit_node_(r, cam, command, &node_data->children[i]);
@@ -458,13 +458,23 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
       goto end;
   }
 
+  if (OWL_SCENE_NODE_NO_MESH_SLOT == node_data->mesh.slot)
+    goto end;
+
+  mesh_data = &scene->meshes[node_data->mesh.slot];
+
   if (!mesh_data->primitives_count)
     goto end;
 
   owl_scene_resolve_node_matrix_(scene, node, push_constant.model);
 
-  // OWL_V3_SET(0.0F, 0.0F, -1.0F, position);
-  // owl_m4_translate(position, push_constant.model);
+#if 0
+  {
+    owl_v3 axis = {0.0F, 1.0F, 0.0F};
+    owl_m4_rotate(push_constant.model, OWL_DEG_TO_RAD(180.0F), axis,
+                  push_constant.model);
+  }
+#endif
 
   vkCmdPushConstants(r->active_frame_command_buffer, r->active_pipeline_layout,
                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),
@@ -485,6 +495,10 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
 
     primitive = &mesh_data->primitives[i];
     primitive_data = &scene->primitives[primitive->slot];
+
+    if (!primitive_data->count)
+      goto end;
+
     material_data = &scene->materials[primitive_data->material.slot];
     base_texture_data =
         &scene->textures[material_data->base_color_texture.slot];
