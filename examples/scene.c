@@ -66,7 +66,7 @@ int main(void) {
       continue;
     }
 
-#if 0
+#if 1
     owl_scene_update_animation(scene, client->dt_time_stamp);
 #endif
 

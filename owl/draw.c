@@ -314,8 +314,9 @@ owl_scene_resolve_node_matrix_(struct owl_scene const *scene,
 
 #if 1
 
-OWL_INTERNAL void owl_scene_update_joints_(struct owl_scene *scene,
-                                           struct owl_scene_node const *node) {
+OWL_INTERNAL void
+owl_scene_node_update_joints_(struct owl_scene *scene,
+                              struct owl_scene_node const *node) {
   int i;
   owl_m4 *out;
   owl_m4 tmp;
@@ -324,6 +325,9 @@ OWL_INTERNAL void owl_scene_update_joints_(struct owl_scene *scene,
   struct owl_scene_node_data const *node_data;
 
   node_data = &scene->nodes[node->slot];
+
+  for (i = 0; i < node_data->children_count; ++i)
+    owl_scene_node_update_joints_(scene, &node_data->children[i]);
 
   if (OWL_SCENE_NODE_NO_SKIN_SLOT == node_data->skin.slot)
     goto end;
@@ -341,11 +345,8 @@ OWL_INTERNAL void owl_scene_update_joints_(struct owl_scene *scene,
     OWL_M4_COPY(tmp, out[i]);
   }
 
-  for (i = 0; i < node_data->children_count; ++i)
-    owl_scene_update_joints_(scene, &node_data->children[i]);
-
 end:
-  (void)0;
+  return;
 }
 
 void owl_scene_update_animation(struct owl_scene *scene, float dt) {
@@ -422,15 +423,18 @@ void owl_scene_update_animation(struct owl_scene *scene, float dt) {
 
         owl_v4_mix(x, y, a, node_data->scale);
       } break;
+
+      default:
+        OWL_ASSERT(0);
       }
     }
   }
 
   for (i = 0; i < scene->nodes_count; ++i)
-    owl_scene_update_joints_(scene, &scene->roots[i]);
+    owl_scene_node_update_joints_(scene, &scene->roots[i]);
 
 end:
-  (void)0;
+  return;
 }
 
 #endif
@@ -468,14 +472,6 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
 
   owl_scene_resolve_node_matrix_(scene, node, push_constant.model);
 
-#if 0
-  {
-    owl_v3 axis = {0.0F, 1.0F, 0.0F};
-    owl_m4_rotate(push_constant.model, OWL_DEG_TO_RAD(180.0F), axis,
-                  push_constant.model);
-  }
-#endif
-
   vkCmdPushConstants(r->active_frame_command_buffer, r->active_pipeline_layout,
                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),
                      &push_constant);
@@ -497,7 +493,7 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
     primitive_data = &scene->primitives[primitive->slot];
 
     if (!primitive_data->count)
-      goto end;
+      continue;
 
     material_data = &scene->materials[primitive_data->material.slot];
     base_texture_data =

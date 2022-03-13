@@ -191,8 +191,8 @@ owl_scene_init_load_info_(struct owl_renderer *r, struct cgltf_data const *gltf,
   sli->vertices_count = 0;
   sli->indices_count = 0;
 
-  for (i = 0; i < (int)gltf->nodes_count; ++i)
-    owl_scene_find_load_info_capacities_(&gltf->nodes[i], sli);
+  for (i = 0; i < (int)gltf->scene->nodes_count; ++i)
+    owl_scene_find_load_info_capacities_(gltf->scene->nodes[i], sli);
 
   size = (owl_u64)sli->vertices_capacity * sizeof(*sli->vertices);
   if (!(sli->vertices = OWL_MALLOC(size))) {
@@ -365,7 +365,7 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
         struct owl_scene_vertex *vertex = &sli->vertices[offset + j];
 
         OWL_V3_COPY(&position[j * 3], vertex->position);
-#if 0
+#if 1
         /* HACK(flipping the model Y coordinate */
         vertex->position[1] *= -1.0F;
 #endif
@@ -594,8 +594,9 @@ OWL_INTERNAL enum owl_code owl_scene_load_nodes_(struct owl_renderer *r,
     scene->nodes[i].skin.slot = -1;
   }
 
-  for (i = 0; i < (int)gltf->nodes_count; ++i) {
-    code = owl_scene_load_node_(r, gltf, &gltf->nodes[i], &root, &sli, scene);
+  for (i = 0; i < (int)gltf->scene->nodes_count; ++i) {
+    code = owl_scene_load_node_(r, gltf, gltf->scene->nodes[i], &root, &sli,
+                                scene);
 
     if (OWL_SUCCESS != code)
       goto end_err_deinit_load_info;
