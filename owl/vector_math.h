@@ -268,7 +268,7 @@ void owl_m4_look_at(owl_v3 const eye, owl_v3 const center, owl_v3 const up,
 
 void owl_v3_direction(float pitch, float yaw, owl_v3 const up, owl_v3 out);
 
-void owl_m4_mul_rotation(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out);
+void owl_m4_mul(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out);
 
 void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out);
 

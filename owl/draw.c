@@ -286,14 +286,30 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *cam,
     struct owl_scene_node_data const *current_data =
         &scene->nodes[current.slot];
 
-    owl_m4_mul_rotation(push_constant.model, current_data->matrix,
-                        push_constant.model);
+    owl_m4_mul(push_constant.model, current_data->matrix, push_constant.model);
 
     current.slot = current_data->parent.slot;
   }
 
   // OWL_V3_SET(0.0F, 0.0F, -1.0F, position);
   // owl_m4_translate(position, push_constant.model);
+
+  {
+    owl_v3 axis = {0.0F, 1.0F, 0.0F};
+    owl_m4_rotate(push_constant.model, OWL_DEG_TO_RAD(90.0F), axis,
+                  push_constant.model);
+  }
+
+  {
+    owl_v3 axis = {0.0F, 0.0F, -1.0F};
+    owl_m4_rotate(push_constant.model, OWL_DEG_TO_RAD(90.0F), axis,
+                  push_constant.model);
+  }
+
+  {
+    owl_v3 translation = {0.0F, 0.0F, -1.0F};
+    owl_m4_translate(translation, push_constant.model);
+  }
 
   vkCmdPushConstants(r->active_frame_command_buffer, r->active_pipeline_layout,
                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),

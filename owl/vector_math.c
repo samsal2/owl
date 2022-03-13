@@ -208,10 +208,10 @@ void owl_v3_direction(float pitch, float yaw, owl_v3 const up, owl_v3 out) {
 void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out) {
   owl_m4 rotation;
   owl_m4_make_rotate(angle, axis, rotation);
-  owl_m4_mul_rotation(m, rotation, out);
+  owl_m4_mul(m, rotation, out);
 }
 
-void owl_m4_mul_rotation(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out) {
+void owl_m4_mul(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out) {
   owl_m4 a;
   owl_m3 b;
   owl_v4 c;
