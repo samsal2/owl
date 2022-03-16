@@ -256,11 +256,11 @@ void owl_v3_cross(owl_v3 const lhs, owl_v3 const rhs, owl_v3 out);
 
 void owl_m4v4_mul(owl_m4 const m, owl_v4 const v, owl_v4 out);
 
-float owl_v2_mag(owl_v2 const v);
+float owl_v4_magnitude(owl_v2 const v);
 
-float owl_v3_mag(owl_v3 const v);
+float owl_v3_magnitude(owl_v3 const v);
 
-float owl_v4_mag(owl_v3 const v);
+float owl_v4_magnitude(owl_v3 const v);
 
 void owl_v3_normalize(owl_v3 const v, owl_v3 out);
 
@@ -306,27 +306,27 @@ void owl_m4_inverse(owl_m4 const mat, owl_m4 dest);
 
 #ifndef NDEBUG
 
-#define OWL_V2_FORMAT "%.2f %.2f"
+#define OWL_V2_FORMAT "%.8fF,%.8fF"
 #define OWL_V2_FORMAT_ARGS(v) v[0], v[1]
 
-#define OWL_V3_FORMAT "%.2f %.2f %.2f"
+#define OWL_V3_FORMAT "%.8fF,%.8fF,%.8fF"
 #define OWL_V3_FORMAT_ARGS(v) v[0], v[1], v[2]
 
-#define OWL_V4_FORMAT "%.2f %.2f %.2f %.2f"
+#define OWL_V4_FORMAT "%.8fF,%.8fF,%.8fF,%.8fF"
 #define OWL_V4_FORMAT_ARGS(v) v[0], v[1], v[2], v[3]
 
 #define OWL_M4_FORMAT                                                          \
-  "%.2f %.2f %.2f %.2f\n"                                                      \
-  "%.2f %.2f %.2f %.2f\n"                                                      \
-  "%.2f %.2f %.2f %.2f\n"                                                      \
-  "%.2f %.2f %.2f %.2f"
+  "%.8fF,%.8fF,%.8fF,%.8fF,\n"                                                 \
+  "%.8fF,%.8fF,%.8fF,%.8fF,\n"                                                 \
+  "%.8fF,%.8fF,%.8fF,%.8fF,\n"                                                 \
+  "%.8fF,%.8fF,%.8fF,%.8fF"
 
 /* clang-format off */
 
-#define OWL_M4_FORMAT_ARGS(v)                                             \
+#define OWL_M4_FORMAT_ARGS(v)                                                  \
   v[0][0], v[0][1], v[0][2], v[0][3],                                          \
   v[1][0], v[1][1], v[1][2], v[1][3],                                          \
-  v[2][0], v[2][1], v[2][2], v[3][3],                                          \
+  v[2][0], v[2][1], v[2][2], v[2][3],                                          \
   v[3][0], v[3][1], v[3][2], v[3][3]
 
 /* clang-format on */

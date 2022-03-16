@@ -155,7 +155,7 @@ static void update_cloth(float dt, struct cloth *cloth) {
           continue;
 
         OWL_V3_SUB(link->position, p->position, delta);
-        factor = 1 - (p->rest_distances[k] / owl_v3_mag(delta));
+        factor = 1 - (p->rest_distances[k] / owl_v3_magnitude(delta));
         OWL_V3_SCALE(delta, factor, correction);
         OWL_V3_SCALE(correction, 0.5F, correction);
         OWL_V3_ADD(p->position, correction, p->position);

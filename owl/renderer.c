@@ -11,7 +11,7 @@
 #define OWL_MAX_PRESENT_MODES 16
 #define OWL_UNRESTRICTED_DIMENSION (owl_u32) - 1
 #define OWL_ACQUIRE_IMAGE_TIMEOUT (owl_u64) - 1
-#define OWL_WAIT_FOR_FENCES_TIMOUT (owl_u64) - 1
+#define OWL_WAIT_FOR_FENCES_TIMEOUT (owl_u64) - 1
 #define OWL_QUEUE_FAMILY_INDEX_NONE (owl_u32) - 1
 
 OWL_GLOBAL char const *const g_required_device_extensions[] = {
@@ -1432,7 +1432,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     switch (i) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SCENE:
       rasterization_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
       rasterization_state.pNext = NULL;
@@ -1442,6 +1441,23 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       rasterization_state.polygonMode = VK_POLYGON_MODE_FILL;
       rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT;
       rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+      rasterization_state.depthBiasEnable = VK_FALSE;
+      rasterization_state.depthBiasConstantFactor = 0.0F;
+      rasterization_state.depthBiasClamp = 0.0F;
+      rasterization_state.depthBiasSlopeFactor = 0.0F;
+      rasterization_state.lineWidth = 1.0F;
+      break;
+
+    case OWL_PIPELINE_TYPE_SCENE:
+      rasterization_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+      rasterization_state.pNext = NULL;
+      rasterization_state.flags = 0;
+      rasterization_state.depthClampEnable = VK_FALSE;
+      rasterization_state.rasterizerDiscardEnable = VK_FALSE;
+      rasterization_state.polygonMode = VK_POLYGON_MODE_LINE;
+      rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT;
+      rasterization_state.frontFace = VK_FRONT_FACE_CLOCKWISE;
       rasterization_state.depthBiasEnable = VK_FALSE;
       rasterization_state.depthBiasConstantFactor = 0.0F;
       rasterization_state.depthBiasClamp = 0.0F;
@@ -2101,6 +2117,8 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *rii,
   r->window_height = rii->window_height;
   r->framebuffer_width = rii->framebuffer_width;
   r->framebuffer_height = rii->framebuffer_height;
+  r->framebuffer_ratio =
+      (float)rii->framebuffer_width / (float)rii->framebuffer_height;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_instance_(rii, r)))
     goto end;
@@ -2288,6 +2306,8 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_info const *rii,
   r->window_height = rii->window_height;
   r->framebuffer_width = rii->framebuffer_width;
   r->framebuffer_height = rii->framebuffer_height;
+  r->framebuffer_ratio =
+      (float)rii->framebuffer_width / (float)rii->framebuffer_height;
 
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
@@ -2374,7 +2394,7 @@ void *owl_renderer_dynamic_heap_alloc(struct owl_renderer *r, VkDeviceSize size,
   dhr->pvm_set = r->active_dynamic_heap_pvm_set;
   dhr->pvl_set = r->active_dynamic_heap_pvl_set;
 
-  data = r->active_dynamic_heap_data + r->dynamic_heap_offset;
+  data = &r->active_dynamic_heap_data[r->dynamic_heap_offset];
 
   r->dynamic_heap_offset = OWL_ALIGNU2(r->dynamic_heap_offset + size,
                                        r->dynamic_heap_buffer_alignment);
@@ -2512,7 +2532,7 @@ owl_renderer_acquire_next_image_(struct owl_renderer *r) {
 
 OWL_INTERNAL void owl_renderer_prepare_frame_(struct owl_renderer *r) {
   OWL_VK_CHECK(vkWaitForFences(r->device, 1, &r->active_in_flight_fence,
-                               VK_TRUE, OWL_WAIT_FOR_FENCES_TIMOUT));
+                               VK_TRUE, OWL_WAIT_FOR_FENCES_TIMEOUT));
   OWL_VK_CHECK(vkResetFences(r->device, 1, &r->active_in_flight_fence));
   OWL_VK_CHECK(vkResetCommandPool(r->device, r->active_frame_command_pool, 0));
 }

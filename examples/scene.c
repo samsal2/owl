@@ -10,7 +10,6 @@ static struct owl_client_init_info client_info;
 static struct owl_client *client;
 static struct owl_renderer_init_info renderer_info;
 static struct owl_renderer *renderer;
-static struct owl_scene *scene;
 static struct owl_draw_scene_command scene_command;
 static struct owl_camera camera;
 static struct owl_font *font;
@@ -29,6 +28,7 @@ static struct owl_draw_text_command text_command;
   } while (0)
 
 int main(void) {
+  struct owl_scene *scene;
   client_info.height = 600;
   client_info.width = 600;
   client_info.title = "scene";
@@ -61,8 +61,7 @@ int main(void) {
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);
-      owl_camera_set_ratio(&camera, (float)renderer->framebuffer_width /
-                                        (float)renderer->framebuffer_height);
+      owl_camera_set_ratio(&camera, renderer->framebuffer_ratio);
       continue;
     }
 
@@ -79,8 +78,7 @@ int main(void) {
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);
-      owl_camera_set_ratio(&camera, (float)renderer->framebuffer_width /
-                                        (float)renderer->framebuffer_height);
+      owl_camera_set_ratio(&camera, renderer->framebuffer_ratio);
       continue;
     }
 

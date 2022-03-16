@@ -39,19 +39,19 @@ void owl_m4v4_mul(owl_m4 const m, owl_v4 const v, owl_v4 out) {
       m[0][3] * tmp[0] + m[1][3] * tmp[1] + m[2][3] * tmp[2] + m[3][3] * tmp[3];
 }
 
-float owl_v2_mag(owl_v2 const v) { return OWL_SQRTF(OWL_V2_DOT(v, v)); }
+float owl_v2_magnitude(owl_v2 const v) { return OWL_SQRTF(OWL_V2_DOT(v, v)); }
 
-float owl_v3_mag(owl_v3 const v) { return OWL_SQRTF(OWL_V3_DOT(v, v)); }
+float owl_v3_magnitude(owl_v3 const v) { return OWL_SQRTF(OWL_V3_DOT(v, v)); }
 
-float owl_v4_mag(owl_v4 const v) { return OWL_SQRTF(OWL_V4_DOT(v, v)); }
+float owl_v4_magnitude(owl_v4 const v) { return OWL_SQRTF(OWL_V4_DOT(v, v)); }
 
 void owl_v3_normalize(owl_v3 const v, owl_v3 out) {
-  float const mag = 1 / owl_v3_mag(v);
+  float const mag = 1 / owl_v3_magnitude(v);
   OWL_V3_SCALE(v, mag, out);
 }
 
 void owl_v4_normalize(owl_v4 const v, owl_v4 out) {
-  float const mag = 1 / owl_v4_mag(v);
+  float const mag = 1 / owl_v4_magnitude(v);
   OWL_V4_SCALE(v, mag, out);
 }
 
@@ -223,99 +223,80 @@ void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out) {
 }
 
 void owl_m4_multiply(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out) {
-  owl_m4 a;
-  owl_m3 b;
-  owl_v4 c;
+  float a00 = lhs[0][0], a01 = lhs[0][1], a02 = lhs[0][2], a03 = lhs[0][3],
+        a10 = lhs[1][0], a11 = lhs[1][1], a12 = lhs[1][2], a13 = lhs[1][3],
+        a20 = lhs[2][0], a21 = lhs[2][1], a22 = lhs[2][2], a23 = lhs[2][3],
+        a30 = lhs[3][0], a31 = lhs[3][1], a32 = lhs[3][2], a33 = lhs[3][3],
 
-  OWL_M4_COPY(lhs, a);
-  OWL_M3_COPY(rhs, b);
-  OWL_V4_COPY(rhs[3], c);
+        b00 = rhs[0][0], b01 = rhs[0][1], b02 = rhs[0][2], b03 = rhs[0][3],
+        b10 = rhs[1][0], b11 = rhs[1][1], b12 = rhs[1][2], b13 = rhs[1][3],
+        b20 = rhs[2][0], b21 = rhs[2][1], b22 = rhs[2][2], b23 = rhs[2][3],
+        b30 = rhs[3][0], b31 = rhs[3][1], b32 = rhs[3][2], b33 = rhs[3][3];
 
-  out[0][0] = a[0][0] * b[0][0] + a[1][0] * b[0][1] + a[2][0] * b[0][2];
-  out[0][1] = a[0][1] * b[0][0] + a[1][1] * b[0][1] + a[2][1] * b[0][2];
-  out[0][2] = a[0][2] * b[0][0] + a[1][2] * b[0][1] + a[2][2] * b[0][2];
-  out[0][3] = a[0][3] * b[0][0] + a[1][3] * b[0][1] + a[2][3] * b[0][2];
-
-  out[1][0] = a[0][0] * b[1][0] + a[1][0] * b[1][1] + a[2][0] * b[1][2];
-  out[1][1] = a[0][1] * b[1][0] + a[1][1] * b[1][1] + a[2][1] * b[1][2];
-  out[1][2] = a[0][2] * b[1][0] + a[1][2] * b[1][1] + a[2][2] * b[1][2];
-  out[1][3] = a[0][3] * b[1][0] + a[1][3] * b[1][1] + a[2][3] * b[1][2];
-
-  out[2][0] = a[0][0] * b[2][0] + a[1][0] * b[2][1] + a[2][0] * b[2][2];
-  out[2][1] = a[0][1] * b[2][0] + a[1][1] * b[2][1] + a[2][1] * b[2][2];
-  out[2][2] = a[0][2] * b[2][0] + a[1][2] * b[2][1] + a[2][2] * b[2][2];
-  out[2][3] = a[0][3] * b[2][0] + a[1][3] * b[2][1] + a[2][3] * b[2][2];
-
-  out[3][0] = a[0][0] * c[0] + a[1][0] * c[1] + a[2][0] * c[2] + a[3][0] * c[3];
-  out[3][1] = a[0][1] * c[0] + a[1][1] * c[1] + a[2][1] * c[2] + a[3][1] * c[3];
-  out[3][2] = a[0][2] * c[0] + a[1][2] * c[1] + a[2][2] * c[2] + a[3][2] * c[3];
-  out[3][3] = a[0][3] * c[0] + a[1][3] * c[1] + a[2][3] * c[2] + a[3][3] * c[3];
+  out[0][0] = a00 * b00 + a10 * b01 + a20 * b02 + a30 * b03;
+  out[0][1] = a01 * b00 + a11 * b01 + a21 * b02 + a31 * b03;
+  out[0][2] = a02 * b00 + a12 * b01 + a22 * b02 + a32 * b03;
+  out[0][3] = a03 * b00 + a13 * b01 + a23 * b02 + a33 * b03;
+  out[1][0] = a00 * b10 + a10 * b11 + a20 * b12 + a30 * b13;
+  out[1][1] = a01 * b10 + a11 * b11 + a21 * b12 + a31 * b13;
+  out[1][2] = a02 * b10 + a12 * b11 + a22 * b12 + a32 * b13;
+  out[1][3] = a03 * b10 + a13 * b11 + a23 * b12 + a33 * b13;
+  out[2][0] = a00 * b20 + a10 * b21 + a20 * b22 + a30 * b23;
+  out[2][1] = a01 * b20 + a11 * b21 + a21 * b22 + a31 * b23;
+  out[2][2] = a02 * b20 + a12 * b21 + a22 * b22 + a32 * b23;
+  out[2][3] = a03 * b20 + a13 * b21 + a23 * b22 + a33 * b23;
+  out[3][0] = a00 * b30 + a10 * b31 + a20 * b32 + a30 * b33;
+  out[3][1] = a01 * b30 + a11 * b31 + a21 * b32 + a31 * b33;
+  out[3][2] = a02 * b30 + a12 * b31 + a22 * b32 + a32 * b33;
+  out[3][3] = a03 * b30 + a13 * b31 + a23 * b32 + a33 * b33;
 }
 
 float owl_v2_distance(owl_v2 const from, owl_v2 const to) {
   owl_v2 diff;
   OWL_V2_SUB(from, to, diff);
-  return owl_v2_mag(diff);
+  return owl_v2_magnitude(diff);
 }
 
 float owl_v3_distance(owl_v3 const from, owl_v3 const to) {
   owl_v3 diff;
   OWL_V3_SUB(from, to, diff);
-  return owl_v3_mag(diff);
+  return owl_v3_magnitude(diff);
 }
 
 /* https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/mix.xhtml */
 void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out) {
-  owl_v4 x;
-  owl_v4 y;
+  owl_v4 s;
+  owl_v4 v;
 
-  OWL_V4_COPY(from, x);
-  OWL_V4_COPY(to, y);
-
-  /* x * (1 - a) + y * a */
-  /* (x - y) * a + x */
-  OWL_V4_COPY(x, out);
-  OWL_V4_SUB(y, to, out);
-  OWL_V4_SCALE(out, weight, out);
-  OWL_V4_ADD(out, x, out);
+  OWL_V4_SET(weight, weight, weight, weight, s);
+  OWL_V4_SUB(to, from, v);
+  OWL_V4_MUL(s, v, v);
+  OWL_V4_ADD(from, v, out);
 }
 
-void owl_v4_quat_as_m4(owl_v4 const from, owl_m4 out) {
-  float w, x, y, z;
-  float xx, yy, zz;
-  float xy, yz, xz;
-  float wx, wy, wz;
-  float n, s;
+void owl_v4_quat_as_m4(owl_v4 const q, owl_m4 out) {
+  /* NOTE(samuel): who would've thought that the first element is the w
+   * component
+   */
+  float xx = q[1] * q[1];
+  float yy = q[2] * q[2];
+  float zz = q[3] * q[3];
+  float xz = q[1] * q[3];
+  float xy = q[1] * q[2];
+  float yz = q[2] * q[3];
+  float wx = q[0] * q[1];
+  float wy = q[0] * q[2];
+  float wz = q[0] * q[3];
 
-  n = owl_v4_mag(from);
-  s = n > 0.0F ? 2.0F / n : 0.0F;
-
-  x = from[0];
-  y = from[1];
-  z = from[2];
-  w = from[3];
-
-  xx = s * x * x;
-  xy = s * x * y;
-  wx = s * w * x;
-  yy = s * y * y;
-  yz = s * y * z;
-  wy = s * w * y;
-  zz = s * z * z;
-  xz = s * x * z;
-  wz = s * w * z;
-
-  out[0][0] = 1.0F - yy - zz;
-  out[1][1] = 1.0F - xx - zz;
-  out[2][2] = 1.0F - xx - yy;
-
-  out[0][1] = xy + wz;
-  out[1][2] = yz + wx;
-  out[2][0] = xz + wy;
-
-  out[1][0] = xy - wz;
-  out[2][1] = yz - wx;
-  out[0][2] = xz - wy;
+  out[0][0] = 1.0F - 2.0F * (yy + zz);
+  out[0][1] = 2.0F * (xy + wz);
+  out[0][2] = 2.0F * (xz - wy);
+  out[1][0] = 2.0F * (xy - wz);
+  out[1][1] = 1.0F - 2.0F * (xx + zz);
+  out[1][2] = 2.0F * (yz + wx);
+  out[2][0] = 2.0F * (xz + wy);
+  out[2][1] = 2.0F * (yz - wx);
+  out[2][2] = 1.0F - 2.0F * (xx + yy);
 
   out[0][3] = 0.0F;
   out[1][3] = 0.0F;
@@ -369,7 +350,7 @@ void owl_v4_quat_slerp(owl_v4 const from, owl_v4 const to, float t,
     cosTheta = -cosTheta;
   }
 
-  sinTheta = OWL_SQRTF(1.0f - cosTheta * cosTheta);
+  sinTheta = OWL_SQRTF(1.0F - cosTheta * cosTheta);
 
   /* LERP to avoid zero division */
   if (OWL_FABSF(sinTheta) < 0.001f) {

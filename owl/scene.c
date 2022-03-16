@@ -365,7 +365,7 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
         struct owl_scene_vertex *vertex = &sli->vertices[offset + j];
 
         OWL_V3_COPY(&position[j * 3], vertex->position);
-#if 1
+#if 0
         /* HACK(flipping the model Y coordinate */
         vertex->position[1] *= -1.0F;
 #endif
@@ -382,12 +382,12 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
 
         OWL_V3_SET(1.0F, 1.0F, 1.0F, vertex->color);
 
-        if (joints0)
+        if (joints0 && weights0) {
           OWL_V4_COPY(&joints0[j * 4], vertex->joints0);
-        else
+        } else
           OWL_V4_ZERO(vertex->joints0);
 
-        if (weights0)
+        if (joints0 && weights0)
           OWL_V4_COPY(&weights0[j * 4], vertex->weights0);
         else
           OWL_V4_ZERO(vertex->weights0);
@@ -747,15 +747,15 @@ OWL_INTERNAL enum owl_code owl_scene_load_skins_(struct owl_renderer *r,
     }
 
     {
-      owl_m4 *data;
+      void *data;
 
       vkMapMemory(r->device, skin_data->ssbo_memory, 0, VK_WHOLE_SIZE, 0,
-                  &skin_data->ssbo_data);
+                  &data);
 
-      data = skin_data->ssbo_data;
+      skin_data->ssbo_data = data;
 
       for (j = 0; j < (int)from_skin->inverse_bind_matrices->count; ++j)
-        OWL_M4_COPY(inverse_bind_matrices[j], data[j]);
+        OWL_M4_COPY(inverse_bind_matrices[j], skin_data->ssbo_data[j]);
     }
   }
 
@@ -786,6 +786,8 @@ owl_scene_load_animations_(struct owl_renderer *r,
 
     from_animation = &gltf->animations[i];
     animation_data = &scene->animations[i];
+
+    animation_data->current_time = 0.0F;
 
     if (OWL_SCENE_ANIMATION_MAX_SAMPLERS_COUNT <=
         (int)from_animation->samplers_count) {
@@ -888,7 +890,6 @@ owl_scene_load_animations_(struct owl_renderer *r,
     animation_data->channels_count = (int)from_animation->channels_count;
 
     for (j = 0; j < (int)from_animation->channels_count; ++j) {
-      struct owl_scene_animation_sampler offset;
       struct cgltf_animation_channel const *from_channel;
       struct owl_scene_animation_channel channel;
       struct owl_scene_animation_channel_data *channel_data;
@@ -904,12 +905,12 @@ owl_scene_load_animations_(struct owl_renderer *r,
 
       channel_data = &scene->animation_channels[channel.slot];
 
-      offset.slot = animation_data->samplers[0].slot;
-
       channel_data->path = (int)from_channel->target_path;
       channel_data->node.slot = (int)(from_channel->target_node - gltf->nodes);
       channel_data->animation_sampler.slot =
-          (int)(from_channel->sampler - from_animation->samplers) + offset.slot;
+          animation_data
+              ->samplers[(from_channel->sampler - from_animation->samplers)]
+              .slot;
 
       animation_data->channels[j].slot = channel.slot;
     }

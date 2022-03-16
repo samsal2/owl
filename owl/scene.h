@@ -144,7 +144,7 @@ struct owl_scene_skin_data {
   char name[OWL_SCENE_MAX_NAME_LENGTH];
   struct owl_scene_node skeleton_root;
 
-  void *ssbo_data;
+  owl_m4 *ssbo_data;
   VkBuffer ssbo_buffer;
   VkDeviceMemory ssbo_memory;
   VkDescriptorSet ssbo_set;

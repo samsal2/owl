@@ -63,6 +63,7 @@ struct owl_renderer {
   /* ====================================================================== */
   int framebuffer_width;
   int framebuffer_height;
+  float framebuffer_ratio;
   int window_width;
   int window_height;
   /* ====================================================================== */
