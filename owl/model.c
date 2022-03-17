@@ -151,36 +151,30 @@ end:
 }
 
 OWL_INTERNAL void
-owl_model_find_load_info_capacities_(struct cgltf_node const *node,
+owl_model_find_load_info_capacities_(struct cgltf_data const *gltf,
                                      struct owl_model_load_info *sli) {
   int i;
-  struct cgltf_mesh const *mesh = NULL;
-  struct cgltf_attribute const *attribute = NULL;
-  struct cgltf_accessor const *accessor = NULL;
+  for (i = 0; i < (int)gltf->nodes_count; ++i) {
+    int j;
+    struct cgltf_node const *from_node = &gltf->nodes[i];
 
-  for (i = 0; i < (int)node->children_count; ++i)
-    owl_model_find_load_info_capacities_(node->children[i], sli);
+    if (!from_node->mesh)
+      continue;
 
-  if (!node->mesh)
-    return;
+    for (j = 0; j < (int)from_node->mesh->primitives_count; ++j) {
+      struct cgltf_attribute const *attribute;
+      struct cgltf_primitive const *primitive = &from_node->mesh->primitives[j];
 
-  mesh = node->mesh;
-
-  for (i = 0; i < (int)mesh->primitives_count; ++i) {
-    struct cgltf_primitive const *primitive = &mesh->primitives[i];
-    attribute = owl_find_gltf_attribute_(primitive, "POSITION");
-    accessor = attribute->data;
-    sli->vertices_capacity += accessor->count;
-
-    accessor = primitive->indices;
-    sli->indices_capacity += accessor->count;
+      attribute = owl_find_gltf_attribute_(primitive, "POSITION");
+      sli->vertices_capacity += attribute->data->count;
+      sli->indices_capacity += primitive->indices->count;
+    }
   }
 }
 
 OWL_INTERNAL enum owl_code
 owl_model_init_load_info_(struct owl_renderer *r, struct cgltf_data const *gltf,
                           struct owl_model_load_info *sli) {
-  int i;
   VkDeviceSize size;
   enum owl_code code = OWL_SUCCESS;
 
@@ -191,8 +185,7 @@ owl_model_init_load_info_(struct owl_renderer *r, struct cgltf_data const *gltf,
   sli->vertices_count = 0;
   sli->indices_count = 0;
 
-  for (i = 0; i < (int)gltf->scene->nodes_count; ++i)
-    owl_model_find_load_info_capacities_(gltf->scene->nodes[i], sli);
+  owl_model_find_load_info_capacities_(gltf, sli);
 
   size = (owl_u64)sli->vertices_capacity * sizeof(*sli->vertices);
   if (!(sli->vertices = OWL_MALLOC(size))) {
