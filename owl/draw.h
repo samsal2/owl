@@ -5,7 +5,7 @@
 #include "types.h"
 
 struct owl_renderer;
-struct owl_scene;
+struct owl_model;
 struct owl_camera;
 
 struct owl_draw_vertex {
@@ -62,16 +62,16 @@ owl_submit_draw_text_command(struct owl_renderer *r,
                              struct owl_camera const *cam,
                              struct owl_draw_text_command const *command);
 
-struct owl_draw_scene_command {
+struct owl_draw_model_command {
   owl_v3 light;
-  struct owl_scene const *scene;
+  struct owl_model const *model;
 };
 
 enum owl_code
-owl_submit_draw_scene_command(struct owl_renderer *r, struct owl_camera *cam,
-                              struct owl_draw_scene_command const *command);
+owl_submit_draw_model_command(struct owl_renderer *r, struct owl_camera *cam,
+                              struct owl_draw_model_command const *command);
 
-void owl_scene_update_animation(struct owl_renderer const *r,
-                                struct owl_scene *scene, float dt);
+void owl_model_update_animation(struct owl_renderer const *r,
+                                struct owl_model *model, float dt);
 
 #endif

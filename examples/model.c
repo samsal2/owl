@@ -10,7 +10,7 @@ static struct owl_client_init_info client_info;
 static struct owl_client *client;
 static struct owl_renderer_init_info renderer_info;
 static struct owl_renderer *renderer;
-static struct owl_draw_scene_command scene_command;
+static struct owl_draw_model_command model_command;
 static struct owl_camera camera;
 static struct owl_font *font;
 static struct owl_draw_text_command text_command;
@@ -28,11 +28,11 @@ static struct owl_draw_text_command text_command;
   } while (0)
 
 int main(void) {
-  struct owl_scene *scene;
+  struct owl_model *model;
 
   client_info.height = 600;
   client_info.width = 600;
-  client_info.title = "scene";
+  client_info.title = "model";
   client = OWL_MALLOC(sizeof(*client));
   CHECK(owl_client_init(&client_info, client));
 
@@ -42,11 +42,11 @@ int main(void) {
 
   CHECK(owl_camera_init(&camera));
 
-  scene = OWL_MALLOC(sizeof(*scene));
-  CHECK(owl_scene_init(renderer, SCENE_PATH, scene));
+  model = OWL_MALLOC(sizeof(*model));
+  CHECK(owl_model_init(renderer, SCENE_PATH, model));
 
-  OWL_V3_SET(0.0F, 0.0F, -1.5F, scene_command.light);
-  scene_command.scene = scene;
+  OWL_V3_SET(0.0F, 0.0F, -1.5F, model_command.light);
+  model_command.model = model;
 
   font = OWL_MALLOC(sizeof(*font));
   CHECK(owl_font_init(renderer, 80, FONT_PATH, font));
@@ -57,7 +57,7 @@ int main(void) {
   text_command.font = font;
 
   while (!owl_client_is_done(client)) {
-    OWL_V2_COPY(client->cursor_position, scene_command.light);
+    OWL_V2_COPY(client->cursor_position, model_command.light);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
@@ -67,11 +67,11 @@ int main(void) {
     }
 
 #if 1
-    owl_scene_update_animation(renderer, scene, client->dt_time_stamp);
+    owl_model_update_animation(renderer, model, client->dt_time_stamp);
 #endif
 
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_SCENE);
-    owl_submit_draw_scene_command(renderer, &camera, &scene_command);
+    owl_submit_draw_model_command(renderer, &camera, &model_command);
 
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
     owl_submit_draw_text_command(renderer, &camera, &text_command);
@@ -91,8 +91,8 @@ int main(void) {
 
   owl_camera_deinit(&camera);
 
-  owl_scene_deinit(renderer, scene);
-  OWL_FREE(scene);
+  owl_model_deinit(renderer, model);
+  OWL_FREE(model);
 
   owl_renderer_deinit(renderer);
   OWL_FREE(renderer);

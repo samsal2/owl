@@ -374,26 +374,7 @@ void owl_v4_quat_slerp(owl_v4 const from, owl_v4 const to, float t,
   OWL_V4_SCALE(q1, 1.0F / sinTheta, out);
 }
 
-OWL_INTERNAL void owl_m4_scale_p(owl_m4 m, float s) {
-  m[0][0] *= s;
-  m[0][1] *= s;
-  m[0][2] *= s;
-  m[0][3] *= s;
-  m[1][0] *= s;
-  m[1][1] *= s;
-  m[1][2] *= s;
-  m[1][3] *= s;
-  m[2][0] *= s;
-  m[2][1] *= s;
-  m[2][2] *= s;
-  m[2][3] *= s;
-  m[3][0] *= s;
-  m[3][1] *= s;
-  m[3][2] *= s;
-  m[3][3] *= s;
-}
-
-void owl_m4_inverse(owl_m4 const mat, owl_m4 dest) {
+void owl_m4_inverse(owl_m4 const mat, owl_m4 out) {
   float t[6];
   float det;
   float a = mat[0][0], b = mat[0][1], c = mat[0][2], d = mat[0][3],
@@ -408,15 +389,15 @@ void owl_m4_inverse(owl_m4 const mat, owl_m4 dest) {
   t[4] = i * o - m * k;
   t[5] = i * n - m * j;
 
-  dest[0][0] = f * t[0] - g * t[1] + h * t[2];
-  dest[1][0] = -(e * t[0] - g * t[3] + h * t[4]);
-  dest[2][0] = e * t[1] - f * t[3] + h * t[5];
-  dest[3][0] = -(e * t[2] - f * t[4] + g * t[5]);
+  out[0][0] = f * t[0] - g * t[1] + h * t[2];
+  out[1][0] = -(e * t[0] - g * t[3] + h * t[4]);
+  out[2][0] = e * t[1] - f * t[3] + h * t[5];
+  out[3][0] = -(e * t[2] - f * t[4] + g * t[5]);
 
-  dest[0][1] = -(b * t[0] - c * t[1] + d * t[2]);
-  dest[1][1] = a * t[0] - c * t[3] + d * t[4];
-  dest[2][1] = -(a * t[1] - b * t[3] + d * t[5]);
-  dest[3][1] = a * t[2] - b * t[4] + c * t[5];
+  out[0][1] = -(b * t[0] - c * t[1] + d * t[2]);
+  out[1][1] = a * t[0] - c * t[3] + d * t[4];
+  out[2][1] = -(a * t[1] - b * t[3] + d * t[5]);
+  out[3][1] = a * t[2] - b * t[4] + c * t[5];
 
   t[0] = g * p - o * h;
   t[1] = f * p - n * h;
@@ -425,10 +406,10 @@ void owl_m4_inverse(owl_m4 const mat, owl_m4 dest) {
   t[4] = e * o - m * g;
   t[5] = e * n - m * f;
 
-  dest[0][2] = b * t[0] - c * t[1] + d * t[2];
-  dest[1][2] = -(a * t[0] - c * t[3] + d * t[4]);
-  dest[2][2] = a * t[1] - b * t[3] + d * t[5];
-  dest[3][2] = -(a * t[2] - b * t[4] + c * t[5]);
+  out[0][2] = b * t[0] - c * t[1] + d * t[2];
+  out[1][2] = -(a * t[0] - c * t[3] + d * t[4]);
+  out[2][2] = a * t[1] - b * t[3] + d * t[5];
+  out[3][2] = -(a * t[2] - b * t[4] + c * t[5]);
 
   t[0] = g * l - k * h;
   t[1] = f * l - j * h;
@@ -437,15 +418,14 @@ void owl_m4_inverse(owl_m4 const mat, owl_m4 dest) {
   t[4] = e * k - i * g;
   t[5] = e * j - i * f;
 
-  dest[0][3] = -(b * t[0] - c * t[1] + d * t[2]);
-  dest[1][3] = a * t[0] - c * t[3] + d * t[4];
-  dest[2][3] = -(a * t[1] - b * t[3] + d * t[5]);
-  dest[3][3] = a * t[2] - b * t[4] + c * t[5];
+  out[0][3] = -(b * t[0] - c * t[1] + d * t[2]);
+  out[1][3] = a * t[0] - c * t[3] + d * t[4];
+  out[2][3] = -(a * t[1] - b * t[3] + d * t[5]);
+  out[3][3] = a * t[2] - b * t[4] + c * t[5];
 
-  det = 1.0f /
-        (a * dest[0][0] + b * dest[1][0] + c * dest[2][0] + d * dest[3][0]);
+  det = 1.0f / (a * out[0][0] + b * out[1][0] + c * out[2][0] + d * out[3][0]);
 
-  owl_m4_scale_p(dest, det);
+  OWL_M4_SCALE(out, det, out);
 }
 
 #ifndef NDEBUG

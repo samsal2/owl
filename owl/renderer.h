@@ -175,7 +175,7 @@ struct owl_renderer {
   /* pipeline layouts */
   /* ====================================================================== */
   VkPipelineLayout common_pipeline_layout;
-  VkPipelineLayout scene_pipeline_layout;
+  VkPipelineLayout model_pipeline_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -184,8 +184,8 @@ struct owl_renderer {
   VkShaderModule basic_vertex_shader;
   VkShaderModule basic_fragment_shader;
   VkShaderModule font_fragment_shader;
-  VkShaderModule scene_vertex_shader;
-  VkShaderModule scene_fragment_shader;
+  VkShaderModule model_vertex_shader;
+  VkShaderModule model_fragment_shader;
   /* ====================================================================== */
 
   /* ====================================================================== */

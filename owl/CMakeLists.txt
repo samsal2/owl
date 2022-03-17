@@ -15,6 +15,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   vector_math.h
   draw.c
   draw.h
-  scene.c
-  scene.h)
+  model.c
+  model.h)
 

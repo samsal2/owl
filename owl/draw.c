@@ -4,7 +4,7 @@
 #include "font.h"
 #include "internal.h"
 #include "renderer.h"
-#include "scene.h"
+#include "model.h"
 #include "vector_math.h"
 
 OWL_INTERNAL enum owl_code
@@ -252,13 +252,13 @@ end:
 }
 
 OWL_INTERNAL void
-owl_scene_resolve_local_node_matrix_(struct owl_scene const *scene,
-                                     struct owl_scene_node const *node,
+owl_model_resolve_local_node_matrix_(struct owl_model const *model,
+                                     struct owl_model_node const *node,
                                      owl_m4 matrix) {
   owl_m4 tmp;
-  struct owl_scene_node_data const *node_data;
+  struct owl_model_node_data const *node_data;
 
-  node_data = &scene->nodes[node->slot];
+  node_data = &model->nodes[node->slot];
 
   OWL_M4_IDENTITY(matrix);
   owl_m4_translate(node_data->translation, matrix);
@@ -275,18 +275,18 @@ owl_scene_resolve_local_node_matrix_(struct owl_scene const *scene,
 }
 
 OWL_INTERNAL void
-owl_scene_resolve_node_matrix_(struct owl_scene const *scene,
-                               struct owl_scene_node const *node,
+owl_model_resolve_node_matrix_(struct owl_model const *model,
+                               struct owl_model_node const *node,
                                owl_m4 matrix) {
-  struct owl_scene_node parent;
+  struct owl_model_node parent;
 
-  owl_scene_resolve_local_node_matrix_(scene, node, matrix);
+  owl_model_resolve_local_node_matrix_(model, node, matrix);
 
-  for (parent.slot = scene->nodes[node->slot].parent.slot;
+  for (parent.slot = model->nodes[node->slot].parent.slot;
        OWL_SCENE_NODE_NO_PARENT_SLOT != parent.slot;
-       parent.slot = scene->nodes[parent.slot].parent.slot) {
+       parent.slot = model->nodes[parent.slot].parent.slot) {
     owl_m4 local;
-    owl_scene_resolve_local_node_matrix_(scene, &parent, local);
+    owl_model_resolve_local_node_matrix_(model, &parent, local);
     owl_m4_multiply(local, matrix, matrix);
   }
 }
@@ -297,30 +297,30 @@ owl_scene_resolve_node_matrix_(struct owl_scene const *scene,
 #define OWL_FIXME_SCALE_PATH_VALUE 3
 
 OWL_INTERNAL void
-owl_scene_node_update_joints_(struct owl_renderer const *r,
-                              struct owl_scene *scene,
-                              struct owl_scene_node const *node) {
+owl_model_node_update_joints_(struct owl_renderer const *r,
+                              struct owl_model *model,
+                              struct owl_model_node const *node) {
   int i;
   owl_m4 tmp;
   owl_m4 inverse;
-  struct owl_scene_skin_data const *skin_data;
-  struct owl_scene_node_data const *node_data;
+  struct owl_model_skin_data const *skin_data;
+  struct owl_model_node_data const *node_data;
 
-  node_data = &scene->nodes[node->slot];
+  node_data = &model->nodes[node->slot];
 
   for (i = 0; i < node_data->children_count; ++i)
-    owl_scene_node_update_joints_(r, scene, &node_data->children[i]);
+    owl_model_node_update_joints_(r, model, &node_data->children[i]);
 
   if (OWL_SCENE_NODE_NO_SKIN_SLOT == node_data->skin.slot)
     goto end;
 
-  skin_data = &scene->skins[node_data->skin.slot];
+  skin_data = &model->skins[node_data->skin.slot];
 
-  owl_scene_resolve_node_matrix_(scene, node, tmp);
+  owl_model_resolve_node_matrix_(model, node, tmp);
   owl_m4_inverse(tmp, inverse);
 
   for (i = 0; i < skin_data->joints_count; ++i) {
-    owl_scene_resolve_node_matrix_(scene, &skin_data->joints[i], tmp);
+    owl_model_resolve_node_matrix_(model, &skin_data->joints[i], tmp);
     owl_m4_multiply(tmp, skin_data->inverse_bind_matrices[i], tmp);
     owl_m4_multiply(inverse, tmp, skin_data->ssbo_datas[r->frame][i]);
   }
@@ -331,10 +331,10 @@ end:
 
 OWL_INTERNAL int run_once = 0;
 
-void owl_scene_update_animation(struct owl_renderer const *r,
-                                struct owl_scene *scene, float dt) {
+void owl_model_update_animation(struct owl_renderer const *r,
+                                struct owl_model *model, float dt) {
   int i;
-  struct owl_scene_animation_data *animation_data;
+  struct owl_model_animation_data *animation_data;
 
   if (run_once)
     goto end;
@@ -343,27 +343,27 @@ void owl_scene_update_animation(struct owl_renderer const *r,
   ++run_once;
 #endif
 
-  if (OWL_SCENE_NO_ANIMATION_SLOT == scene->active_animation.slot)
+  if (OWL_SCENE_NO_ANIMATION_SLOT == model->active_animation.slot)
     goto end;
 
-  animation_data = &scene->animations[scene->active_animation.slot];
+  animation_data = &model->animations[model->active_animation.slot];
 
   if (animation_data->end < (animation_data->current_time += dt))
     animation_data->current_time -= animation_data->end;
 
   for (i = 0; i < animation_data->channels_count; ++i) {
     int j;
-    struct owl_scene_animation_channel channel;
-    struct owl_scene_animation_sampler sampler;
-    struct owl_scene_node_data *node_data;
-    struct owl_scene_animation_channel_data const *channel_data;
-    struct owl_scene_animation_sampler_data const *sampler_data;
+    struct owl_model_animation_channel channel;
+    struct owl_model_animation_sampler sampler;
+    struct owl_model_node_data *node_data;
+    struct owl_model_animation_channel_data const *channel_data;
+    struct owl_model_animation_sampler_data const *sampler_data;
 
     channel.slot = animation_data->channels[i].slot;
-    channel_data = &scene->animation_channels[channel.slot];
+    channel_data = &model->animation_channels[channel.slot];
     sampler.slot = channel_data->animation_sampler.slot;
-    sampler_data = &scene->animation_samplers[sampler.slot];
-    node_data = &scene->nodes[channel_data->node.slot];
+    sampler_data = &model->animation_samplers[sampler.slot];
+    node_data = &model->nodes[channel_data->node.slot];
 
     if (OWL_FIXME_LINEAR_INTERPOLATION_VALUE != sampler_data->interpolation)
       continue;
@@ -415,8 +415,8 @@ void owl_scene_update_animation(struct owl_renderer const *r,
     }
   }
 
-  for (i = 0; i < scene->roots_count; ++i) {
-    owl_scene_node_update_joints_(r, scene, &scene->roots[i]);
+  for (i = 0; i < model->roots_count; ++i) {
+    owl_model_node_update_joints_(r, model, &model->roots[i]);
   }
 
 end:
@@ -428,23 +428,23 @@ OWL_GLOBAL float remove_this_please_angle = 0.0F;
 #endif
 
 OWL_INTERNAL enum owl_code
-owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *c,
-                       struct owl_draw_scene_command const *command,
-                       struct owl_scene_node const *node) {
+owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
+                       struct owl_draw_model_command const *command,
+                       struct owl_model_node const *node) {
 
   int i;
-  struct owl_scene_node parent;
-  struct owl_scene const *scene;
-  struct owl_scene_node_data const *node_data;
-  struct owl_scene_mesh_data const *mesh_data;
-  struct owl_scene_push_constant push_constant;
+  struct owl_model_node parent;
+  struct owl_model const *model;
+  struct owl_model_node_data const *node_data;
+  struct owl_model_mesh_data const *mesh_data;
+  struct owl_model_push_constant push_constant;
   enum owl_code code = OWL_SUCCESS;
 
-  scene = command->scene;
-  node_data = &scene->nodes[node->slot];
+  model = command->model;
+  node_data = &model->nodes[node->slot];
 
   for (i = 0; i < node_data->children_count; ++i) {
-    code = owl_scene_submit_node_(r, c, command, &node_data->children[i]);
+    code = owl_model_submit_node_(r, c, command, &node_data->children[i]);
 
     if (OWL_SUCCESS != code)
       goto end;
@@ -453,19 +453,19 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *c,
   if (OWL_SCENE_NODE_NO_MESH_SLOT == node_data->mesh.slot)
     goto end;
 
-  mesh_data = &scene->meshes[node_data->mesh.slot];
+  mesh_data = &model->meshes[node_data->mesh.slot];
 
   if (!mesh_data->primitives_count)
     goto end;
 
-  OWL_M4_COPY(scene->nodes[node->slot].matrix, push_constant.model);
+  OWL_M4_COPY(model->nodes[node->slot].matrix, push_constant.model);
 
   push_constant.model[2][2] *= -1.0F;
 
-  for (parent.slot = scene->nodes[node->slot].parent.slot;
+  for (parent.slot = model->nodes[node->slot].parent.slot;
        OWL_SCENE_NODE_NO_PARENT_SLOT != parent.slot;
-       parent.slot = scene->nodes[parent.slot].parent.slot)
-    owl_m4_multiply(scene->nodes[parent.slot].matrix, push_constant.model,
+       parent.slot = model->nodes[parent.slot].parent.slot)
+    owl_m4_multiply(model->nodes[parent.slot].matrix, push_constant.model,
                     push_constant.model);
 
 #if 1
@@ -503,46 +503,46 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *c,
   vkCmdBindDescriptorSets(
       r->active_frame_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
       r->active_pipeline_layout, 3, 1,
-      &scene->skins[node_data->skin.slot].ssbo_sets[r->frame], 0, 0);
+      &model->skins[node_data->skin.slot].ssbo_sets[r->frame], 0, 0);
 
   for (i = 0; i < mesh_data->primitives_count; ++i) {
     owl_byte *upload;
     VkDescriptorSet sets[3];
-    struct owl_scene_primitive primitive;
-    struct owl_scene_uniform uniform;
+    struct owl_model_primitive primitive;
+    struct owl_model_uniform uniform;
     struct owl_dynamic_heap_reference dhr;
-    struct owl_scene_material material;
-    struct owl_scene_texture base_color_texture;
-    struct owl_scene_texture normal_texture;
-    struct owl_scene_image base_color_image;
-    struct owl_scene_image normal_image;
-    struct owl_scene_primitive_data const *primitive_data;
-    struct owl_scene_material_data const *material_data;
-    struct owl_scene_texture_data const *base_color_texture_data;
-    struct owl_scene_texture_data const *normal_texture_data;
-    struct owl_scene_image_data const *base_color_image_data;
-    struct owl_scene_image_data const *normal_image_data;
+    struct owl_model_material material;
+    struct owl_model_texture base_color_texture;
+    struct owl_model_texture normal_texture;
+    struct owl_model_image base_color_image;
+    struct owl_model_image normal_image;
+    struct owl_model_primitive_data const *primitive_data;
+    struct owl_model_material_data const *material_data;
+    struct owl_model_texture_data const *base_color_texture_data;
+    struct owl_model_texture_data const *normal_texture_data;
+    struct owl_model_image_data const *base_color_image_data;
+    struct owl_model_image_data const *normal_image_data;
 
     primitive.slot = mesh_data->primitives[i].slot;
-    primitive_data = &scene->primitives[primitive.slot];
+    primitive_data = &model->primitives[primitive.slot];
 
     if (!primitive_data->count)
       continue;
 
     material.slot = primitive_data->material.slot;
-    material_data = &scene->materials[material.slot];
+    material_data = &model->materials[material.slot];
 
     base_color_texture.slot = material_data->base_color_texture.slot;
-    base_color_texture_data = &scene->textures[base_color_texture.slot];
+    base_color_texture_data = &model->textures[base_color_texture.slot];
 
     normal_texture.slot = material_data->normal_texture.slot;
-    normal_texture_data = &scene->textures[normal_texture.slot];
+    normal_texture_data = &model->textures[normal_texture.slot];
 
     base_color_image.slot = base_color_texture_data->image.slot;
-    base_color_image_data = &scene->images[base_color_image.slot];
+    base_color_image_data = &model->images[base_color_image.slot];
 
     normal_image.slot = normal_texture_data->image.slot;
-    normal_image_data = &scene->images[normal_image.slot];
+    normal_image_data = &model->images[normal_image.slot];
 
     OWL_M4_COPY(c->projection, uniform.projection);
     OWL_M4_COPY(c->view, uniform.view);
@@ -570,21 +570,21 @@ end:
 }
 
 enum owl_code
-owl_submit_draw_scene_command(struct owl_renderer *r, struct owl_camera *c,
-                              struct owl_draw_scene_command const *command) {
+owl_submit_draw_model_command(struct owl_renderer *r, struct owl_camera *c,
+                              struct owl_draw_model_command const *command) {
   int i;
   VkDeviceSize offset = 0;
   enum owl_code code = OWL_SUCCESS;
-  struct owl_scene const *scene = command->scene;
+  struct owl_model const *model = command->model;
 
   vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1,
-                         &scene->vertices_buffer, &offset);
+                         &model->vertices_buffer, &offset);
 
-  vkCmdBindIndexBuffer(r->active_frame_command_buffer, scene->indices_buffer, 0,
+  vkCmdBindIndexBuffer(r->active_frame_command_buffer, model->indices_buffer, 0,
                        VK_INDEX_TYPE_UINT32);
 
-  for (i = 0; i < command->scene->roots_count; ++i) {
-    code = owl_scene_submit_node_(r, c, command, &scene->roots[i]);
+  for (i = 0; i < command->model->roots_count; ++i) {
+    code = owl_model_submit_node_(r, c, command, &model->roots[i]);
 
     if (OWL_SUCCESS != code)
       goto end;

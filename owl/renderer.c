@@ -3,7 +3,7 @@
 #include "client.h"
 #include "draw.h"
 #include "internal.h"
-#include "scene.h"
+#include "model.h"
 #include "vulkan/vulkan_core.h"
 
 #define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
@@ -1130,7 +1130,7 @@ owl_renderer_init_pipelines_layouts_(struct owl_renderer *r) {
 
     push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     push_constant.offset = 0;
-    push_constant.size = sizeof(struct owl_scene_push_constant);
+    push_constant.size = sizeof(struct owl_model_push_constant);
 
     sets[0] = r->pvl_set_layout;
     sets[1] = r->image_set_layout;
@@ -1146,7 +1146,7 @@ owl_renderer_init_pipelines_layouts_(struct owl_renderer *r) {
     layout.pPushConstantRanges = &push_constant;
 
     OWL_VK_CHECK(vkCreatePipelineLayout(r->device, &layout, NULL,
-                                        &r->scene_pipeline_layout));
+                                        &r->model_pipeline_layout));
   }
 
   return code;
@@ -1154,7 +1154,7 @@ owl_renderer_init_pipelines_layouts_(struct owl_renderer *r) {
 
 OWL_INTERNAL void
 owl_renderer_deinit_pipeline_layouts_(struct owl_renderer *r) {
-  vkDestroyPipelineLayout(r->device, r->scene_pipeline_layout, NULL);
+  vkDestroyPipelineLayout(r->device, r->model_pipeline_layout, NULL);
   vkDestroyPipelineLayout(r->device, r->common_pipeline_layout, NULL);
 }
 
@@ -1228,7 +1228,7 @@ OWL_INTERNAL enum owl_code owl_renderer_init_shaders_(struct owl_renderer *r) {
     shader.pCode = code;
 
     OWL_VK_CHECK(vkCreateShaderModule(r->device, &shader, NULL,
-                                      &r->scene_vertex_shader));
+                                      &r->model_vertex_shader));
   }
 
   {
@@ -1245,15 +1245,15 @@ OWL_INTERNAL enum owl_code owl_renderer_init_shaders_(struct owl_renderer *r) {
     shader.pCode = code;
 
     OWL_VK_CHECK(vkCreateShaderModule(r->device, &shader, NULL,
-                                      &r->scene_fragment_shader));
+                                      &r->model_fragment_shader));
   }
 
   return code;
 }
 
 OWL_INTERNAL void owl_renderer_deinit_shaders_(struct owl_renderer *r) {
-  vkDestroyShaderModule(r->device, r->scene_fragment_shader, NULL);
-  vkDestroyShaderModule(r->device, r->scene_vertex_shader, NULL);
+  vkDestroyShaderModule(r->device, r->model_fragment_shader, NULL);
+  vkDestroyShaderModule(r->device, r->model_vertex_shader, NULL);
   vkDestroyShaderModule(r->device, r->font_fragment_shader, NULL);
   vkDestroyShaderModule(r->device, r->basic_fragment_shader, NULL);
   vkDestroyShaderModule(r->device, r->basic_vertex_shader, NULL);
@@ -1310,42 +1310,42 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
 
     case OWL_PIPELINE_TYPE_SCENE:
       vertex_bindings[0].binding = 0;
-      vertex_bindings[0].stride = sizeof(struct owl_scene_vertex);
+      vertex_bindings[0].stride = sizeof(struct owl_model_vertex);
       vertex_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
       vertex_bindings[0].binding = 0;
-      vertex_bindings[0].stride = sizeof(struct owl_scene_vertex);
+      vertex_bindings[0].stride = sizeof(struct owl_model_vertex);
       vertex_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
       vertex_attributes[0].binding = 0;
       vertex_attributes[0].location = 0;
       vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_attributes[0].offset = offsetof(struct owl_scene_vertex, position);
+      vertex_attributes[0].offset = offsetof(struct owl_model_vertex, position);
 
       vertex_attributes[1].binding = 0;
       vertex_attributes[1].location = 1;
       vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_attributes[1].offset = offsetof(struct owl_scene_vertex, normal);
+      vertex_attributes[1].offset = offsetof(struct owl_model_vertex, normal);
 
       vertex_attributes[2].binding = 0;
       vertex_attributes[2].location = 2;
       vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-      vertex_attributes[2].offset = offsetof(struct owl_scene_vertex, uv);
+      vertex_attributes[2].offset = offsetof(struct owl_model_vertex, uv);
 
       vertex_attributes[3].binding = 0;
       vertex_attributes[3].location = 3;
       vertex_attributes[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_attributes[3].offset = offsetof(struct owl_scene_vertex, color);
+      vertex_attributes[3].offset = offsetof(struct owl_model_vertex, color);
 
       vertex_attributes[4].binding = 0;
       vertex_attributes[4].location = 4;
       vertex_attributes[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-      vertex_attributes[4].offset = offsetof(struct owl_scene_vertex, joints0);
+      vertex_attributes[4].offset = offsetof(struct owl_model_vertex, joints0);
 
       vertex_attributes[5].binding = 0;
       vertex_attributes[5].location = 5;
       vertex_attributes[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-      vertex_attributes[5].offset = offsetof(struct owl_scene_vertex, weights0);
+      vertex_attributes[5].offset = offsetof(struct owl_model_vertex, weights0);
       break;
     }
 
@@ -1606,7 +1606,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       stages[0].pNext = NULL;
       stages[0].flags = 0;
       stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-      stages[0].module = r->scene_vertex_shader;
+      stages[0].module = r->model_vertex_shader;
       stages[0].pName = "main";
       stages[0].pSpecializationInfo = NULL;
 
@@ -1614,7 +1614,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       stages[1].pNext = NULL;
       stages[1].flags = 0;
       stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-      stages[1].module = r->scene_fragment_shader;
+      stages[1].module = r->model_fragment_shader;
       stages[1].pName = "main";
       stages[1].pSpecializationInfo = NULL;
       break;
@@ -1628,7 +1628,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       break;
 
     case OWL_PIPELINE_TYPE_SCENE:
-      r->pipeline_layouts[i] = r->scene_pipeline_layout;
+      r->pipeline_layouts[i] = r->model_pipeline_layout;
       break;
     }
 
@@ -1899,7 +1899,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
         vkAllocateDescriptorSets(r->device, &sets, r->dynamic_heap_pvm_sets));
   }
 
-  /* init scene descriptor sets */
+  /* init model descriptor sets */
   {
     VkDescriptorSetAllocateInfo sets;
     VkDescriptorSetLayout layouts[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
@@ -1942,7 +1942,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
     }
   }
 
-  /* write the scene descriptor sets */
+  /* write the model descriptor sets */
   {
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
       VkWriteDescriptorSet write;
@@ -1950,7 +1950,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
 
       buffer.buffer = r->dynamic_heap_buffers[i];
       buffer.offset = 0;
-      buffer.range = sizeof(struct owl_scene_uniform);
+      buffer.range = sizeof(struct owl_model_uniform);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
