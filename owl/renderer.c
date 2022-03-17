@@ -1433,22 +1433,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     switch (i) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_FONT:
-      rasterization_state.sType =
-          VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-      rasterization_state.pNext = NULL;
-      rasterization_state.flags = 0;
-      rasterization_state.depthClampEnable = VK_FALSE;
-      rasterization_state.rasterizerDiscardEnable = VK_FALSE;
-      rasterization_state.polygonMode = VK_POLYGON_MODE_FILL;
-      rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT;
-      rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-      rasterization_state.depthBiasEnable = VK_FALSE;
-      rasterization_state.depthBiasConstantFactor = 0.0F;
-      rasterization_state.depthBiasClamp = 0.0F;
-      rasterization_state.depthBiasSlopeFactor = 0.0F;
-      rasterization_state.lineWidth = 1.0F;
-      break;
-
     case OWL_PIPELINE_TYPE_SCENE:
       rasterization_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
