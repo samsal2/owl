@@ -131,9 +131,8 @@ end:
 }
 
 OWL_INTERNAL enum owl_code owl_draw_text_command_fill_char_quad_(
-    struct owl_draw_text_command const *text, int framebuffer_width,
-    int framebuffer_height, owl_v3 const offset, char c,
-    struct owl_draw_quad_command *quad) {
+    struct owl_renderer const *r, struct owl_draw_text_command const *text,
+    owl_v3 const offset, char c, struct owl_draw_quad_command *quad) {
   float uv_offset;
   owl_v2 uv_bearing;
   owl_v2 current_position;
@@ -158,15 +157,15 @@ OWL_INTERNAL enum owl_code owl_draw_text_command_fill_char_quad_(
   OWL_V2_ADD(text->position, offset, current_position);
 
   /* TODO(samuel): save the bearing as a normalized value */
-  uv_bearing[0] = (float)glyph->bearing[0] / (float)framebuffer_width;
-  uv_bearing[1] = -(float)glyph->bearing[1] / (float)framebuffer_height;
+  uv_bearing[0] = (float)glyph->bearing[0] / (float)r->framebuffer_width;
+  uv_bearing[1] = -(float)glyph->bearing[1] / (float)r->framebuffer_height;
 
   OWL_V2_ADD(current_position, uv_bearing, screen_position);
 
   /* TODO(samuel): save the size as a normalized value */
 #if 1
-  glyph_screen_size[0] = (float)glyph->size[0] / (float)framebuffer_width;
-  glyph_screen_size[1] = (float)glyph->size[1] / (float)framebuffer_height;
+  glyph_screen_size[0] = (float)glyph->size[0] / (float)r->framebuffer_width;
+  glyph_screen_size[1] = (float)glyph->size[1] / (float)r->framebuffer_height;
 #else
   glyph_screen_size[0] = (float)glyph->size[0] / (float)1200;
   glyph_screen_size[1] = (float)glyph->size[1] / (float)1200;
@@ -219,13 +218,12 @@ end:
   return code;
 }
 
-OWL_INTERNAL void owl_font_step_offset_(int framebuffer_width,
-                                        int framebuffer_height,
+OWL_INTERNAL void owl_font_step_offset_(struct owl_renderer const *r,
                                         struct owl_font const *font,
                                         char const c, owl_v2 offset) {
-  offset[0] += font->glyphs[(int)c].advance[0] / (float)framebuffer_width;
+  offset[0] += font->glyphs[(int)c].advance[0] / (float)r->framebuffer_width;
   /* FIXME(samuel): not sure if i should substract or add */
-  offset[1] -= font->glyphs[(int)c].advance[1] / (float)framebuffer_height;
+  offset[1] -= font->glyphs[(int)c].advance[1] / (float)r->framebuffer_height;
 }
 
 enum owl_code
@@ -240,17 +238,13 @@ owl_submit_draw_text_command(struct owl_renderer *r, struct owl_camera const *c,
   for (l = command->text; '\0' != *l; ++l) {
     struct owl_draw_quad_command quad;
 
-    code = owl_draw_text_command_fill_char_quad_(command, r->framebuffer_width,
-                                                 r->framebuffer_height, offset,
-                                                 *l, &quad);
+    code = owl_draw_text_command_fill_char_quad_(r, command, offset, *l, &quad);
 
     if (OWL_SUCCESS != code)
       goto end;
 
     owl_submit_draw_quad_command(r, c, &quad);
-
-    owl_font_step_offset_(r->framebuffer_width, r->framebuffer_height,
-                          command->font, *l, offset);
+    owl_font_step_offset_(r, command->font, *l, offset);
   }
 
 end:
@@ -267,10 +261,7 @@ owl_scene_resolve_local_node_matrix_(struct owl_scene const *scene,
   node_data = &scene->nodes[node->slot];
 
   OWL_M4_IDENTITY(matrix);
-
-  OWL_M4_IDENTITY(tmp);
-  owl_m4_translate(node_data->translation, tmp);
-  owl_m4_multiply(tmp, matrix, matrix);
+  owl_m4_translate(node_data->translation, matrix);
 
   OWL_M4_IDENTITY(tmp);
   owl_v4_quat_as_m4(node_data->rotation, tmp);
@@ -280,11 +271,9 @@ owl_scene_resolve_local_node_matrix_(struct owl_scene const *scene,
   owl_m4_scale(tmp, node_data->scale, tmp);
   owl_m4_multiply(matrix, tmp, matrix);
 
-  OWL_M4_COPY(node_data->matrix, tmp);
-  owl_m4_multiply(matrix, tmp, matrix);
+  owl_m4_multiply(matrix, node_data->matrix, matrix);
 }
 
-#if 1
 OWL_INTERNAL void
 owl_scene_resolve_node_matrix_(struct owl_scene const *scene,
                                struct owl_scene_node const *node,
@@ -301,7 +290,6 @@ owl_scene_resolve_node_matrix_(struct owl_scene const *scene,
     owl_m4_multiply(local, matrix, matrix);
   }
 }
-#endif
 
 #define OWL_FIXME_LINEAR_INTERPOLATION_VALUE 0
 #define OWL_FIXME_TRANSLATION_PATH_VALUE 1
@@ -309,7 +297,8 @@ owl_scene_resolve_node_matrix_(struct owl_scene const *scene,
 #define OWL_FIXME_SCALE_PATH_VALUE 3
 
 OWL_INTERNAL void
-owl_scene_node_update_joints_(struct owl_scene *scene,
+owl_scene_node_update_joints_(struct owl_renderer const *r,
+                              struct owl_scene *scene,
                               struct owl_scene_node const *node) {
   int i;
   owl_m4 tmp;
@@ -320,7 +309,7 @@ owl_scene_node_update_joints_(struct owl_scene *scene,
   node_data = &scene->nodes[node->slot];
 
   for (i = 0; i < node_data->children_count; ++i)
-    owl_scene_node_update_joints_(scene, &node_data->children[i]);
+    owl_scene_node_update_joints_(r, scene, &node_data->children[i]);
 
   if (OWL_SCENE_NODE_NO_SKIN_SLOT == node_data->skin.slot)
     goto end;
@@ -333,7 +322,7 @@ owl_scene_node_update_joints_(struct owl_scene *scene,
   for (i = 0; i < skin_data->joints_count; ++i) {
     owl_scene_resolve_node_matrix_(scene, &skin_data->joints[i], tmp);
     owl_m4_multiply(tmp, skin_data->inverse_bind_matrices[i], tmp);
-    owl_m4_multiply(inverse, tmp, skin_data->ssbo_data[i]);
+    owl_m4_multiply(inverse, tmp, skin_data->ssbo_datas[r->frame][i]);
   }
 
 end:
@@ -342,7 +331,8 @@ end:
 
 OWL_INTERNAL int run_once = 0;
 
-void owl_scene_update_animation(struct owl_scene *scene, float dt) {
+void owl_scene_update_animation(struct owl_renderer const *r,
+                                struct owl_scene *scene, float dt) {
   int i;
   struct owl_scene_animation_data *animation_data;
 
@@ -364,14 +354,15 @@ void owl_scene_update_animation(struct owl_scene *scene, float dt) {
   for (i = 0; i < animation_data->channels_count; ++i) {
     int j;
     struct owl_scene_animation_channel channel;
+    struct owl_scene_animation_sampler sampler;
     struct owl_scene_node_data *node_data;
     struct owl_scene_animation_channel_data const *channel_data;
     struct owl_scene_animation_sampler_data const *sampler_data;
 
     channel.slot = animation_data->channels[i].slot;
     channel_data = &scene->animation_channels[channel.slot];
-    sampler_data =
-        &scene->animation_samplers[channel_data->animation_sampler.slot];
+    sampler.slot = channel_data->animation_sampler.slot;
+    sampler_data = &scene->animation_samplers[sampler.slot];
     node_data = &scene->nodes[channel_data->node.slot];
 
     if (OWL_FIXME_LINEAR_INTERPOLATION_VALUE != sampler_data->interpolation)
@@ -385,54 +376,48 @@ void owl_scene_update_animation(struct owl_scene *scene, float dt) {
       float const ct = animation_data->current_time;
       float const a = (ct - i0) / (i1 - i0);
 
-#if 1
-      if (animation_data->current_time < i0)
+      if (!((ct >= i0) && (ct <= i1)))
         continue;
-
-      if (animation_data->current_time > i1)
-        continue;
-#endif
 
       switch (channel_data->path) {
       case OWL_FIXME_TRANSLATION_PATH_VALUE: {
-        owl_v4 x;
-        owl_v4 y;
-
-        OWL_V4_COPY(sampler_data->outputs[j], x);
-        OWL_V4_COPY(sampler_data->outputs[j + 1], y);
-
-        owl_v4_mix(x, y, a, node_data->translation);
+        owl_v3_mix(sampler_data->outputs[j], sampler_data->outputs[j + 1], a,
+                   node_data->translation);
       } break;
 
       case OWL_FIXME_ROTATION_PATH_VALUE: {
         owl_v4 q1;
         owl_v4 q2;
 
-        OWL_V4_COPY(sampler_data->outputs[j], q1);
-        OWL_V4_COPY(sampler_data->outputs[j + 1], q2);
+        /* NOTE(samuel): gltf gives rotations in XYZW */
+        q1[1] = sampler_data->outputs[j][0];
+        q1[2] = sampler_data->outputs[j][1];
+        q1[3] = sampler_data->outputs[j][2];
+        q1[0] = sampler_data->outputs[j][3];
+
+        q2[1] = sampler_data->outputs[j + 1][0];
+        q2[2] = sampler_data->outputs[j + 1][1];
+        q2[3] = sampler_data->outputs[j + 1][2];
+        q2[0] = sampler_data->outputs[j + 1][3];
 
         owl_v4_quat_slerp(q1, q2, a, node_data->rotation);
         owl_v4_normalize(node_data->rotation, node_data->rotation);
       } break;
 
       case OWL_FIXME_SCALE_PATH_VALUE: {
-        owl_v4 x;
-        owl_v4 y;
-
-        OWL_V4_COPY(sampler_data->outputs[j], x);
-        OWL_V4_COPY(sampler_data->outputs[j + 1], y);
-
-        owl_v4_mix(x, y, a, node_data->scale);
+        owl_v3_mix(sampler_data->outputs[j], sampler_data->outputs[j + 1], a,
+                   node_data->scale);
       } break;
 
       default:
-        OWL_ASSERT(0);
+        OWL_ASSERT(0 && "unexpected path");
       }
     }
   }
 
-  for (i = 0; i < scene->roots_count; ++i)
-    owl_scene_node_update_joints_(scene, &scene->roots[i]);
+  for (i = 0; i < scene->roots_count; ++i) {
+    owl_scene_node_update_joints_(r, scene, &scene->roots[i]);
+  }
 
 end:
   return;
@@ -481,11 +466,13 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *c,
     owl_m4_multiply(scene->nodes[parent.slot].matrix, push_constant.model,
                     push_constant.model);
 
-#if 0
+#if 1
   {
     owl_v3 position = {0.0F, 0.0F, -1.0F};
     owl_m4_translate(position, push_constant.model);
   }
+#endif
+#if 0
   {
     owl_v3 axis = {0.0F, 1.0F, 0.0F};
     owl_m4_rotate(push_constant.model, OWL_DEG_TO_RAD(180.0F), axis,
@@ -495,21 +482,14 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *c,
     owl_v3 axis = {0.0F, 0.0F, 1.0F};
     owl_m4_rotate(push_constant.model, OWL_DEG_TO_RAD(90.0F), axis,
                   push_constant.model);
- }
-#endif
-#if 0
-  {
-    owl_v3 axis = {1.0F, 0.0F, 0.0F};
-    owl_m4_rotate(push_constant.model,
-                  OWL_DEG_TO_RAD(remove_this_please_angle += 1.1F), axis,
-                  push_constant.model);
   }
 #endif
+
 #if 0
   {
-    owl_v3 axis = {1.0F, 0.0F, 0.0F};
+    owl_v3 axis = {0.0F, 1.0F, 0.0F};
     owl_m4_rotate(push_constant.model,
-                  OWL_DEG_TO_RAD(remove_this_please_angle += 0.9F), axis,
+                  OWL_DEG_TO_RAD(remove_this_please_angle += 1.1F), axis,
                   push_constant.model);
   }
 #endif
@@ -518,36 +498,49 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *c,
                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),
                      &push_constant);
 
-  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
-                          VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          r->active_pipeline_layout, 3, 1,
-                          &scene->skins[node_data->skin.slot].ssbo_set, 0, 0);
+  vkCmdBindDescriptorSets(
+      r->active_frame_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+      r->active_pipeline_layout, 3, 1,
+      &scene->skins[node_data->skin.slot].ssbo_sets[r->frame], 0, 0);
 
   for (i = 0; i < mesh_data->primitives_count; ++i) {
     owl_byte *upload;
     VkDescriptorSet sets[3];
+    struct owl_scene_primitive primitive;
     struct owl_scene_uniform uniform;
     struct owl_dynamic_heap_reference dhr;
-    struct owl_scene_primitive const *primitive;
+    struct owl_scene_material material;
+    struct owl_scene_texture base_color_texture;
+    struct owl_scene_texture normal_texture;
+    struct owl_scene_image base_color_image;
+    struct owl_scene_image normal_image;
     struct owl_scene_primitive_data const *primitive_data;
     struct owl_scene_material_data const *material_data;
-    struct owl_scene_texture_data const *base_texture_data;
+    struct owl_scene_texture_data const *base_color_texture_data;
     struct owl_scene_texture_data const *normal_texture_data;
-    struct owl_scene_image_data const *base_image_data;
+    struct owl_scene_image_data const *base_color_image_data;
     struct owl_scene_image_data const *normal_image_data;
 
-    primitive = &mesh_data->primitives[i];
-    primitive_data = &scene->primitives[primitive->slot];
+    primitive.slot = mesh_data->primitives[i].slot;
+    primitive_data = &scene->primitives[primitive.slot];
 
     if (!primitive_data->count)
       continue;
 
-    material_data = &scene->materials[primitive_data->material.slot];
-    base_texture_data =
-        &scene->textures[material_data->base_color_texture.slot];
-    normal_texture_data = &scene->textures[material_data->normal_texture.slot];
-    base_image_data = &scene->images[base_texture_data->image.slot];
-    normal_image_data = &scene->images[normal_texture_data->image.slot];
+    material.slot = primitive_data->material.slot;
+    material_data = &scene->materials[material.slot];
+
+    base_color_texture.slot = material_data->base_color_texture.slot;
+    base_color_texture_data = &scene->textures[base_color_texture.slot];
+
+    normal_texture.slot = material_data->normal_texture.slot;
+    normal_texture_data = &scene->textures[normal_texture.slot];
+
+    base_color_image.slot = base_color_texture_data->image.slot;
+    base_color_image_data = &scene->images[base_color_image.slot];
+
+    normal_image.slot = normal_texture_data->image.slot;
+    normal_image_data = &scene->images[normal_image.slot];
 
     OWL_M4_COPY(c->projection, uniform.projection);
     OWL_M4_COPY(c->view, uniform.view);
@@ -558,7 +551,7 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *c,
     OWL_MEMCPY(upload, &uniform, sizeof(uniform));
 
     sets[0] = dhr.pvl_set;
-    sets[1] = r->image_manager_sets[base_image_data->image.slot];
+    sets[1] = r->image_manager_sets[base_color_image_data->image.slot];
     sets[2] = r->image_manager_sets[normal_image_data->image.slot];
 
     vkCmdBindDescriptorSets(r->active_frame_command_buffer,
@@ -580,15 +573,16 @@ owl_submit_draw_scene_command(struct owl_renderer *r, struct owl_camera *c,
   int i;
   VkDeviceSize offset = 0;
   enum owl_code code = OWL_SUCCESS;
+  struct owl_scene const *scene = command->scene;
 
   vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1,
-                         &command->scene->vertices_buffer, &offset);
+                         &scene->vertices_buffer, &offset);
 
-  vkCmdBindIndexBuffer(r->active_frame_command_buffer,
-                       command->scene->indices_buffer, 0, VK_INDEX_TYPE_UINT32);
+  vkCmdBindIndexBuffer(r->active_frame_command_buffer, scene->indices_buffer, 0,
+                       VK_INDEX_TYPE_UINT32);
 
   for (i = 0; i < command->scene->roots_count; ++i) {
-    code = owl_scene_submit_node_(r, c, command, &command->scene->roots[i]);
+    code = owl_scene_submit_node_(r, c, command, &scene->roots[i]);
 
     if (OWL_SUCCESS != code)
       goto end;

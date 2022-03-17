@@ -263,7 +263,16 @@ float owl_v3_distance(owl_v3 const from, owl_v3 const to) {
   return owl_v3_magnitude(diff);
 }
 
-/* https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/mix.xhtml */
+void owl_v3_mix(owl_v3 const from, owl_v3 const to, float weight, owl_v3 out) {
+  owl_v3 s;
+  owl_v3 v;
+
+  OWL_V3_SET(weight, weight, weight, s);
+  OWL_V3_SUB(to, from, v);
+  OWL_V3_MUL(s, v, v);
+  OWL_V3_ADD(from, v, out);
+}
+
 void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out) {
   owl_v4 s;
   owl_v4 v;
@@ -274,10 +283,8 @@ void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out) {
   OWL_V4_ADD(from, v, out);
 }
 
+/* FIXME(samuel): expects q to be in WXYZ */
 void owl_v4_quat_as_m4(owl_v4 const q, owl_m4 out) {
-  /* NOTE(samuel): who would've thought that the first element is the w
-   * component
-   */
   float xx = q[1] * q[1];
   float yy = q[2] * q[2];
   float zz = q[3] * q[3];
@@ -464,12 +471,12 @@ void owl_m4_print(owl_m4 const m) {
 #endif
 
 void owl_complex_mul(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out) {
-  owl_v2 lhs_tmp;
-  owl_v2 rhs_tmp;
+  owl_v2 l;
+  owl_v2 r;
 
-  OWL_V2_COPY(lhs, lhs_tmp);
-  OWL_V2_COPY(rhs, rhs_tmp);
+  OWL_V2_COPY(lhs, l);
+  OWL_V2_COPY(rhs, r);
 
-  out[0] = (lhs_tmp[0] * rhs_tmp[0] - lhs_tmp[1] * rhs_tmp[1]);
-  out[1] = (lhs_tmp[0] * rhs_tmp[1] + lhs_tmp[1] * rhs_tmp[0]);
+  out[0] = (l[0] * r[0] - l[1] * r[1]);
+  out[1] = (l[0] * r[1] + l[1] * r[0]);
 }

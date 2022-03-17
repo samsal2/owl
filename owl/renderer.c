@@ -4,6 +4,7 @@
 #include "draw.h"
 #include "internal.h"
 #include "scene.h"
+#include "vulkan/vulkan_core.h"
 
 #define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
 #define OWL_MAX_VERTEX_INPUT_ATTRIBUTES_COUNT 8
@@ -1455,7 +1456,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       rasterization_state.flags = 0;
       rasterization_state.depthClampEnable = VK_FALSE;
       rasterization_state.rasterizerDiscardEnable = VK_FALSE;
-      rasterization_state.polygonMode = VK_POLYGON_MODE_LINE;
+      rasterization_state.polygonMode = VK_POLYGON_MODE_FILL;
       rasterization_state.cullMode = VK_CULL_MODE_BACK_BIT;
       rasterization_state.frontFace = VK_FRONT_FACE_CLOCKWISE;
       rasterization_state.depthBiasEnable = VK_FALSE;
@@ -2507,9 +2508,10 @@ enum owl_code owl_renderer_deinit_single_use_command_buffer(
 
 OWL_INTERNAL enum owl_code
 owl_renderer_acquire_next_image_(struct owl_renderer *r) {
+  VkResult result;
   enum owl_code code = OWL_SUCCESS;
 
-  VkResult const result =
+  result =
       vkAcquireNextImageKHR(r->device, r->swapchain, OWL_ACQUIRE_IMAGE_TIMEOUT,
                             r->active_image_available_semaphore, VK_NULL_HANDLE,
                             &r->active_swapchain_image_index);

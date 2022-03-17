@@ -226,7 +226,6 @@ OWL_INTERNAL void owl_scene_deinit_load_info_(struct owl_renderer *r,
 OWL_INTERNAL enum owl_code
 owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
                      struct cgltf_node const *from_node,
-                     struct owl_scene_node const *parent,
                      struct owl_scene_load_info *sli, struct owl_scene *scene) {
 
   int i;
@@ -234,7 +233,9 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
   struct owl_scene_node_data *node_data;
   enum owl_code code = OWL_SUCCESS;
 
-  node.slot = scene->nodes_count++;
+  OWL_UNUSED(r);
+
+  node.slot = (int)(from_node - gltf->nodes);
 
   if (OWL_SCENE_MAX_NODES_COUNT <= node.slot) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -243,31 +244,27 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
 
   node_data = &scene->nodes[node.slot];
 
-  node_data->parent.slot = parent->slot;
+  if (from_node->parent)
+    node_data->parent.slot = (int)(from_node->parent - gltf->nodes);
+  else
+    node_data->parent.slot = OWL_SCENE_NODE_NO_PARENT_SLOT;
 
-  if (OWL_SCENE_NODE_NO_PARENT_SLOT == parent->slot) {
-    struct owl_scene_node root;
+  if (OWL_SCENE_NODE_MAX_CHILDREN_COUNT <= (int)from_node->children_count) {
+    code = OWL_ERROR_OUT_OF_BOUNDS;
+    goto end;
+  }
 
-    root.slot = scene->roots_count++;
+  node_data->children_count = (int)from_node->children_count;
 
-    if (OWL_SCENE_MAX_NODE_ROOTS_COUNT <= root.slot) {
-      code = OWL_ERROR_OUT_OF_BOUNDS;
-      goto end;
-    }
+  for (i = 0; i < (int)from_node->children_count; ++i)
+    node_data->children[i].slot = (int)(from_node->children[i] - gltf->nodes);
 
-    scene->roots[root.slot].slot = node.slot;
+  if (from_node->name) {
+    OWL_DEBUG_LOG("\n adding node with name (%s) \n", from_node->name);
+    strncpy(node_data->name, from_node->name, OWL_SCENE_MAX_NAME_LENGTH);
   } else {
-    struct owl_scene_node child;
-    struct owl_scene_node_data *parent_data = &scene->nodes[parent->slot];
-
-    child.slot = parent_data->children_count++;
-
-    if (OWL_SCENE_NODE_MAX_CHILDREN_COUNT <= child.slot) {
-      code = OWL_ERROR_OUT_OF_BOUNDS;
-      goto end;
-    }
-
-    parent_data->children[child.slot].slot = node.slot;
+    OWL_DEBUG_LOG("\n adding node with name (NO NAME) \n");
+    strncpy(node_data->name, "NO NAME", OWL_SCENE_MAX_NAME_LENGTH);
   }
 
   if (from_node->has_translation)
@@ -289,14 +286,6 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
     OWL_M4_COPY_V16(from_node->matrix, node_data->matrix);
   else
     OWL_M4_IDENTITY(node_data->matrix);
-
-  for (i = 0; i < (int)from_node->children_count; ++i) {
-    code = owl_scene_load_node_(r, gltf, from_node->children[i], &node, sli,
-                                scene);
-
-    if (OWL_SUCCESS != code)
-      goto end;
-  }
 
   if (from_node->skin)
     node_data->skin.slot = (int)(from_node->skin - gltf->skins);
@@ -365,10 +354,6 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
         struct owl_scene_vertex *vertex = &sli->vertices[offset + j];
 
         OWL_V3_COPY(&position[j * 3], vertex->position);
-#if 0
-        /* HACK(flipping the model Y coordinate */
-        vertex->position[1] *= -1.0F;
-#endif
 
         if (normal)
           OWL_V3_COPY(&normal[j * 3], vertex->normal);
@@ -380,7 +365,11 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
         else
           OWL_V2_ZERO(vertex->uv);
 
+#if 1
         OWL_V3_SET(1.0F, 1.0F, 1.0F, vertex->color);
+#else
+        OWL_V3_SET(0.0F, 0.0F, 1.0F, vertex->color);
+#endif
 
         if (joints0 && weights0) {
           OWL_V4_COPY(&joints0[j * 4], vertex->joints0);
@@ -578,11 +567,11 @@ OWL_INTERNAL enum owl_code owl_scene_load_nodes_(struct owl_renderer *r,
                                                  struct cgltf_data const *gltf,
                                                  struct owl_scene *scene) {
   int i;
-  struct owl_scene_node root;
   struct owl_scene_load_info sli;
+  struct cgltf_scene const *from_scene;
   enum owl_code code = OWL_SUCCESS;
 
-  root.slot = OWL_SCENE_NODE_NO_PARENT_SLOT;
+  from_scene = gltf->scene;
 
   if (OWL_SUCCESS != (code = owl_scene_init_load_info_(r, gltf, &sli)))
     goto end;
@@ -594,13 +583,19 @@ OWL_INTERNAL enum owl_code owl_scene_load_nodes_(struct owl_renderer *r,
     scene->nodes[i].skin.slot = -1;
   }
 
-  for (i = 0; i < (int)gltf->scene->nodes_count; ++i) {
-    code = owl_scene_load_node_(r, gltf, gltf->scene->nodes[i], &root, &sli,
-                                scene);
+  scene->nodes_count = (int)gltf->nodes_count;
+
+  for (i = 0; i < (int)gltf->nodes_count; ++i) {
+    code = owl_scene_load_node_(r, gltf, &gltf->nodes[i], &sli, scene);
 
     if (OWL_SUCCESS != code)
       goto end_err_deinit_load_info;
   }
+
+  scene->roots_count = (int)from_scene->nodes_count;
+
+  for (i = 0; i < (int)from_scene->nodes_count; ++i)
+    scene->roots[i].slot = (int)(from_scene->nodes[i] - gltf->nodes);
 
   owl_scene_load_buffers_(r, &sli, scene);
 
@@ -648,8 +643,14 @@ OWL_INTERNAL enum owl_code owl_scene_load_skins_(struct owl_renderer *r,
 
     skin_data->joints_count = (int)from_skin->joints_count;
 
-    for (j = 0; j < (int)from_skin->joints_count; ++j)
+    for (j = 0; j < (int)from_skin->joints_count; ++j) {
+
       skin_data->joints[j].slot = (int)(from_skin->joints[j] - gltf->nodes);
+
+      OWL_ASSERT(!strncmp(scene->nodes[skin_data->joints[j].slot].name,
+                          from_skin->joints[j]->name,
+                          OWL_SCENE_MAX_NAME_LENGTH));
+    }
 
     skin_data->inverse_bind_matrices_count = 0;
 
@@ -676,86 +677,110 @@ OWL_INTERNAL enum owl_code owl_scene_load_skins_(struct owl_renderer *r,
     {
       VkBufferCreateInfo buffer;
 
+      skin_data->ssbo_buffer_size =
+          from_skin->inverse_bind_matrices->count * sizeof(owl_m4);
+
       buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
       buffer.pNext = NULL;
       buffer.flags = 0;
-      buffer.size = from_skin->inverse_bind_matrices->count * sizeof(owl_m4);
+      buffer.size = skin_data->ssbo_buffer_size;
       buffer.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
       buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
       buffer.queueFamilyIndexCount = 0;
       buffer.pQueueFamilyIndices = NULL;
 
-      OWL_VK_CHECK(
-          vkCreateBuffer(r->device, &buffer, NULL, &skin_data->ssbo_buffer));
+      for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j)
+        OWL_VK_CHECK(vkCreateBuffer(r->device, &buffer, NULL,
+                                    &skin_data->ssbo_buffers[j]));
     }
 
     {
       VkMemoryRequirements requirements;
       VkMemoryAllocateInfo memory;
 
-      vkGetBufferMemoryRequirements(r->device, skin_data->ssbo_buffer,
+      vkGetBufferMemoryRequirements(r->device, skin_data->ssbo_buffers[0],
                                     &requirements);
+
+      skin_data->ssbo_buffer_alignment = requirements.alignment;
+      skin_data->ssbo_buffer_aligned_size =
+          OWL_ALIGNU2(skin_data->ssbo_buffer_size, requirements.alignment);
 
       memory.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
       memory.pNext = NULL;
-      memory.allocationSize = requirements.size;
+      memory.allocationSize = skin_data->ssbo_buffer_aligned_size *
+                              OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
       memory.memoryTypeIndex = owl_renderer_find_memory_type(
           r, &requirements, OWL_MEMORY_VISIBILITY_CPU_ONLY);
 
       OWL_VK_CHECK(
           vkAllocateMemory(r->device, &memory, NULL, &skin_data->ssbo_memory));
-      OWL_VK_CHECK(vkBindBufferMemory(r->device, skin_data->ssbo_buffer,
-                                      skin_data->ssbo_memory, 0));
+
+      for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j)
+        OWL_VK_CHECK(vkBindBufferMemory(
+            r->device, skin_data->ssbo_buffers[j], skin_data->ssbo_memory,
+            (VkDeviceSize)j * skin_data->ssbo_buffer_aligned_size));
     }
 
     {
-      VkDescriptorSetLayout layout;
-      VkDescriptorSetAllocateInfo set;
+      VkDescriptorSetLayout layouts[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+      VkDescriptorSetAllocateInfo sets;
 
-      layout = r->joints_set_layout;
+      for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j)
+        layouts[j] = r->joints_set_layout;
 
-      set.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-      set.pNext = NULL;
-      set.descriptorPool = r->common_set_pool;
-      set.descriptorSetCount = 1;
-      set.pSetLayouts = &layout;
+      sets.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+      sets.pNext = NULL;
+      sets.descriptorPool = r->common_set_pool;
+      sets.descriptorSetCount = OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
+      sets.pSetLayouts = layouts;
 
       OWL_VK_CHECK(
-          vkAllocateDescriptorSets(r->device, &set, &skin_data->ssbo_set));
+          vkAllocateDescriptorSets(r->device, &sets, skin_data->ssbo_sets));
     }
 
     {
-      VkDescriptorBufferInfo buffer;
-      VkWriteDescriptorSet write;
 
-      buffer.buffer = skin_data->ssbo_buffer;
-      buffer.offset = 0;
-      buffer.range = from_skin->inverse_bind_matrices->count * sizeof(owl_m4);
+      for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j) {
+        VkDescriptorBufferInfo buffer;
+        VkWriteDescriptorSet write;
 
-      write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-      write.pNext = NULL;
-      write.dstSet = skin_data->ssbo_set;
-      write.dstBinding = 0;
-      write.dstArrayElement = 0;
-      write.descriptorCount = 1;
-      write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-      write.pImageInfo = NULL;
-      write.pBufferInfo = &buffer;
-      write.pTexelBufferView = NULL;
+        buffer.buffer = skin_data->ssbo_buffers[j];
+        buffer.offset = 0;
+        buffer.range = skin_data->ssbo_buffer_size;
 
-      vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.pNext = NULL;
+        write.dstSet = skin_data->ssbo_sets[j];
+        write.dstBinding = 0;
+        write.dstArrayElement = 0;
+        write.descriptorCount = 1;
+        write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        write.pImageInfo = NULL;
+        write.pBufferInfo = &buffer;
+        write.pTexelBufferView = NULL;
+
+        vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);
+      }
     }
 
     {
+      int k;
       void *data;
+      owl_byte *bytes;
 
       vkMapMemory(r->device, skin_data->ssbo_memory, 0, VK_WHOLE_SIZE, 0,
                   &data);
 
-      skin_data->ssbo_data = data;
+      bytes = data;
 
-      for (j = 0; j < (int)from_skin->inverse_bind_matrices->count; ++j)
-        OWL_M4_COPY(inverse_bind_matrices[j], skin_data->ssbo_data[j]);
+      for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j)
+        skin_data->ssbo_datas[j] =
+            (owl_m4 *)&bytes[(VkDeviceSize)j *
+                             skin_data->ssbo_buffer_aligned_size];
+
+      for (k = 0; k < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++k)
+        for (j = 0; j < (int)from_skin->inverse_bind_matrices->count; ++j)
+          OWL_M4_COPY(inverse_bind_matrices[j], skin_data->ssbo_datas[k][j]);
     }
   }
 
@@ -829,13 +854,15 @@ owl_scene_load_animations_(struct owl_renderer *r,
       inputs = owl_resolve_gltf_accessor_(from_sampler->input);
 
       for (k = 0; k < (int)from_sampler->input->count; ++k) {
-        sampler_data->inputs[k] = inputs[k];
+        float const input = inputs[k];
 
-        if (inputs[k] < animation_data->begin)
-          animation_data->begin = inputs[k];
+        sampler_data->inputs[k] = input;
 
-        if (inputs[k] > animation_data->end)
-          animation_data->end = inputs[k];
+        if (input < animation_data->begin)
+          animation_data->begin = input;
+
+        if (input > animation_data->end)
+          animation_data->end = input;
       }
 
       if (OWL_SCENE_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT <=
@@ -848,8 +875,8 @@ owl_scene_load_animations_(struct owl_renderer *r,
 
       switch (from_sampler->output->type) {
       case cgltf_type_vec3: {
-        owl_v3 const *outputs =
-            owl_resolve_gltf_accessor_(from_sampler->output);
+        owl_v3 const *outputs;
+        outputs = owl_resolve_gltf_accessor_(from_sampler->output);
 
         for (k = 0; k < (int)from_sampler->output->count; ++k) {
           OWL_V4_ZERO(sampler_data->outputs[k]);
@@ -858,9 +885,8 @@ owl_scene_load_animations_(struct owl_renderer *r,
       } break;
 
       case cgltf_type_vec4: {
-        owl_v4 const *outputs =
-            owl_resolve_gltf_accessor_(from_sampler->output);
-
+        owl_v4 const *outputs;
+        outputs = owl_resolve_gltf_accessor_(from_sampler->output);
         for (k = 0; k < (int)from_sampler->output->count; ++k)
           OWL_V4_COPY(outputs[k], sampler_data->outputs[k]);
       } break;
@@ -967,13 +993,13 @@ enum owl_code owl_scene_init(struct owl_renderer *r, char const *path,
   if (OWL_SUCCESS != (code = owl_scene_load_materials_(r, data, scene)))
     goto end_err_free_data;
 
+  if (OWL_SUCCESS != (code = owl_scene_load_nodes_(r, data, scene)))
+    goto end_err_free_data;
+
   if (OWL_SUCCESS != (code = owl_scene_load_skins_(r, data, scene)))
     goto end_err_free_data;
 
   if (OWL_SUCCESS != (code = owl_scene_load_animations_(r, data, scene)))
-    goto end_err_free_data;
-
-  if (OWL_SUCCESS != (code = owl_scene_load_nodes_(r, data, scene)))
     goto end_err_free_data;
 
 end_err_free_data:
@@ -999,9 +1025,15 @@ void owl_scene_deinit(struct owl_renderer *r, struct owl_scene *scene) {
     owl_image_deinit(r, &scene->images[i].image);
 
   for (i = 0; i < scene->skins_count; ++i) {
-    vkFreeDescriptorSets(r->device, r->common_set_pool, 1,
-                         &scene->skins[i].ssbo_set);
+    int j;
+
+    vkFreeDescriptorSets(r->device, r->common_set_pool,
+                         OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
+                         scene->skins[i].ssbo_sets);
+
     vkFreeMemory(r->device, scene->skins[i].ssbo_memory, NULL);
-    vkDestroyBuffer(r->device, scene->skins[i].ssbo_buffer, NULL);
+
+    for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j)
+      vkDestroyBuffer(r->device, scene->skins[i].ssbo_buffers[j], NULL);
   }
 }

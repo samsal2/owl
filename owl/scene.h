@@ -2,6 +2,7 @@
 #define OWL_SCENE_H_
 
 #include "image.h"
+#include "owl/renderer.h"
 #include "types.h"
 
 #define OWL_SCENE_NODE_NO_MESH_SLOT -1
@@ -144,10 +145,15 @@ struct owl_scene_skin_data {
   char name[OWL_SCENE_MAX_NAME_LENGTH];
   struct owl_scene_node skeleton_root;
 
-  owl_m4 *ssbo_data;
-  VkBuffer ssbo_buffer;
   VkDeviceMemory ssbo_memory;
-  VkDescriptorSet ssbo_set;
+
+  VkDeviceSize ssbo_buffer_size;
+  VkDeviceSize ssbo_buffer_alignment;
+  VkDeviceSize ssbo_buffer_aligned_size;
+
+  owl_m4 *ssbo_datas[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkBuffer ssbo_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkDescriptorSet ssbo_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
 
   int inverse_bind_matrices_count;
   owl_m4 inverse_bind_matrices[OWL_SCENE_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT];

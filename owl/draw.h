@@ -71,6 +71,7 @@ enum owl_code
 owl_submit_draw_scene_command(struct owl_renderer *r, struct owl_camera *cam,
                               struct owl_draw_scene_command const *command);
 
-void owl_scene_update_animation(struct owl_scene *scene, float dt);
+void owl_scene_update_animation(struct owl_renderer const *r,
+                                struct owl_scene *scene, float dt);
 
 #endif

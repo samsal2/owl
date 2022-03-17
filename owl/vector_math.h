@@ -244,6 +244,13 @@
     (out)[3] = (lhs)[3] - (rhs)[3];                                            \
   } while (0)
 
+#define OWL_V3_MUL(lhs, rhs, out)                                              \
+  do {                                                                         \
+    (out)[0] = (lhs)[0] * (rhs)[0];                                            \
+    (out)[1] = (lhs)[1] * (rhs)[1];                                            \
+    (out)[2] = (lhs)[2] * (rhs)[2];                                            \
+  } while (0)
+
 #define OWL_V4_MUL(lhs, rhs, out)                                              \
   do {                                                                         \
     (out)[0] = (lhs)[0] * (rhs)[0];                                            \
@@ -291,6 +298,8 @@ void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out);
 float owl_v2_distance(owl_v2 const from, owl_v2 const to);
 
 float owl_v3_distance(owl_v3 const from, owl_v3 const to);
+
+void owl_v3_mix(owl_v3 const from, owl_v3 const to, float weight, owl_v3 out);
 
 void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out);
 

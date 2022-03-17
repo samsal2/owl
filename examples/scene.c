@@ -18,7 +18,7 @@ static struct owl_draw_text_command text_command;
 #define SCENE_PATH "../../assets/CesiumMan.gltf"
 #define FONT_PATH "../../assets/Inconsolata-Regular.ttf"
 
-#define TEST(fn)                                                               \
+#define CHECK(fn)                                                              \
   do {                                                                         \
     enum owl_code code = (fn);                                                 \
     if (OWL_SUCCESS != (code)) {                                               \
@@ -29,26 +29,27 @@ static struct owl_draw_text_command text_command;
 
 int main(void) {
   struct owl_scene *scene;
+
   client_info.height = 600;
   client_info.width = 600;
   client_info.title = "scene";
   client = OWL_MALLOC(sizeof(*client));
-  TEST(owl_client_init(&client_info, client));
+  CHECK(owl_client_init(&client_info, client));
 
-  TEST(owl_client_fill_renderer_init_info(client, &renderer_info));
+  CHECK(owl_client_fill_renderer_init_info(client, &renderer_info));
   renderer = OWL_MALLOC(sizeof(*renderer));
-  TEST(owl_renderer_init(&renderer_info, renderer));
+  CHECK(owl_renderer_init(&renderer_info, renderer));
 
-  TEST(owl_camera_init(&camera));
+  CHECK(owl_camera_init(&camera));
 
   scene = OWL_MALLOC(sizeof(*scene));
-  TEST(owl_scene_init(renderer, SCENE_PATH, scene));
+  CHECK(owl_scene_init(renderer, SCENE_PATH, scene));
 
   OWL_V3_SET(0.0F, 0.0F, -1.5F, scene_command.light);
   scene_command.scene = scene;
 
   font = OWL_MALLOC(sizeof(*font));
-  TEST(owl_font_init(renderer, 80, FONT_PATH, font));
+  CHECK(owl_font_init(renderer, 80, FONT_PATH, font));
 
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
   OWL_V3_SET(-0.1F, -0.1F, 0.90, text_command.position);
@@ -66,7 +67,7 @@ int main(void) {
     }
 
 #if 1
-    owl_scene_update_animation(scene, client->dt_time_stamp);
+    owl_scene_update_animation(renderer, scene, client->dt_time_stamp);
 #endif
 
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_SCENE);
