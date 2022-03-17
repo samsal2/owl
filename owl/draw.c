@@ -377,8 +377,8 @@ void owl_model_update_animation(struct owl_renderer const *r,
       } break;
 
       case OWL_FIXME_ROTATION_PATH_VALUE: {
-        owl_v4_quat_slerp(sampler_data->outputs[j], sampler_data->outputs[j + 1],
-                          a, node_data->rotation);
+        owl_v4_quat_slerp(sampler_data->outputs[j],
+                          sampler_data->outputs[j + 1], a, node_data->rotation);
         owl_v4_normalize(node_data->rotation, node_data->rotation);
       } break;
 
