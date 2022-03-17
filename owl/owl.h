@@ -7,8 +7,8 @@
 #include "font.h"
 #include "image.h"
 #include "internal.h"
-#include "renderer.h"
 #include "model.h"
+#include "renderer.h"
 #include "types.h"
 #include "vector_math.h"
 

@@ -3,8 +3,8 @@
 #include "camera.h"
 #include "font.h"
 #include "internal.h"
-#include "renderer.h"
 #include "model.h"
+#include "renderer.h"
 #include "vector_math.h"
 
 OWL_INTERNAL enum owl_code
@@ -329,19 +329,10 @@ end:
   return;
 }
 
-OWL_INTERNAL int run_once = 0;
-
 void owl_model_update_animation(struct owl_renderer const *r,
                                 struct owl_model *model, float dt) {
   int i;
   struct owl_model_animation_data *animation_data;
-
-  if (run_once)
-    goto end;
-
-#if 0
-  ++run_once;
-#endif
 
   if (OWL_MODEL_NO_ANIMATION_SLOT == model->active_animation.slot)
     goto end;
@@ -386,21 +377,8 @@ void owl_model_update_animation(struct owl_renderer const *r,
       } break;
 
       case OWL_FIXME_ROTATION_PATH_VALUE: {
-        owl_v4 q1;
-        owl_v4 q2;
-
-        /* NOTE(samuel): gltf gives rotations in XYZW */
-        q1[1] = sampler_data->outputs[j][0];
-        q1[2] = sampler_data->outputs[j][1];
-        q1[3] = sampler_data->outputs[j][2];
-        q1[0] = sampler_data->outputs[j][3];
-
-        q2[1] = sampler_data->outputs[j + 1][0];
-        q2[2] = sampler_data->outputs[j + 1][1];
-        q2[3] = sampler_data->outputs[j + 1][2];
-        q2[0] = sampler_data->outputs[j + 1][3];
-
-        owl_v4_quat_slerp(q1, q2, a, node_data->rotation);
+        owl_v4_quat_slerp(sampler_data->outputs[j], sampler_data->outputs[j + 1],
+                          a, node_data->rotation);
         owl_v4_normalize(node_data->rotation, node_data->rotation);
       } break;
 
@@ -462,39 +440,16 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
 
   push_constant.model[2][2] *= -1.0F;
 
+  {
+    owl_v3 offset = {0.0F, 0.0F, -1.0F};
+    owl_m4_translate(offset, push_constant.model);
+  }
+
   for (parent.slot = model->nodes[node->slot].parent.slot;
        OWL_MODEL_NODE_NO_PARENT_SLOT != parent.slot;
        parent.slot = model->nodes[parent.slot].parent.slot)
     owl_m4_multiply(model->nodes[parent.slot].matrix, push_constant.model,
                     push_constant.model);
-
-#if 1
-  {
-    owl_v3 position = {0.0F, 0.0F, -1.0F};
-    owl_m4_translate(position, push_constant.model);
-  }
-#endif
-#if 0
-  {
-    owl_v3 axis = {0.0F, 1.0F, 0.0F};
-    owl_m4_rotate(push_constant.model, OWL_DEG_TO_RAD(180.0F), axis,
-                  push_constant.model);
-  }
-  {
-    owl_v3 axis = {0.0F, 0.0F, 1.0F};
-    owl_m4_rotate(push_constant.model, OWL_DEG_TO_RAD(90.0F), axis,
-                  push_constant.model);
-  }
-#endif
-
-#if 0
-  {
-    owl_v3 axis = {0.0F, 1.0F, 0.0F};
-    owl_m4_rotate(push_constant.model,
-                  OWL_DEG_TO_RAD(remove_this_please_angle += 1.1F), axis,
-                  push_constant.model);
-  }
-#endif
 
   vkCmdPushConstants(r->active_frame_command_buffer, r->active_pipeline_layout,
                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),

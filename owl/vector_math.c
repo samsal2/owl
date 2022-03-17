@@ -283,17 +283,16 @@ void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out) {
   OWL_V4_ADD(from, v, out);
 }
 
-/* FIXME(samuel): expects q to be in WXYZ */
 void owl_v4_quat_as_m4(owl_v4 const q, owl_m4 out) {
-  float xx = q[1] * q[1];
-  float yy = q[2] * q[2];
-  float zz = q[3] * q[3];
-  float xz = q[1] * q[3];
-  float xy = q[1] * q[2];
-  float yz = q[2] * q[3];
-  float wx = q[0] * q[1];
-  float wy = q[0] * q[2];
-  float wz = q[0] * q[3];
+  float xx = q[0] * q[0];
+  float yy = q[1] * q[1];
+  float zz = q[2] * q[2];
+  float xz = q[0] * q[2];
+  float xy = q[0] * q[1];
+  float yz = q[1] * q[2];
+  float wx = q[3] * q[0];
+  float wy = q[3] * q[1];
+  float wz = q[3] * q[2];
 
   out[0][0] = 1.0F - 2.0F * (yy + zz);
   out[0][1] = 2.0F * (xy + wz);

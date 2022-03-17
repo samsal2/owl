@@ -570,6 +570,11 @@ OWL_INTERNAL enum owl_code owl_model_load_nodes_(struct owl_renderer *r,
     model->nodes[i].skin.slot = -1;
   }
 
+  if (OWL_MODEL_MAX_NODES_COUNT <= (int)gltf->nodes_count) {
+    code = OWL_ERROR_OUT_OF_BOUNDS;
+    goto end_err_deinit_load_info;
+  }
+
   model->nodes_count = (int)gltf->nodes_count;
 
   for (i = 0; i < (int)gltf->nodes_count; ++i) {
@@ -577,6 +582,11 @@ OWL_INTERNAL enum owl_code owl_model_load_nodes_(struct owl_renderer *r,
 
     if (OWL_SUCCESS != code)
       goto end_err_deinit_load_info;
+  }
+
+  if (OWL_MODEL_MAX_NODE_ROOTS_COUNT <= (int)from_scene->nodes_count) {
+    code = OWL_ERROR_OUT_OF_BOUNDS;
+    goto end_err_deinit_load_info;
   }
 
   model->roots_count = (int)from_scene->nodes_count;

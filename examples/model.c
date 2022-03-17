@@ -73,8 +73,10 @@ int main(void) {
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MODEL);
     owl_submit_draw_model_command(renderer, &camera, &model_command);
 
+#if 0
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
     owl_submit_draw_text_command(renderer, &camera, &text_command);
+#endif
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
