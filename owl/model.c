@@ -81,7 +81,7 @@ owl_model_load_materials_(struct owl_renderer *r, struct cgltf_data const *gltf,
 
   OWL_UNUSED(r);
 
-  if (OWL_SCENE_MAX_MATERIALS_COUNT <= (int)gltf->materials_count) {
+  if (OWL_MODEL_MAX_MATERIALS_COUNT <= (int)gltf->materials_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
@@ -237,7 +237,7 @@ owl_model_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
 
   node.slot = (int)(from_node - gltf->nodes);
 
-  if (OWL_SCENE_MAX_NODES_COUNT <= node.slot) {
+  if (OWL_MODEL_MAX_NODES_COUNT <= node.slot) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
@@ -247,9 +247,9 @@ owl_model_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
   if (from_node->parent)
     node_data->parent.slot = (int)(from_node->parent - gltf->nodes);
   else
-    node_data->parent.slot = OWL_SCENE_NODE_NO_PARENT_SLOT;
+    node_data->parent.slot = OWL_MODEL_NODE_NO_PARENT_SLOT;
 
-  if (OWL_SCENE_NODE_MAX_CHILDREN_COUNT <= (int)from_node->children_count) {
+  if (OWL_MODEL_NODE_MAX_CHILDREN_COUNT <= (int)from_node->children_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
@@ -260,9 +260,9 @@ owl_model_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
     node_data->children[i].slot = (int)(from_node->children[i] - gltf->nodes);
 
   if (from_node->name) {
-    strncpy(node_data->name, from_node->name, OWL_SCENE_MAX_NAME_LENGTH);
+    strncpy(node_data->name, from_node->name, OWL_MODEL_MAX_NAME_LENGTH);
   } else {
-    strncpy(node_data->name, "NO NAME", OWL_SCENE_MAX_NAME_LENGTH);
+    strncpy(node_data->name, "NO NAME", OWL_MODEL_MAX_NAME_LENGTH);
   }
 
   if (from_node->has_translation)
@@ -288,7 +288,7 @@ owl_model_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
   if (from_node->skin)
     node_data->skin.slot = (int)(from_node->skin - gltf->skins);
   else
-    node_data->skin.slot = OWL_SCENE_NODE_NO_SKIN_SLOT;
+    node_data->skin.slot = OWL_MODEL_NODE_NO_SKIN_SLOT;
 
   if (from_node->mesh) {
     struct cgltf_mesh const *from_mesh;
@@ -296,7 +296,7 @@ owl_model_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
 
     node_data->mesh.slot = model->meshes_count++;
 
-    if (OWL_SCENE_MAX_MESHES_COUNT <= node_data->mesh.slot) {
+    if (OWL_MODEL_MAX_MESHES_COUNT <= node_data->mesh.slot) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
@@ -323,7 +323,7 @@ owl_model_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
       primitive = &mesh_data->primitives[i];
       primitive->slot = model->primitives_count++;
 
-      if (OWL_SCENE_MAX_PRIMITIVES_COUNT <= primitive->slot) {
+      if (OWL_MODEL_MAX_PRIMITIVES_COUNT <= primitive->slot) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
         goto end;
       }
@@ -570,7 +570,7 @@ OWL_INTERNAL enum owl_code owl_model_load_nodes_(struct owl_renderer *r,
   if (OWL_SUCCESS != (code = owl_model_init_load_info_(r, gltf, &sli)))
     goto end;
 
-  for (i = 0; i < OWL_SCENE_MAX_NODES_COUNT; ++i) {
+  for (i = 0; i < OWL_MODEL_MAX_NODES_COUNT; ++i) {
     model->nodes[i].mesh.slot = -1;
     model->nodes[i].parent.slot = -1;
     model->nodes[i].mesh.slot = -1;
@@ -608,7 +608,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *r,
 
   OWL_UNUSED(r);
 
-  if (OWL_SCENE_MAX_SKINS_COUNT <= (int)gltf->skins_count) {
+  if (OWL_MODEL_MAX_SKINS_COUNT <= (int)gltf->skins_count) {
     OWL_ASSERT(0);
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
@@ -623,13 +623,13 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *r,
     struct owl_model_skin_data *skin_data = &model->skins[i];
 
     if (from_skin->name)
-      strncpy(skin_data->name, from_skin->name, OWL_SCENE_MAX_NAME_LENGTH);
+      strncpy(skin_data->name, from_skin->name, OWL_MODEL_MAX_NAME_LENGTH);
     else
-      strncpy(skin_data->name, "NO NAME", OWL_SCENE_MAX_NAME_LENGTH);
+      strncpy(skin_data->name, "NO NAME", OWL_MODEL_MAX_NAME_LENGTH);
 
     skin_data->skeleton_root.slot = (int)(from_skin->skeleton - gltf->nodes);
 
-    if (OWL_SCENE_SKIN_MAX_JOINTS_COUNT <= (int)from_skin->joints_count) {
+    if (OWL_MODEL_SKIN_MAX_JOINTS_COUNT <= (int)from_skin->joints_count) {
       OWL_ASSERT(0);
       code = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
@@ -643,7 +643,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *r,
 
       OWL_ASSERT(!strncmp(model->nodes[skin_data->joints[j].slot].name,
                           from_skin->joints[j]->name,
-                          OWL_SCENE_MAX_NAME_LENGTH));
+                          OWL_MODEL_MAX_NAME_LENGTH));
     }
 
     skin_data->inverse_bind_matrices_count = 0;
@@ -651,7 +651,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *r,
     if (!from_skin->inverse_bind_matrices)
       continue;
 
-    if (OWL_SCENE_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT <=
+    if (OWL_MODEL_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT <=
         (int)from_skin->inverse_bind_matrices->count) {
       OWL_ASSERT(0);
       code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -791,7 +791,7 @@ owl_model_load_animations_(struct owl_renderer *r,
 
   OWL_UNUSED(r);
 
-  if (OWL_SCENE_MAX_ANIMATIONS_COUNT <= (int)gltf->animations_count) {
+  if (OWL_MODEL_MAX_ANIMATIONS_COUNT <= (int)gltf->animations_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
@@ -808,7 +808,7 @@ owl_model_load_animations_(struct owl_renderer *r,
 
     animation_data->current_time = 0.0F;
 
-    if (OWL_SCENE_ANIMATION_MAX_SAMPLERS_COUNT <=
+    if (OWL_MODEL_ANIMATION_MAX_SAMPLERS_COUNT <=
         (int)from_animation->samplers_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
@@ -830,14 +830,14 @@ owl_model_load_animations_(struct owl_renderer *r,
 
       sampler.slot = model->animation_samplers_count++;
 
-      if (OWL_SCENE_MAX_SAMPLERS_COUNT <= sampler.slot) {
+      if (OWL_MODEL_MAX_SAMPLERS_COUNT <= sampler.slot) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
         goto end;
       }
 
       sampler_data = &model->animation_samplers[sampler.slot];
 
-      if (OWL_SCENE_ANIMATION_SAMPLER_MAX_INPUTS_COUNT <=
+      if (OWL_MODEL_ANIMATION_SAMPLER_MAX_INPUTS_COUNT <=
           (int)from_sampler->input->count) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
         goto end;
@@ -859,7 +859,7 @@ owl_model_load_animations_(struct owl_renderer *r,
           animation_data->end = input;
       }
 
-      if (OWL_SCENE_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT <=
+      if (OWL_MODEL_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT <=
           (int)from_sampler->output->count) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
         goto end;
@@ -901,7 +901,7 @@ owl_model_load_animations_(struct owl_renderer *r,
       animation_data->samplers[j].slot = sampler.slot;
     }
 
-    if (OWL_SCENE_ANIMATION_MAX_CHANNELS_COUNT <=
+    if (OWL_MODEL_ANIMATION_MAX_CHANNELS_COUNT <=
         (int)from_animation->channels_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
@@ -918,7 +918,7 @@ owl_model_load_animations_(struct owl_renderer *r,
 
       channel.slot = model->animation_channels_count++;
 
-      if (OWL_SCENE_MAX_CHANNELS_COUNT <= channel.slot) {
+      if (OWL_MODEL_MAX_CHANNELS_COUNT <= channel.slot) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
         goto end;
       }
@@ -963,7 +963,7 @@ enum owl_code owl_model_init(struct owl_renderer *r, char const *path,
   model->animation_channels_count = 0;
   model->animations_count = 0;
 #if 0
-  model->active_animation.slot = OWL_SCENE_NO_ANIMATION_SLOT;
+  model->active_animation.slot = OWL_MODEL_NO_ANIMATION_SLOT;
 #else
   model->active_animation.slot = 0;
 #endif

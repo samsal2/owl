@@ -1,34 +1,34 @@
-#ifndef OWL_SCENE_H_
-#define OWL_SCENE_H_
+#ifndef OWL_MODEL_H_
+#define OWL_MODEL_H_
 
 #include "image.h"
 #include "owl/renderer.h"
 #include "types.h"
 
-#define OWL_SCENE_NODE_NO_MESH_SLOT -1
-#define OWL_SCENE_NO_ANIMATION_SLOT -1
-#define OWL_SCENE_NODE_NO_SKIN_SLOT -1
-#define OWL_SCENE_NODE_NO_PARENT_SLOT -1
-#define OWL_SCENE_MAX_PRIMITIVES_COUNT 128
-#define OWL_SCENE_MESH_MAX_PRIMITIVES_COUNT 128
-#define OWL_SCENE_MAX_NAME_LENGTH 128
-#define OWL_SCENE_MAX_IMAGES_COUNT 16
-#define OWL_SCENE_MAX_NODE_ROOTS_COUNT 128
-#define OWL_SCENE_MAX_NODES_COUNT 128
-#define OWL_SCENE_MAX_TEXTURES_COUNT 8
-#define OWL_SCENE_MAX_MATERIALS_COUNT 8
-#define OWL_SCENE_NODE_MAX_CHILDREN_COUNT 128
-#define OWL_SCENE_MAX_MESHES_COUNT 128
-#define OWL_SCENE_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT 128
-#define OWL_SCENE_SKIN_MAX_JOINTS_COUNT 128
-#define OWL_SCENE_ANIMATION_SAMPLER_MAX_INPUTS_COUNT 128
-#define OWL_SCENE_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT 128
-#define OWL_SCENE_MAX_SKINS_COUNT 128
-#define OWL_SCENE_MAX_SAMPLERS_COUNT 128
-#define OWL_SCENE_MAX_CHANNELS_COUNT 128
-#define OWL_SCENE_ANIMATION_MAX_SAMPLERS_COUNT 128
-#define OWL_SCENE_ANIMATION_MAX_CHANNELS_COUNT 128
-#define OWL_SCENE_MAX_ANIMATIONS_COUNT 128
+#define OWL_MODEL_NODE_NO_MESH_SLOT -1
+#define OWL_MODEL_NO_ANIMATION_SLOT -1
+#define OWL_MODEL_NODE_NO_SKIN_SLOT -1
+#define OWL_MODEL_NODE_NO_PARENT_SLOT -1
+#define OWL_MODEL_MAX_PRIMITIVES_COUNT 128
+#define OWL_MODEL_MESH_MAX_PRIMITIVES_COUNT 128
+#define OWL_MODEL_MAX_NAME_LENGTH 128
+#define OWL_MODEL_MAX_IMAGES_COUNT 16
+#define OWL_MODEL_MAX_NODE_ROOTS_COUNT 128
+#define OWL_MODEL_MAX_NODES_COUNT 128
+#define OWL_MODEL_MAX_TEXTURES_COUNT 8
+#define OWL_MODEL_MAX_MATERIALS_COUNT 8
+#define OWL_MODEL_NODE_MAX_CHILDREN_COUNT 128
+#define OWL_MODEL_MAX_MESHES_COUNT 128
+#define OWL_MODEL_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT 128
+#define OWL_MODEL_SKIN_MAX_JOINTS_COUNT 128
+#define OWL_MODEL_ANIMATION_SAMPLER_MAX_INPUTS_COUNT 128
+#define OWL_MODEL_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT 128
+#define OWL_MODEL_MAX_SKINS_COUNT 128
+#define OWL_MODEL_MAX_SAMPLERS_COUNT 128
+#define OWL_MODEL_MAX_CHANNELS_COUNT 128
+#define OWL_MODEL_ANIMATION_MAX_SAMPLERS_COUNT 128
+#define OWL_MODEL_ANIMATION_MAX_CHANNELS_COUNT 128
+#define OWL_MODEL_MAX_ANIMATIONS_COUNT 128
 
 struct owl_renderer;
 
@@ -99,11 +99,11 @@ struct owl_model_primitive_data {
 
 struct owl_model_mesh_data {
   int primitives_count;
-  struct owl_model_primitive primitives[OWL_SCENE_MESH_MAX_PRIMITIVES_COUNT];
+  struct owl_model_primitive primitives[OWL_MODEL_MESH_MAX_PRIMITIVES_COUNT];
 };
 
 struct owl_model_node_data {
-  char name[OWL_SCENE_MAX_NAME_LENGTH];
+  char name[OWL_MODEL_MAX_NAME_LENGTH];
 
   owl_v3 translation;
   owl_v3 scale;
@@ -115,7 +115,7 @@ struct owl_model_node_data {
   struct owl_model_skin skin;
 
   int children_count;
-  struct owl_model_node children[OWL_SCENE_NODE_MAX_CHILDREN_COUNT];
+  struct owl_model_node children[OWL_MODEL_NODE_MAX_CHILDREN_COUNT];
 };
 
 struct owl_model_image_data {
@@ -142,7 +142,7 @@ struct owl_model_material_data {
 };
 
 struct owl_model_skin_data {
-  char name[OWL_SCENE_MAX_NAME_LENGTH];
+  char name[OWL_MODEL_MAX_NAME_LENGTH];
   struct owl_model_node skeleton_root;
 
   VkDeviceMemory ssbo_memory;
@@ -156,20 +156,20 @@ struct owl_model_skin_data {
   VkDescriptorSet ssbo_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
 
   int inverse_bind_matrices_count;
-  owl_m4 inverse_bind_matrices[OWL_SCENE_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT];
+  owl_m4 inverse_bind_matrices[OWL_MODEL_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT];
 
   int joints_count;
-  struct owl_model_node joints[OWL_SCENE_SKIN_MAX_JOINTS_COUNT];
+  struct owl_model_node joints[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
 };
 
 struct owl_model_animation_sampler_data {
   int interpolation;
 
   int inputs_count;
-  float inputs[OWL_SCENE_ANIMATION_SAMPLER_MAX_INPUTS_COUNT];
+  float inputs[OWL_MODEL_ANIMATION_SAMPLER_MAX_INPUTS_COUNT];
 
   int outputs_count;
-  owl_v4 outputs[OWL_SCENE_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT];
+  owl_v4 outputs[OWL_MODEL_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT];
 };
 
 struct owl_model_animation_channel_data {
@@ -180,7 +180,7 @@ struct owl_model_animation_channel_data {
 };
 
 struct owl_model_animation_data {
-  char name[OWL_SCENE_MAX_NAME_LENGTH];
+  char name[OWL_MODEL_MAX_NAME_LENGTH];
 
   float current_time;
   float begin;
@@ -188,11 +188,11 @@ struct owl_model_animation_data {
 
   int samplers_count;
   struct owl_model_animation_sampler
-      samplers[OWL_SCENE_ANIMATION_MAX_SAMPLERS_COUNT];
+      samplers[OWL_MODEL_ANIMATION_MAX_SAMPLERS_COUNT];
 
   int channels_count;
   struct owl_model_animation_channel
-      channels[OWL_SCENE_ANIMATION_MAX_CHANNELS_COUNT];
+      channels[OWL_MODEL_ANIMATION_MAX_CHANNELS_COUNT];
 };
 
 struct owl_model {
@@ -205,39 +205,39 @@ struct owl_model {
   struct owl_model_animation active_animation;
 
   int roots_count;
-  struct owl_model_node roots[OWL_SCENE_MAX_NODE_ROOTS_COUNT];
+  struct owl_model_node roots[OWL_MODEL_MAX_NODE_ROOTS_COUNT];
 
   int nodes_count;
-  struct owl_model_node_data nodes[OWL_SCENE_MAX_NODES_COUNT];
+  struct owl_model_node_data nodes[OWL_MODEL_MAX_NODES_COUNT];
 
   int images_count;
-  struct owl_model_image_data images[OWL_SCENE_MAX_IMAGES_COUNT];
+  struct owl_model_image_data images[OWL_MODEL_MAX_IMAGES_COUNT];
 
   int textures_count;
-  struct owl_model_texture_data textures[OWL_SCENE_MAX_TEXTURES_COUNT];
+  struct owl_model_texture_data textures[OWL_MODEL_MAX_TEXTURES_COUNT];
 
   int materials_count;
-  struct owl_model_material_data materials[OWL_SCENE_MAX_MATERIALS_COUNT];
+  struct owl_model_material_data materials[OWL_MODEL_MAX_MATERIALS_COUNT];
 
   int meshes_count;
-  struct owl_model_mesh_data meshes[OWL_SCENE_MAX_MESHES_COUNT];
+  struct owl_model_mesh_data meshes[OWL_MODEL_MAX_MESHES_COUNT];
 
   int primitives_count;
-  struct owl_model_primitive_data primitives[OWL_SCENE_MAX_PRIMITIVES_COUNT];
+  struct owl_model_primitive_data primitives[OWL_MODEL_MAX_PRIMITIVES_COUNT];
 
   int skins_count;
-  struct owl_model_skin_data skins[OWL_SCENE_MAX_SKINS_COUNT];
+  struct owl_model_skin_data skins[OWL_MODEL_MAX_SKINS_COUNT];
 
   int animation_samplers_count;
   struct owl_model_animation_sampler_data
-      animation_samplers[OWL_SCENE_MAX_SAMPLERS_COUNT];
+      animation_samplers[OWL_MODEL_MAX_SAMPLERS_COUNT];
 
   int animation_channels_count;
   struct owl_model_animation_channel_data
-      animation_channels[OWL_SCENE_MAX_CHANNELS_COUNT];
+      animation_channels[OWL_MODEL_MAX_CHANNELS_COUNT];
 
   int animations_count;
-  struct owl_model_animation_data animations[OWL_SCENE_MAX_ANIMATIONS_COUNT];
+  struct owl_model_animation_data animations[OWL_MODEL_MAX_ANIMATIONS_COUNT];
 };
 
 enum owl_code owl_model_init(struct owl_renderer *r, char const *path,

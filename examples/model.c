@@ -15,7 +15,7 @@ static struct owl_camera camera;
 static struct owl_font *font;
 static struct owl_draw_text_command text_command;
 
-#define SCENE_PATH "../../assets/CesiumMan.gltf"
+#define MODEL_PATH "../../assets/CesiumMan.gltf"
 #define FONT_PATH "../../assets/Inconsolata-Regular.ttf"
 
 #define CHECK(fn)                                                              \
@@ -43,7 +43,7 @@ int main(void) {
   CHECK(owl_camera_init(&camera));
 
   model = OWL_MALLOC(sizeof(*model));
-  CHECK(owl_model_init(renderer, SCENE_PATH, model));
+  CHECK(owl_model_init(renderer, MODEL_PATH, model));
 
   OWL_V3_SET(0.0F, 0.0F, -1.5F, model_command.light);
   model_command.model = model;
@@ -70,7 +70,7 @@ int main(void) {
     owl_model_update_animation(renderer, model, client->dt_time_stamp);
 #endif
 
-    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_SCENE);
+    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MODEL);
     owl_submit_draw_model_command(renderer, &camera, &model_command);
 
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);

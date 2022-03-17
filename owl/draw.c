@@ -283,7 +283,7 @@ owl_model_resolve_node_matrix_(struct owl_model const *model,
   owl_model_resolve_local_node_matrix_(model, node, matrix);
 
   for (parent.slot = model->nodes[node->slot].parent.slot;
-       OWL_SCENE_NODE_NO_PARENT_SLOT != parent.slot;
+       OWL_MODEL_NODE_NO_PARENT_SLOT != parent.slot;
        parent.slot = model->nodes[parent.slot].parent.slot) {
     owl_m4 local;
     owl_model_resolve_local_node_matrix_(model, &parent, local);
@@ -311,7 +311,7 @@ owl_model_node_update_joints_(struct owl_renderer const *r,
   for (i = 0; i < node_data->children_count; ++i)
     owl_model_node_update_joints_(r, model, &node_data->children[i]);
 
-  if (OWL_SCENE_NODE_NO_SKIN_SLOT == node_data->skin.slot)
+  if (OWL_MODEL_NODE_NO_SKIN_SLOT == node_data->skin.slot)
     goto end;
 
   skin_data = &model->skins[node_data->skin.slot];
@@ -343,7 +343,7 @@ void owl_model_update_animation(struct owl_renderer const *r,
   ++run_once;
 #endif
 
-  if (OWL_SCENE_NO_ANIMATION_SLOT == model->active_animation.slot)
+  if (OWL_MODEL_NO_ANIMATION_SLOT == model->active_animation.slot)
     goto end;
 
   animation_data = &model->animations[model->active_animation.slot];
@@ -450,7 +450,7 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
       goto end;
   }
 
-  if (OWL_SCENE_NODE_NO_MESH_SLOT == node_data->mesh.slot)
+  if (OWL_MODEL_NODE_NO_MESH_SLOT == node_data->mesh.slot)
     goto end;
 
   mesh_data = &model->meshes[node_data->mesh.slot];
@@ -463,7 +463,7 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
   push_constant.model[2][2] *= -1.0F;
 
   for (parent.slot = model->nodes[node->slot].parent.slot;
-       OWL_SCENE_NODE_NO_PARENT_SLOT != parent.slot;
+       OWL_MODEL_NODE_NO_PARENT_SLOT != parent.slot;
        parent.slot = model->nodes[parent.slot].parent.slot)
     owl_m4_multiply(model->nodes[parent.slot].matrix, push_constant.model,
                     push_constant.model);

@@ -1308,7 +1308,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       vertex_attributes[2].offset = offsetof(struct owl_draw_vertex, uv);
       break;
 
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       vertex_bindings[0].binding = 0;
       vertex_bindings[0].stride = sizeof(struct owl_model_vertex);
       vertex_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -1363,7 +1363,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       vertex_input_state.pVertexAttributeDescriptions = vertex_attributes;
       break;
 
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       vertex_input_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
       vertex_input_state.pNext = NULL;
@@ -1379,7 +1379,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       input_assembly_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
       input_assembly_state.pNext = NULL;
@@ -1393,7 +1393,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       viewport.x = 0.0F;
       viewport.y = 0.0F;
       viewport.width = r->swapchain_extent.width;
@@ -1407,7 +1407,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       scissor.offset.x = 0;
       scissor.offset.y = 0;
       scissor.extent = r->swapchain_extent;
@@ -1418,7 +1418,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       viewport_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
       viewport_state.pNext = NULL;
@@ -1433,7 +1433,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     switch (i) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       rasterization_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
       rasterization_state.pNext = NULL;
@@ -1472,7 +1472,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       multisample_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
       multisample_state.pNext = NULL;
@@ -1489,7 +1489,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     switch (i) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       color_blend_attachments[0].blendEnable = VK_FALSE;
       color_blend_attachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
       color_blend_attachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -1524,7 +1524,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       color_blend_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
       color_blend_state.pNext = NULL;
@@ -1544,7 +1544,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       depth_stencil_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
       depth_stencil_state.pNext = NULL;
@@ -1601,7 +1601,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       stages[1].pSpecializationInfo = NULL;
       break;
 
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
       stages[0].pNext = NULL;
       stages[0].flags = 0;
@@ -1627,7 +1627,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
       r->pipeline_layouts[i] = r->common_pipeline_layout;
       break;
 
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       r->pipeline_layouts[i] = r->model_pipeline_layout;
       break;
     }
@@ -1636,7 +1636,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_PIPELINE_TYPE_MAIN:
     case OWL_PIPELINE_TYPE_WIRES:
     case OWL_PIPELINE_TYPE_FONT:
-    case OWL_PIPELINE_TYPE_SCENE:
+    case OWL_PIPELINE_TYPE_MODEL:
       pipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
       pipeline.pNext = NULL;
       pipeline.flags = 0;
@@ -1667,7 +1667,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL void owl_renderer_deinit_pipelines_(struct owl_renderer *r) {
-  vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_SCENE], NULL);
+  vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_MODEL], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_FONT], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_WIRES], NULL);
   vkDestroyPipeline(r->device, r->pipelines[OWL_PIPELINE_TYPE_MAIN], NULL);
