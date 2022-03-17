@@ -260,10 +260,8 @@ owl_scene_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
     node_data->children[i].slot = (int)(from_node->children[i] - gltf->nodes);
 
   if (from_node->name) {
-    OWL_DEBUG_LOG("\n adding node with name (%s) \n", from_node->name);
     strncpy(node_data->name, from_node->name, OWL_SCENE_MAX_NAME_LENGTH);
   } else {
-    OWL_DEBUG_LOG("\n adding node with name (NO NAME) \n");
     strncpy(node_data->name, "NO NAME", OWL_SCENE_MAX_NAME_LENGTH);
   }
 
