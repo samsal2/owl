@@ -460,6 +460,8 @@ owl_scene_submit_node_(struct owl_renderer *r, struct owl_camera *c,
 
   OWL_M4_COPY(scene->nodes[node->slot].matrix, push_constant.model);
 
+  push_constant.model[2][2] *= -1.0F;
+
   for (parent.slot = scene->nodes[node->slot].parent.slot;
        OWL_SCENE_NODE_NO_PARENT_SLOT != parent.slot;
        parent.slot = scene->nodes[parent.slot].parent.slot)
