@@ -1,7 +1,3 @@
-#include "owl/camera.h"
-#include "owl/draw.h"
-#include "owl/renderer.h"
-#include "owl/vector_math.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -17,6 +13,12 @@ static struct owl_draw_text_command text_command;
 
 #define MODEL_PATH "../../assets/CesiumMan.gltf"
 #define FONT_PATH "../../assets/Inconsolata-Regular.ttf"
+
+char const *fmtfps(double d) {
+  static char buffer[128];
+  snprintf(buffer, sizeof(buffer), "%.2f fps", d);
+  return buffer;
+}
 
 #define CHECK(fn)                                                              \
   do {                                                                         \
@@ -45,15 +47,14 @@ int main(void) {
   model = OWL_MALLOC(sizeof(*model));
   CHECK(owl_model_init(renderer, MODEL_PATH, model));
 
-  OWL_V3_SET(0.0F, 0.0F, -1.5F, model_command.light);
+  OWL_V3_SET(0.0F, 0.0F, 1.9F, model_command.light);
   model_command.model = model;
 
   font = OWL_MALLOC(sizeof(*font));
   CHECK(owl_font_init(renderer, 80, FONT_PATH, font));
 
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
-  OWL_V3_SET(-0.1F, -0.1F, 0.90, text_command.position);
-  text_command.text = "HELLO WORLD!";
+  OWL_V3_SET(-0.3F, -0.3F, 0.90, text_command.position);
   text_command.font = font;
 
   while (!owl_client_is_done(client)) {
@@ -73,7 +74,8 @@ int main(void) {
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MODEL);
     owl_submit_draw_model_command(renderer, &camera, &model_command);
 
-#if 0
+#if 1
+    text_command.text = fmtfps(client->fps);
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
     owl_submit_draw_text_command(renderer, &camera, &text_command);
 #endif

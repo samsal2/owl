@@ -159,6 +159,7 @@ struct owl_client {
   int framebuffer_height;
   int window_width;
   int window_height;
+  double fps;
   double dt_time_stamp;
   double time_stamp;
   double previous_time_stamp;

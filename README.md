@@ -1,1 +1,1 @@
-![Screenshot](assets/Suzanne.png)
+![Screenshot](assets/CessiumMan.png)

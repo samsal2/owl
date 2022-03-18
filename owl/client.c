@@ -134,6 +134,7 @@ enum owl_code owl_client_init(struct owl_client_init_info const *cii,
   for (i = 0; i < OWL_KEYBOARD_KEY_LAST; ++i)
     c->keyboard_keys[i] = OWL_BUTTON_STATE_NONE;
 
+  c->fps = 60.0F;
   c->dt_time_stamp = 0.16667;
   c->time_stamp = 0.0;
   c->previous_time_stamp = 0.0;
@@ -204,4 +205,5 @@ void owl_client_poll_events(struct owl_client *c) {
   c->previous_time_stamp = c->time_stamp;
   c->time_stamp = glfwGetTime();
   c->dt_time_stamp = c->time_stamp - c->previous_time_stamp;
+  c->fps = 1.0F / c->dt_time_stamp;
 }

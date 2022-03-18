@@ -1048,7 +1048,7 @@ owl_model_resolve_local_node_matrix_(struct owl_model const *model,
   owl_m4_translate(node_data->translation, matrix);
 
   OWL_M4_IDENTITY(tmp);
-  owl_v4_quat_as_m4(node_data->rotation, tmp);
+  owl_q4_as_m4(node_data->rotation, tmp);
   owl_m4_multiply(matrix, tmp, matrix);
 
   OWL_M4_IDENTITY(tmp);
@@ -1146,8 +1146,6 @@ void owl_model_update_animation(struct owl_renderer const *r,
     if (OWL_MODEL_ANIMATION_INTERPOLATION_TYPE_LINEAR !=
         sampler_data->interpolation)
       continue;
-
-    OWL_ASSERT(sampler_data->inputs_count);
 
     for (j = 0; j < sampler_data->inputs_count - 1; ++j) {
       float const i0 = sampler_data->inputs[j];

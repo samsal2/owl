@@ -19,6 +19,8 @@ typedef float owl_v2[2];
 typedef float owl_v3[3];
 typedef float owl_v4[4];
 
+typedef float owl_q4[4];
+
 typedef int owl_v2i[2];
 typedef int owl_v3i[3];
 typedef int owl_v4i[4];

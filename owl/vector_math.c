@@ -283,7 +283,7 @@ void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out) {
   OWL_V4_ADD(from, v, out);
 }
 
-void owl_v4_quat_as_m4(owl_v4 const q, owl_m4 out) {
+void owl_q4_as_m4(owl_q4 const q, owl_m4 out) {
   float xx = q[0] * q[0];
   float yy = q[1] * q[1];
   float zz = q[2] * q[2];
@@ -448,14 +448,3 @@ void owl_m4_print(owl_m4 const m) {
 }
 
 #endif
-
-void owl_complex_mul(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out) {
-  owl_v2 l;
-  owl_v2 r;
-
-  OWL_V2_COPY(lhs, l);
-  OWL_V2_COPY(rhs, r);
-
-  out[0] = (l[0] * r[0] - l[1] * r[1]);
-  out[1] = (l[0] * r[1] + l[1] * r[0]);
-}

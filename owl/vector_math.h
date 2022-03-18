@@ -323,11 +323,9 @@ void owl_v3_mix(owl_v3 const from, owl_v3 const to, float weight, owl_v3 out);
 
 void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out);
 
-void owl_v4_quat_as_m4(owl_v4 const from, owl_m4 out);
+void owl_q4_as_m4(owl_q4 const from, owl_m4 out);
 
 void owl_m4_scale(owl_m4 const from, owl_v3 const scale, owl_m4 out);
-
-void owl_complex_mul(owl_v2 const lhs, owl_v2 const rhs, owl_v2 out);
 
 void owl_v4_quat_slerp(owl_v4 const from, owl_v4 const to, float t, owl_v4 out);
 
