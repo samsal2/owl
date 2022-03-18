@@ -7,94 +7,53 @@
 #include "renderer.h"
 #include "vector_math.h"
 
-OWL_INTERNAL enum owl_code
-owl_renderer_submit_vertices_(struct owl_renderer *r, owl_u32 count,
-                              struct owl_draw_vertex const *vertices) {
-  owl_byte *data;
-  VkDeviceSize size;
-  struct owl_dynamic_heap_reference dhr;
-  enum owl_code code = OWL_SUCCESS;
-
-  size = sizeof(*vertices) * (VkDeviceSize)count;
-  data = owl_renderer_dynamic_heap_alloc(r, size, &dhr);
-
-  OWL_MEMCPY(data, vertices, size);
-
-  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &dhr.buffer,
-                         &dhr.offset);
-
-  return code;
-}
-
-OWL_INTERNAL enum owl_code
-owl_renderer_submit_indices_(struct owl_renderer *r, owl_u32 count,
-                             owl_u32 const *indices) {
-  owl_byte *data;
-  VkDeviceSize size;
-  struct owl_dynamic_heap_reference dhr;
-  enum owl_code code = OWL_SUCCESS;
-
-  size = sizeof(*indices) * (VkDeviceSize)count;
-  data = owl_renderer_dynamic_heap_alloc(r, size, &dhr);
-
-  OWL_MEMCPY(data, indices, size);
-
-  vkCmdBindIndexBuffer(r->active_frame_command_buffer, dhr.buffer, dhr.offset,
-                       VK_INDEX_TYPE_UINT32);
-
-  return code;
-}
-
-OWL_INTERNAL enum owl_code
-owl_renderer_submit_uniforms_(struct owl_renderer *r, owl_m4 const model,
-                              struct owl_camera const *c,
-                              struct owl_image const *image) {
-  owl_byte *data;
-  VkDescriptorSet sets[2];
-  struct owl_draw_uniform uniform;
-  struct owl_dynamic_heap_reference dhr;
-  enum owl_code code = OWL_SUCCESS;
-
-  OWL_M4_COPY(c->projection, uniform.projection);
-  OWL_M4_COPY(c->view, uniform.view);
-  OWL_M4_COPY(model, uniform.model);
-
-  data = owl_renderer_dynamic_heap_alloc(r, sizeof(uniform), &dhr);
-  OWL_MEMCPY(data, &uniform, sizeof(uniform));
-
-  sets[0] = dhr.pvm_set;
-  sets[1] = r->image_manager_sets[image->slot];
-
-  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
-                          VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
-                          sets, 1, &dhr.offset32);
-
-  return code;
-}
-
 enum owl_code
 owl_submit_draw_basic_command(struct owl_renderer *r,
                               struct owl_camera const *c,
                               struct owl_draw_basic_command const *command) {
+  VkDeviceSize size;
+  VkDescriptorSet sets[2];
+  struct owl_draw_uniform uniform;
+  struct owl_dynamic_heap_reference vdhr;
+  struct owl_dynamic_heap_reference idhr;
+  struct owl_dynamic_heap_reference udhr;
   enum owl_code code = OWL_SUCCESS;
 
-  code = owl_renderer_submit_vertices_(r, command->vertices_count,
-                                       command->vertices);
+  size = (VkDeviceSize)command->vertices_count * sizeof(*command->vertices);
+  code = owl_renderer_dynamic_heap_submit(r, size, command->vertices, &vdhr);
 
   if (OWL_SUCCESS != code)
     goto end;
 
-  code =
-      owl_renderer_submit_indices_(r, command->indices_count, command->indices);
+  size = (VkDeviceSize)command->indices_count * sizeof(*command->indices);
+  code = owl_renderer_dynamic_heap_submit(r, size, command->indices, &idhr);
 
   if (OWL_SUCCESS != code)
     goto end;
 
-  code = owl_renderer_submit_uniforms_(r, command->model, c, &command->image);
+  OWL_M4_COPY(c->projection, uniform.projection);
+  OWL_M4_COPY(c->view, uniform.view);
+  OWL_M4_COPY(command->model, uniform.model);
+
+  size = sizeof(uniform);
+  code = owl_renderer_dynamic_heap_submit(r, size, &uniform, &udhr);
 
   if (OWL_SUCCESS != code)
     goto end;
+
+  sets[0] = udhr.pvm_set;
+  sets[1] = r->image_manager_sets[command->image.slot];
+
+  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &vdhr.buffer,
+                         &vdhr.offset);
+
+  vkCmdBindIndexBuffer(r->active_frame_command_buffer, idhr.buffer, idhr.offset,
+                       VK_INDEX_TYPE_UINT32);
+
+  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
+                          sets, 1, &udhr.offset32);
 
   vkCmdDrawIndexed(r->active_frame_command_buffer, command->indices_count, 1, 0,
                    0, 0);
@@ -106,26 +65,53 @@ end:
 enum owl_code
 owl_submit_draw_quad_command(struct owl_renderer *r, struct owl_camera const *c,
                              struct owl_draw_quad_command const *command) {
+  VkDeviceSize size;
+  VkDescriptorSet sets[2];
+  struct owl_draw_uniform uniform;
+  struct owl_dynamic_heap_reference vdhr;
+  struct owl_dynamic_heap_reference idhr;
+  struct owl_dynamic_heap_reference udhr;
   enum owl_code code = OWL_SUCCESS;
   owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
 
-  code = owl_renderer_submit_vertices_(r, 4, command->vertices);
+  size = OWL_ARRAY_SIZE(command->vertices) * sizeof(command->vertices[0]);
+  code = owl_renderer_dynamic_heap_submit(r, size, command->vertices, &vdhr);
 
   if (OWL_SUCCESS != code)
     goto end;
 
-  code = owl_renderer_submit_indices_(r, 6, indices);
+  size = OWL_ARRAY_SIZE(indices) * sizeof(indices[0]);
+  code = owl_renderer_dynamic_heap_submit(r, size, indices, &idhr);
 
   if (OWL_SUCCESS != code)
     goto end;
 
-  code = owl_renderer_submit_uniforms_(r, command->model, c, &command->image);
+  OWL_M4_COPY(c->projection, uniform.projection);
+  OWL_M4_COPY(c->view, uniform.view);
+  OWL_M4_COPY(command->model, uniform.model);
+
+  size = sizeof(uniform);
+  code = owl_renderer_dynamic_heap_submit(r, size, &uniform, &udhr);
 
   if (OWL_SUCCESS != code)
     goto end;
 
-  vkCmdDrawIndexed(r->active_frame_command_buffer, 6, 1, 0, 0, 0);
+  sets[0] = udhr.pvm_set;
+  sets[1] = r->image_manager_sets[command->image.slot];
 
+  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &vdhr.buffer,
+                         &vdhr.offset);
+
+  vkCmdBindIndexBuffer(r->active_frame_command_buffer, idhr.buffer, idhr.offset,
+                       VK_INDEX_TYPE_UINT32);
+
+  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
+                          sets, 1, &udhr.offset32);
+
+  vkCmdDrawIndexed(r->active_frame_command_buffer, OWL_ARRAY_SIZE(indices), 1,
+                   0, 0, 0);
 end:
   return code;
 }
@@ -284,8 +270,10 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
 
   OWL_M4_COPY(model->nodes[node->slot].matrix, push_constant.model);
 
+  /* HACK(samuel): invert the y coordinate */
   push_constant.model[2][2] *= -1.0F;
 
+  /* HACK(samuel): manually change the offset */
   {
     owl_v3 offset = {0.0F, 0.0F, -1.0F};
     owl_m4_translate(offset, push_constant.model);
