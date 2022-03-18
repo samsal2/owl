@@ -6,6 +6,7 @@ static struct owl_client_init_info client_info;
 static struct owl_client *client;
 static struct owl_renderer_init_info renderer_info;
 static struct owl_renderer *renderer;
+static struct owl_model *model;
 static struct owl_draw_model_command model_command;
 static struct owl_camera camera;
 static struct owl_font *font;
@@ -30,8 +31,6 @@ char const *fmtfps(double d) {
   } while (0)
 
 int main(void) {
-  struct owl_model *model;
-
   client_info.height = 600;
   client_info.width = 600;
   client_info.title = "model";
