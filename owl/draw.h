@@ -51,6 +51,7 @@ owl_submit_draw_quad_command(struct owl_renderer *r,
  * can't seem to be able to fix the bleeding */
 
 struct owl_draw_text_command {
+  float scale;
   owl_v3 color;
   owl_v3 position;
   char const *text;

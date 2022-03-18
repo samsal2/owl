@@ -51,11 +51,12 @@ int main(void) {
   model_command.model = model;
 
   font = OWL_MALLOC(sizeof(*font));
-  CHECK(owl_font_init(renderer, 80, FONT_PATH, font));
+  CHECK(owl_font_init(renderer, 64, FONT_PATH, font));
 
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
   OWL_V3_SET(-0.3F, -0.3F, 0.90, text_command.position);
   text_command.font = font;
+  text_command.scale = 0.05F;
 
   while (!owl_client_is_done(client)) {
     OWL_V2_COPY(client->cursor_position, model_command.light);

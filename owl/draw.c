@@ -116,9 +116,10 @@ end:
   return code;
 }
 
-OWL_INTERNAL enum owl_code owl_draw_text_command_fill_char_quad_(
-    struct owl_renderer const *r, struct owl_draw_text_command const *text,
-    owl_v3 const offset, char c, struct owl_draw_quad_command *quad) {
+OWL_INTERNAL enum owl_code
+owl_draw_text_command_fill_char_quad_(struct owl_draw_text_command const *text,
+                                      owl_v3 const offset, char c,
+                                      struct owl_draw_quad_command *quad) {
   float uv_offset;
   owl_v2 uv_bearing;
   owl_v2 current_position;
@@ -143,15 +144,19 @@ OWL_INTERNAL enum owl_code owl_draw_text_command_fill_char_quad_(
   OWL_V2_ADD(text->position, offset, current_position);
 
   /* TODO(samuel): save the bearing as a normalized value */
-  uv_bearing[0] = (float)glyph->bearing[0] / (float)r->framebuffer_width;
-  uv_bearing[1] = -(float)glyph->bearing[1] / (float)r->framebuffer_height;
+  uv_bearing[0] =
+      (float)glyph->bearing[0] / (float)(text->font->size) * text->scale;
+  uv_bearing[1] =
+      -(float)glyph->bearing[1] / (float)(text->font->size) * text->scale;
 
   OWL_V2_ADD(current_position, uv_bearing, screen_position);
 
   /* TODO(samuel): save the size as a normalized value */
 #if 1
-  glyph_screen_size[0] = (float)glyph->size[0] / (float)r->framebuffer_width;
-  glyph_screen_size[1] = (float)glyph->size[1] / (float)r->framebuffer_height;
+  glyph_screen_size[0] =
+      (float)glyph->size[0] / (float)(text->font->size) * text->scale;
+  glyph_screen_size[1] =
+      (float)glyph->size[1] / (float)(text->font->size) * text->scale;
 #else
   glyph_screen_size[0] = (float)glyph->size[0] / (float)1200;
   glyph_screen_size[1] = (float)glyph->size[1] / (float)1200;
@@ -204,12 +209,14 @@ end:
   return code;
 }
 
-OWL_INTERNAL void owl_font_step_offset_(struct owl_renderer const *r,
-                                        struct owl_font const *font,
-                                        char const c, owl_v2 offset) {
-  offset[0] += font->glyphs[(int)c].advance[0] / (float)r->framebuffer_width;
+OWL_INTERNAL void
+owl_draw_text_command_step_offset_(struct owl_draw_text_command const *command,
+                                   char const c, owl_v2 offset) {
+  offset[0] += command->font->glyphs[(int)c].advance[0] /
+               (float)(command->font->size) * command->scale;
   /* FIXME(samuel): not sure if i should substract or add */
-  offset[1] -= font->glyphs[(int)c].advance[1] / (float)r->framebuffer_height;
+  offset[1] -= command->font->glyphs[(int)c].advance[1] /
+               (float)(command->font->size) * command->scale;
 }
 
 enum owl_code
@@ -224,13 +231,13 @@ owl_submit_draw_text_command(struct owl_renderer *r, struct owl_camera const *c,
   for (l = command->text; '\0' != *l; ++l) {
     struct owl_draw_quad_command quad;
 
-    code = owl_draw_text_command_fill_char_quad_(r, command, offset, *l, &quad);
+    code = owl_draw_text_command_fill_char_quad_(command, offset, *l, &quad);
 
     if (OWL_SUCCESS != code)
       goto end;
 
     owl_submit_draw_quad_command(r, c, &quad);
-    owl_font_step_offset_(r, command->font, *l, offset);
+    owl_draw_text_command_step_offset_(command, *l, offset);
   }
 
 end:
