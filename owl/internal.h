@@ -11,6 +11,8 @@
 #include <string.h>
 #define OWL_MEMSET(dst, c, s) memset(dst, c, s)
 #define OWL_MEMCPY(dst, src, s) memcpy(dst, src, s)
+#define OWL_STRNCPY(dst, src, n) strncpy(dst, src, n)
+#define OWL_STRNCMP(lhs, rhs, n) strncmp(lhs, rhs, n)
 
 #ifndef NDEBUG
 

@@ -140,7 +140,8 @@ owl_find_gltf_attribute_(struct cgltf_primitive const *from_primitive,
   for (i = 0; i < (int)from_primitive->attributes_count; ++i) {
     struct cgltf_attribute const *current = &from_primitive->attributes[i];
 
-    if (!strcmp(current->name, attribute_name)) {
+    if (!OWL_STRNCMP(current->name, attribute_name,
+                     OWL_MODEL_MAX_NAME_LENGTH)) {
       attribute = current;
       goto end;
     }
@@ -252,11 +253,10 @@ owl_model_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
   for (i = 0; i < (int)from_node->children_count; ++i)
     node_data->children[i].slot = (int)(from_node->children[i] - gltf->nodes);
 
-  if (from_node->name) {
-    strncpy(node_data->name, from_node->name, OWL_MODEL_MAX_NAME_LENGTH);
-  } else {
-    strncpy(node_data->name, "NO NAME", OWL_MODEL_MAX_NAME_LENGTH);
-  }
+  if (from_node->name)
+    OWL_STRNCPY(node_data->name, from_node->name, OWL_MODEL_MAX_NAME_LENGTH);
+  else
+    OWL_STRNCPY(node_data->name, "NO NAME", OWL_MODEL_MAX_NAME_LENGTH);
 
   if (from_node->has_translation)
     OWL_V3_COPY(from_node->translation, node_data->translation);
@@ -626,9 +626,9 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *r,
     struct owl_model_skin_data *skin_data = &model->skins[i];
 
     if (from_skin->name)
-      strncpy(skin_data->name, from_skin->name, OWL_MODEL_MAX_NAME_LENGTH);
+      OWL_STRNCPY(skin_data->name, from_skin->name, OWL_MODEL_MAX_NAME_LENGTH);
     else
-      strncpy(skin_data->name, "NO NAME", OWL_MODEL_MAX_NAME_LENGTH);
+      OWL_STRNCPY(skin_data->name, "NO NAME", OWL_MODEL_MAX_NAME_LENGTH);
 
     skin_data->skeleton_root.slot = (int)(from_skin->skeleton - gltf->nodes);
 
@@ -644,9 +644,9 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *r,
 
       skin_data->joints[j].slot = (int)(from_skin->joints[j] - gltf->nodes);
 
-      OWL_ASSERT(!strncmp(model->nodes[skin_data->joints[j].slot].name,
-                          from_skin->joints[j]->name,
-                          OWL_MODEL_MAX_NAME_LENGTH));
+      OWL_ASSERT(!OWL_STRNCMP(model->nodes[skin_data->joints[j].slot].name,
+                              from_skin->joints[j]->name,
+                              OWL_MODEL_MAX_NAME_LENGTH));
     }
 
     skin_data->inverse_bind_matrices_count = 0;

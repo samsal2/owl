@@ -234,8 +234,9 @@ owl_validate_device_extensions_(owl_u32 count,
   for (i = 0; i < count; ++i) {
     owl_u32 j;
     for (j = 0; j < OWL_ARRAY_SIZE(g_required_device_extensions); ++j) {
-      if (!strcmp(g_required_device_extensions[j],
-                  extensions[i].extensionName)) {
+      if (!OWL_STRNCMP(g_required_device_extensions[j],
+                       extensions[i].extensionName,
+                       VK_MAX_EXTENSION_NAME_SIZE)) {
         extensions_found[j] = 1;
       }
     }
