@@ -358,9 +358,9 @@ owl_model_load_node_(struct owl_renderer *r, struct cgltf_data const *gltf,
 
         OWL_V3_SET(1.0F, 1.0F, 1.0F, vertex->color);
 
-        if (joints0 && weights0) {
+        if (joints0 && weights0)
           OWL_V4_COPY(&joints0[j * 4], vertex->joints0);
-        } else
+        else
           OWL_V4_ZERO(vertex->joints0);
 
         if (joints0 && weights0)
