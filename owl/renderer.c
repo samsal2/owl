@@ -2389,6 +2389,25 @@ end:
   return data;
 }
 
+enum owl_code
+owl_renderer_dynamic_heap_submit(struct owl_renderer *r, VkDeviceSize size,
+                                 void const *source,
+                                 struct owl_dynamic_heap_reference *dhr) {
+
+  owl_byte *data;
+  enum owl_code code = OWL_SUCCESS;
+
+  if (!(data = owl_renderer_dynamic_heap_alloc(r, size, dhr))) {
+    code = OWL_ERROR_BAD_ALLOC;
+    goto end;
+  }
+
+  OWL_MEMCPY(data, source, size);
+
+end:
+  return code;
+}
+
 OWL_INTERNAL VkMemoryPropertyFlags
 owl_as_vk_memory_property_flags(enum owl_memory_visibility vis) {
   switch (vis) {
