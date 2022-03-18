@@ -302,7 +302,6 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
       &model->skins[node_data->skin.slot].ssbo_sets[r->frame], 0, 0);
 
   for (i = 0; i < mesh_data->primitives_count; ++i) {
-    owl_byte *upload;
     VkDescriptorSet sets[3];
     struct owl_model_primitive primitive;
     struct owl_model_uniform uniform;
@@ -345,8 +344,10 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
     OWL_V4_ZERO(uniform.light);
     OWL_V3_COPY(command->light, uniform.light);
 
-    upload = owl_renderer_dynamic_heap_alloc(r, sizeof(uniform), &dhr);
-    OWL_MEMCPY(upload, &uniform, sizeof(uniform));
+    code = owl_renderer_dynamic_heap_submit(r, sizeof(uniform), &uniform, &dhr);
+
+    if (OWL_SUCCESS != code)
+      goto end;
 
     sets[0] = dhr.pvl_set;
     sets[1] = r->image_manager_sets[base_color_image_data->image.slot];
