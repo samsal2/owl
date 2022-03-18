@@ -70,8 +70,4 @@ struct owl_draw_model_command {
 enum owl_code
 owl_submit_draw_model_command(struct owl_renderer *r, struct owl_camera *cam,
                               struct owl_draw_model_command const *command);
-
-void owl_model_update_animation(struct owl_renderer const *r,
-                                struct owl_model *model, float dt);
-
 #endif
