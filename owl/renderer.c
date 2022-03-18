@@ -4,7 +4,6 @@
 #include "draw.h"
 #include "internal.h"
 #include "model.h"
-#include "vulkan/vulkan_core.h"
 
 #define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
 #define OWL_MAX_VERTEX_INPUT_ATTRIBUTES_COUNT 8
