@@ -23,6 +23,7 @@ OWL_INTERNAL void owl_ensure_ft_library_(void) {
   if (!(g_ft_library_reference_count++))
     err = FT_Init_FreeType(&g_ft_library);
 
+  OWL_UNUSED(err);
   OWL_ASSERT(FT_Err_Ok == err);
 }
 
@@ -40,9 +41,8 @@ OWL_INTERNAL void owl_font_calc_dims_(FT_Face face, int *width, int *height) {
   *height = 0;
 
   for (i = OWL_FIRST_CHAR; i < OWL_FONT_GLYPHS_COUNT; ++i) {
-    FT_Load_Char(face, (unsigned)i, FT_LOAD_RENDER);
+    FT_Load_Char(face, (unsigned)i, FT_LOAD_BITMAP_METRICS_ONLY);
 
-    /* HACK(samuel): add 2 to avoid bleeding */
     *width += (int)face->glyph->bitmap.width + OWL_FONT_X_OFFSET_PAD;
     *height = OWL_MAX(*height, (int)face->glyph->bitmap.rows);
   }
@@ -116,7 +116,8 @@ enum owl_code owl_font_init(struct owl_renderer *r, int size, char const *path,
 
   owl_font_calc_dims_(face, &font->atlas_width, &font->atlas_height);
 
-  data = OWL_CALLOC((VkDeviceSize)(font->atlas_width * font->atlas_height), 1);
+  data = OWL_CALLOC((owl_u64)(font->atlas_width * font->atlas_height),
+                    sizeof(owl_u8));
 
   if (!data) {
     code = OWL_ERROR_BAD_ALLOC;

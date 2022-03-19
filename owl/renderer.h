@@ -287,11 +287,11 @@ int owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
 
 void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
 
-void *owl_renderer_dynamic_heap_alloc(struct owl_renderer *r, VkDeviceSize size,
+void *owl_renderer_dynamic_heap_alloc(struct owl_renderer *r, owl_u64 size,
                                       struct owl_dynamic_heap_reference *dhr);
 
 enum owl_code
-owl_renderer_dynamic_heap_submit(struct owl_renderer *r, VkDeviceSize size,
+owl_renderer_dynamic_heap_submit(struct owl_renderer *r, owl_u64 size,
                                  void const *source,
                                  struct owl_dynamic_heap_reference *dhr);
 

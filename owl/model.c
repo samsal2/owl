@@ -715,7 +715,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *r,
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j)
         OWL_VK_CHECK(vkBindBufferMemory(
             r->device, skin_data->ssbo_buffers[j], skin_data->ssbo_memory,
-            (VkDeviceSize)j * skin_data->ssbo_buffer_aligned_size));
+            (owl_u64)j * skin_data->ssbo_buffer_aligned_size));
     }
 
     {
@@ -772,8 +772,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *r,
 
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j)
         skin_data->ssbo_datas[j] =
-            (owl_m4 *)&bytes[(VkDeviceSize)j *
-                             skin_data->ssbo_buffer_aligned_size];
+            (owl_m4 *)&bytes[(owl_u64)j * skin_data->ssbo_buffer_aligned_size];
 
       for (k = 0; k < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++k)
         for (j = 0; j < (int)from_skin->inverse_bind_matrices->count; ++j)

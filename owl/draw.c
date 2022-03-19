@@ -19,13 +19,13 @@ owl_submit_draw_basic_command(struct owl_renderer *r,
   struct owl_dynamic_heap_reference udhr;
   enum owl_code code = OWL_SUCCESS;
 
-  size = (VkDeviceSize)command->vertices_count * sizeof(*command->vertices);
+  size = (owl_u64)command->vertices_count * sizeof(*command->vertices);
   code = owl_renderer_dynamic_heap_submit(r, size, command->vertices, &vdhr);
 
   if (OWL_SUCCESS != code)
     goto end;
 
-  size = (VkDeviceSize)command->indices_count * sizeof(*command->indices);
+  size = (owl_u64)command->indices_count * sizeof(*command->indices);
   code = owl_renderer_dynamic_heap_submit(r, size, command->indices, &idhr);
 
   if (OWL_SUCCESS != code)
