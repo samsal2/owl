@@ -106,6 +106,10 @@ enum owl_code owl_image_init(struct owl_renderer *r,
    * would make the dynamic heap unnecessarily big */
   OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(r));
 
+  /* prepare the dynamic heap for staging */
+  if (OWL_SUCCESS != (code = owl_renderer_invalidate_dynamic_heap(r)))
+    goto end;
+
   /* get the required image properties (width, height, format, mips) based one
    * the source type, and submit the data into the dynamic heap  */
   switch (iii->source_type) {
@@ -188,7 +192,7 @@ enum owl_code owl_image_init(struct owl_renderer *r,
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, &requirements, OWL_MEMORY_VISIBILITY_GPU_ONLY);
+        r, &requirements, OWL_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL,
                                   &r->image_manager_memories[i->slot]));
@@ -286,6 +290,10 @@ enum owl_code owl_image_init(struct owl_renderer *r,
 
       owl_vk_image_generate_mips(&imi);
     }
+
+    /* flush the dynamic heap */
+    if (OWL_SUCCESS != (code = owl_renderer_flush_dynamic_heap(r)))
+      goto end;
 
     owl_renderer_deinit_single_use_command_buffer(r, &sucb);
   }

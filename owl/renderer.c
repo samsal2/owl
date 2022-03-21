@@ -4,6 +4,7 @@
 #include "draw.h"
 #include "internal.h"
 #include "model.h"
+#include "vulkan/vulkan_core.h"
 
 #define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
 #define OWL_MAX_VERTEX_INPUT_ATTRIBUTES_COUNT 8
@@ -849,7 +850,7 @@ owl_renderer_init_attachments_(struct owl_renderer *r) {
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, &requirements, OWL_MEMORY_VISIBILITY_GPU_ONLY);
+        r, &requirements, OWL_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK(vkAllocateMemory(r->device, &memory, NULL, &r->color_memory));
 
@@ -914,7 +915,7 @@ owl_renderer_init_attachments_(struct owl_renderer *r) {
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, &requirements, OWL_MEMORY_VISIBILITY_GPU_ONLY);
+        r, &requirements, OWL_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK(
         vkAllocateMemory(r->device, &memory, NULL, &r->depth_stencil_memory));
@@ -1856,7 +1857,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
     memory.allocationSize = r->dynamic_heap_buffer_aligned_size *
                             OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, &requirements, OWL_MEMORY_VISIBILITY_CPU_ONLY);
+        r, &requirements, OWL_MEMORY_VISIBILITY_CPU);
 
     OWL_VK_CHECK(
         vkAllocateMemory(r->device, &memory, NULL, &r->dynamic_heap_memory));
@@ -1874,7 +1875,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
   {
     void *data;
     OWL_VK_CHECK(vkMapMemory(r->device, r->dynamic_heap_memory, 0,
-                             r->dynamic_heap_buffer_size, 0, &data));
+                             VK_WHOLE_SIZE, 0, &data));
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i)
       r->dynamic_heap_datas[i] =
@@ -2410,11 +2411,12 @@ end:
 OWL_INTERNAL VkMemoryPropertyFlags
 owl_as_vk_memory_property_flags(enum owl_memory_visibility vis) {
   switch (vis) {
-  case OWL_MEMORY_VISIBILITY_CPU_ONLY:
-  case OWL_MEMORY_VISIBILITY_CPU_TO_GPU:
+  case OWL_MEMORY_VISIBILITY_CPU:
+    return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+  case OWL_MEMORY_VISIBILITY_CPU_COHERENT:
     return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-  case OWL_MEMORY_VISIBILITY_GPU_ONLY:
+  case OWL_MEMORY_VISIBILITY_GPU:
     return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   }
 }
@@ -2654,16 +2656,48 @@ OWL_INTERNAL void owl_renderer_update_frame_actives_(struct owl_renderer *r) {
 enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
+  owl_renderer_flush_dynamic_heap(r);
   owl_renderer_end_recording_(r);
   owl_renderer_submit_graphics_(r);
 
   if (OWL_SUCCESS != (code = owl_renderer_present_swapchain_(r)))
     goto end;
 
-  owl_renderer_clear_dynamic_heap_offset(r);
   owl_renderer_update_frame_actives_(r);
+  owl_renderer_invalidate_dynamic_heap(r);
+  owl_renderer_clear_dynamic_heap_offset(r);
   owl_renderer_clear_garbage_(r);
 
 end:
+  return code;
+}
+
+enum owl_code owl_renderer_flush_dynamic_heap(struct owl_renderer *r) {
+  VkMappedMemoryRange range;
+  enum owl_code code = OWL_SUCCESS;
+
+  range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+  range.pNext = NULL;
+  range.memory = r->dynamic_heap_memory;
+  range.offset = r->dynamic_heap_buffer_aligned_size * (owl_u64)r->frame;
+  range.size = r->dynamic_heap_buffer_size;
+
+  OWL_VK_CHECK(vkFlushMappedMemoryRanges(r->device, 1, &range));
+
+  return code;
+}
+
+enum owl_code owl_renderer_invalidate_dynamic_heap(struct owl_renderer *r) {
+  VkMappedMemoryRange range;
+  enum owl_code code = OWL_SUCCESS;
+
+  range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+  range.pNext = NULL;
+  range.memory = r->dynamic_heap_memory;
+  range.offset = r->dynamic_heap_buffer_aligned_size * (owl_u64)r->frame;
+  range.size = r->dynamic_heap_buffer_size;
+
+  OWL_VK_CHECK(vkInvalidateMappedMemoryRanges(r->device, 1, &range));
+
   return code;
 }

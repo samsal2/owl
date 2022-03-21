@@ -18,9 +18,9 @@ struct owl_renderer;
 #define OWL_PIPELINE_TYPE_NONE OWL_PIPELINE_TYPE_COUNT
 
 enum owl_memory_visibility {
-  OWL_MEMORY_VISIBILITY_CPU_ONLY,
-  OWL_MEMORY_VISIBILITY_GPU_ONLY,
-  OWL_MEMORY_VISIBILITY_CPU_TO_GPU
+  OWL_MEMORY_VISIBILITY_CPU,
+  OWL_MEMORY_VISIBILITY_CPU_COHERENT,
+  OWL_MEMORY_VISIBILITY_GPU
 };
 
 enum owl_pipeline_type {
@@ -282,6 +282,10 @@ void owl_renderer_deinit(struct owl_renderer *r);
 owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
                                       VkMemoryRequirements const *requirements,
                                       enum owl_memory_visibility vis);
+
+enum owl_code owl_renderer_flush_dynamic_heap(struct owl_renderer *r);
+
+enum owl_code owl_renderer_invalidate_dynamic_heap(struct owl_renderer *r);
 
 int owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
 

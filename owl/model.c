@@ -431,17 +431,16 @@ OWL_INTERNAL void owl_model_load_buffers_(struct owl_renderer *r,
   OWL_ASSERT(sli->vertices_count == sli->vertices_capacity);
   OWL_ASSERT(sli->indices_count == sli->indices_capacity);
 
+  owl_renderer_invalidate_dynamic_heap(r);
+
   {
-    owl_byte *data;
     VkDeviceSize size;
 
     size = (owl_u64)sli->vertices_capacity * sizeof(struct owl_model_vertex);
-    data = owl_renderer_dynamic_heap_alloc(r, size, &vdhr);
-    OWL_MEMCPY(data, sli->vertices, size);
+    owl_renderer_dynamic_heap_submit(r, size, sli->vertices, &vdhr);
 
     size = (owl_u64)sli->indices_capacity * sizeof(owl_u32);
-    data = owl_renderer_dynamic_heap_alloc(r, size, &idhr);
-    OWL_MEMCPY(data, sli->indices, size);
+    owl_renderer_dynamic_heap_submit(r, size, sli->indices, &idhr);
   }
 
   {
@@ -473,7 +472,7 @@ OWL_INTERNAL void owl_model_load_buffers_(struct owl_renderer *r,
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, &requirements, OWL_MEMORY_VISIBILITY_GPU_ONLY);
+        r, &requirements, OWL_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK(
         vkAllocateMemory(r->device, &memory, NULL, &model->vertices_memory));
@@ -509,7 +508,7 @@ OWL_INTERNAL void owl_model_load_buffers_(struct owl_renderer *r,
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        r, &requirements, OWL_MEMORY_VISIBILITY_GPU_ONLY);
+        r, &requirements, OWL_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK(
         vkAllocateMemory(r->device, &memory, NULL, &model->indices_memory));
@@ -544,6 +543,7 @@ OWL_INTERNAL void owl_model_load_buffers_(struct owl_renderer *r,
                       1, &copy);
     }
 
+    owl_renderer_flush_dynamic_heap(r);
     owl_renderer_deinit_single_use_command_buffer(r, &sucb);
   }
 
@@ -707,7 +707,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *r,
       memory.allocationSize = skin_data->ssbo_buffer_aligned_size *
                               OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
       memory.memoryTypeIndex = owl_renderer_find_memory_type(
-          r, &requirements, OWL_MEMORY_VISIBILITY_CPU_ONLY);
+          r, &requirements, OWL_MEMORY_VISIBILITY_CPU_COHERENT);
 
       OWL_VK_CHECK(
           vkAllocateMemory(r->device, &memory, NULL, &skin_data->ssbo_memory));
