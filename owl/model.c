@@ -1100,7 +1100,8 @@ owl_model_node_update_joints_(struct owl_renderer const *r,
   for (i = 0; i < skin_data->joints_count; ++i) {
     owl_model_resolve_node_matrix_(model, &skin_data->joints[i], tmp);
     owl_m4_multiply(tmp, skin_data->inverse_bind_matrices[i], tmp);
-    owl_m4_multiply(inverse, tmp, skin_data->ssbo_datas[r->frame][i]);
+    owl_m4_multiply(inverse, tmp,
+                    skin_data->ssbo_datas[r->active_frame_index][i]);
   }
 
 end:

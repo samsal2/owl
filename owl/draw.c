@@ -299,7 +299,8 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
   vkCmdBindDescriptorSets(
       r->active_frame_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
       r->active_pipeline_layout, 3, 1,
-      &model->skins[node_data->skin.slot].ssbo_sets[r->frame], 0, 0);
+      &model->skins[node_data->skin.slot].ssbo_sets[r->active_frame_index], 0,
+      0);
 
   for (i = 0; i < mesh_data->primitives_count; ++i) {
     VkDescriptorSet sets[3];

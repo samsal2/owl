@@ -201,7 +201,7 @@ struct owl_renderer {
   /* ====================================================================== */
   /* frame submition resources */
   /* ====================================================================== */
-  int frame;
+  int active_frame_index;
   VkCommandBuffer active_frame_command_buffer;
   VkCommandPool active_frame_command_pool;
 

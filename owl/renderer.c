@@ -4,7 +4,6 @@
 #include "draw.h"
 #include "internal.h"
 #include "model.h"
-#include "vulkan/vulkan_core.h"
 
 #define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
 #define OWL_MAX_VERTEX_INPUT_ATTRIBUTES_COUNT 8
@@ -1679,7 +1678,7 @@ owl_renderer_init_frame_commands_(struct owl_renderer *r) {
   owl_u32 i;
   enum owl_code code = OWL_SUCCESS;
 
-  r->frame = 0;
+  r->active_frame_index = 0;
 
   for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
     VkCommandPoolCreateInfo command_pool;
@@ -1706,8 +1705,9 @@ owl_renderer_init_frame_commands_(struct owl_renderer *r) {
                                           &r->frame_command_buffers[i]));
   }
 
-  r->active_frame_command_buffer = r->frame_command_buffers[r->frame];
-  r->active_frame_command_pool = r->frame_command_pools[r->frame];
+  r->active_frame_command_buffer =
+      r->frame_command_buffers[r->active_frame_index];
+  r->active_frame_command_pool = r->frame_command_pools[r->active_frame_index];
 
   return code;
 }
@@ -1755,9 +1755,11 @@ owl_renderer_init_frame_sync_(struct owl_renderer *r) {
                                    &r->image_available_semaphores[i]));
   }
 
-  r->active_in_flight_fence = r->in_flight_fences[r->frame];
-  r->active_render_done_semaphore = r->render_done_semaphores[r->frame];
-  r->active_image_available_semaphore = r->image_available_semaphores[r->frame];
+  r->active_in_flight_fence = r->in_flight_fences[r->active_frame_index];
+  r->active_render_done_semaphore =
+      r->render_done_semaphores[r->active_frame_index];
+  r->active_image_available_semaphore =
+      r->image_available_semaphores[r->active_frame_index];
 
   return code;
 }
@@ -1968,10 +1970,13 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
     }
   }
 
-  r->active_dynamic_heap_data = r->dynamic_heap_datas[r->frame];
-  r->active_dynamic_heap_buffer = r->dynamic_heap_buffers[r->frame];
-  r->active_dynamic_heap_pvm_set = r->dynamic_heap_pvm_sets[r->frame];
-  r->active_dynamic_heap_pvl_set = r->dynamic_heap_pvl_sets[r->frame];
+  r->active_dynamic_heap_data = r->dynamic_heap_datas[r->active_frame_index];
+  r->active_dynamic_heap_buffer =
+      r->dynamic_heap_buffers[r->active_frame_index];
+  r->active_dynamic_heap_pvm_set =
+      r->dynamic_heap_pvm_sets[r->active_frame_index];
+  r->active_dynamic_heap_pvl_set =
+      r->dynamic_heap_pvl_sets[r->active_frame_index];
 
   return code;
 }
@@ -2577,6 +2582,9 @@ OWL_INTERNAL void owl_renderer_begin_recording_(struct owl_renderer *r) {
 enum owl_code owl_renderer_begin_frame(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
+  if (OWL_SUCCESS != (code = owl_renderer_invalidate_dynamic_heap(r)))
+    goto end;
+
   if (OWL_SUCCESS != (code = owl_renderer_acquire_next_image_(r)))
     goto end;
 
@@ -2639,24 +2647,34 @@ owl_renderer_present_swapchain_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL void owl_renderer_update_frame_actives_(struct owl_renderer *r) {
-  if (OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT == ++r->frame)
-    r->frame = 0;
+  if (OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT == ++r->active_frame_index)
+    r->active_frame_index = 0;
 
-  r->active_in_flight_fence = r->in_flight_fences[r->frame];
-  r->active_image_available_semaphore = r->image_available_semaphores[r->frame];
-  r->active_render_done_semaphore = r->render_done_semaphores[r->frame];
-  r->active_frame_command_buffer = r->frame_command_buffers[r->frame];
-  r->active_frame_command_pool = r->frame_command_pools[r->frame];
-  r->active_dynamic_heap_data = r->dynamic_heap_datas[r->frame];
-  r->active_dynamic_heap_buffer = r->dynamic_heap_buffers[r->frame];
-  r->active_dynamic_heap_pvm_set = r->dynamic_heap_pvm_sets[r->frame];
-  r->active_dynamic_heap_pvl_set = r->dynamic_heap_pvl_sets[r->frame];
+  r->active_in_flight_fence = r->in_flight_fences[r->active_frame_index];
+  r->active_image_available_semaphore =
+      r->image_available_semaphores[r->active_frame_index];
+  r->active_render_done_semaphore =
+      r->render_done_semaphores[r->active_frame_index];
+
+  r->active_frame_command_buffer =
+      r->frame_command_buffers[r->active_frame_index];
+  r->active_frame_command_pool = r->frame_command_pools[r->active_frame_index];
+
+  r->active_dynamic_heap_data = r->dynamic_heap_datas[r->active_frame_index];
+  r->active_dynamic_heap_buffer =
+      r->dynamic_heap_buffers[r->active_frame_index];
+  r->active_dynamic_heap_pvm_set =
+      r->dynamic_heap_pvm_sets[r->active_frame_index];
+  r->active_dynamic_heap_pvl_set =
+      r->dynamic_heap_pvl_sets[r->active_frame_index];
 }
 
 enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
-  owl_renderer_flush_dynamic_heap(r);
+  if (OWL_SUCCESS != (code = owl_renderer_flush_dynamic_heap(r)))
+    goto end;
+
   owl_renderer_end_recording_(r);
   owl_renderer_submit_graphics_(r);
 
@@ -2664,7 +2682,6 @@ enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
     goto end;
 
   owl_renderer_update_frame_actives_(r);
-  owl_renderer_invalidate_dynamic_heap(r);
   owl_renderer_clear_dynamic_heap_offset(r);
   owl_renderer_clear_garbage_(r);
 
@@ -2679,7 +2696,8 @@ enum owl_code owl_renderer_flush_dynamic_heap(struct owl_renderer *r) {
   range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
   range.pNext = NULL;
   range.memory = r->dynamic_heap_memory;
-  range.offset = r->dynamic_heap_buffer_aligned_size * (owl_u64)r->frame;
+  range.offset =
+      r->dynamic_heap_buffer_aligned_size * (owl_u64)r->active_frame_index;
   range.size = r->dynamic_heap_buffer_size;
 
   OWL_VK_CHECK(vkFlushMappedMemoryRanges(r->device, 1, &range));
@@ -2694,7 +2712,8 @@ enum owl_code owl_renderer_invalidate_dynamic_heap(struct owl_renderer *r) {
   range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
   range.pNext = NULL;
   range.memory = r->dynamic_heap_memory;
-  range.offset = r->dynamic_heap_buffer_aligned_size * (owl_u64)r->frame;
+  range.offset =
+      r->dynamic_heap_buffer_aligned_size * (owl_u64)r->active_frame_index;
   range.size = r->dynamic_heap_buffer_size;
 
   OWL_VK_CHECK(vkInvalidateMappedMemoryRanges(r->device, 1, &range));
