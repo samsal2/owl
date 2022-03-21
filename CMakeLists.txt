@@ -27,6 +27,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/external/glfw)
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/stb)
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/cgltf)
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/freetype)
+add_subdirectory(${PROJECT_SOURCE_DIR}/external/imgui)
 
 if (OWL_BUILD_EXAMPLES)
   add_subdirectory(examples)
@@ -100,18 +101,23 @@ set(OWL_C_CLANG_RELEASE_COMPILE_FLAGS
 set(OWL_C_CLANG_DEBUG_LINK_FLAGS
 		-fsanitize=address
 		-fsanitize=undefined
-		-fsanitize=bounds
-)
+		-fsanitize=bounds)
+
+set(OWL_CXX_CLANG_BASE_COMPILE_FLAGS
+    -O3)
 	
-target_compile_features(owl PRIVATE c_std_90)
+target_compile_features(owl PRIVATE c_std_99)
+target_compile_features(owl PRIVATE cxx_std_11)
 
 target_compile_options(owl PRIVATE
-	"$<$<C_COMPILER_ID:Clang,AppleClang>:"
+	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<COMPILE_LANGUAGE:C>>:"
     "${OWL_C_CLANG_BASE_COMPILE_FLAGS}>"
-	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Debug>>:"
+	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Debug>,$<COMPILE_LANGUAGE:C>>:"
     "${OWL_C_CLANG_DEBUG_COMPILE_FLAGS}>"
-	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Release>>:"
-    "${OWL_C_CLANG_RELEASE_COMPILE_FLAGS}>")
+	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Release>,$<COMPILE_LANGUAGE:C>>:"
+    "${OWL_C_CLANG_RELEASE_COMPILE_FLAGS}>"
+	"$<$<AND:$<CXX_COMPILER_ID:Clang,AppleClang>,$<COMPILE_LANGUAGE:CXX>>:"
+    "${OWL_CXX_CLANG_BASE_COMPILE_FLAGS}>")
 
 target_link_options(owl PUBLIC
 	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Debug>>:"

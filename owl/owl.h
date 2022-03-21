@@ -6,6 +6,7 @@
 #include "draw.h"
 #include "font.h"
 #include "image.h"
+#include "imgui.h"
 #include "internal.h"
 #include "model.h"
 #include "renderer.h"

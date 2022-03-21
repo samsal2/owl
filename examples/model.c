@@ -1,3 +1,4 @@
+#include "owl/imgui.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -9,8 +10,6 @@ static struct owl_renderer *renderer;
 static struct owl_model *model;
 static struct owl_draw_model_command model_command;
 static struct owl_camera camera;
-static struct owl_font *font;
-static struct owl_draw_text_command text_command;
 
 #define MODEL_PATH "../../assets/CesiumMan.gltf"
 #define FONT_PATH "../../assets/Inconsolata-Regular.ttf"
@@ -49,13 +48,7 @@ int main(void) {
   OWL_V3_SET(0.0F, 0.0F, 1.9F, model_command.light);
   model_command.model = model;
 
-  font = OWL_MALLOC(sizeof(*font));
-  CHECK(owl_font_init(renderer, 64, FONT_PATH, font));
-
-  OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
-  OWL_V3_SET(-0.3F, -0.3F, 0.90, text_command.position);
-  text_command.font = font;
-  text_command.scale = 0.05F;
+  CHECK(owl_imgui_init(client, renderer, FONT_PATH));
 
   while (!owl_client_is_done(client)) {
     OWL_V2_COPY(client->cursor_position, model_command.light);
@@ -64,6 +57,7 @@ int main(void) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);
       owl_camera_set_ratio(&camera, renderer->framebuffer_ratio);
+      owl_imgui_handle_resize(client, renderer);
       continue;
     }
 
@@ -74,24 +68,24 @@ int main(void) {
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MODEL);
     owl_submit_draw_model_command(renderer, &camera, &model_command);
 
-#if 1
-    text_command.text = fmtfps(client->fps);
-    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
-    owl_submit_draw_text_command(renderer, &camera, &text_command);
-#endif
+    owl_imgui_begin_frame(renderer);
+    owl_imgui_begin("hello world");
+    owl_imgui_text("hi %.8f", (float)client->dt_time_stamp);
+    owl_imgui_end();
+    owl_imgui_end_frame(renderer);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_info(client, &renderer_info);
       owl_renderer_resize_swapchain(&renderer_info, renderer);
       owl_camera_set_ratio(&camera, renderer->framebuffer_ratio);
+      owl_imgui_handle_resize(client, renderer);
       continue;
     }
 
     owl_client_poll_events(client);
   }
 
-  owl_font_deinit(renderer, font);
-  OWL_FREE(font);
+  owl_imgui_deinit(renderer);
 
   owl_camera_deinit(&camera);
 

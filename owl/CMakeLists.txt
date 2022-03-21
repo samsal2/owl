@@ -9,6 +9,8 @@ target_sources(${PROJECT_NAME} PRIVATE
   internal.h
   image.c
   image.h
+  imgui.cpp
+  imgui.h
   renderer.c
   renderer.h
   vector_math.c
