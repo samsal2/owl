@@ -149,7 +149,7 @@ void owl_client_deinit(struct owl_client *c) {
   glfwTerminate();
 }
 
-#ifdef OWL_ENABLE_VALIDATION
+#if defined(OWL_ENABLE_VALIDATION)
 
 #define OWL_MAX_EXTENSIONS 64
 
@@ -184,7 +184,7 @@ owl_client_fill_renderer_init_info(struct owl_client const *c,
   rii->surface_user_data = c;
   rii->create_surface = owl_vk_surface_init_callback_;
 
-#ifdef OWL_ENABLE_VALIDATION
+#if defined(OWL_ENABLE_VALIDATION)
   rii->instance_extensions = owl_get_debug_instance_extensions_(&count);
 #else  /* OWL_ENABLE_VALIDATION */
   rii->instance_extensions = glfwGetRequiredInstanceExtensions(&count);

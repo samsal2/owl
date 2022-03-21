@@ -94,10 +94,10 @@ struct owl_renderer {
   VkPhysicalDevice physical_device;
   VkDevice device;
 
-  owl_u32 graphics_family_index;
+  owl_u32 graphics_queue_family_index;
   VkQueue graphics_queue;
 
-  owl_u32 present_family_index;
+  owl_u32 present_queue_family_index;
   VkQueue present_queue;
 
   VkPhysicalDeviceFeatures device_features;

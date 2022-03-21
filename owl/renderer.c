@@ -17,7 +17,7 @@
 OWL_GLOBAL char const *const g_required_device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-#ifdef OWL_ENABLE_VALIDATION
+#if defined(OWL_ENABLE_VALIDATION)
 
 OWL_GLOBAL char const *const g_debug_validation_layers[] = {
     "VK_LAYER_KHRONOS_validation"};
@@ -43,7 +43,7 @@ owl_renderer_init_instance_(struct owl_renderer_init_info const *rii,
   instance.pNext = NULL;
   instance.flags = 0;
   instance.pApplicationInfo = &app;
-#ifdef OWL_ENABLE_VALIDATION
+#if defined(OWL_ENABLE_VALIDATION)
   instance.enabledLayerCount = OWL_ARRAY_SIZE(g_debug_validation_layers);
   instance.ppEnabledLayerNames = g_debug_validation_layers;
 #else  /* OWL_ENABLE_VALIDATION */
@@ -62,7 +62,7 @@ OWL_INTERNAL void owl_renderer_deinit_instance_(struct owl_renderer *r) {
   vkDestroyInstance(r->instance, NULL);
 }
 
-#ifdef OWL_ENABLE_VALIDATION
+#if defined(OWL_ENABLE_VALIDATION)
 
 #define OWL_GET_INSTANCE_PROC_ADDR(i, fn)                                      \
   ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))
@@ -277,8 +277,8 @@ owl_renderer_select_physical_device_(struct owl_renderer *r) {
     if (!has_present_modes)
       continue;
 
-    if (!owl_renderer_query_families_(r, &r->graphics_family_index,
-                                      &r->present_family_index))
+    if (!owl_renderer_query_families_(r, &r->graphics_queue_family_index,
+                                      &r->present_queue_family_index))
       continue;
 
     vkGetPhysicalDeviceFeatures(r->physical_device, &r->device_features);
@@ -381,7 +381,8 @@ end:
 }
 
 OWL_INTERNAL owl_u32 owl_get_queue_count_(struct owl_renderer const *r) {
-  return r->graphics_family_index == r->present_family_index ? 1 : 2;
+  return r->graphics_queue_family_index == r->present_queue_family_index ? 1
+                                                                         : 2;
 }
 
 OWL_INTERNAL enum owl_code owl_renderer_init_device_(struct owl_renderer *r) {
@@ -411,14 +412,14 @@ OWL_INTERNAL enum owl_code owl_renderer_init_device_(struct owl_renderer *r) {
   queues[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queues[0].pNext = NULL;
   queues[0].flags = 0;
-  queues[0].queueFamilyIndex = r->graphics_family_index;
+  queues[0].queueFamilyIndex = r->graphics_queue_family_index;
   queues[0].queueCount = 1;
   queues[0].pQueuePriorities = &priority;
 
   queues[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queues[1].pNext = NULL;
   queues[1].flags = 0;
-  queues[1].queueFamilyIndex = r->present_family_index;
+  queues[1].queueFamilyIndex = r->present_queue_family_index;
   queues[1].queueCount = 1;
   queues[1].pQueuePriorities = &priority;
 
@@ -435,8 +436,10 @@ OWL_INTERNAL enum owl_code owl_renderer_init_device_(struct owl_renderer *r) {
 
   OWL_VK_CHECK(vkCreateDevice(r->physical_device, &device, NULL, &r->device));
 
-  vkGetDeviceQueue(r->device, r->graphics_family_index, 0, &r->graphics_queue);
-  vkGetDeviceQueue(r->device, r->present_family_index, 0, &r->present_queue);
+  vkGetDeviceQueue(r->device, r->graphics_queue_family_index, 0,
+                   &r->graphics_queue);
+  vkGetDeviceQueue(r->device, r->present_queue_family_index, 0,
+                   &r->present_queue);
 
 end:
   return code;
@@ -502,8 +505,8 @@ owl_renderer_init_swapchain_(struct owl_renderer_init_info const *rii,
   VkSwapchainCreateInfoKHR swapchain;
   enum owl_code code = OWL_SUCCESS;
 
-  families[0] = r->graphics_family_index;
-  families[1] = r->present_family_index;
+  families[0] = r->graphics_queue_family_index;
+  families[1] = r->present_queue_family_index;
 
   r->swapchain_extent.width = (owl_u32)rii->framebuffer_width;
   r->swapchain_extent.height = (owl_u32)rii->framebuffer_height;
@@ -535,7 +538,7 @@ owl_renderer_init_swapchain_(struct owl_renderer_init_info const *rii,
   swapchain.clipped = VK_TRUE;
   swapchain.oldSwapchain = VK_NULL_HANDLE;
 
-  if (r->graphics_family_index == r->present_family_index) {
+  if (r->graphics_queue_family_index == r->present_queue_family_index) {
     swapchain.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     swapchain.queueFamilyIndexCount = 0;
     swapchain.pQueueFamilyIndices = NULL;
@@ -623,7 +626,7 @@ owl_renderer_init_common_pools_(struct owl_renderer *r) {
     pool.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     pool.pNext = NULL;
     pool.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    pool.queueFamilyIndex = r->graphics_family_index;
+    pool.queueFamilyIndex = r->graphics_queue_family_index;
 
     OWL_VK_CHECK(vkCreateCommandPool(r->device, &pool, NULL,
                                      &r->transient_command_pool));
@@ -1686,7 +1689,7 @@ owl_renderer_init_frame_commands_(struct owl_renderer *r) {
     command_pool.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     command_pool.pNext = NULL;
     command_pool.flags = 0;
-    command_pool.queueFamilyIndex = r->graphics_family_index;
+    command_pool.queueFamilyIndex = r->graphics_queue_family_index;
 
     OWL_VK_CHECK(vkCreateCommandPool(r->device, &command_pool, NULL,
                                      &r->frame_command_pools[i]));
@@ -2114,7 +2117,7 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *rii,
   if (OWL_SUCCESS != (code = owl_renderer_init_instance_(rii, r)))
     goto end;
 
-#ifdef OWL_ENABLE_VALIDATION
+#if defined(OWL_ENABLE_VALIDATION)
   if (OWL_SUCCESS != (code = owl_renderer_init_debug_(r)))
     goto end_err_deinit_instance;
 
@@ -2223,7 +2226,7 @@ end_err_deinit_device:
 end_err_deinit_surface:
   owl_renderer_deinit_surface_(r);
 
-#ifdef OWL_ENABLE_VALIDATION
+#if defined(OWL_ENABLE_VALIDATION)
 end_err_deinit_debug:
   owl_renderer_deinit_debug_(r);
 #endif /* OWL_ENABLE_VALIDATION */
@@ -2256,7 +2259,7 @@ void owl_renderer_deinit(struct owl_renderer *r) {
   owl_renderer_deinit_device_(r);
   owl_renderer_deinit_surface_(r);
 
-#ifdef OWL_ENABLE_VALIDATION
+#if defined(OWL_ENABLE_VALIDATION)
   owl_renderer_deinit_debug_(r);
 #endif /* OWL_ENABLE_VALIDATION */
 
