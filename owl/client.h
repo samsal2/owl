@@ -18,11 +18,11 @@ enum owl_button_state {
   OWL_BUTTON_STATE_REPEAT
 };
 
-enum owl_mouse_key {
-  OWL_MOUSE_KEY_LEFT,
-  OWL_MOUSE_KEY_MIDDLE,
-  OWL_MOUSE_KEY_RIGHT,
-  OWL_MOUSE_KEY_COUNT
+enum owl_mouse_button {
+  OWL_MOUSE_BUTTON_LEFT,
+  OWL_MOUSE_BUTTON_MIDDLE,
+  OWL_MOUSE_BUTTON_RIGHT,
+  OWL_MOUSE_BUTTON_COUNT
 };
 
 enum owl_keyboard_key {
@@ -160,12 +160,13 @@ struct owl_client {
   int window_width;
   int window_height;
   double fps;
-  double dt_time_stamp;
+  double d_time_stamp;
   double time_stamp;
   double previous_time_stamp;
+  owl_v2 d_cursor_position;
   owl_v2 cursor_position;
   owl_v2 previous_cursor_position;
-  enum owl_button_state mouse_keys[OWL_MOUSE_KEY_COUNT];
+  enum owl_button_state mouse_buttons[OWL_MOUSE_BUTTON_COUNT];
   enum owl_button_state keyboard_keys[OWL_KEYBOARD_KEY_LAST];
 };
 

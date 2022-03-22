@@ -47,7 +47,12 @@ int main(void) {
   CHECK(owl_model_init(renderer, MODEL_PATH, model));
 
   OWL_V3_SET(0.0F, 0.0F, 1.9F, model_command.light);
-  model_command.model = model;
+  OWL_M4_IDENTITY(model_command.model);
+  {
+    owl_v3 offset = {0.0F, 0.0F, -1.0F};
+    owl_m4_translate(offset, model_command.model);
+  }
+  model_command.skin = model;
 
   font = OWL_MALLOC(sizeof(*font));
   CHECK(owl_font_init(renderer, 64, FONT_PATH, font));
@@ -67,8 +72,18 @@ int main(void) {
       continue;
     }
 
+    if (OWL_BUTTON_STATE_PRESS ==
+        client->mouse_buttons[OWL_MOUSE_BUTTON_LEFT]) {
+      owl_v3 side = {1.0F, 0.0F, 0.0F};
+      owl_v3 up = {0.0F, 1.0F, 0.0F};
+      owl_m4_rotate(model_command.model, -client->d_cursor_position[1] * 2.0F,
+                    side, model_command.model);
+      owl_m4_rotate(model_command.model, client->d_cursor_position[0] * 2.0F,
+                    up, model_command.model);
+    }
+
 #if 1
-    owl_model_update_animation(renderer, model, client->dt_time_stamp);
+    owl_model_update_animation(renderer, model, client->d_time_stamp);
 #endif
 
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MODEL);

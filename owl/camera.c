@@ -17,7 +17,7 @@ enum owl_code owl_camera_init(struct owl_camera *c) {
   owl_m4_perspective(c->fov, c->ratio, c->near, c->far, c->projection);
 #endif
 
-  OWL_V3_SET(0.0F, 0.0F, 3.0F, c->eye);
+  OWL_V3_SET(0.0F, 0.0F, 5.0F, c->eye);
   OWL_V3_SET(0.0F, 0.0F, 1.0F, c->direction);
   OWL_V3_SET(0.0F, 1.0F, 0.0F, c->up);
   owl_m4_look(c->eye, c->direction, c->up, c->view);

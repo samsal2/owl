@@ -10,16 +10,16 @@
 #include <vulkan/vulkan.h>
 /* clang-format on */
 
-OWL_INTERNAL enum owl_mouse_key owl_as_mouse_key_(int type) {
+OWL_INTERNAL enum owl_mouse_button owl_as_mouse_key_(int type) {
   switch (type) {
   case GLFW_MOUSE_BUTTON_LEFT:
-    return OWL_MOUSE_KEY_LEFT;
+    return OWL_MOUSE_BUTTON_LEFT;
 
   case GLFW_MOUSE_BUTTON_MIDDLE:
-    return OWL_MOUSE_KEY_MIDDLE;
+    return OWL_MOUSE_BUTTON_MIDDLE;
 
   case GLFW_MOUSE_BUTTON_RIGHT:
-    return OWL_MOUSE_KEY_RIGHT;
+    return OWL_MOUSE_BUTTON_RIGHT;
 
   default:
     return 0;
@@ -66,16 +66,19 @@ OWL_INTERNAL void owl_cursor_position_callback_(GLFWwindow *window, double x,
 
   c->cursor_position[0] = 2.0F * ((float)x / (float)c->window_width) - 1.0F;
   c->cursor_position[1] = 2.0F * ((float)y / (float)c->window_height) - 1.0F;
+
+  OWL_V2_SUB(c->cursor_position, c->previous_cursor_position,
+             c->d_cursor_position);
 }
 
 OWL_INTERNAL void owl_mouse_key_callback_(GLFWwindow *window, int button,
                                           int action, int modifiers) {
   struct owl_client *c = glfwGetWindowUserPointer(window);
-  enum owl_mouse_key key = owl_as_mouse_key_(button);
+  enum owl_mouse_button key = owl_as_mouse_key_(button);
 
   OWL_UNUSED(modifiers);
 
-  c->mouse_keys[key] = owl_as_mouse_state_(action);
+  c->mouse_buttons[key] = owl_as_mouse_state_(action);
 }
 
 OWL_INTERNAL void owl_keyboard_key_callback_(GLFWwindow *glfw, int key,
@@ -128,14 +131,14 @@ enum owl_code owl_client_init(struct owl_client_init_info const *cii,
   OWL_V2_ZERO(c->previous_cursor_position);
   OWL_V2_ZERO(c->cursor_position);
 
-  for (i = 0; i < OWL_MOUSE_KEY_COUNT; ++i)
-    c->mouse_keys[i] = OWL_BUTTON_STATE_NONE;
+  for (i = 0; i < OWL_MOUSE_BUTTON_COUNT; ++i)
+    c->mouse_buttons[i] = OWL_BUTTON_STATE_NONE;
 
   for (i = 0; i < OWL_KEYBOARD_KEY_LAST; ++i)
     c->keyboard_keys[i] = OWL_BUTTON_STATE_NONE;
 
   c->fps = 60.0F;
-  c->dt_time_stamp = 0.16667;
+  c->d_time_stamp = 0.16667;
   c->time_stamp = 0.0;
   c->previous_time_stamp = 0.0;
   c->title = cii->title;
@@ -204,6 +207,6 @@ void owl_client_poll_events(struct owl_client *c) {
   glfwPollEvents();
   c->previous_time_stamp = c->time_stamp;
   c->time_stamp = glfwGetTime();
-  c->dt_time_stamp = c->time_stamp - c->previous_time_stamp;
-  c->fps = 1.0F / c->dt_time_stamp;
+  c->d_time_stamp = c->time_stamp - c->previous_time_stamp;
+  c->fps = 1.0F / c->d_time_stamp;
 }

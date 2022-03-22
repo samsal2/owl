@@ -288,14 +288,15 @@ int main(void) {
 #if 1
 
     if (UNSELECTED == selected &&
-        OWL_BUTTON_STATE_PRESS == client->mouse_keys[OWL_MOUSE_KEY_LEFT])
+        OWL_BUTTON_STATE_PRESS == client->mouse_buttons[OWL_MOUSE_BUTTON_LEFT])
       selected = select_particle_at(client->cursor_position, &cloth);
 
     if (UNSELECTED != selected)
       change_particle_position(selected, client->cursor_position, &cloth);
 
     if (UNSELECTED != selected &&
-        OWL_BUTTON_STATE_RELEASE == client->mouse_keys[OWL_MOUSE_KEY_LEFT])
+        OWL_BUTTON_STATE_RELEASE ==
+            client->mouse_buttons[OWL_MOUSE_BUTTON_LEFT])
       selected = UNSELECTED;
 
 #endif
@@ -316,7 +317,7 @@ int main(void) {
     owl_submit_draw_basic_command(renderer, &camera, &cloth.command_);
 
     owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
-    text_command.text = fps_string(client->dt_time_stamp);
+    text_command.text = fps_string(client->d_time_stamp);
     owl_submit_draw_text_command(renderer, &camera, &text_command);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {

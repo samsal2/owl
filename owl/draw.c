@@ -245,7 +245,7 @@ end:
 }
 
 OWL_INTERNAL enum owl_code
-owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
+owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *c,
                        struct owl_draw_model_command const *command,
                        struct owl_model_node const *node) {
 
@@ -257,7 +257,7 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
   struct owl_model_push_constant push_constant;
   enum owl_code code = OWL_SUCCESS;
 
-  model = command->model;
+  model = command->skin;
   node_data = &model->nodes[node->slot];
 
   for (i = 0; i < node_data->children_count; ++i) {
@@ -275,22 +275,25 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera *c,
   if (!mesh_data->primitives_count)
     goto end;
 
+
+#if 0
+  OWL_M4_COPY(command->model, push_constant.model);
+  owl_m4_multiply(model->nodes[node->slot].matrix, push_constant.model, 
+                  push_constant.model);
+#else
   OWL_M4_COPY(model->nodes[node->slot].matrix, push_constant.model);
+#endif
 
-  /* HACK(samuel): invert the y coordinate */
-  push_constant.model[2][2] *= -1.0F;
-
-  /* HACK(samuel): manually change the offset */
-  {
-    owl_v3 offset = {0.0F, 0.0F, -1.0F};
-    owl_m4_translate(offset, push_constant.model);
-  }
 
   for (parent.slot = model->nodes[node->slot].parent.slot;
        OWL_MODEL_NODE_NO_PARENT_SLOT != parent.slot;
        parent.slot = model->nodes[parent.slot].parent.slot)
     owl_m4_multiply(model->nodes[parent.slot].matrix, push_constant.model,
                     push_constant.model);
+
+  owl_m4_multiply(command->model, push_constant.model, push_constant.model);
+
+
 
   vkCmdPushConstants(r->active_frame_command_buffer, r->active_pipeline_layout,
                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),
@@ -368,12 +371,13 @@ end:
 }
 
 enum owl_code
-owl_submit_draw_model_command(struct owl_renderer *r, struct owl_camera *c,
+owl_submit_draw_model_command(struct owl_renderer *r,
+                              struct owl_camera const *c,
                               struct owl_draw_model_command const *command) {
   int i;
   VkDeviceSize offset = 0;
   enum owl_code code = OWL_SUCCESS;
-  struct owl_model const *model = command->model;
+  struct owl_model const *model = command->skin;
 
   vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1,
                          &model->vertices_buffer, &offset);
@@ -381,7 +385,7 @@ owl_submit_draw_model_command(struct owl_renderer *r, struct owl_camera *c,
   vkCmdBindIndexBuffer(r->active_frame_command_buffer, model->indices_buffer, 0,
                        VK_INDEX_TYPE_UINT32);
 
-  for (i = 0; i < command->model->roots_count; ++i) {
+  for (i = 0; i < command->skin->roots_count; ++i) {
     code = owl_model_submit_node_(r, c, command, &model->roots[i]);
 
     if (OWL_SUCCESS != code)

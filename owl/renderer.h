@@ -176,6 +176,7 @@ struct owl_renderer {
   /* ====================================================================== */
   VkPipelineLayout common_pipeline_layout;
   VkPipelineLayout model_pipeline_layout;
+  VkPipelineLayout grid_pipeline_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */
