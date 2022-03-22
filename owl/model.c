@@ -41,9 +41,9 @@ OWL_INTERNAL enum owl_code owl_model_load_images_(struct owl_renderer *r,
     if (OWL_SUCCESS != (code = owl_fix_uri_(gltf->images[i].uri, uri)))
       goto end;
 
-    iii.source_type = OWL_IMAGE_SOURCE_TYPE_FILE;
-    iii.path = uri;
-    iii.use_default_sampler = 1;
+    iii.source_type = OWL_IMAGE_INIT_INFO_SOURCE_TYPE_PATH;
+    iii.source_storage.as_path.path = uri;
+    iii.sampler_type = OWL_IMAGE_INIT_INFO_SAMPLER_TYPE_DEFAULT;
 
     if (OWL_SUCCESS != (code = owl_image_init(r, &iii, &image->image)))
       goto end;

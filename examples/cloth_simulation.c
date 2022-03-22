@@ -263,15 +263,15 @@ int main(void) {
   renderer = OWL_MALLOC(sizeof(*renderer));
   TEST(owl_renderer_init(&renderer_info, renderer));
 
-  image_info.source_type = OWL_IMAGE_SOURCE_TYPE_FILE;
-  image_info.path = TPATH;
-  image_info.use_default_sampler = 0;
-  image_info.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-  image_info.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-  image_info.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-  image_info.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  image_info.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  image_info.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  image_info.source_type = OWL_IMAGE_INIT_INFO_SOURCE_TYPE_PATH;
+  image_info.source_storage.as_path.path = TPATH;
+  image_info.sampler_type = OWL_IMAGE_INIT_INFO_SAMPLER_TYPE_SPECIFY;
+  image_info.sampler_storage.as_specify.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
+  image_info.sampler_storage.as_specify.min_filter = OWL_SAMPLER_FILTER_LINEAR;
+  image_info.sampler_storage.as_specify.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
+  image_info.sampler_storage.as_specify.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  image_info.sampler_storage.as_specify.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
+  image_info.sampler_storage.as_specify.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
   TEST(owl_image_init(renderer, &image_info, &image));
 
   TEST(owl_font_init(renderer, 128, FONTPATH, &font));

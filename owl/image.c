@@ -113,11 +113,13 @@ enum owl_code owl_image_init(struct owl_renderer *r,
   /* get the required image properties (width, height, format, mips) based one
    * the source type, and submit the data into the dynamic heap  */
   switch (iii->source_type) {
-  case OWL_IMAGE_SOURCE_TYPE_FILE: {
+  case OWL_IMAGE_INIT_INFO_SOURCE_TYPE_PATH: {
     struct owl_image_info ii;
     VkDeviceSize size;
 
-    if (OWL_SUCCESS != (code = owl_image_load_info(iii->path, &ii)))
+    code = owl_image_load_info(iii->source_storage.as_path.path, &ii);
+
+    if (OWL_SUCCESS != code)
       goto end;
 
     format = ii.format;
@@ -133,14 +135,15 @@ enum owl_code owl_image_init(struct owl_renderer *r,
 
   } break;
 
-  case OWL_IMAGE_SOURCE_TYPE_DATA: {
+  case OWL_IMAGE_INIT_INFO_SOURCE_TYPE_DATA: {
     VkDeviceSize size;
 
-    format = iii->format;
-    width = (owl_u32)iii->width;
-    height = (owl_u32)iii->height;
-    size = owl_pixel_format_size_(iii->format) * width * height;
-    code = owl_renderer_dynamic_heap_submit(r, size, iii->data, &dhr);
+    format = iii->source_storage.as_data.format;
+    width = (owl_u32)iii->source_storage.as_data.width;
+    height = (owl_u32)iii->source_storage.as_data.height;
+    size = owl_pixel_format_size_(format) * width * height;
+    code = owl_renderer_dynamic_heap_submit(
+        r, size, iii->source_storage.as_data.data, &dhr);
 
     if (OWL_SUCCESS != code)
       goto end;
@@ -302,7 +305,8 @@ enum owl_code owl_image_init(struct owl_renderer *r,
   {
     VkSamplerCreateInfo sampler;
 
-    if (iii->use_default_sampler) {
+    switch (iii->sampler_type) {
+    case OWL_IMAGE_INIT_INFO_SAMPLER_TYPE_DEFAULT:
       sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
       sampler.pNext = NULL;
       sampler.flags = 0;
@@ -321,16 +325,24 @@ enum owl_code owl_image_init(struct owl_renderer *r,
       sampler.maxLod = mips; /* VK_LOD_CLAMP_NONE */
       sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
       sampler.unnormalizedCoordinates = VK_FALSE;
-    } else {
+      break;
+
+    case OWL_IMAGE_INIT_INFO_SAMPLER_TYPE_SPECIFY:
       sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
       sampler.pNext = NULL;
       sampler.flags = 0;
-      sampler.magFilter = owl_as_vk_filter_(iii->mag_filter);
-      sampler.minFilter = owl_as_vk_filter_(iii->min_filter);
-      sampler.mipmapMode = owl_as_vk_mip_mode_(iii->mip_mode);
-      sampler.addressModeU = owl_as_vk_addr_mode_(iii->wrap_u);
-      sampler.addressModeV = owl_as_vk_addr_mode_(iii->wrap_v);
-      sampler.addressModeW = owl_as_vk_addr_mode_(iii->wrap_w);
+      sampler.magFilter =
+          owl_as_vk_filter_(iii->sampler_storage.as_specify.mag_filter);
+      sampler.minFilter =
+          owl_as_vk_filter_(iii->sampler_storage.as_specify.min_filter);
+      sampler.mipmapMode =
+          owl_as_vk_mip_mode_(iii->sampler_storage.as_specify.mip_mode);
+      sampler.addressModeU =
+          owl_as_vk_addr_mode_(iii->sampler_storage.as_specify.wrap_u);
+      sampler.addressModeV =
+          owl_as_vk_addr_mode_(iii->sampler_storage.as_specify.wrap_v);
+      sampler.addressModeW =
+          owl_as_vk_addr_mode_(iii->sampler_storage.as_specify.wrap_w);
       sampler.mipLodBias = 0.0F;
       sampler.anisotropyEnable = VK_TRUE;
       sampler.maxAnisotropy = OWL_MAX_ANISOTROPY;
@@ -340,6 +352,7 @@ enum owl_code owl_image_init(struct owl_renderer *r,
       sampler.maxLod = mips; /* VK_LOD_CLAMP_NONE */
       sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
       sampler.unnormalizedCoordinates = VK_FALSE;
+      break;
     }
 
     OWL_VK_CHECK(vkCreateSampler(r->device, &sampler, NULL,

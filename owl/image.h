@@ -6,7 +6,6 @@
 #include <vulkan/vulkan.h>
 
 struct owl_renderer;
-struct owl_dynamic_heap_reference;
 
 struct owl_image {
   int slot;
@@ -34,27 +33,51 @@ enum owl_sampler_addr_mode {
   OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER
 };
 
-enum owl_image_source_type {
-  OWL_IMAGE_SOURCE_TYPE_FILE,
-  OWL_IMAGE_SOURCE_TYPE_DATA
+enum owl_image_init_info_source_type {
+  OWL_IMAGE_INIT_INFO_SOURCE_TYPE_PATH,
+  OWL_IMAGE_INIT_INFO_SOURCE_TYPE_DATA
 };
 
-struct owl_image_init_info {
-  enum owl_image_source_type source_type;
-  char const *path;
+enum owl_image_init_info_sampler_type {
+  OWL_IMAGE_INIT_INFO_SAMPLER_TYPE_DEFAULT,
+  OWL_IMAGE_INIT_INFO_SAMPLER_TYPE_SPECIFY
+};
 
+struct owl_image_init_info_source_path {
+  char const *path;
+};
+
+struct owl_image_init_info_source_data {
+  owl_byte const *data;
   int width;
   int height;
   enum owl_pixel_format format;
-  owl_byte const *data;
+};
 
-  int use_default_sampler;
+union owl_image_init_info_source_storage {
+  struct owl_image_init_info_source_path as_path;
+  struct owl_image_init_info_source_data as_data;
+};
+
+struct owl_image_init_info_sampler_specify {
   enum owl_sampler_mip_mode mip_mode;
   enum owl_sampler_filter min_filter;
   enum owl_sampler_filter mag_filter;
   enum owl_sampler_addr_mode wrap_u;
   enum owl_sampler_addr_mode wrap_v;
   enum owl_sampler_addr_mode wrap_w;
+};
+
+union owl_image_init_info_sampler_storage {
+  struct owl_image_init_info_sampler_specify as_specify;
+};
+
+struct owl_image_init_info {
+  enum owl_image_init_info_source_type source_type;
+  union owl_image_init_info_source_storage source_storage;
+
+  enum owl_image_init_info_sampler_type sampler_type;
+  union owl_image_init_info_sampler_storage sampler_storage;
 };
 
 struct owl_image_info {
@@ -72,7 +95,7 @@ enum owl_code owl_image_init(struct owl_renderer *r,
                              struct owl_image_init_info const *iii,
                              struct owl_image *i);
 
-void owl_image_deinit(struct owl_renderer *r, struct owl_image *image);
+void owl_image_deinit(struct owl_renderer *r, struct owl_image *i);
 
 struct owl_vk_image_transition_info {
   owl_u32 mips;
