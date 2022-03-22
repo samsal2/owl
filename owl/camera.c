@@ -8,7 +8,7 @@ enum owl_code owl_camera_init(struct owl_camera *c) {
 
   c->near = 0.01F;
   c->far = 10.0F;
-  c->fov = OWL_DEG_TO_RAD(45.0F);
+  c->fov = OWL_DEG_AS_RAD(45.0F);
   c->ratio = 1.0F;
 
 #if 0

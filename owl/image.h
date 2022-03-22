@@ -33,9 +33,9 @@ enum owl_sampler_addr_mode {
   OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER
 };
 
-enum owl_image_init_info_source_type {
-  OWL_IMAGE_INIT_INFO_SOURCE_TYPE_PATH,
-  OWL_IMAGE_INIT_INFO_SOURCE_TYPE_DATA
+enum owl_image_init_info_src_type {
+  OWL_IMAGE_INIT_INFO_SRC_TYPE_PATH,
+  OWL_IMAGE_INIT_INFO_SRC_TYPE_DATA
 };
 
 enum owl_image_init_info_sampler_type {
@@ -43,20 +43,20 @@ enum owl_image_init_info_sampler_type {
   OWL_IMAGE_INIT_INFO_SAMPLER_TYPE_SPECIFY
 };
 
-struct owl_image_init_info_source_path {
+struct owl_image_init_info_src_path {
   char const *path;
 };
 
-struct owl_image_init_info_source_data {
+struct owl_image_init_info_src_data {
   owl_byte const *data;
   int width;
   int height;
   enum owl_pixel_format format;
 };
 
-union owl_image_init_info_source_storage {
-  struct owl_image_init_info_source_path as_path;
-  struct owl_image_init_info_source_data as_data;
+union owl_image_init_info_src_storage {
+  struct owl_image_init_info_src_path as_path;
+  struct owl_image_init_info_src_data as_data;
 };
 
 struct owl_image_init_info_sampler_specify {
@@ -73,23 +73,25 @@ union owl_image_init_info_sampler_storage {
 };
 
 struct owl_image_init_info {
-  enum owl_image_init_info_source_type source_type;
-  union owl_image_init_info_source_storage source_storage;
+  enum owl_image_init_info_src_type src_type;
+  union owl_image_init_info_src_storage src_storage;
 
   enum owl_image_init_info_sampler_type sampler_type;
   union owl_image_init_info_sampler_storage sampler_storage;
 };
 
-struct owl_image_info {
+struct owl_image_info_from_file {
   owl_byte *data;
   int width;
   int height;
   enum owl_pixel_format format;
 };
 
-enum owl_code owl_image_load_info(char const *path, struct owl_image_info *ii);
+enum owl_code
+owl_image_init_info_from_file(char const *path,
+                              struct owl_image_info_from_file *iiff);
 
-void owl_image_free_info(struct owl_image_info *ii);
+void owl_image_deinit_info_from_file(struct owl_image_info_from_file *iiff);
 
 enum owl_code owl_image_init(struct owl_renderer *r,
                              struct owl_image_init_info const *iii,
@@ -100,8 +102,8 @@ void owl_image_deinit(struct owl_renderer *r, struct owl_image *i);
 struct owl_vk_image_transition_info {
   owl_u32 mips;
   owl_u32 layers;
-  VkImageLayout from;
-  VkImageLayout to;
+  VkImageLayout src;
+  VkImageLayout dst;
   VkImage image;
   VkCommandBuffer command_buffer;
 };

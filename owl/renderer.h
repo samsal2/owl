@@ -297,7 +297,7 @@ void *owl_renderer_dynamic_heap_alloc(struct owl_renderer *r, owl_u64 size,
 
 enum owl_code
 owl_renderer_dynamic_heap_submit(struct owl_renderer *r, owl_u64 size,
-                                 void const *source,
+                                 void const *src,
                                  struct owl_dynamic_heap_reference *dhr);
 
 enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,

@@ -74,11 +74,11 @@ OWL_INTERNAL enum owl_code owl_font_init_atlas_(struct owl_renderer *r,
   enum owl_code code = OWL_SUCCESS;
   struct owl_image_init_info iii;
 
-  iii.source_type = OWL_IMAGE_INIT_INFO_SOURCE_TYPE_DATA;
-  iii.source_storage.as_data.data = data;
-  iii.source_storage.as_data.width = font->atlas_width;
-  iii.source_storage.as_data.height = font->atlas_height;
-  iii.source_storage.as_data.format = OWL_PIXEL_FORMAT_R8_UNORM;
+  iii.src_type = OWL_IMAGE_INIT_INFO_SRC_TYPE_DATA;
+  iii.src_storage.as_data.data = data;
+  iii.src_storage.as_data.width = font->atlas_width;
+  iii.src_storage.as_data.height = font->atlas_height;
+  iii.src_storage.as_data.format = OWL_PIXEL_FORMAT_R8_UNORM;
   iii.sampler_type = OWL_IMAGE_INIT_INFO_SAMPLER_TYPE_SPECIFY;
   iii.sampler_storage.as_specify.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
   iii.sampler_storage.as_specify.min_filter = OWL_SAMPLER_FILTER_LINEAR;

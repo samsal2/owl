@@ -633,25 +633,26 @@ owl_renderer_init_common_pools_(struct owl_renderer *r) {
   }
 
   {
+    /* NOTE: 256 ought to be enough... */
     VkDescriptorPoolSize sizes[6];
     VkDescriptorPoolCreateInfo pool;
 
-    sizes[0].descriptorCount = 16;
+    sizes[0].descriptorCount = 256;
     sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
-    sizes[1].descriptorCount = 16;
+    sizes[1].descriptorCount = 256;
     sizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
 
-    sizes[2].descriptorCount = 16;
+    sizes[2].descriptorCount = 256;
     sizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 
-    sizes[3].descriptorCount = 16;
+    sizes[3].descriptorCount = 256;
     sizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
-    sizes[4].descriptorCount = 16;
+    sizes[4].descriptorCount = 256;
     sizes[4].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-    sizes[5].descriptorCount = 16;
+    sizes[5].descriptorCount = 256;
     sizes[5].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
     pool.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -2415,7 +2416,7 @@ end:
 
 enum owl_code
 owl_renderer_dynamic_heap_submit(struct owl_renderer *r, VkDeviceSize size,
-                                 void const *source,
+                                 void const *src,
                                  struct owl_dynamic_heap_reference *dhr) {
 
   owl_byte *data;
@@ -2426,7 +2427,7 @@ owl_renderer_dynamic_heap_submit(struct owl_renderer *r, VkDeviceSize size,
     goto end;
   }
 
-  OWL_MEMCPY(data, source, size);
+  OWL_MEMCPY(data, src, size);
 
 end:
   return code;

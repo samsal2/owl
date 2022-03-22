@@ -112,38 +112,38 @@ enum owl_code owl_image_init(struct owl_renderer *r,
 
   /* get the required image properties (width, height, format, mips) based one
    * the source type, and submit the data into the dynamic heap  */
-  switch (iii->source_type) {
-  case OWL_IMAGE_INIT_INFO_SOURCE_TYPE_PATH: {
-    struct owl_image_info ii;
+  switch (iii->src_type) {
+  case OWL_IMAGE_INIT_INFO_SRC_TYPE_PATH: {
+    struct owl_image_info_from_file iiff;
     VkDeviceSize size;
 
-    code = owl_image_load_info(iii->source_storage.as_path.path, &ii);
+    code = owl_image_init_info_from_file(iii->src_storage.as_path.path, &iiff);
 
     if (OWL_SUCCESS != code)
       goto end;
 
-    format = ii.format;
-    width = (owl_u32)ii.width;
-    height = (owl_u32)ii.height;
-    size = owl_pixel_format_size_(ii.format) * width * height;
-    code = owl_renderer_dynamic_heap_submit(r, size, ii.data, &dhr);
+    format = iiff.format;
+    width = (owl_u32)iiff.width;
+    height = (owl_u32)iiff.height;
+    size = owl_pixel_format_size_(iiff.format) * width * height;
+    code = owl_renderer_dynamic_heap_submit(r, size, iiff.data, &dhr);
 
-    owl_image_free_info(&ii);
+    owl_image_deinit_info_from_file(&iiff);
 
     if (OWL_SUCCESS != code)
       goto end;
 
   } break;
 
-  case OWL_IMAGE_INIT_INFO_SOURCE_TYPE_DATA: {
+  case OWL_IMAGE_INIT_INFO_SRC_TYPE_DATA: {
     VkDeviceSize size;
 
-    format = iii->source_storage.as_data.format;
-    width = (owl_u32)iii->source_storage.as_data.width;
-    height = (owl_u32)iii->source_storage.as_data.height;
+    format = iii->src_storage.as_data.format;
+    width = (owl_u32)iii->src_storage.as_data.width;
+    height = (owl_u32)iii->src_storage.as_data.height;
     size = owl_pixel_format_size_(format) * width * height;
     code = owl_renderer_dynamic_heap_submit(
-        r, size, iii->source_storage.as_data.data, &dhr);
+        r, size, iii->src_storage.as_data.data, &dhr);
 
     if (OWL_SUCCESS != code)
       goto end;
@@ -252,8 +252,8 @@ enum owl_code owl_image_init(struct owl_renderer *r,
 
       iti.mips = mips;
       iti.layers = 1;
-      iti.from = VK_IMAGE_LAYOUT_UNDEFINED;
-      iti.to = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      iti.src = VK_IMAGE_LAYOUT_UNDEFINED;
+      iti.dst = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
       iti.image = r->image_manager_images[i->slot];
       iti.command_buffer = sucb.command_buffer;
 
@@ -418,14 +418,17 @@ void owl_image_deinit(struct owl_renderer *r, struct owl_image *i) {
   vkDestroyImage(r->device, r->image_manager_images[i->slot], NULL);
 }
 
-enum owl_code owl_image_load_info(char const *path, struct owl_image_info *ii) {
+enum owl_code
+owl_image_init_info_from_file(char const *path,
+                              struct owl_image_info_from_file *iiff) {
   int ch;
   enum owl_code code = OWL_SUCCESS;
 
-  ii->format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
-  ii->data = stbi_load(path, &ii->width, &ii->height, &ch, STBI_rgb_alpha);
+  iiff->format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
+  iiff->data =
+      stbi_load(path, &iiff->width, &iiff->height, &ch, STBI_rgb_alpha);
 
-  if (!ii->data) {
+  if (!iiff->data) {
     code = OWL_ERROR_BAD_ALLOC;
     goto end;
   }
@@ -434,8 +437,8 @@ end:
   return code;
 }
 
-void owl_image_free_info(struct owl_image_info *ii) {
-  stbi_image_free(ii->data);
+void owl_image_deinit_info_from_file(struct owl_image_info_from_file *iiff) {
+  stbi_image_free(iiff->data);
 }
 
 enum owl_code
@@ -449,8 +452,8 @@ owl_vk_image_transition(struct owl_vk_image_transition_info const *viti) {
   barrier.pNext = NULL;
   /* image_memory_barrier.srcAccessMask = Defined later */
   /* image_memory_barrier.dstAccessMask = Defined later */
-  barrier.oldLayout = viti->from;
-  barrier.newLayout = viti->to;
+  barrier.oldLayout = viti->src;
+  barrier.newLayout = viti->dst;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.image = viti->image;
@@ -459,22 +462,22 @@ owl_vk_image_transition(struct owl_vk_image_transition_info const *viti) {
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount = viti->layers;
 
-  if (VK_IMAGE_LAYOUT_UNDEFINED == viti->from &&
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == viti->to) {
+  if (VK_IMAGE_LAYOUT_UNDEFINED == viti->src &&
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == viti->dst) {
     barrier.srcAccessMask = VK_ACCESS_NONE_KHR;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
     src = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
-  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == viti->from &&
-             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == viti->to) {
+  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == viti->src &&
+             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == viti->dst) {
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
     src = VK_PIPELINE_STAGE_TRANSFER_BIT;
     dst = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-  } else if (VK_IMAGE_LAYOUT_UNDEFINED == viti->from &&
-             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == viti->to) {
+  } else if (VK_IMAGE_LAYOUT_UNDEFINED == viti->src &&
+             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == viti->dst) {
     barrier.srcAccessMask = VK_ACCESS_NONE_KHR;
     barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
@@ -487,11 +490,11 @@ owl_vk_image_transition(struct owl_vk_image_transition_info const *viti) {
     goto end;
   }
 
-  if (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == viti->to) {
+  if (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == viti->dst) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == viti->to) {
+  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == viti->dst) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  } else if (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == viti->to) {
+  } else if (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == viti->dst) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   } else {
     OWL_ASSERT(0 && "Invalid arguments");
@@ -546,6 +549,7 @@ owl_vk_image_generate_mips(struct owl_vk_image_mip_info const *vimi) {
                          &barrier);
     {
       VkImageBlit blit;
+
       blit.srcOffsets[0].x = 0;
       blit.srcOffsets[0].y = 0;
       blit.srcOffsets[0].z = 0;

@@ -1,11 +1,11 @@
-#ifndef OWL_VECTOR_MATH_H_
-#define OWL_VECTOR_MATH_H_
+#ifndef OWL_VECdstR_MATH_H_
+#define OWL_VECdstR_MATH_H_
 
 #include "types.h"
 
 /* math */
-#define OWL_DEG_TO_RAD(a) ((a)*0.01745329252F)
-#define OWL_RAD_TO_DEG(a) ((a)*57.2957795131F)
+#define OWL_DEG_AS_RAD(a) ((a)*0.01745329252F)
+#define OWL_RAD_AS_DEG(a) ((a)*57.2957795131F)
 
 #define OWL_V2_ZERO(v)                                                         \
   do {                                                                         \
@@ -297,8 +297,8 @@ void owl_m4_make_rotate(float angle, owl_v3 const axis, owl_m4 out);
 
 void owl_m4_translate(owl_v3 const v, owl_m4 out);
 
-void owl_m4_ortho(float left, float right, float bottom, float top, float near,
-                  float far, owl_m4 out);
+void owl_m4_ortho(float left, float right, float botdstm, float dstp,
+                  float near, float far, owl_m4 out);
 
 void owl_m4_perspective(float fov, float ratio, float near, float far,
                         owl_m4 out);
@@ -315,21 +315,21 @@ void owl_m4_multiply(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out);
 
 void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out);
 
-float owl_v2_distance(owl_v2 const from, owl_v2 const to);
+float owl_v2_distance(owl_v2 const src, owl_v2 const dst);
 
-float owl_v3_distance(owl_v3 const from, owl_v3 const to);
+float owl_v3_distance(owl_v3 const src, owl_v3 const dst);
 
-void owl_v3_mix(owl_v3 const from, owl_v3 const to, float weight, owl_v3 out);
+void owl_v3_mix(owl_v3 const src, owl_v3 const dst, float weight, owl_v3 out);
 
-void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out);
+void owl_v4_mix(owl_v4 const src, owl_v4 const dst, float weight, owl_v4 out);
 
-void owl_q4_as_m4(owl_q4 const from, owl_m4 out);
+void owl_q4_as_m4(owl_q4 const src, owl_m4 out);
 
-void owl_m4_scale(owl_m4 const from, owl_v3 const scale, owl_m4 out);
+void owl_m4_scale(owl_m4 const src, owl_v3 const scale, owl_m4 out);
 
-void owl_v4_quat_slerp(owl_v4 const from, owl_v4 const to, float t, owl_v4 out);
+void owl_v4_quat_slerp(owl_v4 const src, owl_v4 const dst, float t, owl_v4 out);
 
-void owl_m4_inverse(owl_m4 const mat, owl_m4 dest);
+void owl_m4_inverse(owl_m4 const mat, owl_m4 dst);
 
 #ifndef NDEBUG
 
