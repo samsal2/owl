@@ -108,21 +108,6 @@ struct owl_renderer_image_init_desc {
   enum owl_renderer_sampler_addr_mode sampler_wrap_w;
 };
 
-struct owl_renderer_image_transition_desc {
-  owl_u32 mips;
-  owl_u32 layers;
-  VkImageLayout src;
-  VkImageLayout dst;
-  struct owl_renderer_image image;
-};
-
-struct owl_renderer_image_generate_mips_desc {
-  owl_i32 width;
-  owl_i32 height;
-  owl_u32 mips;
-  struct owl_renderer_image image;
-};
-
 struct owl_renderer {
   /* ====================================================================== */
   /* dims */

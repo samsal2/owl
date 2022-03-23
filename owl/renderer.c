@@ -2955,8 +2955,22 @@ OWL_INTERNAL owl_u32 owl_calculate_mip_levels_(owl_u32 width, owl_u32 height) {
   return (owl_u32)(floor(log2(OWL_MAX(width, height))) + 1);
 }
 
+struct owl_renderer_image_transition_desc {
+  owl_u32 mips;
+  owl_u32 layers;
+  VkImageLayout src;
+  VkImageLayout dst;
+};
+
+struct owl_renderer_image_generate_mips_desc {
+  owl_i32 width;
+  owl_i32 height;
+  owl_u32 mips;
+};
+
 OWL_INTERNAL enum owl_code owl_renderer_image_transition_(
     struct owl_renderer const *r,
+    struct owl_renderer_image const *ri,
     struct owl_renderer_image_transition_desc const *ritd) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src = VK_PIPELINE_STAGE_NONE_KHR;
@@ -2971,7 +2985,7 @@ OWL_INTERNAL enum owl_code owl_renderer_image_transition_(
   barrier.newLayout = ritd->dst;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = r->image_manager_images[ritd->image.slot];
+  barrier.image = r->image_manager_images[ri->slot];
   barrier.subresourceRange.baseMipLevel = 0;
   barrier.subresourceRange.levelCount = ritd->mips;
   barrier.subresourceRange.baseArrayLayer = 0;
@@ -3026,6 +3040,7 @@ end:
 
 OWL_INTERNAL enum owl_code owl_renderer_image_generate_mips_(
     struct owl_renderer const *r,
+    struct owl_renderer_image const *ri,
     struct owl_renderer_image_generate_mips_desc const *rigmd) {
   owl_u32 i;
   owl_i32 width;
@@ -3047,7 +3062,7 @@ OWL_INTERNAL enum owl_code owl_renderer_image_generate_mips_(
   /* image_memory_barrier.newLayout =  later */
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = r->image_manager_images[rigmd->image.slot];
+  barrier.image = r->image_manager_images[ri->slot];
   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount = 1;
@@ -3088,9 +3103,9 @@ OWL_INTERNAL enum owl_code owl_renderer_image_generate_mips_(
       blit.dstSubresource.layerCount = 1;
 
       vkCmdBlitImage(r->immidiate_command_buffer,
-                     r->image_manager_images[rigmd->image.slot],
+                     r->image_manager_images[ri->slot],
                      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                     r->image_manager_images[rigmd->image.slot],
+                     r->image_manager_images[ri->slot],
                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
                      VK_FILTER_LINEAR);
     }
@@ -3276,9 +3291,8 @@ owl_renderer_init_image(struct owl_renderer *r,
     itd.layers = 1;
     itd.src = VK_IMAGE_LAYOUT_UNDEFINED;
     itd.dst = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    itd.image.slot = ri->slot;
 
-    owl_renderer_image_transition_(r, &itd);
+    owl_renderer_image_transition_(r, ri, &itd);
   }
 
   {
@@ -3309,9 +3323,8 @@ owl_renderer_init_image(struct owl_renderer *r,
     rigmd.width = (owl_i32)width;
     rigmd.height = (owl_i32)height;
     rigmd.mips = mips;
-    rigmd.image.slot = ri->slot;
 
-    owl_renderer_image_generate_mips_(r, &rigmd);
+    owl_renderer_image_generate_mips_(r, ri, &rigmd);
   }
 
   if (OWL_SUCCESS != (code = owl_renderer_flush_dynamic_heap(r)))
