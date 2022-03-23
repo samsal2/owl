@@ -2955,7 +2955,7 @@ OWL_INTERNAL owl_u32 owl_calculate_mip_levels_(owl_u32 width, owl_u32 height) {
   return (owl_u32)(floor(log2(OWL_MAX(width, height))) + 1);
 }
 
-enum owl_code owl_renderer_image_transition(
+OWL_INTERNAL enum owl_code owl_renderer_image_transition_(
     struct owl_renderer const *r,
     struct owl_renderer_image_transition_desc const *ritd) {
   VkImageMemoryBarrier barrier;
@@ -3024,7 +3024,7 @@ end:
   return code;
 }
 
-enum owl_code owl_renderer_image_generate_mips(
+OWL_INTERNAL enum owl_code owl_renderer_image_generate_mips_(
     struct owl_renderer const *r,
     struct owl_renderer_image_generate_mips_desc const *rigmd) {
   owl_u32 i;
@@ -3278,7 +3278,7 @@ owl_renderer_init_image(struct owl_renderer *r,
     itd.dst = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     itd.image.slot = ri->slot;
 
-    owl_renderer_image_transition(r, &itd);
+    owl_renderer_image_transition_(r, &itd);
   }
 
   {
@@ -3311,7 +3311,7 @@ owl_renderer_init_image(struct owl_renderer *r,
     rigmd.mips = mips;
     rigmd.image.slot = ri->slot;
 
-    owl_renderer_image_generate_mips(r, &rigmd);
+    owl_renderer_image_generate_mips_(r, &rigmd);
   }
 
   if (OWL_SUCCESS != (code = owl_renderer_flush_dynamic_heap(r)))
