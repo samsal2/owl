@@ -352,7 +352,7 @@ enum owl_code owl_renderer_flush_dynamic_heap(struct owl_renderer *r);
 
 enum owl_code owl_renderer_invalidate_dynamic_heap(struct owl_renderer *r);
 
-owl_i32 owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
+owl_b32 owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
 
 void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
 

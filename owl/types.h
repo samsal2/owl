@@ -13,6 +13,8 @@ typedef int16_t owl_i16;
 typedef int32_t owl_i32;
 typedef int64_t owl_i64;
 
+typedef int32_t owl_b32;
+
 typedef unsigned char owl_byte;
 
 typedef float owl_v2[2];

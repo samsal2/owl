@@ -174,7 +174,7 @@ end:
 }
 
 OWL_INTERNAL
-owl_i32 owl_renderer_query_families_(struct owl_renderer const *r,
+owl_b32 owl_renderer_query_families_(struct owl_renderer const *r,
                                      owl_u32 *graphics_family_index,
                                      owl_u32 *present_family_index) {
   owl_i32 found;
@@ -2495,7 +2495,7 @@ end:
   return code;
 }
 
-owl_i32
+owl_b32
 owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r) {
   return 0 == r->dynamic_heap_offset;
 }
@@ -2969,8 +2969,7 @@ struct owl_renderer_image_generate_mips_desc {
 };
 
 OWL_INTERNAL enum owl_code owl_renderer_image_transition_(
-    struct owl_renderer const *r,
-    struct owl_renderer_image const *ri,
+    struct owl_renderer const *r, struct owl_renderer_image const *ri,
     struct owl_renderer_image_transition_desc const *ritd) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src = VK_PIPELINE_STAGE_NONE_KHR;
@@ -3039,8 +3038,7 @@ end:
 }
 
 OWL_INTERNAL enum owl_code owl_renderer_image_generate_mips_(
-    struct owl_renderer const *r,
-    struct owl_renderer_image const *ri,
+    struct owl_renderer const *r, struct owl_renderer_image const *ri,
     struct owl_renderer_image_generate_mips_desc const *rigmd) {
   owl_u32 i;
   owl_i32 width;
@@ -3102,12 +3100,11 @@ OWL_INTERNAL enum owl_code owl_renderer_image_generate_mips_(
       blit.dstSubresource.baseArrayLayer = 0;
       blit.dstSubresource.layerCount = 1;
 
-      vkCmdBlitImage(r->immidiate_command_buffer,
-                     r->image_manager_images[ri->slot],
-                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                     r->image_manager_images[ri->slot],
-                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
-                     VK_FILTER_LINEAR);
+      vkCmdBlitImage(
+          r->immidiate_command_buffer, r->image_manager_images[ri->slot],
+          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+          r->image_manager_images[ri->slot],
+          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
     }
 
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
