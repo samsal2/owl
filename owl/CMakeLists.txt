@@ -7,8 +7,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   font.h
   internal.c
   internal.h
-  image.c
-  image.h
   renderer.c
   renderer.h
   vector_math.c

@@ -36,34 +36,34 @@ OWL_INTERNAL void owl_decrement_ft_library_count_(void) {
 
 OWL_INTERNAL void owl_font_calc_dims_(FT_Face face, owl_i32 *width,
                                       owl_i32 *height) {
-  owl_i32i;
+  owl_i32 i;
 
   *width = 0;
   *height = 0;
 
   for (i = OWL_FIRST_CHAR; i < OWL_FONT_GLYPHS_COUNT; ++i) {
-    FT_Load_Char(face, (unsigned)i, FT_LOAD_BITMAP_METRICS_ONLY);
+    FT_Load_Char(face, (owl_u32)i, FT_LOAD_BITMAP_METRICS_ONLY);
 
     *width += (int)face->glyph->bitmap.width + OWL_FONT_X_OFFSET_PAD;
     *height = OWL_MAX(*height, (int)face->glyph->bitmap.rows);
   }
 }
 
-OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face, owl_i32x_offset,
-                                              owl_i32atlas_width,
-                                              owl_i32atlas_height,
+OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face, owl_i32 x_offset,
+                                              owl_i32 atlas_width,
+                                              owl_i32 atlas_height,
                                               owl_byte *data) {
-  owl_i32bx; /* bitmap x position */
+  owl_i32 bx; /* bitmap x position */
 
   OWL_UNUSED(atlas_height);
 
   for (bx = 0; bx < (int)face->glyph->bitmap.width; ++bx) {
-    owl_i32by;                       /* bitmap y position, shared by data*/
-    owl_i32const dx = x_offset + bx; /* atlas x position */
+    owl_i32 by;                       /* bitmap y position, shared by data*/
+    owl_i32 const dx = x_offset + bx; /* atlas x position */
 
     for (by = 0; by < (int)face->glyph->bitmap.rows; ++by) {
-      owl_i32const dw = atlas_width;                    /* data width */
-      owl_i32const bw = (int)face->glyph->bitmap.width; /* buf width */
+      owl_i32 const dw = atlas_width;                    /* data width */
+      owl_i32 const bw = (int)face->glyph->bitmap.width; /* buf width */
 
       data[by * dw + dx] = face->glyph->bitmap.buffer[by * bw + bx];
     }
@@ -74,30 +74,30 @@ OWL_INTERNAL enum owl_code owl_font_init_atlas_(struct owl_renderer *r,
                                                 owl_byte const *data,
                                                 struct owl_font *font) {
   enum owl_code code = OWL_SUCCESS;
-  struct owl_image_init_info iii;
+  struct owl_renderer_image_init_desc riid;
 
-  iii.src_type = OWL_IMAGE_INIT_INFO_SRC_TYPE_DATA;
-  iii.src_storage.as_data.data = data;
-  iii.src_storage.as_data.width = font->atlas_width;
-  iii.src_storage.as_data.height = font->atlas_height;
-  iii.src_storage.as_data.format = OWL_PIXEL_FORMAT_R8_UNORM;
-  iii.sampler_type = OWL_IMAGE_INIT_INFO_SAMPLER_TYPE_SPECIFY;
-  iii.sampler_storage.as_specify.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-  iii.sampler_storage.as_specify.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-  iii.sampler_storage.as_specify.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-  iii.sampler_storage.as_specify.wrap_u = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  iii.sampler_storage.as_specify.wrap_v = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  iii.sampler_storage.as_specify.wrap_w = OWL_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  riid.source_type = OWL_RENDERER_IMAGE_SOURCE_TYPE_DATA;
+  riid.source_data = data;
+  riid.source_data_width = font->atlas_width;
+  riid.source_data_height = font->atlas_height;
+  riid.source_data_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
+  riid.use_default_sampler = 0;
+  riid.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
+  riid.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
+  riid.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
+  riid.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  riid.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  riid.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
 
-  code = owl_image_init(r, &iii, &font->atlas);
+  code = owl_renderer_init_image(r, &riid, &font->atlas);
 
   return code;
 }
 
-enum owl_code owl_font_init(struct owl_renderer *r, owl_i32size,
+enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
                             char const *path, struct owl_font *font) {
-  owl_i32i;
-  owl_i32x;
+  owl_i32 i;
+  owl_i32 x;
   owl_byte *data;
   FT_Face face;
   enum owl_code code = OWL_SUCCESS;
@@ -168,6 +168,6 @@ end:
 }
 
 void owl_font_deinit(struct owl_renderer *r, struct owl_font *font) {
-  owl_image_deinit(r, &font->atlas);
+  owl_renderer_deinit_image(r, &font->atlas);
   owl_decrement_ft_library_count_();
 }

@@ -251,36 +251,36 @@ void owl_m4_multiply(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out) {
   out[3][3] = a03 * b30 + a13 * b31 + a23 * b32 + a33 * b33;
 }
 
-float owl_v2_distance(owl_v2 const from, owl_v2 const to) {
+float owl_v2_distance(owl_v2 const src, owl_v2 const dst) {
   owl_v2 diff;
-  OWL_V2_SUB(from, to, diff);
+  OWL_V2_SUB(src, dst, diff);
   return owl_v2_magnitude(diff);
 }
 
-float owl_v3_distance(owl_v3 const from, owl_v3 const to) {
+float owl_v3_distance(owl_v3 const src, owl_v3 const dst) {
   owl_v3 diff;
-  OWL_V3_SUB(from, to, diff);
+  OWL_V3_SUB(src, dst, diff);
   return owl_v3_magnitude(diff);
 }
 
-void owl_v3_mix(owl_v3 const from, owl_v3 const to, float weight, owl_v3 out) {
+void owl_v3_mix(owl_v3 const src, owl_v3 const dst, float weight, owl_v3 out) {
   owl_v3 s;
   owl_v3 v;
 
   OWL_V3_SET(weight, weight, weight, s);
-  OWL_V3_SUB(to, from, v);
+  OWL_V3_SUB(dst, src, v);
   OWL_V3_MUL(s, v, v);
-  OWL_V3_ADD(from, v, out);
+  OWL_V3_ADD(src, v, out);
 }
 
-void owl_v4_mix(owl_v4 const from, owl_v4 const to, float weight, owl_v4 out) {
+void owl_v4_mix(owl_v4 const src, owl_v4 const dst, float weight, owl_v4 out) {
   owl_v4 s;
   owl_v4 v;
 
   OWL_V4_SET(weight, weight, weight, weight, s);
-  OWL_V4_SUB(to, from, v);
+  OWL_V4_SUB(dst, src, v);
   OWL_V4_MUL(s, v, v);
-  OWL_V4_ADD(from, v, out);
+  OWL_V4_ADD(src, v, out);
 }
 
 void owl_q4_as_m4(owl_q4 const q, owl_m4 out) {
@@ -313,11 +313,11 @@ void owl_q4_as_m4(owl_q4 const q, owl_m4 out) {
   out[3][3] = 1.0F;
 }
 
-void owl_m4_scale(owl_m4 const from, owl_v3 const scale, owl_m4 out) {
+void owl_m4_scale(owl_m4 const src, owl_v3 const scale, owl_m4 out) {
   owl_m4 m;
   owl_v3 s;
 
-  OWL_M4_COPY(from, m);
+  OWL_M4_COPY(src, m);
   OWL_V3_COPY(scale, s);
 
   OWL_V4_SCALE(m[0], s[0], out[0]);
@@ -327,24 +327,24 @@ void owl_m4_scale(owl_m4 const from, owl_v3 const scale, owl_m4 out) {
   OWL_V4_COPY(m[3], out[3]);
 }
 
-OWL_INTERNAL void owl_v4_quat_lerp(owl_v4 const from, owl_v4 const to, float t,
+OWL_INTERNAL void owl_v4_quat_lerp(owl_v4 const src, owl_v4 const dst, float t,
                                    owl_v4 dest) {
   owl_v4 s, v;
 
-  /* from + s * (to - from) */
+  /* src + s * (to - src) */
   OWL_V4_SET(t, t, t, t, s);
-  OWL_V4_SUB(to, from, v);
+  OWL_V4_SUB(dst, src, v);
   OWL_V4_MUL(s, v, v);
-  OWL_V4_ADD(from, v, dest);
+  OWL_V4_ADD(src, v, dest);
 }
 
-void owl_v4_quat_slerp(owl_v4 const from, owl_v4 const to, float t,
+void owl_v4_quat_slerp(owl_v4 const src, owl_v4 const dst, float t,
                        owl_v4 out) {
   owl_v4 q1, q2;
   float cosTheta, sinTheta, angle;
 
-  cosTheta = OWL_V4_DOT(from, to);
-  OWL_V4_COPY(from, q1);
+  cosTheta = OWL_V4_DOT(src, dst);
+  OWL_V4_COPY(src, q1);
 
   if (OWL_FABSF(cosTheta) >= 1.0f) {
     OWL_V4_COPY(q1, out);
@@ -360,14 +360,14 @@ void owl_v4_quat_slerp(owl_v4 const from, owl_v4 const to, float t,
 
   /* LERP to avoid zero division */
   if (OWL_FABSF(sinTheta) < 0.001f) {
-    owl_v4_quat_lerp(from, to, t, out);
+    owl_v4_quat_lerp(src, dst, t, out);
     return;
   }
 
   /* SLERP */
   angle = OWL_ACOSF(cosTheta);
   OWL_V4_SCALE(q1, OWL_SINF((1.0F - t) * angle), q1);
-  OWL_V4_SCALE(to, OWL_SINF(t * angle), q2);
+  OWL_V4_SCALE(dst, OWL_SINF(t * angle), q2);
 
   OWL_V4_ADD(q1, q2, q1);
   OWL_V4_SCALE(q1, 1.0F / sinTheta, out);

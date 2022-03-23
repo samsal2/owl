@@ -1,8 +1,7 @@
 #ifndef OWL_MODEL_H_
 #define OWL_MODEL_H_
 
-#include "image.h"
-#include "owl/renderer.h"
+#include "renderer.h"
 #include "types.h"
 
 #define OWL_MODEL_NODE_NO_MESH_SLOT -1
@@ -119,7 +118,7 @@ struct owl_model_node_data {
 };
 
 struct owl_model_image_data {
-  struct owl_image image;
+  struct owl_renderer_image image;
 };
 
 struct owl_model_texture_data {

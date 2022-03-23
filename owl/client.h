@@ -3,9 +3,9 @@
 
 #include "types.h"
 
-struct owl_renderer_init_info;
+struct owl_renderer_init_desc;
 
-struct owl_client_init_info {
+struct owl_client_init_desc {
   char const *title;
   owl_i32 width;
   owl_i32 height;
@@ -170,17 +170,17 @@ struct owl_client {
   enum owl_button_state keyboard_keys[OWL_KEYBOARD_KEY_LAST];
 };
 
-enum owl_code owl_client_init(struct owl_client_init_info const *cii,
+enum owl_code owl_client_init(struct owl_client_init_desc const *cid,
                               struct owl_client *c);
 
 void owl_client_deinit(struct owl_client *c);
 
 enum owl_code
-owl_client_fill_renderer_init_info(struct owl_client const *c,
-                                   struct owl_renderer_init_info *rii);
+owl_client_fill_renderer_init_desc(struct owl_client const *c,
+                                   struct owl_renderer_init_desc *rid);
 
 void owl_client_poll_events(struct owl_client *c);
 
-owl_i32owl_client_is_done(struct owl_client *c);
+owl_i32 owl_client_is_done(struct owl_client *c);
 
 #endif

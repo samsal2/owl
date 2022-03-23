@@ -1,3 +1,4 @@
+#include "owl/renderer.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -28,7 +29,7 @@ struct particle {
 struct cloth {
   struct particle particles[PARTICLE_COUNT];
 
-  /* priv draw info */
+  /* priv draw desc */
   struct owl_draw_basic_command command_;
   owl_u32 indices_[IDXS_COUNT];
   struct owl_draw_vertex vertices_[PARTICLE_COUNT];
@@ -199,7 +200,7 @@ static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
   return current;
 }
 
-void init_cloth(struct cloth *cloth, struct owl_image *image) {
+void init_cloth(struct cloth *cloth, struct owl_renderer_image *image) {
   owl_v3 position;
 
   init_cloth_(cloth);
@@ -230,12 +231,12 @@ char const *fps_string(double time) {
     }                                                                          \
   } while (0)
 
-static struct owl_client_init_info client_info;
+static struct owl_client_init_desc client_desc;
 static struct owl_client *client;
-static struct owl_renderer_init_info renderer_info;
+static struct owl_renderer_init_desc renderer_desc;
 static struct owl_renderer *renderer;
-static struct owl_image_init_info image_info;
-static struct owl_image image;
+static struct owl_renderer_image_init_desc image_desc;
+static struct owl_renderer_image image;
 static struct cloth cloth;
 static struct owl_font font;
 static struct owl_draw_text_command text_command;
@@ -253,26 +254,20 @@ int main(void) {
   owl_v3 color;
   owl_u32 selected = UNSELECTED;
 
-  client_info.height = 600;
-  client_info.width = 600;
-  client_info.title = "cloth-sim";
+  client_desc.height = 600;
+  client_desc.width = 600;
+  client_desc.title = "cloth-sim";
   client = OWL_MALLOC(sizeof(*client));
-  TEST(owl_client_init(&client_info, client));
+  TEST(owl_client_init(&client_desc, client));
 
-  TEST(owl_client_fill_renderer_init_info(client, &renderer_info));
+  TEST(owl_client_fill_renderer_init_desc(client, &renderer_desc));
   renderer = OWL_MALLOC(sizeof(*renderer));
-  TEST(owl_renderer_init(&renderer_info, renderer));
+  TEST(owl_renderer_init(&renderer_desc, renderer));
 
-  image_info.src_type = OWL_IMAGE_INIT_INFO_SRC_TYPE_PATH;
-  image_info.src_storage.as_path.path = TPATH;
-  image_info.sampler_type = OWL_IMAGE_INIT_INFO_SAMPLER_TYPE_SPECIFY;
-  image_info.sampler_storage.as_specify.mip_mode = OWL_SAMPLER_MIP_MODE_LINEAR;
-  image_info.sampler_storage.as_specify.min_filter = OWL_SAMPLER_FILTER_LINEAR;
-  image_info.sampler_storage.as_specify.mag_filter = OWL_SAMPLER_FILTER_LINEAR;
-  image_info.sampler_storage.as_specify.wrap_u = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  image_info.sampler_storage.as_specify.wrap_v = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  image_info.sampler_storage.as_specify.wrap_w = OWL_SAMPLER_ADDR_MODE_REPEAT;
-  TEST(owl_image_init(renderer, &image_info, &image));
+  image_desc.source_type = OWL_RENDERER_IMAGE_SOURCE_TYPE_FILE;
+  image_desc.source_path = TPATH;
+  image_desc.use_default_sampler = 1;
+  TEST(owl_renderer_init_image(renderer, &image_desc, &image));
 
   TEST(owl_font_init(renderer, 128, FONTPATH, &font));
 
@@ -304,25 +299,25 @@ int main(void) {
     update_cloth(1.0F / 60.0F, &cloth);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
-      owl_client_fill_renderer_init_info(client, &renderer_info);
-      owl_renderer_resize_swapchain(&renderer_info, renderer);
+      owl_client_fill_renderer_init_desc(client, &renderer_desc);
+      owl_renderer_resize_swapchain(&renderer_desc, renderer);
       continue;
     }
 
 #if 1
-    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_MAIN);
+    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_MAIN);
 #else
-    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_WIRES);
+    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_WIRES);
 #endif
     owl_submit_draw_basic_command(renderer, &camera, &cloth.command_);
 
-    owl_renderer_bind_pipeline(renderer, OWL_PIPELINE_TYPE_FONT);
+    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_FONT);
     text_command.text = fps_string(client->d_time_stamp);
     owl_submit_draw_text_command(renderer, &camera, &text_command);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
-      owl_client_fill_renderer_init_info(client, &renderer_info);
-      owl_renderer_resize_swapchain(&renderer_info, renderer);
+      owl_client_fill_renderer_init_desc(client, &renderer_desc);
+      owl_renderer_resize_swapchain(&renderer_desc, renderer);
       continue;
     }
 
@@ -330,7 +325,7 @@ int main(void) {
   }
 
   owl_font_deinit(renderer, &font);
-  owl_image_deinit(renderer, &image);
+  owl_renderer_deinit_image(renderer, &image);
   owl_renderer_deinit(renderer);
   owl_client_deinit(client);
 }

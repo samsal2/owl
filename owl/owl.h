@@ -5,7 +5,6 @@
 #include "client.h"
 #include "draw.h"
 #include "font.h"
-#include "image.h"
 #include "internal.h"
 #include "model.h"
 #include "renderer.h"

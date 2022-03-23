@@ -1,7 +1,8 @@
 #ifndef OWL_FONT_H_
 #define OWL_FONT_H_
 
-#include "image.h"
+#include "renderer.h"
+#include "types.h"
 
 #define OWL_FONT_GLYPHS_COUNT 128
 
@@ -16,11 +17,11 @@ struct owl_font {
   owl_i32 size;
   owl_i32 atlas_width;
   owl_i32 atlas_height;
-  struct owl_image atlas;
+  struct owl_renderer_image atlas;
   struct owl_glyph glyphs[OWL_FONT_GLYPHS_COUNT];
 };
 
-enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32size,
+enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
                             char const *path, struct owl_font *font);
 
 void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font);
