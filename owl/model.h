@@ -146,9 +146,9 @@ struct owl_model_skin_data {
 
   VkDeviceMemory ssbo_memory;
 
-  VkDeviceSize ssbo_buffer_size;
-  VkDeviceSize ssbo_buffer_alignment;
-  VkDeviceSize ssbo_buffer_aligned_size;
+  owl_u64 ssbo_buffer_size;
+  owl_u64 ssbo_buffer_alignment;
+  owl_u64 ssbo_buffer_aligned_size;
 
   owl_m4 *ssbo_datas[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkBuffer ssbo_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];

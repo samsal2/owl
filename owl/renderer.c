@@ -8,9 +8,6 @@
 #include <math.h>
 #include <stb/stb_image.h>
 
-OWL_STATIC_ASSERT(sizeof(owl_u64) == sizeof(VkDeviceSize),
-                  "assuimg VkDeviceSize is the same as owl_u64");
-
 #define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
 #define OWL_MAX_VERTEX_INPUT_ATTRIBUTES_COUNT 8
 #define OWL_MAX_COLOR_ATTACHMENTS_COUNT 8
@@ -388,7 +385,8 @@ end:
   return code;
 }
 
-OWL_INTERNAL owl_u32 owl_renderer_get_queue_count_(struct owl_renderer const *r) {
+OWL_INTERNAL owl_u32
+owl_renderer_get_queue_count_(struct owl_renderer const *r) {
   return r->graphics_queue_family_index == r->present_queue_family_index ? 1
                                                                          : 2;
 }
@@ -1954,7 +1952,7 @@ OWL_INTERNAL void owl_renderer_deinit_garbage_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
+owl_renderer_init_dynamic_heap_(struct owl_renderer *r, owl_u64 size) {
   owl_u32 i;
   enum owl_code code = OWL_SUCCESS;
 
@@ -2405,9 +2403,9 @@ void owl_renderer_deinit(struct owl_renderer *r) {
 
 OWL_INTERNAL enum owl_code
 owl_renderer_reserve_dynamic_heap_memory_(struct owl_renderer *r,
-                                          VkDeviceSize size) {
+                                          owl_u64 size) {
   enum owl_code code = OWL_SUCCESS;
-  VkDeviceSize required = r->dynamic_heap_offset + size;
+  owl_u64 required = r->dynamic_heap_offset + size;
 
   if (required < r->dynamic_heap_buffer_size)
     goto end;
@@ -2514,7 +2512,7 @@ void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r) {
 }
 
 void *owl_renderer_dynamic_heap_alloc(
-    struct owl_renderer *r, VkDeviceSize size,
+    struct owl_renderer *r, owl_u64 size,
     struct owl_renderer_dynamic_heap_reference *rdhr) {
   owl_byte *data = NULL;
 
@@ -2537,7 +2535,7 @@ end:
 }
 
 enum owl_code owl_renderer_dynamic_heap_submit(
-    struct owl_renderer *r, VkDeviceSize size, void const *src,
+    struct owl_renderer *r, owl_u64 size, void const *src,
     struct owl_renderer_dynamic_heap_reference *rdhr) {
 
   owl_byte *data;
@@ -2919,7 +2917,7 @@ owl_renderer_sampler_addr_mode_as_vk_sampler_address_mode_(
   }
 }
 
-OWL_INTERNAL VkDeviceSize
+OWL_INTERNAL owl_u64
 owl_renderer_pixel_format_size(enum owl_renderer_pixel_format format) {
   switch (format) {
   case OWL_RENDERER_PIXEL_FORMAT_R8_UNORM:

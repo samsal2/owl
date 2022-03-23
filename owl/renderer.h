@@ -52,7 +52,7 @@ struct owl_renderer_init_desc {
 
 struct owl_renderer_dynamic_heap_reference {
   owl_u32 offset32;
-  VkDeviceSize offset;
+  owl_u64 offset;
   VkBuffer buffer;
   VkDescriptorSet pvm_set;
   VkDescriptorSet pvl_set;
@@ -306,10 +306,10 @@ struct owl_renderer {
   /* ====================================================================== */
   VkDeviceMemory dynamic_heap_memory;
 
-  VkDeviceSize dynamic_heap_offset;
-  VkDeviceSize dynamic_heap_buffer_size;
-  VkDeviceSize dynamic_heap_buffer_alignment;
-  VkDeviceSize dynamic_heap_buffer_aligned_size;
+  owl_u64 dynamic_heap_offset;
+  owl_u64 dynamic_heap_buffer_size;
+  owl_u64 dynamic_heap_buffer_alignment;
+  owl_u64 dynamic_heap_buffer_aligned_size;
 
   owl_byte *active_dynamic_heap_data;
   VkBuffer active_dynamic_heap_buffer;

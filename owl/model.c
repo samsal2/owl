@@ -178,7 +178,7 @@ owl_model_find_load_desc_capacities_(struct cgltf_data const *gltf,
 OWL_INTERNAL enum owl_code
 owl_model_init_load_desc_(struct owl_renderer *r, struct cgltf_data const *gltf,
                           struct owl_model_load_desc *sli) {
-  VkDeviceSize size;
+  owl_u64 size;
   enum owl_code code = OWL_SUCCESS;
 
   OWL_UNUSED(r);
@@ -437,7 +437,7 @@ OWL_INTERNAL void owl_model_load_buffers_(struct owl_renderer *r,
   owl_renderer_invalidate_dynamic_heap(r);
 
   {
-    VkDeviceSize size;
+    owl_u64 size;
 
     size = (owl_u64)sli->vertices_capacity * sizeof(struct owl_model_vertex);
     owl_renderer_dynamic_heap_submit(r, size, sli->vertices, &vrdhr);

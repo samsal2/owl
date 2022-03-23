@@ -11,7 +11,7 @@ enum owl_code
 owl_draw_command_submit_basic(struct owl_renderer *r,
                               struct owl_camera const *c,
                               struct owl_draw_command_basic const *command) {
-  VkDeviceSize size;
+  owl_u64 size;
   VkDescriptorSet sets[2];
   struct owl_draw_command_uniform uniform;
   struct owl_renderer_dynamic_heap_reference vrdhr;
@@ -65,7 +65,7 @@ end:
 enum owl_code
 owl_draw_command_submit_quad(struct owl_renderer *r, struct owl_camera const *c,
                              struct owl_draw_command_quad const *command) {
-  VkDeviceSize size;
+  owl_u64 size;
   VkDescriptorSet sets[2];
   struct owl_draw_command_uniform uniform;
   struct owl_renderer_dynamic_heap_reference vrdhr;
@@ -372,7 +372,7 @@ owl_draw_command_submit_model(struct owl_renderer *r,
                               struct owl_camera const *c,
                               struct owl_draw_command_model const *command) {
   owl_i32 i;
-  VkDeviceSize offset = 0;
+  owl_u64 offset = 0;
   enum owl_code code = OWL_SUCCESS;
   struct owl_model const *model = command->skin;
 
