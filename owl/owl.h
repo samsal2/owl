@@ -3,7 +3,7 @@
 
 #include "camera.h"
 #include "client.h"
-#include "draw.h"
+#include "draw_command.h"
 #include "font.h"
 #include "internal.h"
 #include "model.h"

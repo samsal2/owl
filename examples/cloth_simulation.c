@@ -30,9 +30,9 @@ struct cloth {
   struct particle particles[PARTICLE_COUNT];
 
   /* priv draw desc */
-  struct owl_draw_basic_command command_;
+  struct owl_draw_command_basic command_;
   owl_u32 indices_[IDXS_COUNT];
-  struct owl_draw_vertex vertices_[PARTICLE_COUNT];
+  struct owl_draw_command_vertex vertices_[PARTICLE_COUNT];
 };
 
 static void init_cloth_(struct cloth *cloth) {
@@ -239,7 +239,7 @@ static struct owl_renderer_image_init_desc image_desc;
 static struct owl_renderer_image image;
 static struct cloth cloth;
 static struct owl_font font;
-static struct owl_draw_text_command text_command;
+static struct owl_draw_command_text text_command;
 static struct owl_camera camera;
 
 #define UNSELECTED (owl_u32) - 1
@@ -309,11 +309,11 @@ int main(void) {
 #else
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_WIRES);
 #endif
-    owl_submit_draw_basic_command(renderer, &camera, &cloth.command_);
+    owl_draw_command_submit_basic(renderer, &camera, &cloth.command_);
 
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_FONT);
     text_command.text = fps_string(client->d_time_stamp);
-    owl_submit_draw_text_command(renderer, &camera, &text_command);
+    owl_draw_command_submit_text(renderer, &camera, &text_command);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_desc);

@@ -11,8 +11,8 @@ target_sources(${PROJECT_NAME} PRIVATE
   renderer.h
   vector_math.c
   vector_math.h
-  draw.c
-  draw.h
+  draw_command.c
+  draw_command.h
   model.c
   model.h)
 

@@ -1,10 +1,9 @@
 #include "renderer.h"
 
 #include "client.h"
-#include "draw.h"
+#include "draw_command.h"
 #include "internal.h"
 #include "model.h"
-#include "vulkan/vulkan_core.h"
 
 #include <math.h>
 #include <stb/stb_image.h>
@@ -1358,23 +1357,26 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
     case OWL_RENDERER_PIPELINE_TYPE_WIRES:
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
       vertex_bindings[0].binding = 0;
-      vertex_bindings[0].stride = sizeof(struct owl_draw_vertex);
+      vertex_bindings[0].stride = sizeof(struct owl_draw_command_vertex);
       vertex_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
       vertex_attributes[0].binding = 0;
       vertex_attributes[0].location = 0;
       vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_attributes[0].offset = offsetof(struct owl_draw_vertex, position);
+      vertex_attributes[0].offset =
+          offsetof(struct owl_draw_command_vertex, position);
 
       vertex_attributes[1].binding = 0;
       vertex_attributes[1].location = 1;
       vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_attributes[1].offset = offsetof(struct owl_draw_vertex, color);
+      vertex_attributes[1].offset =
+          offsetof(struct owl_draw_command_vertex, color);
 
       vertex_attributes[2].binding = 0;
       vertex_attributes[2].location = 2;
       vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-      vertex_attributes[2].offset = offsetof(struct owl_draw_vertex, uv);
+      vertex_attributes[2].offset =
+          offsetof(struct owl_draw_command_vertex, uv);
       break;
 
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
@@ -2065,7 +2067,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
 
       buffer.buffer = r->dynamic_heap_buffers[i];
       buffer.offset = 0;
-      buffer.range = sizeof(struct owl_draw_uniform);
+      buffer.range = sizeof(struct owl_draw_command_uniform);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;

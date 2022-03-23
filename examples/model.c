@@ -7,11 +7,11 @@ static struct owl_client *client;
 static struct owl_renderer_init_desc renderer_desc;
 static struct owl_renderer *renderer;
 static struct owl_model *model;
-static struct owl_draw_model_command model_command;
+static struct owl_draw_command_model model_command;
 static struct owl_camera camera;
 static struct owl_font *font;
-static struct owl_draw_text_command text_command;
-static struct owl_draw_grid_command grid_command;
+static struct owl_draw_command_text text_command;
+static struct owl_draw_command_grid grid_command;
 
 #define MODEL_PATH "../../assets/CesiumMan.gltf"
 #define FONT_PATH "../../assets/Inconsolata-Regular.ttf"
@@ -88,12 +88,12 @@ int main(void) {
 #endif
 
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_MODEL);
-    owl_submit_draw_model_command(renderer, &camera, &model_command);
+    owl_draw_command_submit_model(renderer, &camera, &model_command);
 
 #if 1
     text_command.text = fmtfps(client->fps);
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_FONT);
-    owl_submit_draw_text_command(renderer, &camera, &text_command);
+    owl_draw_command_submit_text(renderer, &camera, &text_command);
 #endif
 
 #if 0

@@ -1,4 +1,4 @@
-#include "draw.h"
+#include "draw_command.h"
 
 #include "camera.h"
 #include "font.h"
@@ -6,15 +6,14 @@
 #include "model.h"
 #include "renderer.h"
 #include "vector_math.h"
-#include "vulkan/vulkan_core.h"
 
 enum owl_code
-owl_submit_draw_basic_command(struct owl_renderer *r,
+owl_draw_command_submit_basic(struct owl_renderer *r,
                               struct owl_camera const *c,
-                              struct owl_draw_basic_command const *command) {
+                              struct owl_draw_command_basic const *command) {
   VkDeviceSize size;
   VkDescriptorSet sets[2];
-  struct owl_draw_uniform uniform;
+  struct owl_draw_command_uniform uniform;
   struct owl_renderer_dynamic_heap_reference vrdhr;
   struct owl_renderer_dynamic_heap_reference irdhr;
   struct owl_renderer_dynamic_heap_reference urdhr;
@@ -64,11 +63,11 @@ end:
 }
 
 enum owl_code
-owl_submit_draw_quad_command(struct owl_renderer *r, struct owl_camera const *c,
-                             struct owl_draw_quad_command const *command) {
+owl_draw_command_submit_quad(struct owl_renderer *r, struct owl_camera const *c,
+                             struct owl_draw_command_quad const *command) {
   VkDeviceSize size;
   VkDescriptorSet sets[2];
-  struct owl_draw_uniform uniform;
+  struct owl_draw_command_uniform uniform;
   struct owl_renderer_dynamic_heap_reference vrdhr;
   struct owl_renderer_dynamic_heap_reference irdhr;
   struct owl_renderer_dynamic_heap_reference urdhr;
@@ -118,9 +117,9 @@ end:
 }
 
 OWL_INTERNAL enum owl_code
-owl_draw_text_command_fill_char_quad_(struct owl_draw_text_command const *text,
+owl_draw_text_command_fill_char_quad_(struct owl_draw_command_text const *text,
                                       owl_v3 const offset, char c,
-                                      struct owl_draw_quad_command *quad) {
+                                      struct owl_draw_command_quad *quad) {
   float uv_offset;
   owl_v2 uv_bearing;
   owl_v2 current_position;
@@ -211,7 +210,7 @@ end:
 }
 
 OWL_INTERNAL void
-owl_draw_text_command_step_offset_(struct owl_draw_text_command const *command,
+owl_draw_text_command_step_offset_(struct owl_draw_command_text const *command,
                                    char const c, owl_v2 offset) {
   offset[0] += command->font->glyphs[(int)c].advance[0] /
                (float)(command->font->size) * command->scale;
@@ -221,8 +220,8 @@ owl_draw_text_command_step_offset_(struct owl_draw_text_command const *command,
 }
 
 enum owl_code
-owl_submit_draw_text_command(struct owl_renderer *r, struct owl_camera const *c,
-                             struct owl_draw_text_command const *command) {
+owl_draw_command_submit_text(struct owl_renderer *r, struct owl_camera const *c,
+                             struct owl_draw_command_text const *command) {
   char const *l;
   owl_v2 offset;
   enum owl_code code = OWL_SUCCESS;
@@ -230,14 +229,14 @@ owl_submit_draw_text_command(struct owl_renderer *r, struct owl_camera const *c,
   OWL_V2_ZERO(offset);
 
   for (l = command->text; '\0' != *l; ++l) {
-    struct owl_draw_quad_command quad;
+    struct owl_draw_command_quad quad;
 
     code = owl_draw_text_command_fill_char_quad_(command, offset, *l, &quad);
 
     if (OWL_SUCCESS != code)
       goto end;
 
-    owl_submit_draw_quad_command(r, c, &quad);
+    owl_draw_command_submit_quad(r, c, &quad);
     owl_draw_text_command_step_offset_(command, *l, offset);
   }
 
@@ -247,7 +246,7 @@ end:
 
 OWL_INTERNAL enum owl_code
 owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *c,
-                       struct owl_draw_model_command const *command,
+                       struct owl_draw_command_model const *command,
                        struct owl_model_node const *node) {
 
   owl_i32 i;
@@ -369,9 +368,9 @@ end:
 }
 
 enum owl_code
-owl_submit_draw_model_command(struct owl_renderer *r,
+owl_draw_command_submit_model(struct owl_renderer *r,
                               struct owl_camera const *c,
-                              struct owl_draw_model_command const *command) {
+                              struct owl_draw_command_model const *command) {
   owl_i32 i;
   VkDeviceSize offset = 0;
   enum owl_code code = OWL_SUCCESS;
@@ -395,9 +394,9 @@ end:
 }
 
 enum owl_code
-owl_submit_draw_grid_command(struct owl_renderer *r, struct owl_camera const *c,
-                             struct owl_draw_grid_command const *command) {
-  struct owl_draw_uniform uniform;
+owl_draw_command_submit_grid(struct owl_renderer *r, struct owl_camera const *c,
+                             struct owl_draw_command_grid const *command) {
+  struct owl_draw_command_uniform uniform;
   struct owl_renderer_dynamic_heap_reference rdhr;
   enum owl_code code = OWL_SUCCESS;
 
