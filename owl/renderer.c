@@ -388,7 +388,7 @@ end:
   return code;
 }
 
-OWL_INTERNAL owl_u32 owl_get_queue_count_(struct owl_renderer const *r) {
+OWL_INTERNAL owl_u32 owl_renderer_get_queue_count_(struct owl_renderer const *r) {
   return r->graphics_queue_family_index == r->present_queue_family_index ? 1
                                                                          : 2;
 }
@@ -434,7 +434,7 @@ OWL_INTERNAL enum owl_code owl_renderer_init_device_(struct owl_renderer *r) {
   device.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   device.pNext = NULL;
   device.flags = 0;
-  device.queueCreateInfoCount = owl_get_queue_count_(r);
+  device.queueCreateInfoCount = owl_renderer_get_queue_count_(r);
   device.pQueueCreateInfos = queues;
   device.enabledLayerCount = 0;      /* deprecated */
   device.ppEnabledLayerNames = NULL; /* deprecated */
@@ -552,7 +552,7 @@ owl_renderer_init_swapchain_(struct owl_renderer_init_desc const *rid,
     swapchain.pQueueFamilyIndices = NULL;
   } else {
     swapchain.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-    swapchain.queueFamilyIndexCount = owl_get_queue_count_(r);
+    swapchain.queueFamilyIndexCount = owl_renderer_get_queue_count_(r);
     swapchain.pQueueFamilyIndices = families;
   }
 
