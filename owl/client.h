@@ -7,8 +7,8 @@ struct owl_renderer_init_info;
 
 struct owl_client_init_info {
   char const *title;
-  int width;
-  int height;
+  owl_i32 width;
+  owl_i32 height;
 };
 
 enum owl_button_state {
@@ -155,10 +155,10 @@ enum owl_keyboard_key {
 struct owl_client {
   char const *title;
   void *window;
-  int framebuffer_width;
-  int framebuffer_height;
-  int window_width;
-  int window_height;
+  owl_i32 framebuffer_width;
+  owl_i32 framebuffer_height;
+  owl_i32 window_width;
+  owl_i32 window_height;
   double fps;
   double d_time_stamp;
   double time_stamp;
@@ -181,6 +181,6 @@ owl_client_fill_renderer_init_info(struct owl_client const *c,
 
 void owl_client_poll_events(struct owl_client *c);
 
-int owl_client_is_done(struct owl_client *c);
+owl_i32owl_client_is_done(struct owl_client *c);
 
 #endif

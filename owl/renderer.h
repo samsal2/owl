@@ -37,12 +37,12 @@ typedef enum owl_code (*owl_vk_surface_init_callback)(
 struct owl_renderer_init_info {
   char const *name;
 
-  int framebuffer_width;
-  int framebuffer_height;
-  int window_width;
-  int window_height;
+  owl_i32framebuffer_width;
+  owl_i32framebuffer_height;
+  owl_i32window_width;
+  owl_i32window_height;
 
-  int instance_extensions_count;
+  owl_i32instance_extensions_count;
   char const *const *instance_extensions;
 
   void const *surface_user_data;
@@ -61,11 +61,11 @@ struct owl_renderer {
   /* ====================================================================== */
   /* dims */
   /* ====================================================================== */
-  int framebuffer_width;
-  int framebuffer_height;
+  owl_i32framebuffer_width;
+  owl_i32framebuffer_height;
   float framebuffer_ratio;
-  int window_width;
-  int window_height;
+  owl_i32window_width;
+  owl_i32window_height;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -202,7 +202,7 @@ struct owl_renderer {
   /* ====================================================================== */
   /* frame submition resources */
   /* ====================================================================== */
-  int active_frame_index;
+  owl_i32active_frame_index;
   VkCommandBuffer active_frame_command_buffer;
   VkCommandPool active_frame_command_pool;
 
@@ -225,16 +225,16 @@ struct owl_renderer {
   /* ====================================================================== */
   /* dynamic heap garbage */
   /* ====================================================================== */
-  int garbage_memories_count;
+  owl_i32garbage_memories_count;
   VkDeviceMemory garbage_memories[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
-  int garbage_buffers_count;
+  owl_i32garbage_buffers_count;
   VkBuffer garbage_buffers[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
-  int garbage_pvm_sets_count;
+  owl_i32garbage_pvm_sets_count;
   VkDescriptorSet garbage_pvm_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
-  int garbage_pvl_sets_count;
+  owl_i32garbage_pvl_sets_count;
   VkDescriptorSet garbage_pvl_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
   /* ====================================================================== */
 
@@ -262,7 +262,7 @@ struct owl_renderer {
   /* ====================================================================== */
   /* image manager resources */
   /* ====================================================================== */
-  int image_manager_slots[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
+  owl_i32image_manager_slots[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkImage image_manager_images[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkDeviceMemory image_manager_memories[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkImageView image_manager_views[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
@@ -288,7 +288,7 @@ enum owl_code owl_renderer_flush_dynamic_heap(struct owl_renderer *r);
 
 enum owl_code owl_renderer_invalidate_dynamic_heap(struct owl_renderer *r);
 
-int owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
+owl_i32owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
 
 void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
 

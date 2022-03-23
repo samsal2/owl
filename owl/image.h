@@ -8,7 +8,7 @@
 struct owl_renderer;
 
 struct owl_image {
-  int slot;
+  owl_i32 slot;
 };
 
 enum owl_sampler_filter {
@@ -49,8 +49,8 @@ struct owl_image_init_info_src_path {
 
 struct owl_image_init_info_src_data {
   owl_byte const *data;
-  int width;
-  int height;
+  owl_i32 width;
+  owl_i32 height;
   enum owl_pixel_format format;
 };
 
@@ -82,8 +82,8 @@ struct owl_image_init_info {
 
 struct owl_image_info_from_file {
   owl_byte *data;
-  int width;
-  int height;
+  owl_i32 width;
+  owl_i32 height;
   enum owl_pixel_format format;
 };
 

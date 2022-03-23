@@ -10,7 +10,7 @@
 #include <vulkan/vulkan.h>
 /* clang-format on */
 
-OWL_INTERNAL enum owl_mouse_button owl_as_mouse_key_(int type) {
+OWL_INTERNAL enum owl_mouse_button owl_as_mouse_key_(owl_i32type) {
   switch (type) {
   case GLFW_MOUSE_BUTTON_LEFT:
     return OWL_MOUSE_BUTTON_LEFT;
@@ -26,7 +26,7 @@ OWL_INTERNAL enum owl_mouse_button owl_as_mouse_key_(int type) {
   }
 }
 
-OWL_INTERNAL enum owl_button_state owl_as_mouse_state_(int state) {
+OWL_INTERNAL enum owl_button_state owl_as_mouse_state_(owl_i32state) {
   switch (state) {
   case GLFW_PRESS:
     return OWL_BUTTON_STATE_PRESS;
@@ -42,16 +42,16 @@ OWL_INTERNAL enum owl_button_state owl_as_mouse_state_(int state) {
   }
 }
 
-OWL_INTERNAL void owl_window_size_callback_(GLFWwindow *window, int width,
-                                            int height) {
+OWL_INTERNAL void owl_window_size_callback_(GLFWwindow *window, owl_i32width,
+                                            owl_i32height) {
   struct owl_client *c = glfwGetWindowUserPointer(window);
 
   c->window_width = width;
   c->window_height = height;
 }
 
-OWL_INTERNAL void owl_framebuffer_size_callback_(GLFWwindow *window, int width,
-                                                 int height) {
+OWL_INTERNAL void owl_framebuffer_size_callback_(GLFWwindow *window,
+                                                 owl_i32width, owl_i32height) {
   struct owl_client *c = glfwGetWindowUserPointer(window);
 
   c->framebuffer_width = width;
@@ -71,8 +71,8 @@ OWL_INTERNAL void owl_cursor_position_callback_(GLFWwindow *window, double x,
              c->d_cursor_position);
 }
 
-OWL_INTERNAL void owl_mouse_key_callback_(GLFWwindow *window, int button,
-                                          int action, int modifiers) {
+OWL_INTERNAL void owl_mouse_key_callback_(GLFWwindow *window, owl_i32button,
+                                          owl_i32action, owl_i32modifiers) {
   struct owl_client *c = glfwGetWindowUserPointer(window);
   enum owl_mouse_button key = owl_as_mouse_key_(button);
 
@@ -81,9 +81,9 @@ OWL_INTERNAL void owl_mouse_key_callback_(GLFWwindow *window, int button,
   c->mouse_buttons[key] = owl_as_mouse_state_(action);
 }
 
-OWL_INTERNAL void owl_keyboard_key_callback_(GLFWwindow *glfw, int key,
-                                             int scancode, int action,
-                                             int mods) {
+OWL_INTERNAL void owl_keyboard_key_callback_(GLFWwindow *glfw, owl_i32key,
+                                             owl_i32scancode, owl_i32action,
+                                             owl_i32mods) {
   struct owl_client *c = glfwGetWindowUserPointer(glfw);
 
   OWL_UNUSED(scancode);
@@ -98,7 +98,7 @@ owl_vk_surface_init_callback_(struct owl_renderer const *r, void const *data,
                               VkSurfaceKHR *out) {
   enum owl_code code = OWL_SUCCESS;
   struct owl_client const *c = data;
-  int err = glfwCreateWindowSurface(r->instance, c->window, NULL, out);
+  owl_i32err = glfwCreateWindowSurface(r->instance, c->window, NULL, out);
 
   if (VK_SUCCESS != err)
     code = OWL_ERROR_BAD_INIT;
@@ -107,7 +107,7 @@ owl_vk_surface_init_callback_(struct owl_renderer const *r, void const *data,
 }
 enum owl_code owl_client_init(struct owl_client_init_info const *cii,
                               struct owl_client *c) {
-  int i;
+  owl_i32i;
   enum owl_code code = OWL_SUCCESS;
 
   if (!glfwInit()) {
@@ -199,7 +199,7 @@ owl_client_fill_renderer_init_info(struct owl_client const *c,
   return code;
 }
 
-int owl_client_is_done(struct owl_client *c) {
+owl_i32owl_client_is_done(struct owl_client *c) {
   return glfwWindowShouldClose(c->window);
 }
 

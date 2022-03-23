@@ -167,11 +167,13 @@ end:
   return code;
 }
 
-OWL_INTERNAL int owl_renderer_query_families_(struct owl_renderer const *r,
-                                              owl_u32 *graphics_family_index,
-                                              owl_u32 *present_family_index) {
-  int found;
-  owl_u32 i, count;
+OWL_INTERNAL
+owl_i32owl_renderer_query_families_(struct owl_renderer const *r,
+                                    owl_u32 *graphics_family_index,
+                                    owl_u32 *present_family_index) {
+  owl_i32 found;
+  owl_u32 i;
+  owl_u32 count;
   VkQueueFamilyProperties *properties;
 
   vkGetPhysicalDeviceQueueFamilyProperties(r->physical_device, &count, NULL);
@@ -225,8 +227,8 @@ OWL_INTERNAL int
 owl_validate_device_extensions_(owl_u32 count,
                                 VkExtensionProperties const *extensions) {
   owl_u32 i;
-  int found = 1;
-  int extensions_found[OWL_ARRAY_SIZE(g_required_device_extensions)];
+  owl_i32found = 1;
+  owl_i32extensions_found[OWL_ARRAY_SIZE(g_required_device_extensions)];
 
   OWL_MEMSET(extensions_found, 0, sizeof(extensions_found));
 
@@ -771,7 +773,7 @@ owl_renderer_init_main_render_pass_(struct owl_renderer *r) {
   attachments[2].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
   subpass.flags = 0;
-  subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  subpass.pipelineBindPoowl_i32 = VK_PIPELINE_BIND_POINT_GRAPHICS;
   subpass.inputAttachmentCount = 0;
   subpass.pInputAttachments = NULL;
   subpass.colorAttachmentCount = 1;
@@ -1284,7 +1286,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *r) {
   VkPipelineShaderStageCreateInfo stages[2];
   VkGraphicsPipelineCreateInfo pipeline;
 
-  int i;
+  owl_i32i;
   enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < OWL_PIPELINE_TYPE_COUNT; ++i) {
@@ -1809,7 +1811,7 @@ OWL_INTERNAL enum owl_code owl_renderer_init_garbage_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL void owl_renderer_deinit_garbage_(struct owl_renderer *r) {
-  int i;
+  owl_i32i;
 
   for (i = 0; i < r->garbage_pvl_sets_count; ++i)
     vkFreeDescriptorSets(r->device, r->common_set_pool, 1,
@@ -2002,7 +2004,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *r, VkDeviceSize size) {
 }
 
 OWL_INTERNAL void owl_renderer_deinit_dynamic_heap_(struct owl_renderer *r) {
-  int i;
+  owl_i32i;
 
   vkFreeDescriptorSets(r->device, r->common_set_pool,
                        OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
@@ -2020,12 +2022,12 @@ OWL_INTERNAL void owl_renderer_deinit_dynamic_heap_(struct owl_renderer *r) {
 
 OWL_INTERNAL enum owl_code
 owl_renderer_move_dynamic_heap_to_garbage_(struct owl_renderer *r) {
-  int i;
+  owl_i32i;
   enum owl_code code = OWL_SUCCESS;
 
   {
-    int previous_count = r->garbage_buffers_count;
-    int new_count = previous_count + OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
+    owl_i32previous_count = r->garbage_buffers_count;
+    owl_i32new_count = previous_count + OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT <= new_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -2039,8 +2041,8 @@ owl_renderer_move_dynamic_heap_to_garbage_(struct owl_renderer *r) {
   }
 
   {
-    int previous_count = r->garbage_pvm_sets_count;
-    int new_count = previous_count + OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
+    owl_i32previous_count = r->garbage_pvm_sets_count;
+    owl_i32new_count = previous_count + OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT <= new_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -2054,8 +2056,8 @@ owl_renderer_move_dynamic_heap_to_garbage_(struct owl_renderer *r) {
   }
 
   {
-    int previous_count = r->garbage_pvl_sets_count;
-    int new_count = previous_count + OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
+    owl_i32previous_count = r->garbage_pvl_sets_count;
+    owl_i32new_count = previous_count + OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT <= new_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -2069,8 +2071,8 @@ owl_renderer_move_dynamic_heap_to_garbage_(struct owl_renderer *r) {
   }
 
   {
-    int previous_count = r->garbage_memories_count;
-    int new_count = previous_count + 1;
+    owl_i32previous_count = r->garbage_memories_count;
+    owl_i32new_count = previous_count + 1;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT <= new_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -2091,7 +2093,7 @@ end:
 
 OWL_INTERNAL enum owl_code
 owl_renderer_init_image_manager_(struct owl_renderer *r) {
-  int i;
+  owl_i32i;
   enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT; ++i)
@@ -2101,7 +2103,7 @@ owl_renderer_init_image_manager_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL void owl_renderer_deinit_image_manager_(struct owl_renderer *r) {
-  int i;
+  owl_i32i;
 
   for (i = 0; i < OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT; ++i) {
     if (!r->image_manager_slots[i])
@@ -2375,7 +2377,7 @@ end:
   return code;
 }
 
-int owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r) {
+owl_i32owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r) {
   return 0 == r->dynamic_heap_offset;
 }
 

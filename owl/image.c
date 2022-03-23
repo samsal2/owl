@@ -74,7 +74,7 @@ OWL_INTERNAL VkDeviceSize owl_pixel_format_size_(enum owl_pixel_format format) {
 OWL_INTERNAL enum owl_code
 owl_renderer_find_image_manager_slot_(struct owl_renderer *r,
                                       struct owl_image *i) {
-  int j;
+  owl_i32j;
   enum owl_code code = OWL_SUCCESS;
 
   for (j = 0; j < OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT; ++j) {
@@ -421,7 +421,7 @@ void owl_image_deinit(struct owl_renderer *r, struct owl_image *i) {
 enum owl_code
 owl_image_init_info_from_file(char const *path,
                               struct owl_image_info_from_file *iiff) {
-  int ch;
+  owl_i32ch;
   enum owl_code code = OWL_SUCCESS;
 
   iiff->format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;

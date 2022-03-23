@@ -249,7 +249,7 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *c,
                        struct owl_draw_model_command const *command,
                        struct owl_model_node const *node) {
 
-  int i;
+  owl_i32i;
   struct owl_model_node parent;
   struct owl_model const *model;
   struct owl_model_node_data const *node_data;
@@ -275,7 +275,6 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *c,
   if (!mesh_data->primitives_count)
     goto end;
 
-
 #if 0
   OWL_M4_COPY(command->model, push_constant.model);
   owl_m4_multiply(model->nodes[node->slot].matrix, push_constant.model, 
@@ -284,7 +283,6 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *c,
   OWL_M4_COPY(model->nodes[node->slot].matrix, push_constant.model);
 #endif
 
-
   for (parent.slot = model->nodes[node->slot].parent.slot;
        OWL_MODEL_NODE_NO_PARENT_SLOT != parent.slot;
        parent.slot = model->nodes[parent.slot].parent.slot)
@@ -292,8 +290,6 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *c,
                     push_constant.model);
 
   owl_m4_multiply(command->model, push_constant.model, push_constant.model);
-
-
 
   vkCmdPushConstants(r->active_frame_command_buffer, r->active_pipeline_layout,
                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant),
@@ -374,7 +370,7 @@ enum owl_code
 owl_submit_draw_model_command(struct owl_renderer *r,
                               struct owl_camera const *c,
                               struct owl_draw_model_command const *command) {
-  int i;
+  owl_i32i;
   VkDeviceSize offset = 0;
   enum owl_code code = OWL_SUCCESS;
   struct owl_model const *model = command->skin;
