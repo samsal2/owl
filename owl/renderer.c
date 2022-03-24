@@ -9,7 +9,7 @@
 #include <stb/stb_image.h>
 
 #define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
-#define OWL_MAX_VERTEX_INPUT_ATTRIBUTES_COUNT 8
+#define OWL_MAX_VERTEX_INPUT_ATTR_COUNT 8
 #define OWL_MAX_COLOR_ATTACHMENTS_COUNT 8
 #define OWL_MAX_PRESENT_MODES 16
 #define OWL_UNRESTRICTED_DIMENSION (owl_u32) - 1
@@ -274,7 +274,7 @@ owl_renderer_select_physical_device_(struct owl_renderer *renderer) {
 
   for (i = 0; i < renderer->device_options_count; ++i) {
     owl_u32 has_formats;
-    owl_u32 has_present_modes;
+    owl_u32 has_modes;
     owl_u32 extension_count;
     VkExtensionProperties *extensions;
 
@@ -287,10 +287,9 @@ owl_renderer_select_physical_device_(struct owl_renderer *renderer) {
       continue;
 
     OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
-        renderer->physical_device, renderer->surface, &has_present_modes,
-        NULL));
+        renderer->physical_device, renderer->surface, &has_modes, NULL));
 
-    if (!has_present_modes)
+    if (!has_modes)
       continue;
 
     if (!owl_renderer_query_families_(renderer,
@@ -1400,8 +1399,8 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
 
   VkVertexInputBindingDescription
       vertex_input_binding_descriptions[OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT];
-  VkVertexInputAttributeDescription vertex_input_attributes_descriptions
-      [OWL_MAX_VERTEX_INPUT_ATTRIBUTES_COUNT];
+  VkVertexInputAttributeDescription
+      vertex_input_attr_descriptions[OWL_MAX_VERTEX_INPUT_ATTR_COUNT];
   VkPipelineVertexInputStateCreateInfo vertex_input_state;
   VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
   VkViewport viewport;
@@ -1430,24 +1429,22 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
       vertex_input_binding_descriptions[0].inputRate =
           VK_VERTEX_INPUT_RATE_VERTEX;
 
-      vertex_input_attributes_descriptions[0].binding = 0;
-      vertex_input_attributes_descriptions[0].location = 0;
-      vertex_input_attributes_descriptions[0].format =
-          VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_input_attributes_descriptions[0].offset =
+      vertex_input_attr_descriptions[0].binding = 0;
+      vertex_input_attr_descriptions[0].location = 0;
+      vertex_input_attr_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_input_attr_descriptions[0].offset =
           offsetof(struct owl_draw_command_vertex, position);
 
-      vertex_input_attributes_descriptions[1].binding = 0;
-      vertex_input_attributes_descriptions[1].location = 1;
-      vertex_input_attributes_descriptions[1].format =
-          VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_input_attributes_descriptions[1].offset =
+      vertex_input_attr_descriptions[1].binding = 0;
+      vertex_input_attr_descriptions[1].location = 1;
+      vertex_input_attr_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_input_attr_descriptions[1].offset =
           offsetof(struct owl_draw_command_vertex, color);
 
-      vertex_input_attributes_descriptions[2].binding = 0;
-      vertex_input_attributes_descriptions[2].location = 2;
-      vertex_input_attributes_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-      vertex_input_attributes_descriptions[2].offset =
+      vertex_input_attr_descriptions[2].binding = 0;
+      vertex_input_attr_descriptions[2].location = 2;
+      vertex_input_attr_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+      vertex_input_attr_descriptions[2].offset =
           offsetof(struct owl_draw_command_vertex, uv);
       break;
 
@@ -1464,45 +1461,40 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
       vertex_input_binding_descriptions[0].inputRate =
           VK_VERTEX_INPUT_RATE_VERTEX;
 
-      vertex_input_attributes_descriptions[0].binding = 0;
-      vertex_input_attributes_descriptions[0].location = 0;
-      vertex_input_attributes_descriptions[0].format =
-          VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_input_attributes_descriptions[0].offset =
+      vertex_input_attr_descriptions[0].binding = 0;
+      vertex_input_attr_descriptions[0].location = 0;
+      vertex_input_attr_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_input_attr_descriptions[0].offset =
           offsetof(struct owl_model_vertex, position);
 
-      vertex_input_attributes_descriptions[1].binding = 0;
-      vertex_input_attributes_descriptions[1].location = 1;
-      vertex_input_attributes_descriptions[1].format =
-          VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_input_attributes_descriptions[1].offset =
+      vertex_input_attr_descriptions[1].binding = 0;
+      vertex_input_attr_descriptions[1].location = 1;
+      vertex_input_attr_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_input_attr_descriptions[1].offset =
           offsetof(struct owl_model_vertex, normal);
 
-      vertex_input_attributes_descriptions[2].binding = 0;
-      vertex_input_attributes_descriptions[2].location = 2;
-      vertex_input_attributes_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-      vertex_input_attributes_descriptions[2].offset =
+      vertex_input_attr_descriptions[2].binding = 0;
+      vertex_input_attr_descriptions[2].location = 2;
+      vertex_input_attr_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+      vertex_input_attr_descriptions[2].offset =
           offsetof(struct owl_model_vertex, uv);
 
-      vertex_input_attributes_descriptions[3].binding = 0;
-      vertex_input_attributes_descriptions[3].location = 3;
-      vertex_input_attributes_descriptions[3].format =
-          VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_input_attributes_descriptions[3].offset =
+      vertex_input_attr_descriptions[3].binding = 0;
+      vertex_input_attr_descriptions[3].location = 3;
+      vertex_input_attr_descriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_input_attr_descriptions[3].offset =
           offsetof(struct owl_model_vertex, color);
 
-      vertex_input_attributes_descriptions[4].binding = 0;
-      vertex_input_attributes_descriptions[4].location = 4;
-      vertex_input_attributes_descriptions[4].format =
-          VK_FORMAT_R32G32B32A32_SFLOAT;
-      vertex_input_attributes_descriptions[4].offset =
+      vertex_input_attr_descriptions[4].binding = 0;
+      vertex_input_attr_descriptions[4].location = 4;
+      vertex_input_attr_descriptions[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+      vertex_input_attr_descriptions[4].offset =
           offsetof(struct owl_model_vertex, joints0);
 
-      vertex_input_attributes_descriptions[5].binding = 0;
-      vertex_input_attributes_descriptions[5].location = 5;
-      vertex_input_attributes_descriptions[5].format =
-          VK_FORMAT_R32G32B32A32_SFLOAT;
-      vertex_input_attributes_descriptions[5].offset =
+      vertex_input_attr_descriptions[5].binding = 0;
+      vertex_input_attr_descriptions[5].location = 5;
+      vertex_input_attr_descriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+      vertex_input_attr_descriptions[5].offset =
           offsetof(struct owl_model_vertex, weights0);
       break;
 
@@ -1523,7 +1515,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
           vertex_input_binding_descriptions;
       vertex_input_state.vertexAttributeDescriptionCount = 3;
       vertex_input_state.pVertexAttributeDescriptions =
-          vertex_input_attributes_descriptions;
+          vertex_input_attr_descriptions;
       break;
 
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
@@ -1536,7 +1528,7 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
           vertex_input_binding_descriptions;
       vertex_input_state.vertexAttributeDescriptionCount = 6;
       vertex_input_state.pVertexAttributeDescriptions =
-          vertex_input_attributes_descriptions;
+          vertex_input_attr_descriptions;
       break;
 
     case OWL_RENDERER_PIPELINE_TYPE_GRID:
