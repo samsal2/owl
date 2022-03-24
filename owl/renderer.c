@@ -897,7 +897,7 @@ owl_renderer_init_attachments_(struct owl_renderer *renderer) {
     memory_allocate_info.pNext = NULL;
     memory_allocate_info.allocationSize = requirements.size;
     memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
-        renderer, &requirements, OWL_MEMORY_VISIBILITY_GPU);
+        renderer, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK(vkAllocateMemory(renderer->device, &memory_allocate_info, NULL,
                                   &renderer->color_memory));
@@ -965,7 +965,7 @@ owl_renderer_init_attachments_(struct owl_renderer *renderer) {
     memory_allocate_info.pNext = NULL;
     memory_allocate_info.allocationSize = requirements.size;
     memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
-        renderer, &requirements, OWL_MEMORY_VISIBILITY_GPU);
+        renderer, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK(vkAllocateMemory(renderer->device, &memory_allocate_info, NULL,
                                   &renderer->depth_stencil_memory));
@@ -2109,7 +2109,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *renderer, owl_u64 size) {
     memory.allocationSize = renderer->dynamic_heap_buffer_aligned_size *
                             OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        renderer, &requirements, OWL_MEMORY_VISIBILITY_CPU);
+        renderer, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_CPU);
 
     OWL_VK_CHECK(vkAllocateMemory(renderer->device, &memory, NULL,
                                   &renderer->dynamic_heap_memory));
@@ -2680,24 +2680,27 @@ end:
 }
 
 OWL_INTERNAL VkMemoryPropertyFlags
-owl_as_vk_memory_property_flags(enum owl_memory_visibility visibility) {
+owl_renderer_memory_visbility_as_vk_memory_property_flags(
+    enum owl_renderer_memory_visibility visibility) {
   switch (visibility) {
-  case OWL_MEMORY_VISIBILITY_CPU:
+  case OWL_RENDERER_MEMORY_VISIBILITY_CPU:
     return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-  case OWL_MEMORY_VISIBILITY_CPU_COHERENT:
+  case OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT:
     return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-  case OWL_MEMORY_VISIBILITY_GPU:
+  case OWL_RENDERER_MEMORY_VISIBILITY_GPU:
     return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   }
 }
 
-owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *renderer,
-                                      VkMemoryRequirements const *requirements,
-                                      enum owl_memory_visibility visibility) {
+owl_u32
+owl_renderer_find_memory_type(struct owl_renderer const *renderer,
+                              VkMemoryRequirements const *requirements,
+                              enum owl_renderer_memory_visibility visibility) {
   owl_u32 i;
   owl_u32 filter = requirements->memoryTypeBits;
-  VkMemoryPropertyFlags property = owl_as_vk_memory_property_flags(visibility);
+  VkMemoryPropertyFlags property =
+      owl_renderer_memory_visbility_as_vk_memory_property_flags(visibility);
 
   for (i = 0; i < renderer->device_memory_properties.memoryTypeCount; ++i) {
     owl_u32 f = renderer->device_memory_properties.memoryTypes[i].propertyFlags;
@@ -3272,21 +3275,19 @@ end:
   return code;
 }
 
-enum owl_code
-owl_renderer_init_image(struct owl_renderer *renderer,
-                        struct owl_renderer_image_init_desc const *desc,
-                        struct owl_renderer_image *image) {
+struct owl_renderer_image_load_state {
   owl_u32 width;
   owl_u32 height;
   owl_u32 mips;
   enum owl_renderer_pixel_format format;
   struct owl_renderer_dynamic_heap_reference reference;
+};
+
+enum owl_code owl_renderer_init_image_load_state(
+    struct owl_renderer *renderer,
+    struct owl_renderer_image_init_desc const *desc,
+    struct owl_renderer_image_load_state *state) {
   enum owl_code code = OWL_SUCCESS;
-
-  OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(renderer));
-
-  if (OWL_SUCCESS != (code = owl_renderer_invalidate_dynamic_heap(renderer)))
-    goto end;
 
   switch (desc->source_type) {
   case OWL_RENDERER_IMAGE_SOURCE_TYPE_FILE: {
@@ -3303,11 +3304,13 @@ owl_renderer_init_image(struct owl_renderer *renderer,
       goto end;
     }
 
-    format = OWL_RENDERER_PIXEL_FORMAT_R8G8B8A8_SRGB;
-    width = (owl_u32)source_width;
-    height = (owl_u32)source_height;
-    size = owl_renderer_pixel_format_size(format) * width * height;
-    code = owl_renderer_dynamic_heap_submit(renderer, size, data, &reference);
+    state->format = OWL_RENDERER_PIXEL_FORMAT_R8G8B8A8_SRGB;
+    state->width = (owl_u32)source_width;
+    state->height = (owl_u32)source_height;
+    size = owl_renderer_pixel_format_size(state->format) * state->width *
+           state->height;
+    code = owl_renderer_dynamic_heap_submit(renderer, size, data,
+                                            &state->reference);
 
     stbi_image_free(data);
 
@@ -3318,12 +3321,13 @@ owl_renderer_init_image(struct owl_renderer *renderer,
   case OWL_RENDERER_IMAGE_SOURCE_TYPE_DATA: {
     owl_u64 size;
 
-    format = desc->source_data_format;
-    width = (owl_u32)desc->source_data_width;
-    height = (owl_u32)desc->source_data_height;
-    size = owl_renderer_pixel_format_size(format) * width * height;
+    state->format = desc->source_data_format;
+    state->width = (owl_u32)desc->source_data_width;
+    state->height = (owl_u32)desc->source_data_height;
+    size = owl_renderer_pixel_format_size(state->format) * state->width *
+           state->height;
     code = owl_renderer_dynamic_heap_submit(renderer, size, desc->source_data,
-                                            &reference);
+                                            &state->reference);
 
     if (OWL_SUCCESS != code)
       goto end;
@@ -3331,10 +3335,33 @@ owl_renderer_init_image(struct owl_renderer *renderer,
   } break;
   }
 
-  mips = owl_calculate_mip_levels_(width, height);
+  state->mips = owl_calculate_mip_levels_(state->width, state->height);
 
-  if (OWL_SUCCESS !=
-      (code = owl_renderer_image_manager_find_slot_(renderer, image)))
+end:
+  return code;
+}
+enum owl_code
+owl_renderer_init_image(struct owl_renderer *renderer,
+                        struct owl_renderer_image_init_desc const *desc,
+                        struct owl_renderer_image *image) {
+  enum owl_code code = OWL_SUCCESS;
+  struct owl_renderer_image_load_state state;
+
+  OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(renderer));
+
+  code = owl_renderer_invalidate_dynamic_heap(renderer);
+
+  if (OWL_SUCCESS != code)
+    goto end;
+
+  code = owl_renderer_init_image_load_state(renderer, desc, &state);
+
+  if (OWL_SUCCESS != code)
+    goto end;
+
+  code = owl_renderer_image_manager_find_slot_(renderer, image);
+
+  if (OWL_SUCCESS != code)
     goto end;
 
   {
@@ -3344,11 +3371,12 @@ owl_renderer_init_image(struct owl_renderer *renderer,
     image_create_info.pNext = NULL;
     image_create_info.flags = 0;
     image_create_info.imageType = VK_IMAGE_TYPE_2D;
-    image_create_info.format = owl_renderer_pixel_format_as_vk_format(format);
-    image_create_info.extent.width = width;
-    image_create_info.extent.height = height;
+    image_create_info.format =
+        owl_renderer_pixel_format_as_vk_format(state.format);
+    image_create_info.extent.width = state.width;
+    image_create_info.extent.height = state.height;
     image_create_info.extent.depth = 1;
-    image_create_info.mipLevels = mips;
+    image_create_info.mipLevels = state.mips;
     image_create_info.arrayLayers = 1;
     image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
     image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -3376,7 +3404,7 @@ owl_renderer_init_image(struct owl_renderer *renderer,
     memory.pNext = NULL;
     memory.allocationSize = requirements.size;
     memory.memoryTypeIndex = owl_renderer_find_memory_type(
-        renderer, &requirements, OWL_MEMORY_VISIBILITY_GPU);
+        renderer, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK(
         vkAllocateMemory(renderer->device, &memory, NULL,
@@ -3394,14 +3422,15 @@ owl_renderer_init_image(struct owl_renderer *renderer,
     view_create_info.flags = 0;
     view_create_info.image = renderer->image_manager_images[image->slot];
     view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view_create_info.format = owl_renderer_pixel_format_as_vk_format(format);
+    view_create_info.format =
+        owl_renderer_pixel_format_as_vk_format(state.format);
     view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
     view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
     view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
     view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     view_create_info.subresourceRange.baseMipLevel = 0;
-    view_create_info.subresourceRange.levelCount = mips;
+    view_create_info.subresourceRange.levelCount = state.mips;
     view_create_info.subresourceRange.baseArrayLayer = 0;
     view_create_info.subresourceRange.layerCount = 1;
 
@@ -3426,24 +3455,25 @@ owl_renderer_init_image(struct owl_renderer *renderer,
         renderer->device, &set, &renderer->image_manager_sets[image->slot]));
   }
 
-  if (OWL_SUCCESS !=
-      (code = owl_renderer_begin_immidiate_command_buffer(renderer)))
+  code = owl_renderer_begin_immidiate_command_buffer(renderer);
+
+  if (OWL_SUCCESS != code)
     goto end;
   {
-    struct owl_renderer_image_transition_desc itd;
+    struct owl_renderer_image_transition_desc transition_desc;
 
-    itd.mips = mips;
-    itd.layers = 1;
-    itd.src_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-    itd.dst_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    transition_desc.mips = state.mips;
+    transition_desc.layers = 1;
+    transition_desc.src_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    transition_desc.dst_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-    owl_renderer_image_transition_(renderer, image, &itd);
+    owl_renderer_image_transition_(renderer, image, &transition_desc);
   }
 
   {
     VkBufferImageCopy copy;
 
-    copy.bufferOffset = reference.offset;
+    copy.bufferOffset = state.reference.offset;
     copy.bufferRowLength = 0;
     copy.bufferImageHeight = 0;
     copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -3453,30 +3483,34 @@ owl_renderer_init_image(struct owl_renderer *renderer,
     copy.imageOffset.x = 0;
     copy.imageOffset.y = 0;
     copy.imageOffset.z = 0;
-    copy.imageExtent.width = width;
-    copy.imageExtent.height = height;
+    copy.imageExtent.width = state.width;
+    copy.imageExtent.height = state.height;
     copy.imageExtent.depth = 1;
 
-    vkCmdCopyBufferToImage(renderer->immidiate_command_buffer, reference.buffer,
+    vkCmdCopyBufferToImage(renderer->immidiate_command_buffer,
+                           state.reference.buffer,
                            renderer->image_manager_images[image->slot],
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
   }
 
   {
-    struct owl_renderer_image_generate_mips_desc rigmd;
+    struct owl_renderer_image_generate_mips_desc mips_desc;
 
-    rigmd.width = (owl_i32)width;
-    rigmd.height = (owl_i32)height;
-    rigmd.mips = mips;
+    mips_desc.width = (owl_i32)state.width;
+    mips_desc.height = (owl_i32)state.height;
+    mips_desc.mips = state.mips;
 
-    owl_renderer_image_generate_mips_(renderer, image, &rigmd);
+    owl_renderer_image_generate_mips_(renderer, image, &mips_desc);
   }
 
-  if (OWL_SUCCESS != (code = owl_renderer_flush_dynamic_heap(renderer)))
+  code = owl_renderer_flush_dynamic_heap(renderer);
+
+  if (OWL_SUCCESS != code)
     goto end;
 
-  if (OWL_SUCCESS !=
-      (code = owl_renderer_end_immidiate_command_buffer(renderer)))
+  code = owl_renderer_end_immidiate_command_buffer(renderer);
+
+  if (OWL_SUCCESS != code)
     goto end;
 
   {
@@ -3498,7 +3532,7 @@ owl_renderer_init_image(struct owl_renderer *renderer,
       sampler_create_info.compareEnable = VK_FALSE;
       sampler_create_info.compareOp = VK_COMPARE_OP_ALWAYS;
       sampler_create_info.minLod = 0.0F;
-      sampler_create_info.maxLod = mips; /* VK_LOD_CLAMP_NONE */
+      sampler_create_info.maxLod = state.mips; /* VK_LOD_CLAMP_NONE */
       sampler_create_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
       sampler_create_info.unnormalizedCoordinates = VK_FALSE;
 
@@ -3529,7 +3563,7 @@ owl_renderer_init_image(struct owl_renderer *renderer,
       sampler_create_info.compareEnable = VK_FALSE;
       sampler_create_info.compareOp = VK_COMPARE_OP_ALWAYS;
       sampler_create_info.minLod = 0.0F;
-      sampler_create_info.maxLod = mips; /* VK_LOD_CLAMP_NONE */
+      sampler_create_info.maxLod = state.mips; /* VK_LOD_CLAMP_NONE */
       sampler_create_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
       sampler_create_info.unnormalizedCoordinates = VK_FALSE;
     }

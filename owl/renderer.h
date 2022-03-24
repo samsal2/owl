@@ -17,10 +17,10 @@ struct owl_renderer;
 #define OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT 32
 #define OWL_RENDERER_PIPELINE_TYPE_NONE OWL_RENDERER_PIPELINE_TYPE_COUNT
 
-enum owl_memory_visibility {
-  OWL_MEMORY_VISIBILITY_CPU,
-  OWL_MEMORY_VISIBILITY_CPU_COHERENT,
-  OWL_MEMORY_VISIBILITY_GPU
+enum owl_renderer_memory_visibility {
+  OWL_RENDERER_MEMORY_VISIBILITY_CPU,
+  OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT,
+  OWL_RENDERER_MEMORY_VISIBILITY_GPU
 };
 
 enum owl_renderer_pipeline_type {
@@ -345,9 +345,10 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_desc const *desc,
 
 void owl_renderer_deinit(struct owl_renderer *renderer);
 
-owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *renderer,
-                                      VkMemoryRequirements const *requirements,
-                                      enum owl_memory_visibility visibility);
+owl_u32
+owl_renderer_find_memory_type(struct owl_renderer const *renderer,
+                              VkMemoryRequirements const *requirements,
+                              enum owl_renderer_memory_visibility visibility);
 
 enum owl_code owl_renderer_flush_dynamic_heap(struct owl_renderer *renderer);
 

@@ -485,7 +485,7 @@ owl_model_load_buffers_(struct owl_renderer *renderer,
     memory_allocate_info.pNext = NULL;
     memory_allocate_info.allocationSize = requirements.size;
     memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
-        renderer, &requirements, OWL_MEMORY_VISIBILITY_GPU);
+        renderer, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK(vkAllocateMemory(renderer->device, &memory_allocate_info, NULL,
                                   &model->vertices_memory));
@@ -521,7 +521,7 @@ owl_model_load_buffers_(struct owl_renderer *renderer,
     memory_allocate_info.pNext = NULL;
     memory_allocate_info.allocationSize = requirements.size;
     memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
-        renderer, &requirements, OWL_MEMORY_VISIBILITY_GPU);
+        renderer, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK(vkAllocateMemory(renderer->device, &memory_allocate_info, NULL,
                                   &model->indices_memory));
@@ -727,7 +727,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
       memory_allocate_info.allocationSize = dst_skin->ssbo_buffer_aligned_size *
                                             OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
       memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
-          renderer, &requirements, OWL_MEMORY_VISIBILITY_CPU_COHERENT);
+          renderer, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT);
 
       OWL_VK_CHECK(vkAllocateMemory(renderer->device, &memory_allocate_info,
                                     NULL, &dst_skin->ssbo_memory));
