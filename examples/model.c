@@ -96,12 +96,6 @@ int main(void) {
     owl_draw_command_submit_text(renderer, &camera, &text_command);
 #endif
 
-#if 0
-    grid_command.grid = NULL;
-    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_GRID);
-    owl_submit_draw_grid_command(renderer, &camera, &grid_command);
-#endif
-
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_desc);
       owl_renderer_resize_swapchain(&renderer_desc, renderer);

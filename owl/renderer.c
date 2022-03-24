@@ -1220,33 +1220,11 @@ owl_renderer_init_pipeline_layouts_(struct owl_renderer *renderer) {
                                         &renderer->model_pipeline_layout));
   }
 
-  {
-    VkDescriptorSetLayout set;
-    VkPipelineLayoutCreateInfo pipeline_layout_create_info;
-
-    set = renderer->pvm_set_layout;
-
-    pipeline_layout_create_info.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_create_info.pNext = NULL;
-    pipeline_layout_create_info.flags = 0;
-    pipeline_layout_create_info.setLayoutCount = 1;
-    pipeline_layout_create_info.pSetLayouts = &set;
-    pipeline_layout_create_info.pushConstantRangeCount = 0;
-    pipeline_layout_create_info.pPushConstantRanges = NULL;
-
-    OWL_VK_CHECK(vkCreatePipelineLayout(renderer->device,
-                                        &pipeline_layout_create_info, NULL,
-                                        &renderer->grid_pipeline_layout));
-  }
-
   return code;
 }
 
 OWL_INTERNAL void
 owl_renderer_deinit_pipeline_layouts_(struct owl_renderer *renderer) {
-  vkDestroyPipelineLayout(renderer->device, renderer->grid_pipeline_layout,
-                          NULL);
   vkDestroyPipelineLayout(renderer->device, renderer->model_pipeline_layout,
                           NULL);
   vkDestroyPipelineLayout(renderer->device, renderer->common_pipeline_layout,
@@ -1344,47 +1322,10 @@ owl_renderer_init_shaders_(struct owl_renderer *renderer) {
                                       NULL, &renderer->model_fragment_shader));
   }
 
-  {
-    VkShaderModuleCreateInfo shader_create_info;
-
-    /* TODO(samuel): Properly load code at runtime */
-    OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/grid_vertex.spv.u32"
-    };
-
-    shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shader_create_info.pNext = NULL;
-    shader_create_info.flags = 0;
-    shader_create_info.codeSize = sizeof(code);
-    shader_create_info.pCode = code;
-
-    OWL_VK_CHECK(vkCreateShaderModule(renderer->device, &shader_create_info,
-                                      NULL, &renderer->grid_vertex_shader));
-  }
-
-  {
-    VkShaderModuleCreateInfo shader_create_info;
-
-    OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "../shaders/grid_fragment.spv.u32"
-    };
-
-    shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shader_create_info.pNext = NULL;
-    shader_create_info.flags = 0;
-    shader_create_info.codeSize = sizeof(code);
-    shader_create_info.pCode = code;
-
-    OWL_VK_CHECK(vkCreateShaderModule(renderer->device, &shader_create_info,
-                                      NULL, &renderer->grid_fragment_shader));
-  }
-
   return code;
 }
 
 OWL_INTERNAL void owl_renderer_deinit_shaders_(struct owl_renderer *renderer) {
-  vkDestroyShaderModule(renderer->device, renderer->grid_fragment_shader, NULL);
-  vkDestroyShaderModule(renderer->device, renderer->grid_vertex_shader, NULL);
   vkDestroyShaderModule(renderer->device, renderer->model_fragment_shader,
                         NULL);
   vkDestroyShaderModule(renderer->device, renderer->model_vertex_shader, NULL);
@@ -1497,9 +1438,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
       vertex_input_attr_descriptions[5].offset =
           offsetof(struct owl_model_vertex, weights0);
       break;
-
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
-      break;
     }
 
     switch (i) {
@@ -1530,17 +1468,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
       vertex_input_state.pVertexAttributeDescriptions =
           vertex_input_attr_descriptions;
       break;
-
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
-      vertex_input_state.sType =
-          VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-      vertex_input_state.pNext = NULL;
-      vertex_input_state.flags = 0;
-      vertex_input_state.vertexBindingDescriptionCount = 0;
-      vertex_input_state.pVertexBindingDescriptions = NULL;
-      vertex_input_state.vertexAttributeDescriptionCount = 0;
-      vertex_input_state.pVertexAttributeDescriptions = NULL;
-      break;
     }
 
     switch (i) {
@@ -1548,7 +1475,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
     case OWL_RENDERER_PIPELINE_TYPE_WIRES:
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
       input_assembly_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
       input_assembly_state.pNext = NULL;
@@ -1563,7 +1489,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
     case OWL_RENDERER_PIPELINE_TYPE_WIRES:
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
       viewport.x = 0.0F;
       viewport.y = 0.0F;
       viewport.width = renderer->swapchain_extent.width;
@@ -1578,7 +1503,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
     case OWL_RENDERER_PIPELINE_TYPE_WIRES:
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
       scissor.offset.x = 0;
       scissor.offset.y = 0;
       scissor.extent = renderer->swapchain_extent;
@@ -1590,7 +1514,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
     case OWL_RENDERER_PIPELINE_TYPE_WIRES:
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
       viewport_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
       viewport_state.pNext = NULL;
@@ -1605,7 +1528,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
     switch (i) {
     case OWL_RENDERER_PIPELINE_TYPE_MAIN:
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
       rasterization_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
       rasterization_state.pNext = NULL;
@@ -1662,7 +1584,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
     case OWL_RENDERER_PIPELINE_TYPE_WIRES:
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
       multisample_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
       multisample_state.pNext = NULL;
@@ -1697,7 +1618,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
       break;
 
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
       color_blend_attachment_states[0].blendEnable = VK_TRUE;
       color_blend_attachment_states[0].srcColorBlendFactor =
           VK_BLEND_FACTOR_SRC_ALPHA;
@@ -1720,7 +1640,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
     case OWL_RENDERER_PIPELINE_TYPE_WIRES:
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
       color_blend_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
       color_blend_state.pNext = NULL;
@@ -1741,7 +1660,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
     case OWL_RENDERER_PIPELINE_TYPE_WIRES:
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
       depth_stencil_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
       depth_stencil_state.pNext = NULL;
@@ -1815,24 +1733,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
       stages[1].pName = "main";
       stages[1].pSpecializationInfo = NULL;
       break;
-
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
-      stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-      stages[0].pNext = NULL;
-      stages[0].flags = 0;
-      stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-      stages[0].module = renderer->grid_vertex_shader;
-      stages[0].pName = "main";
-      stages[0].pSpecializationInfo = NULL;
-
-      stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-      stages[1].pNext = NULL;
-      stages[1].flags = 0;
-      stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-      stages[1].module = renderer->grid_fragment_shader;
-      stages[1].pName = "main";
-      stages[1].pSpecializationInfo = NULL;
-      break;
     }
 
     switch (i) {
@@ -1845,10 +1745,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
       renderer->pipeline_layouts[i] = renderer->model_pipeline_layout;
       break;
-
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
-      renderer->pipeline_layouts[i] = renderer->grid_pipeline_layout;
-      break;
     }
 
     switch (i) {
@@ -1856,7 +1752,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
     case OWL_RENDERER_PIPELINE_TYPE_WIRES:
     case OWL_RENDERER_PIPELINE_TYPE_FONT:
     case OWL_RENDERER_PIPELINE_TYPE_MODEL:
-    case OWL_RENDERER_PIPELINE_TYPE_GRID:
       pipeline_create_info.sType =
           VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
       pipeline_create_info.pNext = NULL;
@@ -1890,8 +1785,6 @@ owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
 
 OWL_INTERNAL void
 owl_renderer_deinit_pipelines_(struct owl_renderer *renderer) {
-  vkDestroyPipeline(renderer->device,
-                    renderer->pipelines[OWL_RENDERER_PIPELINE_TYPE_GRID], NULL);
   vkDestroyPipeline(renderer->device,
                     renderer->pipelines[OWL_RENDERER_PIPELINE_TYPE_MODEL],
                     NULL);

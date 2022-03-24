@@ -28,7 +28,6 @@ enum owl_renderer_pipeline_type {
   OWL_RENDERER_PIPELINE_TYPE_WIRES,
   OWL_RENDERER_PIPELINE_TYPE_FONT,
   OWL_RENDERER_PIPELINE_TYPE_MODEL,
-  OWL_RENDERER_PIPELINE_TYPE_GRID,
   OWL_RENDERER_PIPELINE_TYPE_COUNT
 };
 
@@ -237,7 +236,6 @@ struct owl_renderer {
   /* ====================================================================== */
   VkPipelineLayout common_pipeline_layout;
   VkPipelineLayout model_pipeline_layout;
-  VkPipelineLayout grid_pipeline_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -248,10 +246,7 @@ struct owl_renderer {
   VkShaderModule font_fragment_shader;
   VkShaderModule model_vertex_shader;
   VkShaderModule model_fragment_shader;
-  VkShaderModule grid_vertex_shader;
-  VkShaderModule grid_fragment_shader;
-  /* ======================================================================
-   */
+  /* ====================================================================== */
 
   /* ====================================================================== */
   /* pipelines */
