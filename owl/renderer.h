@@ -33,7 +33,8 @@ enum owl_renderer_pipeline_type {
 };
 
 typedef enum owl_code (*owl_renderer_init_vk_surface_callback)(
-    struct owl_renderer const *r, void const *user_data, VkSurfaceKHR *surface);
+    struct owl_renderer const *renderer, void const *user_data,
+    VkSurfaceKHR *surface);
 
 struct owl_renderer_init_desc {
   char const *name;
@@ -335,53 +336,56 @@ struct owl_renderer {
   /* ====================================================================== */
 };
 
-enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *rid,
-                                struct owl_renderer *r);
+enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *desc,
+                                struct owl_renderer *renderer);
 
 enum owl_code
-owl_renderer_resize_swapchain(struct owl_renderer_init_desc const *rid,
-                              struct owl_renderer *r);
+owl_renderer_resize_swapchain(struct owl_renderer_init_desc const *desc,
+                              struct owl_renderer *renderer);
 
-void owl_renderer_deinit(struct owl_renderer *r);
+void owl_renderer_deinit(struct owl_renderer *renderer);
 
-owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
+owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *renderer,
                                       VkMemoryRequirements const *requirements,
-                                      enum owl_memory_visibility vis);
+                                      enum owl_memory_visibility visibility);
 
-enum owl_code owl_renderer_flush_dynamic_heap(struct owl_renderer *r);
-
-enum owl_code owl_renderer_invalidate_dynamic_heap(struct owl_renderer *r);
-
-owl_b32 owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *r);
-
-void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *r);
+enum owl_code owl_renderer_flush_dynamic_heap(struct owl_renderer *renderer);
 
 enum owl_code
-owl_renderer_init_image(struct owl_renderer *r,
-                        struct owl_renderer_image_init_desc const *riid,
-                        struct owl_renderer_image *ri);
+owl_renderer_invalidate_dynamic_heap(struct owl_renderer *renderer);
 
-void owl_renderer_deinit_image(struct owl_renderer *r,
-                               struct owl_renderer_image *ri);
+owl_b32
+owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *renderer);
+
+void owl_renderer_clear_dynamic_heap_offset(struct owl_renderer *renderer);
+
+enum owl_code
+owl_renderer_init_image(struct owl_renderer *renderer,
+                        struct owl_renderer_image_init_desc const *desc,
+                        struct owl_renderer_image *image);
+
+void owl_renderer_deinit_image(struct owl_renderer *renderer,
+                               struct owl_renderer_image *image);
 
 void *owl_renderer_dynamic_heap_alloc(
-    struct owl_renderer *r, owl_u64 size,
-    struct owl_renderer_dynamic_heap_reference *rdhr);
+    struct owl_renderer *renderer, owl_u64 size,
+    struct owl_renderer_dynamic_heap_reference *reference);
 
 enum owl_code owl_renderer_dynamic_heap_submit(
-    struct owl_renderer *r, owl_u64 size, void const *src,
-    struct owl_renderer_dynamic_heap_reference *rdhr);
+    struct owl_renderer *renderer, owl_u64 size, void const *source,
+    struct owl_renderer_dynamic_heap_reference *reference);
 
-enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
+enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *renderer,
                                          enum owl_renderer_pipeline_type type);
 
 enum owl_code
-owl_renderer_begin_immidiate_command_buffer(struct owl_renderer *r);
+owl_renderer_begin_immidiate_command_buffer(struct owl_renderer *renderer);
 
-enum owl_code owl_renderer_end_immidiate_command_buffer(struct owl_renderer *r);
+enum owl_code
+owl_renderer_end_immidiate_command_buffer(struct owl_renderer *renderer);
 
-enum owl_code owl_renderer_begin_frame(struct owl_renderer *r);
+enum owl_code owl_renderer_begin_frame(struct owl_renderer *renderer);
 
-enum owl_code owl_renderer_end_frame(struct owl_renderer *r);
+enum owl_code owl_renderer_end_frame(struct owl_renderer *renderer);
 
 #endif

@@ -170,14 +170,14 @@ struct owl_client {
   enum owl_button_state keyboard_keys[OWL_KEYBOARD_KEY_LAST];
 };
 
-enum owl_code owl_client_init(struct owl_client_init_desc const *cid,
+enum owl_code owl_client_init(struct owl_client_init_desc const *desc,
                               struct owl_client *c);
 
 void owl_client_deinit(struct owl_client *c);
 
 enum owl_code
 owl_client_fill_renderer_init_desc(struct owl_client const *c,
-                                   struct owl_renderer_init_desc *rid);
+                                   struct owl_renderer_init_desc *desc);
 
 void owl_client_poll_events(struct owl_client *c);
 

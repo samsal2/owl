@@ -70,31 +70,31 @@ OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face, owl_i32 x_offset,
   }
 }
 
-OWL_INTERNAL enum owl_code owl_font_init_atlas_(struct owl_renderer *r,
+OWL_INTERNAL enum owl_code owl_font_init_atlas_(struct owl_renderer *renderer,
                                                 owl_byte const *data,
                                                 struct owl_font *font) {
   enum owl_code code = OWL_SUCCESS;
-  struct owl_renderer_image_init_desc riid;
+  struct owl_renderer_image_init_desc desc;
 
-  riid.source_type = OWL_RENDERER_IMAGE_SOURCE_TYPE_DATA;
-  riid.source_data = data;
-  riid.source_data_width = font->atlas_width;
-  riid.source_data_height = font->atlas_height;
-  riid.source_data_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
-  riid.use_default_sampler = 0;
-  riid.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
-  riid.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
-  riid.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
-  riid.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  riid.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  riid.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  desc.source_type = OWL_RENDERER_IMAGE_SOURCE_TYPE_DATA;
+  desc.source_data = data;
+  desc.source_data_width = font->atlas_width;
+  desc.source_data_height = font->atlas_height;
+  desc.source_data_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
+  desc.use_default_sampler = 0;
+  desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
+  desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
+  desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
+  desc.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  desc.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  desc.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
 
-  code = owl_renderer_init_image(r, &riid, &font->atlas);
+  code = owl_renderer_init_image(renderer, &desc, &font->atlas);
 
   return code;
 }
 
-enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
+enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
                             char const *path, struct owl_font *font) {
   owl_i32 i;
   owl_i32 x;
@@ -152,7 +152,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
     x += (int)face->glyph->bitmap.width + OWL_FONT_X_OFFSET_PAD;
   }
 
-  code = owl_font_init_atlas_(r, data, font);
+  code = owl_font_init_atlas_(renderer, data, font);
 
   if (OWL_SUCCESS != code)
     goto end_err_free_data;
@@ -167,7 +167,7 @@ end:
   return code;
 }
 
-void owl_font_deinit(struct owl_renderer *r, struct owl_font *font) {
-  owl_renderer_deinit_image(r, &font->atlas);
+void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font) {
+  owl_renderer_deinit_image(renderer, &font->atlas);
   owl_decrement_ft_library_count_();
 }
