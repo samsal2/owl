@@ -84,7 +84,7 @@ int main(void) {
     }
 
 #if 1
-    owl_model_update_animation(renderer, model, client->d_time_stamp);
+    owl_model_update_animation(model, 0, renderer, client->d_time_stamp);
 #endif
 
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_MODEL);

@@ -1137,15 +1137,20 @@ end:
   cgltf_animation_path_type_rotation
 #define OWL_MODEL_ANIMATION_PATH_TYPE_SCALE cgltf_animation_path_type_scale
 
-void owl_model_update_animation(struct owl_renderer const *renderer,
-                                struct owl_model *model, float dt) {
+enum owl_code owl_model_update_animation(struct owl_model *model,
+                                         owl_i32 animation,
+                                         struct owl_renderer *renderer,
+                                         float dt) {
   owl_i32 i;
   struct owl_model_animation_data *dst_animation;
+  enum owl_code code = OWL_SUCCESS;
 
-  if (OWL_MODEL_NO_ANIMATION_SLOT == model->active_animation.slot)
+  if (OWL_MODEL_NO_ANIMATION_SLOT == animation) {
+    code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
+  }
 
-  dst_animation = &model->animations[model->active_animation.slot];
+  dst_animation = &model->animations[animation];
 
   if (dst_animation->end < (dst_animation->current_time += dt))
     dst_animation->current_time -= dst_animation->end;
@@ -1196,6 +1201,8 @@ void owl_model_update_animation(struct owl_renderer const *renderer,
 
       default:
         OWL_ASSERT(0 && "unexpected path");
+        code = OWL_ERROR_UNKNOWN;
+        goto end;
       }
     }
   }
@@ -1205,5 +1212,5 @@ void owl_model_update_animation(struct owl_renderer const *renderer,
   }
 
 end:
-  return;
+  return code;
 }

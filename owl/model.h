@@ -244,7 +244,7 @@ enum owl_code owl_model_init(struct owl_renderer *renderer, char const *path,
 
 void owl_model_deinit(struct owl_renderer *renderer, struct owl_model *model);
 
-void owl_model_update_animation(struct owl_renderer const *renderer,
-                                struct owl_model *model, float dt);
+enum owl_code owl_model_update_animation(struct owl_model *model, owl_i32 animation,
+                                struct owl_renderer *renderer, float dt);
 
 #endif

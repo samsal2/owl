@@ -185,24 +185,24 @@ owl_b32 owl_renderer_query_families_(struct owl_renderer const *renderer,
                                      owl_u32 *present_family_index) {
   owl_i32 found;
   owl_u32 i;
-  owl_u32 count;
+  owl_u32 properties_count;
   VkQueueFamilyProperties *properties;
 
-  vkGetPhysicalDeviceQueueFamilyProperties(renderer->physical_device, &count,
-                                           NULL);
+  vkGetPhysicalDeviceQueueFamilyProperties(renderer->physical_device,
+                                           &properties_count, NULL);
 
-  if (!(properties = OWL_MALLOC(count * sizeof(*properties)))) {
+  if (!(properties = OWL_MALLOC(properties_count * sizeof(*properties)))) {
     found = 0;
     goto end;
   }
 
-  vkGetPhysicalDeviceQueueFamilyProperties(renderer->physical_device, &count,
-                                           properties);
+  vkGetPhysicalDeviceQueueFamilyProperties(renderer->physical_device,
+                                           &properties_count, properties);
 
   *graphics_family_index = OWL_QUEUE_FAMILY_INDEX_NONE;
   *present_family_index = OWL_QUEUE_FAMILY_INDEX_NONE;
 
-  for (i = 0; i < count; ++i) {
+  for (i = 0; i < properties_count; ++i) {
     VkBool32 has_surface;
 
     if (!properties[i].queueCount)
