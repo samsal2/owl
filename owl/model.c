@@ -311,7 +311,8 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
       owl_i32 indices_count = 0;
       float const *position = NULL;
       float const *normal = NULL;
-      float const *uv = NULL;
+      float const *uv0 = NULL;
+      float const *uv1 = NULL;
       owl_u16 const *joints0 = NULL;
       float const *weights0 = NULL;
       struct cgltf_attribute const *attribute = NULL;
@@ -338,7 +339,10 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
         normal = owl_resolve_gltf_accessor_(attribute->data);
 
       if ((attribute = owl_find_gltf_attribute_(src_primitive, "TEXCOORD_0")))
-        uv = owl_resolve_gltf_accessor_(attribute->data);
+        uv0 = owl_resolve_gltf_accessor_(attribute->data);
+
+      if ((attribute = owl_find_gltf_attribute_(src_primitive, "TEXCOORD_1")))
+        uv1 = owl_resolve_gltf_accessor_(attribute->data);
 
       if ((attribute = owl_find_gltf_attribute_(src_primitive, "JOINTS_0")))
         joints0 = owl_resolve_gltf_accessor_(attribute->data);
@@ -357,12 +361,15 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
         else
           OWL_V3_ZERO(vertex->normal);
 
-        if (uv)
-          OWL_V2_COPY(&uv[j * 2], vertex->uv);
+        if (uv0)
+          OWL_V2_COPY(&uv0[j * 2], vertex->uv0);
         else
-          OWL_V2_ZERO(vertex->uv);
+          OWL_V2_ZERO(vertex->uv0);
 
-        OWL_V3_SET(1.0F, 1.0F, 1.0F, vertex->color);
+        if (uv1)
+          OWL_V2_COPY(&uv1[j * 2], vertex->uv1);
+        else
+          OWL_V2_ZERO(vertex->uv1);
 
         if (joints0 && weights0)
           OWL_V4_COPY(&joints0[j * 4], vertex->joints0);
@@ -441,8 +448,6 @@ owl_model_load_buffers_(struct owl_renderer *renderer,
   OWL_ASSERT(owl_renderer_is_dynamic_heap_offset_clear(renderer));
   OWL_ASSERT(desc->vertices_count == desc->vertices_capacity);
   OWL_ASSERT(desc->indices_count == desc->indices_capacity);
-
-  owl_renderer_invalidate_dynamic_heap(renderer);
 
   {
     owl_u64 size;
@@ -529,11 +534,9 @@ owl_model_load_buffers_(struct owl_renderer *renderer,
                                     model->indices_memory, 0));
   }
 
-  if (OWL_SUCCESS != (code = owl_renderer_flush_dynamic_heap(renderer)))
-    goto end;
+  code = owl_renderer_begin_immidiate_command_buffer(renderer);
 
-  if (OWL_SUCCESS !=
-      (code = owl_renderer_begin_immidiate_command_buffer(renderer)))
+  if (OWL_SUCCESS != code)
     goto end;
 
   {
@@ -675,7 +678,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
     if (!src_skin->inverse_bind_matrices)
       continue;
 
-    if (OWL_MODEL_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT <=
+    if (OWL_MODEL_SKIN_MAX_JOINTS_COUNT <=
         (int)src_skin->inverse_bind_matrices->count) {
       OWL_ASSERT(0);
       code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -694,8 +697,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
     {
       VkBufferCreateInfo buffer_create_info;
 
-      dst_skin->ssbo_buffer_size =
-          src_skin->inverse_bind_matrices->count * sizeof(owl_m4);
+      dst_skin->ssbo_buffer_size = sizeof(struct owl_model_skin_ssbo_data);
 
       buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
       buffer_create_info.pNext = NULL;
@@ -743,7 +745,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
       VkDescriptorSetAllocateInfo set_allocate_info;
 
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j)
-        layouts[j] = renderer->joints_set_layout;
+        layouts[j] = renderer->vertex_ssbo_set_layout;
 
       set_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
       set_allocate_info.pNext = NULL;
@@ -784,23 +786,28 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
     {
       owl_i32 k;
       void *data;
-      owl_byte *bytes;
 
       vkMapMemory(renderer->device, dst_skin->ssbo_memory, 0, VK_WHOLE_SIZE, 0,
                   &data);
 
-      bytes = data;
+      for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j) {
+        owl_u64 offset = (owl_u64)j * dst_skin->ssbo_buffer_aligned_size;
+        owl_byte *ssbo = &((owl_byte *)data)[offset];
+        dst_skin->ssbo_datas[j] = (struct owl_model_skin_ssbo_data *)ssbo;
+      }
 
-      for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j)
-        dst_skin->ssbo_datas[j] =
-            (owl_m4 *)&bytes[(owl_u64)j * dst_skin->ssbo_buffer_aligned_size];
+      for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j) {
+        struct owl_model_skin_ssbo_data *ssbo = dst_skin->ssbo_datas[j];
 
-      for (k = 0; k < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++k)
-        for (j = 0; j < (int)src_skin->inverse_bind_matrices->count; ++j)
-          OWL_M4_COPY(inverse_bind_matrices[j], dst_skin->ssbo_datas[k][j]);
+        OWL_M4_IDENTITY(ssbo->matrix);
+
+        for (k = 0; k < (int)src_skin->inverse_bind_matrices->count; ++k)
+          OWL_M4_COPY(inverse_bind_matrices[k], ssbo->joint_matices[k]);
+
+        ssbo->joint_matrices_count = dst_skin->joints_count;
+      }
     }
   }
-
 end:
   return code;
 }
@@ -1096,8 +1103,7 @@ owl_model_resolve_node_matrix_(struct owl_model const *model,
 }
 
 OWL_INTERNAL void
-owl_model_node_update_joints_(struct owl_renderer const *renderer,
-                              struct owl_model *model,
+owl_model_node_update_joints_(struct owl_model *model, owl_i32 frame,
                               struct owl_model_node const *node) {
   owl_i32 i;
   owl_m4 tmp;
@@ -1108,7 +1114,7 @@ owl_model_node_update_joints_(struct owl_renderer const *renderer,
   dst_node = &model->nodes[node->slot];
 
   for (i = 0; i < dst_node->children_count; ++i)
-    owl_model_node_update_joints_(renderer, model, &dst_node->children[i]);
+    owl_model_node_update_joints_(model, frame, &dst_node->children[i]);
 
   if (OWL_MODEL_NODE_NO_SKIN_SLOT == dst_node->skin.slot)
     goto end;
@@ -1119,10 +1125,11 @@ owl_model_node_update_joints_(struct owl_renderer const *renderer,
   owl_m4_inverse(tmp, inverse);
 
   for (i = 0; i < dst_skin->joints_count; ++i) {
+    struct owl_model_skin_ssbo_data *ssbo = dst_skin->ssbo_datas[frame];
+
     owl_model_resolve_node_matrix_(model, &dst_skin->joints[i], tmp);
     owl_m4_multiply(tmp, dst_skin->inverse_bind_matrices[i], tmp);
-    owl_m4_multiply(inverse, tmp,
-                    dst_skin->ssbo_datas[renderer->active_frame_index][i]);
+    owl_m4_multiply(inverse, tmp, ssbo->joint_matices[i]);
   }
 
 end:
@@ -1131,15 +1138,17 @@ end:
 
 #define OWL_MODEL_ANIMATION_INTERPOLATION_TYPE_LINEAR                          \
   cgltf_interpolation_type_linear
+
 #define OWL_MODEL_ANIMATION_PATH_TYPE_TRANSLATION                              \
   cgltf_animation_path_type_translation
+
 #define OWL_MODEL_ANIMATION_PATH_TYPE_ROTATION                                 \
   cgltf_animation_path_type_rotation
+
 #define OWL_MODEL_ANIMATION_PATH_TYPE_SCALE cgltf_animation_path_type_scale
 
 enum owl_code owl_model_update_animation(struct owl_model *model,
-                                         owl_i32 animation,
-                                         struct owl_renderer *renderer,
+                                         owl_i32 animation, owl_i32 frame,
                                          float dt) {
   owl_i32 i;
   struct owl_model_animation_data *dst_animation;
@@ -1170,8 +1179,10 @@ enum owl_code owl_model_update_animation(struct owl_model *model,
     dst_node = &model->nodes[dst_channel->node.slot];
 
     if (OWL_MODEL_ANIMATION_INTERPOLATION_TYPE_LINEAR !=
-        dst_sampler->interpolation)
+        dst_sampler->interpolation) {
+      OWL_DEBUG_LOG("skipping channel %i\n", i);
       continue;
+    }
 
     for (j = 0; j < dst_sampler->inputs_count - 1; ++j) {
       float const i0 = dst_sampler->inputs[j];
@@ -1208,7 +1219,7 @@ enum owl_code owl_model_update_animation(struct owl_model *model,
   }
 
   for (i = 0; i < model->roots_count; ++i) {
-    owl_model_node_update_joints_(renderer, model, &model->roots[i]);
+    owl_model_node_update_joints_(model, frame, &model->roots[i]);
   }
 
 end:

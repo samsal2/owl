@@ -18,7 +18,6 @@
 #define OWL_MODEL_MAX_MATERIALS_COUNT 8
 #define OWL_MODEL_NODE_MAX_CHILDREN_COUNT 128
 #define OWL_MODEL_MAX_MESHES_COUNT 128
-#define OWL_MODEL_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT 128
 #define OWL_MODEL_SKIN_MAX_JOINTS_COUNT 128
 #define OWL_MODEL_ANIMATION_SAMPLER_MAX_INPUTS_COUNT 128
 #define OWL_MODEL_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT 128
@@ -71,21 +70,39 @@ struct owl_model_animation {
   owl_i32 slot;
 };
 
-struct owl_model_push_constant {
-  owl_m4 model;
+struct owl_model_material_push_constant {
+  owl_v4 base_color_factor;
+  owl_v4 emissive_factor;
+  owl_v4 diffuse_factor;
+  owl_v4 specular_factor;
+  float workflow;
+  owl_i32 base_color_uv_set;
+  owl_i32 physical_descriptor_uv_set;
+  owl_i32 normal_uv_set;
+  owl_i32 occlusion_uv_set;
+  owl_i32 emissive_uv_set;
+  float metallic_factor;
+  float roughness_factor;
+  float alpha_mask;
+  float alpha_mask_cutoff;
 };
 
 struct owl_model_uniform {
   owl_m4 projection;
   owl_m4 view;
+  owl_m4 model;
   owl_v4 light;
+};
+
+struct owl_model_uniform_params {
+  owl_v4 light_direction;
 };
 
 struct owl_model_vertex {
   owl_v3 position;
   owl_v3 normal;
-  owl_v2 uv;
-  owl_v3 color;
+  owl_v2 uv0;
+  owl_v2 uv1;
   owl_v4 joints0;
   owl_v4 weights0;
 };
@@ -140,6 +157,12 @@ struct owl_model_material_data {
   owl_v4 base_color_factor;
 };
 
+struct owl_model_skin_ssbo_data {
+  owl_m4 matrix;
+  owl_m4 joint_matices[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
+  owl_i32 joint_matrices_count;
+};
+
 struct owl_model_skin_data {
   char name[OWL_MODEL_MAX_NAME_LENGTH];
   struct owl_model_node skeleton_root;
@@ -150,12 +173,15 @@ struct owl_model_skin_data {
   owl_u64 ssbo_buffer_alignment;
   owl_u64 ssbo_buffer_aligned_size;
 
-  owl_m4 *ssbo_datas[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  /* NOTE(samuel): directly mapped skin joint data */
+  struct owl_model_skin_ssbo_data
+      *ssbo_datas[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+
   VkBuffer ssbo_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkDescriptorSet ssbo_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
 
   owl_i32 inverse_bind_matrices_count;
-  owl_m4 inverse_bind_matrices[OWL_MODEL_SKIN_MAX_INVERSE_BIND_MATRICES_COUNT];
+  owl_m4 inverse_bind_matrices[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
 
   owl_i32 joints_count;
   struct owl_model_node joints[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
@@ -244,7 +270,8 @@ enum owl_code owl_model_init(struct owl_renderer *renderer, char const *path,
 
 void owl_model_deinit(struct owl_renderer *renderer, struct owl_model *model);
 
-enum owl_code owl_model_update_animation(struct owl_model *model, owl_i32 animation,
-                                struct owl_renderer *renderer, float dt);
+enum owl_code owl_model_update_animation(struct owl_model *model,
+                                         owl_i32 animation, owl_i32 frame,
+                                         float dt);
 
 #endif

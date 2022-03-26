@@ -6,8 +6,6 @@ static struct owl_client_init_desc client_desc;
 static struct owl_client *client;
 static struct owl_renderer_init_desc renderer_desc;
 static struct owl_renderer *renderer;
-static struct owl_model *model;
-static struct owl_draw_command_model model_command;
 static struct owl_camera camera;
 static struct owl_font *font;
 static struct owl_draw_command_text text_command;
@@ -34,7 +32,7 @@ char const *fmtfps(double d) {
 int main(void) {
   client_desc.height = 600;
   client_desc.width = 600;
-  client_desc.title = "model";
+  client_desc.title = "grid";
   client = OWL_MALLOC(sizeof(*client));
   CHECK(owl_client_init(&client_desc, client));
 
@@ -43,17 +41,6 @@ int main(void) {
   CHECK(owl_renderer_init(&renderer_desc, renderer));
 
   CHECK(owl_camera_init(&camera));
-
-  model = OWL_MALLOC(sizeof(*model));
-  CHECK(owl_model_init(renderer, MODEL_PATH, model));
-
-  OWL_V3_SET(0.0F, 0.0F, 1.9F, model_command.light);
-  OWL_M4_IDENTITY(model_command.model);
-  {
-    owl_v3 offset = {0.0F, 0.0F, -1.0F};
-    owl_m4_translate(offset, model_command.model);
-  }
-  model_command.skin = model;
 
   font = OWL_MALLOC(sizeof(*font));
   CHECK(owl_font_init(renderer, 64, FONT_PATH, font));
@@ -64,34 +51,12 @@ int main(void) {
   text_command.scale = 0.05F;
 
   while (!owl_client_is_done(client)) {
-    OWL_V2_COPY(client->cursor_position, model_command.light);
-
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_desc);
       owl_renderer_resize_swapchain(&renderer_desc, renderer);
       owl_camera_set_ratio(&camera, renderer->framebuffer_ratio);
       continue;
     }
-
-    if (OWL_BUTTON_STATE_PRESS ==
-        client->mouse_buttons[OWL_MOUSE_BUTTON_LEFT]) {
-      owl_v3 side = {1.0F, 0.0F, 0.0F};
-      owl_v3 up = {0.0F, 1.0F, 0.0F};
-      owl_m4_rotate(model_command.model,
-                    -client->delta_cursor_position[1] * 2.0F, side,
-                    model_command.model);
-      owl_m4_rotate(model_command.model,
-                    client->delta_cursor_position[0] * 2.0F, up,
-                    model_command.model);
-    }
-
-#if 1
-    owl_model_update_animation(model, 0, renderer->active_frame_index,
-                               client->delta_time_stamp);
-#endif
-
-    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_MODEL);
-    owl_draw_command_submit_model(renderer, &camera, &model_command);
 
 #if 1
     text_command.text = fmtfps(client->fps);
@@ -113,9 +78,6 @@ int main(void) {
   OWL_FREE(font);
 
   owl_camera_deinit(&camera);
-
-  owl_model_deinit(renderer, model);
-  OWL_FREE(model);
 
   owl_renderer_deinit(renderer);
   OWL_FREE(renderer);

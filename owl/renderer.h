@@ -8,7 +8,7 @@
 struct owl_window;
 struct owl_renderer;
 
-#define OWL_MEMORY_TYPE_NONE (owl_u32) - 1
+#define OWL_RENDERER_MEMORY_TYPE_NONE (owl_u32) - 1
 #define OWL_RENDERER_MAX_SWAPCHAIN_IMAGES_COUNT 8
 #define OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT 2
 #define OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT 8
@@ -19,6 +19,7 @@ struct owl_renderer;
 
 enum owl_renderer_memory_visibility {
   OWL_RENDERER_MEMORY_VISIBILITY_CPU,
+  OWL_RENDERER_MEMORY_VISIBILITY_CPU_CACHED,
   OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT,
   OWL_RENDERER_MEMORY_VISIBILITY_GPU
 };
@@ -54,8 +55,9 @@ struct owl_renderer_dynamic_heap_reference {
   owl_u32 offset32;
   owl_u64 offset;
   VkBuffer buffer;
-  VkDescriptorSet pvm_set;
-  VkDescriptorSet pvl_set;
+  VkDescriptorSet common_ubo_set;
+  VkDescriptorSet model_ubo_set;
+  VkDescriptorSet model_ubo_params_set;
 };
 
 struct owl_renderer_image {
@@ -99,7 +101,7 @@ struct owl_renderer_image_init_desc {
   owl_i32 source_data_height;
   enum owl_renderer_pixel_format source_data_format;
 
-  int use_default_sampler;
+  owl_b32 use_default_sampler;
   enum owl_renderer_sampler_mip_mode sampler_mip_mode;
   enum owl_renderer_sampler_filter sampler_min_filter;
   enum owl_renderer_sampler_filter sampler_mag_filter;
@@ -124,8 +126,7 @@ struct owl_renderer {
   /* ====================================================================== */
   VkInstance instance;
   VkDebugUtilsMessengerEXT debug_messenger;
-  /* ======================================================================
-   */
+  /* ====================================================================== */
 
   /* ====================================================================== */
   /* surface */
@@ -138,8 +139,7 @@ struct owl_renderer {
   /* sampling */
   /* ====================================================================== */
   VkSampleCountFlags msaa_sample_count;
-  /* ======================================================================
-   */
+  /* ====================================================================== */
 
   /* ====================================================================== */
   /* device */
@@ -212,8 +212,7 @@ struct owl_renderer {
   VkImage depth_stencil_image;
   VkImageView depth_stencil_view;
   VkDeviceMemory depth_stencil_memory;
-  /* ======================================================================
-   */
+  /* ====================================================================== */
 
   /* ====================================================================== */
   /* main framebuffers */
@@ -225,10 +224,11 @@ struct owl_renderer {
   /* ====================================================================== */
   /* sets layouts */
   /* ====================================================================== */
-  VkDescriptorSetLayout pvm_set_layout;
-  VkDescriptorSetLayout image_set_layout;
-  VkDescriptorSetLayout pvl_set_layout;
-  VkDescriptorSetLayout joints_set_layout;
+  VkDescriptorSetLayout vertex_ubo_set_layout;
+  VkDescriptorSetLayout fragment_ubo_set_layout;
+  VkDescriptorSetLayout shared_ubo_set_layout;
+  VkDescriptorSetLayout vertex_ssbo_set_layout;
+  VkDescriptorSetLayout sampler_image_set_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -290,11 +290,15 @@ struct owl_renderer {
   owl_i32 garbage_buffers_count;
   VkBuffer garbage_buffers[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
-  owl_i32 garbage_pvm_sets_count;
-  VkDescriptorSet garbage_pvm_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
+  owl_i32 garbage_common_ubo_sets_count;
+  VkDescriptorSet garbage_common_ubo_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
-  owl_i32 garbage_pvl_sets_count;
-  VkDescriptorSet garbage_pvl_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
+  owl_i32 garbage_model_ubo_sets_count;
+  VkDescriptorSet garbage_model_ubo_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
+
+  owl_i32 garbage_model_ubo_params_sets_count;
+  VkDescriptorSet
+      garbage_model_ubo_params_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -309,23 +313,30 @@ struct owl_renderer {
 
   owl_byte *active_dynamic_heap_data;
   VkBuffer active_dynamic_heap_buffer;
-  VkDescriptorSet active_dynamic_heap_pvm_set;
-  VkDescriptorSet active_dynamic_heap_pvl_set;
+  VkDescriptorSet active_dynamic_heap_common_ubo_set;
+  VkDescriptorSet active_dynamic_heap_model_ubo_set;
+  VkDescriptorSet active_dynamic_heap_model_ubo_params_set;
 
   owl_byte *dynamic_heap_datas[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkBuffer dynamic_heap_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-  VkDescriptorSet dynamic_heap_pvm_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-  VkDescriptorSet dynamic_heap_pvl_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-  /* ======================================================================
-   */
+  VkDescriptorSet
+      dynamic_heap_common_ubo_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkDescriptorSet
+      dynamic_heap_model_ubo_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkDescriptorSet
+      dynamic_heap_model_ubo_params_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  /* ====================================================================== */
 
   /* ====================================================================== */
   /* image manager resources */
   /* ====================================================================== */
   owl_i32 image_manager_slots[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
+
   VkImage image_manager_images[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkDeviceMemory image_manager_memories[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkImageView image_manager_views[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
+
+  /* TODO(samuel): image manager sampler cache */
   VkSampler image_manager_samplers[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkDescriptorSet image_manager_sets[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   /* ====================================================================== */
@@ -345,11 +356,6 @@ owl_renderer_find_memory_type(struct owl_renderer const *renderer,
                               VkMemoryRequirements const *requirements,
                               enum owl_renderer_memory_visibility visibility);
 
-enum owl_code owl_renderer_flush_dynamic_heap(struct owl_renderer *renderer);
-
-enum owl_code
-owl_renderer_invalidate_dynamic_heap(struct owl_renderer *renderer);
-
 owl_b32
 owl_renderer_is_dynamic_heap_offset_clear(struct owl_renderer const *renderer);
 
@@ -368,7 +374,7 @@ void *owl_renderer_dynamic_heap_alloc(
     struct owl_renderer_dynamic_heap_reference *reference);
 
 enum owl_code owl_renderer_dynamic_heap_submit(
-    struct owl_renderer *renderer, owl_u64 size, void const *source,
+    struct owl_renderer *renderer, owl_u64 size, void const *src,
     struct owl_renderer_dynamic_heap_reference *reference);
 
 enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *renderer,

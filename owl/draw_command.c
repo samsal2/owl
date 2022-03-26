@@ -44,7 +44,7 @@ owl_draw_command_submit_basic(struct owl_renderer *renderer,
   if (OWL_SUCCESS != code)
     goto end;
 
-  sets[0] = uniform_reference.pvm_set;
+  sets[0] = uniform_reference.common_ubo_set;
   sets[1] = renderer->image_manager_sets[command->image.slot];
 
   vkCmdBindVertexBuffers(renderer->active_frame_command_buffer, 0, 1,
@@ -104,7 +104,7 @@ owl_draw_command_submit_quad(struct owl_renderer *renderer,
   if (OWL_SUCCESS != code)
     goto end;
 
-  sets[0] = uniform_reference.pvm_set;
+  sets[0] = uniform_reference.common_ubo_set;
   sets[1] = renderer->image_manager_sets[command->image.slot];
 
   vkCmdBindVertexBuffers(renderer->active_frame_command_buffer, 0, 1,
@@ -263,9 +263,16 @@ owl_model_submit_node_(struct owl_renderer *renderer,
   owl_i32 i;
   struct owl_model_node parent;
   struct owl_model const *model;
+  struct owl_model_uniform uniform;
+  struct owl_model_uniform_params uniform_params;
   struct owl_model_node_data const *node_data;
   struct owl_model_mesh_data const *mesh_data;
+  struct owl_model_skin_data const *skin_data;
+  struct owl_model_skin_ssbo_data *ssbo;
+  /* TODO(samuel): materials */
+#if 0
   struct owl_model_push_constant push_constant;
+#endif
   enum owl_code code = OWL_SUCCESS;
 
   model = command->skin;
@@ -287,38 +294,33 @@ owl_model_submit_node_(struct owl_renderer *renderer,
   if (!mesh_data->primitives_count)
     goto end;
 
-#if 0
-  OWL_M4_COPY(command->model, push_constant.model);
-  owl_m4_multiply(model->nodes[node->slot].matrix, push_constant.model, 
-                  push_constant.model);
-#else
-  OWL_M4_COPY(model->nodes[node->slot].matrix, push_constant.model);
-#endif
+  skin_data = &model->skins[node_data->skin.slot];
+  ssbo = skin_data->ssbo_datas[renderer->active_frame_index];
+
+  OWL_M4_COPY(model->nodes[node->slot].matrix, ssbo->matrix);
 
   for (parent.slot = model->nodes[node->slot].parent.slot;
        OWL_MODEL_NODE_NO_PARENT_SLOT != parent.slot;
        parent.slot = model->nodes[parent.slot].parent.slot)
-    owl_m4_multiply(model->nodes[parent.slot].matrix, push_constant.model,
-                    push_constant.model);
+    owl_m4_multiply(model->nodes[parent.slot].matrix, ssbo->matrix,
+                    ssbo->matrix);
 
-  owl_m4_multiply(command->model, push_constant.model, push_constant.model);
+  OWL_M4_COPY(command->model, uniform.model);
+  OWL_V4_ZERO(uniform_params.light_direction);
 
+  /* TODO(samuel): materials */
+#if 0
   vkCmdPushConstants(
       renderer->active_frame_command_buffer, renderer->active_pipeline_layout,
       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constant), &push_constant);
-
-  vkCmdBindDescriptorSets(renderer->active_frame_command_buffer,
-                          VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          renderer->active_pipeline_layout, 3, 1,
-                          &model->skins[node_data->skin.slot]
-                               .ssbo_sets[renderer->active_frame_index],
-                          0, 0);
+#endif
 
   for (i = 0; i < mesh_data->primitives_count; ++i) {
-    VkDescriptorSet sets[3];
+    owl_u32 offsets[2];
+    VkDescriptorSet sets[5];
     struct owl_model_primitive primitive;
-    struct owl_model_uniform uniform;
     struct owl_renderer_dynamic_heap_reference uniform_reference;
+    struct owl_renderer_dynamic_heap_reference uniform_params_reference;
     struct owl_model_material material;
     struct owl_model_texture base_color_texture;
     struct owl_model_texture normal_texture;
@@ -363,14 +365,26 @@ owl_model_submit_node_(struct owl_renderer *renderer,
     if (OWL_SUCCESS != code)
       goto end;
 
-    sets[0] = uniform_reference.pvl_set;
+    code = owl_renderer_dynamic_heap_submit(
+        renderer, sizeof(uniform_params), &uniform, &uniform_params_reference);
+
+    if (OWL_SUCCESS != code)
+      goto end;
+
+    /* TODO(samuel): generic pipeline layout ordered by frequency */
+    sets[0] = uniform_reference.model_ubo_set;
     sets[1] = renderer->image_manager_sets[base_color_image_data->image.slot];
     sets[2] = renderer->image_manager_sets[normal_image_data->image.slot];
+    sets[3] = skin_data->ssbo_sets[renderer->active_frame_index];
+    sets[4] = uniform_params_reference.model_ubo_params_set;
+
+    offsets[0] = uniform_reference.offset32;
+    offsets[1] = uniform_params_reference.offset32;
 
     vkCmdBindDescriptorSets(
         renderer->active_frame_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        renderer->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets), sets, 1,
-        &uniform_reference.offset32);
+        renderer->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets), sets,
+        OWL_ARRAY_SIZE(offsets), offsets);
 
     vkCmdDrawIndexed(renderer->active_frame_command_buffer,
                      primitive_data->count, 1, primitive_data->first, 0, 0);
@@ -423,8 +437,8 @@ owl_draw_command_submit_grid(struct owl_renderer *renderer,
 
   vkCmdBindDescriptorSets(
       renderer->active_frame_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-      renderer->active_pipeline_layout, 0, 1, &uniform_reference.pvm_set, 1,
-      &uniform_reference.offset32);
+      renderer->active_pipeline_layout, 0, 1, &uniform_reference.common_ubo_set,
+      1, &uniform_reference.offset32);
 
   OWL_UNUSED(command);
 

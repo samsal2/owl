@@ -160,10 +160,10 @@ struct owl_client {
   owl_i32 window_width;
   owl_i32 window_height;
   double fps;
-  double d_time_stamp;
+  double delta_time_stamp;
   double time_stamp;
   double previous_time_stamp;
-  owl_v2 d_cursor_position;
+  owl_v2 delta_cursor_position;
   owl_v2 cursor_position;
   owl_v2 previous_cursor_position;
   enum owl_button_state mouse_buttons[OWL_MOUSE_BUTTON_COUNT];

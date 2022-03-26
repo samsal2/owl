@@ -5,5 +5,5 @@ glslangValidator -V -x -o skybox_vertex.spv.u32 skybox.vert
 glslangValidator -V -x -o skybox_fragment.spv.u32 skybox.frag
 glslangValidator -V -x -o scene_vertex.spv.u32 scene.vert
 glslangValidator -V -x -o scene_fragment.spv.u32 scene.frag
-glslangValidator -V -x -o skin_vertex.spv.u32 skin.vert
-glslangValidator -V -x -o skin_fragment.spv.u32 skin.frag
+glslangValidator -V -x -o model_vertex.spv.u32 model.vert
+glslangValidator -V -x -o model_fragment.spv.u32 model.frag

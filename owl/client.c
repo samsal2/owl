@@ -69,7 +69,7 @@ OWL_INTERNAL void owl_cursor_position_callback_(GLFWwindow *window, double x,
   c->cursor_position[1] = 2.0F * ((float)y / (float)c->window_height) - 1.0F;
 
   OWL_V2_SUB(c->cursor_position, c->previous_cursor_position,
-             c->d_cursor_position);
+             c->delta_cursor_position);
 }
 
 OWL_INTERNAL void owl_mouse_key_callback_(GLFWwindow *window, owl_i32 button,
@@ -143,7 +143,7 @@ enum owl_code owl_client_init(struct owl_client_init_desc const *desc,
     client->keyboard_keys[i] = OWL_BUTTON_STATE_NONE;
 
   client->fps = 60.0F;
-  client->d_time_stamp = 0.16667;
+  client->delta_time_stamp = 0.16667;
   client->time_stamp = 0.0;
   client->previous_time_stamp = 0.0;
   client->title = desc->title;
@@ -212,6 +212,6 @@ void owl_client_poll_events(struct owl_client *client) {
   glfwPollEvents();
   client->previous_time_stamp = client->time_stamp;
   client->time_stamp = glfwGetTime();
-  client->d_time_stamp = client->time_stamp - client->previous_time_stamp;
-  client->fps = 1.0F / client->d_time_stamp;
+  client->delta_time_stamp = client->time_stamp - client->previous_time_stamp;
+  client->fps = 1.0F / client->delta_time_stamp;
 }

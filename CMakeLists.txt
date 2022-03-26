@@ -100,20 +100,19 @@ set(OWL_C_CLANG_RELEASE_COMPILE_FLAGS
 set(OWL_C_CLANG_DEBUG_LINK_FLAGS
 		-fsanitize=address
 		-fsanitize=undefined
-		-fsanitize=bounds
-)
+		-fsanitize=bounds)
 	
-target_compile_features(owl PRIVATE c_std_90)
+target_compile_features(owl PRIVATE c_std_99)
 
 target_compile_options(owl PRIVATE
-	"$<$<C_COMPILER_ID:Clang,AppleClang>:"
+	"$<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:"
     "${OWL_C_CLANG_BASE_COMPILE_FLAGS}>"
-	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Debug>>:"
+	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
     "${OWL_C_CLANG_DEBUG_COMPILE_FLAGS}>"
-	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Release>>:"
+	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Release>>:"
     "${OWL_C_CLANG_RELEASE_COMPILE_FLAGS}>")
 
 target_link_options(owl PUBLIC
-	"$<$<AND:$<C_COMPILER_ID:Clang,AppleClang>,$<CONFIG:Debug>>:"
+	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
     "${OWL_C_CLANG_DEBUG_LINK_FLAGS}>")
 
