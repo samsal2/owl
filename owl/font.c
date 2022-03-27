@@ -6,6 +6,7 @@
 #include "types.h"
 #include "vector_math.h"
 
+#if 0
 /* clang-format off */
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -171,3 +172,24 @@ void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font) {
   owl_renderer_deinit_image(renderer, &font->atlas);
   owl_decrement_ft_library_count_();
 }
+#else
+
+enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
+                            char const *path, struct owl_font *font) {
+  enum owl_code code = OWL_SUCCESS;
+
+  OWL_MEMSET(font, 0, sizeof(*font));
+  OWL_UNUSED(renderer);
+  OWL_UNUSED(size);
+  OWL_UNUSED(path);
+  OWL_UNUSED(font);
+
+  return code;
+}
+
+void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font) {
+  OWL_UNUSED(renderer);
+  OWL_UNUSED(font);
+}
+
+#endif

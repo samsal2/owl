@@ -247,11 +247,6 @@ static struct owl_camera camera;
 #define FONTPATH "../../assets/Inconsolata-Regular.ttf"
 
 int main(void) {
-  owl_v3 eye;
-  owl_v3 center;
-  owl_v3 up;
-  owl_v3 position;
-  owl_v3 color;
   owl_u32 selected = UNSELECTED;
 
   client_desc.height = 600;

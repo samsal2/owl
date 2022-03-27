@@ -8,9 +8,6 @@
 #include <math.h>
 #include <stb/stb_image.h>
 
-#define OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT 8
-#define OWL_MAX_VERTEX_INPUT_ATTR_COUNT 8
-#define OWL_MAX_COLOR_ATTACHMENTS_COUNT 8
 #define OWL_MAX_PRESENT_MODES 16
 #define OWL_UNRESTRICTED_DIMENSION (owl_u32) - 1
 #define OWL_ACQUIRE_IMAGE_TIMEOUT (owl_u64) - 1
@@ -70,7 +67,7 @@ OWL_INTERNAL void owl_renderer_deinit_instance_(struct owl_renderer *renderer) {
 
 #if defined(OWL_ENABLE_VALIDATION)
 
-#define OWL_GET_INSTANCE_PROC_ADDR(i, fn)                                      \
+#define OWL_VK_GET_INSTANCE_PROC_ADDR(i, fn)                                   \
   ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))
 
 #include <stdio.h>
@@ -78,8 +75,10 @@ static VKAPI_ATTR VKAPI_CALL VkBool32 owl_vk_debug_callback_(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT type,
     VkDebugUtilsMessengerCallbackDataEXT const *data, void *user_data) {
+  struct owl_renderer const *renderer = user_data;
+
   OWL_UNUSED(type);
-  OWL_UNUSED(user_data);
+  OWL_UNUSED(renderer);
 
   if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
     fprintf(stderr,
@@ -107,7 +106,7 @@ owl_renderer_init_debug_(struct owl_renderer *renderer) {
   PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
   enum owl_code code = OWL_SUCCESS;
 
-  vkCreateDebugUtilsMessengerEXT = OWL_GET_INSTANCE_PROC_ADDR(
+  vkCreateDebugUtilsMessengerEXT = OWL_VK_GET_INSTANCE_PROC_ADDR(
       renderer->instance, vkCreateDebugUtilsMessengerEXT);
 
   OWL_ASSERT(vkCreateDebugUtilsMessengerEXT);
@@ -137,7 +136,7 @@ owl_renderer_init_debug_(struct owl_renderer *renderer) {
 OWL_INTERNAL void owl_renderer_deinit_debug_(struct owl_renderer *renderer) {
   PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
 
-  vkDestroyDebugUtilsMessengerEXT = OWL_GET_INSTANCE_PROC_ADDR(
+  vkDestroyDebugUtilsMessengerEXT = OWL_VK_GET_INSTANCE_PROC_ADDR(
       renderer->instance, vkDestroyDebugUtilsMessengerEXT);
 
   OWL_ASSERT(vkDestroyDebugUtilsMessengerEXT);
@@ -241,7 +240,7 @@ owl_validate_device_extensions_(owl_u32 extensions_count,
                                 VkExtensionProperties const *extensions) {
   owl_u32 i;
   owl_i32 found = 1;
-  owl_i32 extensions_found[OWL_ARRAY_SIZE(g_required_device_extensions)];
+  owl_b32 extensions_found[OWL_ARRAY_SIZE(g_required_device_extensions)];
 
   OWL_MEMSET(extensions_found, 0, sizeof(extensions_found));
 
@@ -400,10 +399,11 @@ end:
 
 OWL_INTERNAL owl_u32
 owl_renderer_get_queue_count_(struct owl_renderer const *renderer) {
-  return renderer->graphics_queue_family_index ==
-                 renderer->present_queue_family_index
-             ? 1
-             : 2;
+  if (renderer->graphics_queue_family_index ==
+      renderer->present_queue_family_index)
+    return 1;
+  else
+    return 2;
 }
 
 OWL_INTERNAL enum owl_code
@@ -1305,7 +1305,6 @@ owl_renderer_init_shaders_(struct owl_renderer *renderer) {
   {
     VkShaderModuleCreateInfo shader_create_info;
 
-    /* TODO(samuel): Properly load code at runtime */
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
 #include "../shaders/model_vertex.spv.u32"
     };
@@ -1353,28 +1352,25 @@ OWL_INTERNAL void owl_renderer_deinit_shaders_(struct owl_renderer *renderer) {
 OWL_INTERNAL enum owl_code
 owl_renderer_init_pipelines_(struct owl_renderer *renderer) {
 
-  VkVertexInputBindingDescription
-      vertex_binding_descriptions[OWL_MAX_VERTEX_INPUT_BINDINGS_COUNT];
-  VkVertexInputAttributeDescription
-      vertex_attr_descriptions[OWL_MAX_VERTEX_INPUT_ATTR_COUNT];
-  VkPipelineVertexInputStateCreateInfo vertex_input_state;
-  VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
-  VkViewport viewport;
-  VkRect2D scissor;
-  VkPipelineViewportStateCreateInfo viewport_state;
-  VkPipelineRasterizationStateCreateInfo rasterization_state;
-  VkPipelineMultisampleStateCreateInfo multisample_state;
-  VkPipelineColorBlendAttachmentState
-      color_blend_attachment_states[OWL_MAX_COLOR_ATTACHMENTS_COUNT];
-  VkPipelineColorBlendStateCreateInfo color_blend_state;
-  VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
-  VkPipelineShaderStageCreateInfo stages[2];
-  VkGraphicsPipelineCreateInfo pipeline_create_info;
-
   owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < OWL_RENDERER_PIPELINE_TYPE_COUNT; ++i) {
+    VkVertexInputBindingDescription vertex_binding_descriptions[8];
+    VkVertexInputAttributeDescription vertex_attr_descriptions[8];
+    VkPipelineVertexInputStateCreateInfo vertex_input_state;
+    VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
+    VkViewport viewport;
+    VkRect2D scissor;
+    VkPipelineViewportStateCreateInfo viewport_state;
+    VkPipelineRasterizationStateCreateInfo rasterization_state;
+    VkPipelineMultisampleStateCreateInfo multisample_state;
+    VkPipelineColorBlendAttachmentState color_blend_attachment_states[8];
+    VkPipelineColorBlendStateCreateInfo color_blend_state;
+    VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
+    VkPipelineShaderStageCreateInfo stages[2];
+    VkGraphicsPipelineCreateInfo pipeline_create_info;
+
     switch (i) {
     case OWL_RENDERER_PIPELINE_TYPE_MAIN:
     case OWL_RENDERER_PIPELINE_TYPE_WIRES:

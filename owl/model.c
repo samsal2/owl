@@ -22,7 +22,7 @@ OWL_INTERNAL enum owl_code owl_fix_uri_(char const *uri,
                                         char fixed[OWL_MAX_URI_SIZE]) {
   enum owl_code code = OWL_SUCCESS;
 
-  snprintf(fixed, OWL_MAX_URI_SIZE, "../../assets/%s", uri);
+  snprintf(fixed, OWL_MAX_URI_SIZE, "../assets/%s", uri);
 
   return code;
 }

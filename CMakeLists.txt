@@ -28,6 +28,9 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/external/stb)
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/cgltf)
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/freetype)
 
+# add shaders
+add_subdirectory(${PROJECT_SOURCE_DIR}/shaders)
+
 if (OWL_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif (OWL_BUILD_EXAMPLES)
