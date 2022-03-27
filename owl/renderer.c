@@ -48,8 +48,8 @@ owl_renderer_init_instance_(struct owl_renderer_init_desc const *desc,
       OWL_ARRAY_SIZE(g_debug_validation_layers);
   instance_create_info.ppEnabledLayerNames = g_debug_validation_layers;
 #else  /* OWL_ENABLE_VALIDATION */
-  instance.enabledLayerCount = 0;
-  instance.ppEnabledLayerNames = NULL;
+  instance_create_info.enabledLayerCount = 0;
+  instance_create_info.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
   instance_create_info.enabledExtensionCount =
       (owl_u32)desc->instance_extensions_count;

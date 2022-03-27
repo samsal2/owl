@@ -195,7 +195,7 @@ owl_client_fill_renderer_init_desc(struct owl_client const *client,
 #if defined(OWL_ENABLE_VALIDATION)
   desc->instance_extensions = owl_get_debug_instance_extensions_(&count);
 #else  /* OWL_ENABLE_VALIDATION */
-  rid->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
+  desc->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
 #endif /* OWL_ENABLE_VALIDATION */
 
   desc->instance_extensions_count = (int)count;

@@ -12,7 +12,7 @@ OBJECT_DIR		= object
 
 LIBRARY = libowl.a
 
-CFLAGS  = -std=c99 -O3 -Wall -Werror -Wextra -pedantic -pedantic-errors
+CFLAGS  = -std=c99 -O3 -Wall -Werror -Wextra -pedantic -pedantic-errors -DNDEBUG
 
 LDFLAGS = -Llibraries/glfw/macos/lib-x86_64 -lglfw3                        \
           -Llibraries/vulkan/macos/lib -lvulkan                               \

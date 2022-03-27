@@ -10,6 +10,10 @@ format.sh
 # ctags
 tags
 
+# c
+object
+bin
+
 # macos
 .DS_Store
 
