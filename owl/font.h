@@ -6,7 +6,7 @@
 
 #define OWL_FONT_GLYPHS_COUNT 128
 
-struct owl_glyph {
+struct owl_font_glyph {
   owl_i32 offset;
   owl_v2i advance;
   owl_v2i size;
@@ -18,7 +18,7 @@ struct owl_font {
   owl_i32 atlas_width;
   owl_i32 atlas_height;
   struct owl_renderer_image atlas;
-  struct owl_glyph glyphs[OWL_FONT_GLYPHS_COUNT];
+  struct owl_font_glyph glyphs[OWL_FONT_GLYPHS_COUNT];
 };
 
 enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
