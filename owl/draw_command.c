@@ -135,7 +135,7 @@ owl_draw_text_command_fill_char_quad_(struct owl_draw_command_text const *text,
   owl_v2 screen_position;
   owl_v2 glyph_uv_size;
   owl_v2 glyph_screen_size;
-  struct owl_glyph const *glyph;
+  struct owl_font_glyph const *glyph;
   enum owl_code code = OWL_SUCCESS;
 
   if ((int)c >= (int)OWL_ARRAY_SIZE(text->font->glyphs)) {
