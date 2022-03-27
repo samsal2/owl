@@ -21,7 +21,7 @@ LDFLAGS = -Llibraries/glfw/macos/lib-x86_64 -lglfw3                        \
 INCFLAGS =	-Ilibraries/glfw/macos/include -Ilibraries/vulkan/macos/include		\
 						-I$(INCLUDE_DIR) -Iexternal/stb -Iexternal/cgltf
 
-all: $(OUTPUT_DIR)/libowl.a $(OUTPUT_DIR)/model
+all: directories $(OUTPUT_DIR)/libowl.a $(OUTPUT_DIR)/model
 
 $(OUTPUT_DIR)/model: examples/model.c
 	$(CC) $(CFLAGS) $(INCFLAGS) -o $@ $< $(LDFLAGS) -L$(OUTPUT_DIR) -lowl -I.
