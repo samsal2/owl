@@ -2398,8 +2398,9 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *desc,
   if (OWL_SUCCESS != (code = owl_renderer_init_garbage_(renderer)))
     goto end_err_deinit_frame_sync;
 
-  if (OWL_SUCCESS !=
-      (code = owl_renderer_init_dynamic_heap_(renderer, 1048576)))
+  code = owl_renderer_init_dynamic_heap_(renderer, 1 << 16);
+
+  if (OWL_SUCCESS != code)
     goto end_err_deinit_garbage;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_image_manager_(renderer)))

@@ -125,109 +125,6 @@ end:
   return code;
 }
 
-OWL_INTERNAL enum owl_code
-owl_draw_text_command_fill_char_quad_(struct owl_draw_command_text const *text,
-                                      owl_v3 const offset, char c,
-                                      struct owl_draw_command_quad *quad) {
-  float uv_offset;
-  owl_v2 uv_bearing;
-  owl_v2 current_position;
-  owl_v2 screen_position;
-  owl_v2 glyph_uv_size;
-  owl_v2 glyph_screen_size;
-  struct owl_font_glyph const *glyph;
-  enum owl_code code = OWL_SUCCESS;
-
-  if ((int)c >= (int)OWL_ARRAY_SIZE(text->font->glyphs)) {
-    code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto end;
-  }
-
-  quad->image.slot = text->font->atlas.slot;
-
-  OWL_M4_IDENTITY(quad->model);
-  owl_m4_translate(text->position, quad->model);
-
-  glyph = &text->font->glyphs[(int)c];
-
-  OWL_V2_ADD(text->position, offset, current_position);
-
-  /* TODO(samuel): save the bearing as a normalized value */
-  uv_bearing[0] =
-      (float)glyph->bearing[0] / (float)(text->font->size) * text->scale;
-  uv_bearing[1] =
-      -(float)glyph->bearing[1] / (float)(text->font->size) * text->scale;
-
-  OWL_V2_ADD(current_position, uv_bearing, screen_position);
-
-  /* TODO(samuel): save the size as a normalized value */
-#if 1
-  glyph_screen_size[0] =
-      (float)glyph->size[0] / (float)(text->font->size) * text->scale;
-  glyph_screen_size[1] =
-      (float)glyph->size[1] / (float)(text->font->size) * text->scale;
-#else
-  glyph_screen_size[0] = (float)glyph->size[0] / (float)1200;
-  glyph_screen_size[1] = (float)glyph->size[1] / (float)1200;
-#endif
-
-  /* TODO(samuel): save the size as a normalized value */
-  glyph_uv_size[0] = (float)glyph->size[0] / (float)text->font->atlas_width;
-  glyph_uv_size[1] = (float)glyph->size[1] / (float)text->font->atlas_height;
-
-  /* TODO(samuel): save the offset as a normalized value */
-  uv_offset = (float)glyph->offset / (float)text->font->atlas_width;
-
-  quad->vertices[0].position[0] = screen_position[0];
-  quad->vertices[0].position[1] = screen_position[1];
-  quad->vertices[0].position[2] = 0.0F;
-  quad->vertices[0].color[0] = text->color[0];
-  quad->vertices[0].color[1] = text->color[1];
-  quad->vertices[0].color[2] = text->color[2];
-  quad->vertices[0].uv[0] = uv_offset;
-  quad->vertices[0].uv[1] = 0.0F;
-
-  quad->vertices[1].position[0] = screen_position[0] + glyph_screen_size[0];
-  quad->vertices[1].position[1] = screen_position[1];
-  quad->vertices[1].position[2] = 0.0F;
-  quad->vertices[1].color[0] = text->color[0];
-  quad->vertices[1].color[1] = text->color[1];
-  quad->vertices[1].color[2] = text->color[2];
-  quad->vertices[1].uv[0] = uv_offset + glyph_uv_size[0];
-  quad->vertices[1].uv[1] = 0.0F;
-
-  quad->vertices[2].position[0] = screen_position[0];
-  quad->vertices[2].position[1] = screen_position[1] + glyph_screen_size[1];
-  quad->vertices[2].position[2] = 0.0F;
-  quad->vertices[2].color[0] = text->color[0];
-  quad->vertices[2].color[1] = text->color[1];
-  quad->vertices[2].color[2] = text->color[2];
-  quad->vertices[2].uv[0] = uv_offset;
-  quad->vertices[2].uv[1] = glyph_uv_size[1];
-
-  quad->vertices[3].position[0] = screen_position[0] + glyph_screen_size[0];
-  quad->vertices[3].position[1] = screen_position[1] + glyph_screen_size[1];
-  quad->vertices[3].position[2] = 0.0F;
-  quad->vertices[3].color[0] = text->color[0];
-  quad->vertices[3].color[1] = text->color[1];
-  quad->vertices[3].color[2] = text->color[2];
-  quad->vertices[3].uv[0] = uv_offset + glyph_uv_size[0];
-  quad->vertices[3].uv[1] = glyph_uv_size[1];
-
-end:
-  return code;
-}
-
-OWL_INTERNAL void
-owl_draw_text_command_step_offset_(struct owl_draw_command_text const *command,
-                                   char const c, owl_v2 offset) {
-  offset[0] += command->font->glyphs[(int)c].advance[0] /
-               (float)(command->font->size) * command->scale;
-  /* FIXME(samuel): not sure if i should substract or add */
-  offset[1] -= command->font->glyphs[(int)c].advance[1] /
-               (float)(command->font->size) * command->scale;
-}
-
 enum owl_code
 owl_draw_command_submit_text(struct owl_renderer *renderer,
                              struct owl_camera const *camera,
@@ -239,15 +136,35 @@ owl_draw_command_submit_text(struct owl_renderer *renderer,
   OWL_V2_ZERO(offset);
 
   for (l = command->text; '\0' != *l; ++l) {
+    struct owl_font_glyph glyph;
     struct owl_draw_command_quad quad;
 
-    code = owl_draw_text_command_fill_char_quad_(command, offset, *l, &quad);
+    owl_font_fill_glyph(command->font, *l, offset, &glyph);
+
+
+    quad.image.slot = command->font->atlas.slot;
+    OWL_M4_IDENTITY(quad.model);
+
+    OWL_V3_COPY(glyph.positions[0], quad.vertices[0].position);
+    OWL_V3_COPY(command->color, quad.vertices[0].color);
+    OWL_V2_COPY(glyph.uvs[0], quad.vertices[0].uv);
+
+    OWL_V3_COPY(glyph.positions[1], quad.vertices[1].position);
+    OWL_V3_COPY(command->color, quad.vertices[1].color);
+    OWL_V2_COPY(glyph.uvs[1], quad.vertices[1].uv);
+
+    OWL_V3_COPY(glyph.positions[2], quad.vertices[2].position);
+    OWL_V3_COPY(command->color, quad.vertices[2].color);
+    OWL_V2_COPY(glyph.uvs[2], quad.vertices[2].uv);
+
+    OWL_V3_COPY(glyph.positions[3], quad.vertices[3].position);
+    OWL_V3_COPY(command->color, quad.vertices[3].color);
+    OWL_V2_COPY(glyph.uvs[3], quad.vertices[3].uv);
 
     if (OWL_SUCCESS != code)
       goto end;
 
     owl_draw_command_submit_quad(renderer, camera, &quad);
-    owl_draw_text_command_step_offset_(command, *l, offset);
   }
 
 end:

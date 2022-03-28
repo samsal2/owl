@@ -157,12 +157,12 @@ vec3 getIBLContribution(pbr_info pbr_inputs, vec3 n, vec3 reflection) {
 vec4 tonemap(vec4 color)
 {
 	vec3 outcol = Uncharted2Tonemap(color.rgb * ubo_params.exposure);
-	outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+	outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
 	return vec4(pow(outcol, vec3(1.0f / ubo_params.gamma)), color.a);
 }
 
 
-void main() 
+void main()
 {
 	vec4 color = texture(sampler2D(color_map, sampler0), in_uv0);
 
@@ -172,5 +172,5 @@ void main()
 	vec3 reflection = reflect(-normalized_light, normalized_normal);
 	vec3 diffuse = max(dot(normalized_normal, normalized_light), 0.5) * vec3(1.0F, 1.0F, 1.0F);
 	vec3 specular = pow(max(dot(reflection, normalized_view), 0.0), 16.0) * vec3(0.75);
-	out_frag_color = vec4(diffuse * color.rgb + specular, 1.0);		
+	out_frag_color = vec4(diffuse * color.rgb + specular, 1.0);
 }

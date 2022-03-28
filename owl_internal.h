@@ -14,7 +14,7 @@
 #define OWL_STRNCPY(dst, src, n) strncpy(dst, src, n)
 #define OWL_STRNCMP(lhs, rhs, n) strncmp(lhs, rhs, n)
 
-#ifndef NDEBUG
+#if !defined(NDEBUG)
 
 #include <stdio.h>
 
@@ -53,7 +53,7 @@ void owl_debug_log_(char const *f, int l, char const *fmt, ...);
 #define OWL_ALIGNU2(v, a) ((v) + (a)-1) & ~((a)-1)
 #define OWL_STATIC_ASSERT(e, msg) typedef char owl_static_assert_[!!(e)]
 
-#ifndef NDEBUG
+#if !defined(NDEBUG)
 
 #define OWL_VK_CHECK(e)                                                        \
   do {                                                                         \
@@ -69,7 +69,7 @@ void owl_debug_log_(char const *f, int l, char const *fmt, ...);
 
 #endif /* NDEBUG */
 
-#ifndef NDEBUG
+#if !defined(NDEBUG)
 
 #define OWL_ENABLE_VALIDATION
 

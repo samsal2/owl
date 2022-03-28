@@ -74,3 +74,4 @@ clean:
 	$(RMF_CMD) $(c_obj)
 	$(RMF_CMD) $(LIBRARY)
 	$(RMF_CMD) $(c_examples_out)
+
