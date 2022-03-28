@@ -1,5 +1,4 @@
-#include "owl/renderer.h"
-#include <owl/owl.h>
+#include <owl.h>
 
 #include <stdio.h>
 

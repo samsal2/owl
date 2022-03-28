@@ -11,8 +11,9 @@ format.sh
 tags
 
 # c
-object
-bin
+*.o
+*.a
+*.out
 
 # macos
 .DS_Store

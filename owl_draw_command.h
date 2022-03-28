@@ -1,8 +1,8 @@
 #ifndef OWL_DRAW_H_
 #define OWL_DRAW_H_
 
-#include "renderer.h"
-#include "types.h"
+#include "owl_renderer.h"
+#include "owl_types.h"
 
 struct owl_renderer;
 struct owl_model;

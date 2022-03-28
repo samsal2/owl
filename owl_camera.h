@@ -1,7 +1,7 @@
 #ifndef OWL_CAMERA_H_
 #define OWL_CAMERA_H_
 
-#include "types.h"
+#include "owl_types.h"
 
 struct owl_camera {
   float near;

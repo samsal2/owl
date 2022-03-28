@@ -1,7 +1,7 @@
-#include "camera.h"
+#include "owl_camera.h"
 
-#include "internal.h"
-#include "vector_math.h"
+#include "owl_internal.h"
+#include "owl_vector_math.h"
 
 enum owl_code owl_camera_init(struct owl_camera *camera) {
   enum owl_code code = OWL_SUCCESS;

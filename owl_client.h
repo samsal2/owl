@@ -1,7 +1,7 @@
 #ifndef OWL_CLIENT_H_
 #define OWL_CLIENT_H_
 
-#include "types.h"
+#include "owl_types.h"
 
 struct owl_renderer_init_desc;
 

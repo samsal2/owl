@@ -1,8 +1,8 @@
 #ifndef OWL_MODEL_H_
 #define OWL_MODEL_H_
 
-#include "renderer.h"
-#include "types.h"
+#include "owl_renderer.h"
+#include "owl_types.h"
 
 #define OWL_MODEL_NODE_NO_MESH_SLOT -1
 #define OWL_MODEL_NO_ANIMATION_SLOT -1

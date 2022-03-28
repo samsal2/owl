@@ -1,7 +1,7 @@
 #ifndef OWL_RENDERER_H_
 #define OWL_RENDERER_H_
 
-#include "types.h"
+#include "owl_types.h"
 
 #include <vulkan/vulkan.h>
 

@@ -1,10 +1,10 @@
-#include "font.h"
+#include "owl_font.h"
 
-#include "draw_command.h"
-#include "internal.h"
-#include "renderer.h"
-#include "types.h"
-#include "vector_math.h"
+#include "owl_draw_command.h"
+#include "owl_internal.h"
+#include "owl_renderer.h"
+#include "owl_types.h"
+#include "owl_vector_math.h"
 
 #if 0
 /* clang-format off */

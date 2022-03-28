@@ -1,11 +1,11 @@
-#include "draw_command.h"
+#include "owl_draw_command.h"
 
-#include "camera.h"
-#include "font.h"
-#include "internal.h"
-#include "model.h"
-#include "renderer.h"
-#include "vector_math.h"
+#include "owl_camera.h"
+#include "owl_font.h"
+#include "owl_internal.h"
+#include "owl_model.h"
+#include "owl_renderer.h"
+#include "owl_vector_math.h"
 
 enum owl_code
 owl_draw_command_submit_basic(struct owl_renderer *renderer,

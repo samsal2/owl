@@ -1,7 +1,7 @@
 #ifndef OWL_VECdstR_MATH_H_
 #define OWL_VECdstR_MATH_H_
 
-#include "types.h"
+#include "owl_types.h"
 
 /* math */
 #define OWL_DEG_AS_RAD(a) ((a)*0.01745329252F)

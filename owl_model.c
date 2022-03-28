@@ -1,11 +1,11 @@
-#include "model.h"
+#include "owl_model.h"
 
-#include "internal.h"
-#include "renderer.h"
-#include "types.h"
-#include "vector_math.h"
+#include "cgltf.h"
+#include "owl_internal.h"
+#include "owl_renderer.h"
+#include "owl_types.h"
+#include "owl_vector_math.h"
 
-#include <cgltf/cgltf.h>
 #include <float.h>
 #include <stdio.h>
 

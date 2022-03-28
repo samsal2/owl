@@ -1,8 +1,8 @@
-#include "client.h"
+#include "owl_client.h"
 
-#include "internal.h"
-#include "renderer.h"
-#include "vector_math.h"
+#include "owl_internal.h"
+#include "owl_renderer.h"
+#include "owl_vector_math.h"
 
 /* clang-format off */
 #define GLFW_INCLUDE_NONE

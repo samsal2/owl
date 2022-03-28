@@ -1,5 +1,5 @@
-#include "internal.h"
-#include "types.h"
+#include "owl_internal.h"
+#include "owl_types.h"
 
 #include <stdarg.h>
 #include <stdio.h>

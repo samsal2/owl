@@ -1,8 +1,8 @@
 #ifndef OWL_FONT_H_
 #define OWL_FONT_H_
 
-#include "renderer.h"
-#include "types.h"
+#include "owl_renderer.h"
+#include "owl_types.h"
 
 #define OWL_FONT_GLYPHS_COUNT 128
 
