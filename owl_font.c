@@ -299,8 +299,7 @@ end:
 }
 
 void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font) {
-  OWL_UNUSED(renderer);
-  OWL_UNUSED(font);
+  owl_renderer_deinit_image(renderer, &font->atlas);
 }
 
 enum owl_code owl_font_fill_glyph(struct owl_font const *font, char c,
@@ -337,6 +336,13 @@ enum owl_code owl_font_fill_glyph(struct owl_font const *font, char c,
   OWL_V2_SET(quad.s0, quad.t0, glyph->uvs[1]);
   OWL_V2_SET(quad.s1, quad.t0, glyph->uvs[2]);
   OWL_V2_SET(quad.s1, quad.t1, glyph->uvs[3]);
+
+#if 0
+  OWL_DEBUG_LOG("\n\n" OWL_V2_FORMAT "\n", glyph->uvs[0]);
+  OWL_DEBUG_LOG("\n" OWL_V2_FORMAT "\n", glyph->uvs[1]);
+  OWL_DEBUG_LOG("\n" OWL_V2_FORMAT "\n", glyph->uvs[2]);
+  OWL_DEBUG_LOG("\n" OWL_V2_FORMAT "\n\n", glyph->uvs[3]);
+#endif
 
   return code;
 }

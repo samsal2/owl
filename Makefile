@@ -11,13 +11,12 @@ LIBRARY							= libowl.a
 
 CFLAGS							=																													\
 	-std=c99																																		\
-	-Ofast	  																																	\
+	-O0	  																																	    \
 	-Wall																																				\
 	-Werror																																			\
 	-Wextra																																			\
 	-pedantic																																		\
 	-pedantic-errors																														\
-	-flto																														            \
   -Ilibraries/glfw/macos/include																							\
 	-Ilibraries/vulkan/macos/include
 
@@ -61,11 +60,11 @@ $(LIBRARY): $(c_obj)
 %.frag.spv.u32: %.frag
 	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
 
-%.d: %.c
-	$(CC) $(CFLAGS) $@ -c $<
-
 %.out: %.c library
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) -L. -l$(PROJECT_NAME) -I.
+
+%.o: %.c
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 .PHONY: clean
 clean:

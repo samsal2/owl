@@ -92,7 +92,7 @@ int main(void) {
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_MODEL);
     owl_draw_command_submit_model(renderer, &camera, &model_command);
 
-#if 0
+#if 1
     text_command.text = fmtfps(client->fps);
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_FONT);
     owl_draw_command_submit_text(renderer, &camera, &text_command);
