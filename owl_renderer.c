@@ -541,7 +541,11 @@ owl_renderer_init_swapchain_(struct owl_renderer_init_desc const *desc,
   renderer->swapchain_extent.height = (owl_u32)desc->framebuffer_height;
   owl_renderer_clamp_swapchain_extent_(renderer);
 
+#if 1
   renderer->swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+#else
+  renderer->swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+#endif
   owl_renderer_ensure_present_mode_(renderer);
 
   if (OWL_SUCCESS != code)

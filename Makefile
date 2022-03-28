@@ -11,17 +11,18 @@ LIBRARY							= libowl.a
 
 CFLAGS							=																													\
 	-std=c99																																		\
-	-O3																																					\
+	-Ofast	  																																	\
 	-Wall																																				\
 	-Werror																																			\
 	-Wextra																																			\
 	-pedantic																																		\
 	-pedantic-errors																														\
+	-flto																														            \
   -Ilibraries/glfw/macos/include																							\
 	-Ilibraries/vulkan/macos/include
 
 LDFLAGS							=																													\
-	-Llibraries/glfw/macos/lib-x86_64																						\
+	-Llibraries/glfw/macos/lib-universal																				\
 	-lglfw3																																			\
   -Llibraries/vulkan/macos/lib																								\
 	-lvulkan																																		\
