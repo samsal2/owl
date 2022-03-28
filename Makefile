@@ -10,16 +10,13 @@ RMRF_CMD						= rm -rf
 LIBRARY							= libowl.a
 
 CFLAGS							=																													\
-	-std=c90																																		\
+	-std=c99																																		\
 	-O3																																					\
 	-Wall																																				\
 	-Werror																																			\
 	-Wextra																																			\
 	-pedantic																																		\
 	-pedantic-errors																														\
-	-Wno-long-long																													    \
-	-Wno-comment																													      \
-	-Wno-variadic-macros																												\
   -Ilibraries/glfw/macos/include																							\
 	-Ilibraries/vulkan/macos/include
 
@@ -31,20 +28,28 @@ LDFLAGS							=																													\
 	-framework Cocoa																														\
 	-framework IOKit
 
-c_examples_src = $(wildcard examples/*.c)
-c_examples_out = $(c_examples_src:.c=.out)
-
-c_src = $(wildcard *.c)
-c_obj = $(c_src:.c=.o)
-
 glsl_vert_src = $(wildcard *.vert)
 glsl_vert_spv_u32 = $(glsl_vert_src:.vert=.vert.spv.u32)
 
 glsl_frag_src = $(wildcard *.frag)
 glsl_frag_spv_u32 = $(glsl_frag_src:.frag=.frag.spv.u32)
 
+c_src = $(wildcard *.c)
+c_obj = $(c_src:.c=.o)
+
+c_examples_src = $(wildcard examples/*.c)
+c_examples_out = $(c_examples_src:.c=.out)
+
+all: shaders library examples
+
+.PHONY: shaders
+shaders: $(glsl_vert_spv_u32) $(glsl_frag_spv_u32)
+
+.PHONY: library
+library: shaders $(LIBRARY)
+
+.PHONY: examples
 examples: $(c_examples_out)
-library: $(glsl_vert_spv_u32) $(glsl_frag_spv_u32) $(LIBRARY)
 
 $(LIBRARY): $(c_obj)
 	$(AR) -cqsv $@ $^
@@ -60,10 +65,6 @@ $(LIBRARY): $(c_obj)
 
 %.out: %.c library
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) -L. -l$(PROJECT_NAME) -I.
-
-
-.PHONY: all
-all: library examples
 
 .PHONY: clean
 clean:
