@@ -10,13 +10,16 @@ RMRF_CMD						= rm -rf
 LIBRARY							= libowl.a
 
 CFLAGS							=																													\
-	-std=c99																																		\
+	-std=c90																																		\
 	-O3																																					\
 	-Wall																																				\
 	-Werror																																			\
 	-Wextra																																			\
 	-pedantic																																		\
 	-pedantic-errors																														\
+	-Wno-long-long																													    \
+	-Wno-comment																													      \
+	-Wno-variadic-macros																												\
   -Ilibraries/glfw/macos/include																							\
 	-Ilibraries/vulkan/macos/include
 

@@ -1255,7 +1255,7 @@ owl_renderer_init_shaders_(struct owl_renderer *renderer) {
 
     /* TODO(samuel): Properly load code at runtime */
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "owl_shader_basic.vert.spv.u32"
+#include "owl_glsl_shader_basic.vert.spv.u32"
     };
 
     shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1272,7 +1272,7 @@ owl_renderer_init_shaders_(struct owl_renderer *renderer) {
     VkShaderModuleCreateInfo shader_create_info;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "owl_shader_basic.frag.spv.u32"
+#include "owl_glsl_shader_basic.frag.spv.u32"
     };
 
     shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1289,7 +1289,7 @@ owl_renderer_init_shaders_(struct owl_renderer *renderer) {
     VkShaderModuleCreateInfo shader_create_info;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "owl_shader_font.frag.spv.u32"
+#include "owl_glsl_shader_font.frag.spv.u32"
     };
 
     shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1306,7 +1306,7 @@ owl_renderer_init_shaders_(struct owl_renderer *renderer) {
     VkShaderModuleCreateInfo shader_create_info;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "owl_shader_model.vert.spv.u32"
+#include "owl_glsl_shader_model.vert.spv.u32"
     };
 
     shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1323,7 +1323,7 @@ owl_renderer_init_shaders_(struct owl_renderer *renderer) {
     VkShaderModuleCreateInfo shader_create_info;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "owl_shader_model.frag.spv.u32"
+#include "owl_glsl_shader_model.frag.spv.u32"
     };
 
     shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
