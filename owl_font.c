@@ -310,7 +310,7 @@ enum owl_code owl_font_fill_glyph(struct owl_font const *font, char c,
   struct owl_font_char const *current;
   enum owl_code code = OWL_SUCCESS;
 
-  current = &font->chars[(int)c];
+  current = &font->chars[(int)(c - OWL_FONT_FIRST_CHAR)];
 
   packed_char.x0 = current->x0;
   packed_char.y0 = current->y0;
@@ -336,13 +336,6 @@ enum owl_code owl_font_fill_glyph(struct owl_font const *font, char c,
   OWL_V2_SET(quad.s0, quad.t0, glyph->uvs[1]);
   OWL_V2_SET(quad.s1, quad.t0, glyph->uvs[2]);
   OWL_V2_SET(quad.s1, quad.t1, glyph->uvs[3]);
-
-#if 0
-  OWL_DEBUG_LOG("\n\n" OWL_V2_FORMAT "\n", glyph->uvs[0]);
-  OWL_DEBUG_LOG("\n" OWL_V2_FORMAT "\n", glyph->uvs[1]);
-  OWL_DEBUG_LOG("\n" OWL_V2_FORMAT "\n", glyph->uvs[2]);
-  OWL_DEBUG_LOG("\n" OWL_V2_FORMAT "\n\n", glyph->uvs[3]);
-#endif
 
   return code;
 }

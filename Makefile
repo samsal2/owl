@@ -18,7 +18,8 @@ CFLAGS							=																													\
 	-pedantic																																		\
 	-pedantic-errors																														\
   -Ilibraries/glfw/macos/include																							\
-	-Ilibraries/vulkan/macos/include
+	-Ilibraries/vulkan/macos/include																						\
+  -fsanitize=address
 
 LDFLAGS							=																													\
 	-Llibraries/glfw/macos/lib-universal																				\
@@ -26,7 +27,9 @@ LDFLAGS							=																													\
   -Llibraries/vulkan/macos/lib																								\
 	-lvulkan																																		\
 	-framework Cocoa																														\
-	-framework IOKit
+	-framework IOKit																														\
+  -fsanitize=address
+
 
 glsl_vert_src = $(wildcard *.vert)
 glsl_vert_spv_u32 = $(glsl_vert_src:.vert=.vert.spv.u32)
@@ -42,14 +45,14 @@ c_examples_out = $(c_examples_src:.c=.out)
 
 all: shaders library examples
 
-.PHONY: shaders
-shaders: $(glsl_vert_spv_u32) $(glsl_frag_spv_u32)
+.PHONY: examples
+examples: library $(c_examples_out)
 
 .PHONY: library
 library: shaders $(LIBRARY)
 
-.PHONY: examples
-examples: $(c_examples_out)
+.PHONY: shaders
+shaders: $(glsl_vert_spv_u32) $(glsl_frag_spv_u32)
 
 $(LIBRARY): $(c_obj)
 	$(AR) -cqsv $@ $^
@@ -60,17 +63,27 @@ $(LIBRARY): $(c_obj)
 %.frag.spv.u32: %.frag
 	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
 
+%.o: %.c shaders
+	$(CC) $(CFLAGS) -o $@ -c $<
+
 %.out: %.c library
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) -L. -l$(PROJECT_NAME) -I.
 
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $<
 
-.PHONY: clean
-clean:
+.PHONY: clean_shaders
+clean_shaders:
 	$(RMF_CMD) $(glsl_frag_spv_u32)
 	$(RMF_CMD) $(glsl_vert_spv_u32)
+
+.PHONY: clean_examples
+clean_examples:
+	$(RMF_CMD) $(c_examples_out)
+
+.PHONY: clean_library
+clean_library:
 	$(RMF_CMD) $(c_obj)
 	$(RMF_CMD) $(LIBRARY)
-	$(RMF_CMD) $(c_examples_out)
+
+.PHONY: clean
+clean: clean_library clean_examples clean_shaders
 
