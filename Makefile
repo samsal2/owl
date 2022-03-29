@@ -46,10 +46,10 @@ c_examples_out = $(c_examples_src:.c=.out)
 all: shaders library examples
 
 .PHONY: examples
-examples: library $(c_examples_out)
+examples: $(c_examples_out)
 
 .PHONY: library
-library: shaders $(LIBRARY)
+library: $(LIBRARY)
 
 .PHONY: shaders
 shaders: $(glsl_vert_spv_u32) $(glsl_frag_spv_u32)
@@ -63,12 +63,11 @@ $(LIBRARY): $(c_obj)
 %.frag.spv.u32: %.frag
 	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
 
-%.o: %.c shaders
+%.o: %.c 
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-%.out: %.c library
+%.out: %.c 
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) -L. -l$(PROJECT_NAME) -I.
-
 
 .PHONY: clean_shaders
 clean_shaders:
