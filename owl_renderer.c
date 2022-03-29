@@ -3565,3 +3565,4 @@ void owl_renderer_deinit_image(struct owl_renderer *renderer,
   vkDestroyImage(renderer->device, renderer->image_manager_images[image->slot],
                  NULL);
 }
+

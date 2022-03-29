@@ -337,6 +337,7 @@ enum owl_code owl_font_fill_glyph(struct owl_font const *font, char c,
   OWL_V2_SET(quad.s1, quad.t0, glyph->uvs[2]);
   OWL_V2_SET(quad.s1, quad.t1, glyph->uvs[3]);
 
+
   return code;
 }
 

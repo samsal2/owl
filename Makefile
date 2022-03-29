@@ -11,7 +11,7 @@ LIBRARY							= libowl.a
 
 CFLAGS							=																													\
 	-std=c99																																		\
-	-O0	  																																	    \
+	-O0																																					\
 	-Wall																																				\
 	-Werror																																			\
 	-Wextra																																			\
@@ -63,10 +63,10 @@ $(LIBRARY): $(c_obj)
 %.frag.spv.u32: %.frag
 	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
 
-%.o: %.c 
+%.o: %.c $(glsl_vert_spv_u32) $(glsl_frag_spv_u32)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-%.out: %.c 
+%.out: %.c $(LIBRARY)
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) -L. -l$(PROJECT_NAME) -I.
 
 .PHONY: clean_shaders
