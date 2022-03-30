@@ -1,6 +1,33 @@
 CC = clang
 GLSLANG_VALIDATOR = glslangValidator
 
+CFLAGS = -std=c99
+CFLAGS += -O0
+CFLAGS += -g
+CFLAGS += -Ilibraries/glfw/macos/include
+CFLAGS += -I$(VULKAN_SDK)/include
+CFLAGS += -fstrict-aliasing							
+CFLAGS += -fsanitize=address
+CFLAGS += -fsanitize=undefined
+
+CFLAGS += -Wall
+CFLAGS += -Werror
+CFLAGS += -Wextra
+CFLAGS += -Wshadow
+CFLAGS += -pedantic
+CFLAGS += -pedantic-errors
+
+LDFLAGS =-Llibraries/glfw/macos/lib-universal
+LDFLAGS +=-lglfw3
+
+LDFLAGS +=-L$(VULKAN_SDK)/lib
+LDFLAGS +=-lvulkan
+
+LDFLAGS +=-framework Cocoa
+LDFLAGS +=-framework IOKit
+LDFLAGS +=-fsanitize=address
+LDFLAGS +=-fsanitize=undefined
+
 RMF_CMD = rm -f
 
 PREFIX = /usr/local/
@@ -8,54 +35,21 @@ PROJECT_NAME = owl
 
 LIBRARY	= libowl.a
 
-CFLAGS = -std=c99
-CFLAGS += -O0
-CFLAGS += -g
-CFLAGS += -Wall
-CFLAGS += -Werror
-CFLAGS += -Wextra
-CFLAGS += -Wshadow
-CFLAGS += -pedantic
-CFLAGS += -pedantic-errors
-CFLAGS += -Ilibraries/glfw/macos/include
-CFLAGS += -I$(VULKAN_SDK)/include
-CFLAGS += -fstrict-aliasing							
-CFLAGS += -fsanitize=address
-CFLAGS += -fsanitize=undefined
+GLSL_VERT_SRC = $(wildcard *.vert)
+GLSL_VERT_SPV_U32 = $(GLSL_VERT_SRC:.vert=.vert.spv.u32)
 
-LDFLAGS =-Llibraries/glfw/macos/lib-universal
-LDFLAGS +=-lglfw3
-LDFLAGS +=-L$(VULKAN_SDK)/lib
-LDFLAGS +=-lvulkan
-LDFLAGS +=-framework Cocoa
-LDFLAGS +=-framework IOKit
-LDFLAGS +=-fsanitize=address
-LDFLAGS +=-fsanitize=undefined
+GLSL_FRAG_SRC = $(wildcard *.frag)
+GLSL_FRAG_SPV_U32 = $(GLSL_FRAG_SRC:.frag=.frag.spv.u32)
 
-glsl_vert_src = $(wildcard *.vert)
-glsl_vert_spv_u32 = $(glsl_vert_src:.vert=.vert.spv.u32)
+SRCS = $(wildcard *.c)
+OBJS = $(SRCS:.c=.o)
 
-glsl_frag_src = $(wildcard *.frag)
-glsl_frag_spv_u32 = $(glsl_frag_src:.frag=.frag.spv.u32)
-
-c_src = $(wildcard *.c)
-c_obj = $(c_src:.c=.o)
-
-c_examples_src = $(wildcard examples/*.c)
-c_examples_out = $(c_examples_src:.c=.out)
+EXAMPLE_SRCS = $(wildcard examples/*.c)
+EXAMPLE_OUTS = $(EXAMPLE_SRCS:.c=.out)
 
 all: shaders library examples
 
-.PHONY: examples
-examples: $(c_examples_out)
-
-.PHONY: library
-library: $(LIBRARY)
-
-.PHONY: shaders
-shaders: $(glsl_vert_spv_u32) $(glsl_frag_spv_u32)
-
-$(LIBRARY): $(c_obj)
+$(LIBRARY): $(OBJS)
 	$(AR) -cqsv $@ $^
 
 %.vert.spv.u32: %.vert
@@ -64,24 +58,33 @@ $(LIBRARY): $(c_obj)
 %.frag.spv.u32: %.frag
 	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
 
-%.o: %.c $(glsl_vert_spv_u32) $(glsl_frag_spv_u32)
+%.o: %.c $(GLSL_FRAG_SPV_U32) $(GLSL_VERT_SPV_U32)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 %.out: %.c $(LIBRARY)
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) -L. -l$(PROJECT_NAME) -I.
 
+.PHONY: examples
+examples: $(EXAMPLE_OUTS)
+
+.PHONY: library
+library: $(LIBRARY)
+
+.PHONY: shaders
+shaders: $(GLSL_VERT_SPV_U32) $(GLSL_FRAG_SPV_U32)
+
 .PHONY: clean_shaders
 clean_shaders:
-	$(RMF_CMD) $(glsl_frag_spv_u32)
-	$(RMF_CMD) $(glsl_vert_spv_u32)
+	$(RMF_CMD) $(GLSL_FRAG_SPV_U32)
+	$(RMF_CMD) $(GLSL_VERT_SPV_U32)
 
 .PHONY: clean_examples
 clean_examples:
-	$(RMF_CMD) $(c_examples_out)
+	$(RMF_CMD) $(EXAMPLE_OUTS)
 
 .PHONY: clean_library
 clean_library:
-	$(RMF_CMD) $(c_obj)
+	$(RMF_CMD) $(OBJS)
 	$(RMF_CMD) $(LIBRARY)
 
 .PHONY: clean
