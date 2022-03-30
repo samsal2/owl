@@ -1,6 +1,8 @@
 CC = clang
 GLSLANG_VALIDATOR = glslangValidator
 
+RMF_CMD = rm -f
+
 PREFIX = /usr/local/
 PROJECT_NAME = owl
 
