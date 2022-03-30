@@ -1,40 +1,34 @@
-CC								= clang
+CC = clang
 GLSLANG_VALIDATOR = glslangValidator
 
-PREFIX							= /usr/local/
-PROJECT_NAME				= owl
-MKDIRP_CMD					= mkdir -p
-RMF_CMD							= rm -f
-RMRF_CMD						= rm -rf
+PREFIX = /usr/local/
+PROJECT_NAME = owl
 
-LIBRARY							= libowl.a
+LIBRARY	= libowl.a
 
-CFLAGS							=																													\
-	-std=c99																																		\
-	-O0																																					\
-	-g																																					\
-	-Wall																																				\
-	-Werror																																			\
-	-Wextra																																			\
-	-Wshadow																																		\
-	-pedantic																																		\
-	-pedantic-errors																														\
-  -Ilibraries/glfw/macos/include																							\
-	-I$(VULKAN_SDK)/include																											\
-  -fstrict-aliasing																														\
-  -fsanitize=address																													\
-  -fsanitize=undefined
+CFLAGS = -std=c99
+CFLAGS += -O0
+CFLAGS += -g
+CFLAGS += -Wall
+CFLAGS += -Werror
+CFLAGS += -Wextra
+CFLAGS += -Wshadow
+CFLAGS += -pedantic
+CFLAGS += -pedantic-errors
+CFLAGS += -Ilibraries/glfw/macos/include
+CFLAGS += -I$(VULKAN_SDK)/include
+CFLAGS += -fstrict-aliasing							
+CFLAGS += -fsanitize=address
+CFLAGS += -fsanitize=undefined
 
-LDFLAGS							=																													\
-	-Llibraries/glfw/macos/lib-universal																				\
-	-lglfw3																																			\
-  -L$(VULKAN_SDK)/lib																													\
-	-lvulkan																																		\
-	-framework Cocoa																														\
-	-framework IOKit																														\
-  -fsanitize=address																													\
-  -fsanitize=undefined
-
+LDFLAGS =-Llibraries/glfw/macos/lib-universal
+LDFLAGS +=-lglfw3
+LDFLAGS +=-L$(VULKAN_SDK)/lib
+LDFLAGS +=-lvulkan
+LDFLAGS +=-framework Cocoa
+LDFLAGS +=-framework IOKit
+LDFLAGS +=-fsanitize=address
+LDFLAGS +=-fsanitize=undefined
 
 glsl_vert_src = $(wildcard *.vert)
 glsl_vert_spv_u32 = $(glsl_vert_src:.vert=.vert.spv.u32)
