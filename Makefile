@@ -2,6 +2,9 @@ CC = clang
 RMF = rm -f
 GLSLANG_VALIDATOR = glslangValidator
 
+PREFIX = /usr/local/
+LIBRARY	= libowl.a
+
 CFLAGS = -std=c99
 CFLAGS += -O0
 CFLAGS += -g
@@ -10,7 +13,6 @@ CFLAGS += -I$(VULKAN_SDK)/include
 CFLAGS += -fstrict-aliasing							
 CFLAGS += -fsanitize=address
 CFLAGS += -fsanitize=undefined
-
 CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -Wextra
@@ -20,20 +22,12 @@ CFLAGS += -pedantic-errors
 
 LDFLAGS =-Llibraries/glfw/macos/lib-universal
 LDFLAGS +=-lglfw3
-
-LDFLAGS +=-L$(VULKAN_SDK)/lib
-LDFLAGS +=-lvulkan
-
 LDFLAGS +=-framework Cocoa
 LDFLAGS +=-framework IOKit
+LDFLAGS +=-L$(VULKAN_SDK)/lib
+LDFLAGS +=-lvulkan
 LDFLAGS +=-fsanitize=address
 LDFLAGS +=-fsanitize=undefined
-
-
-PREFIX = /usr/local/
-PROJECT_NAME = owl
-
-LIBRARY	= libowl.a
 
 GLSL_VERT_SRC = $(wildcard *.vert)
 GLSL_VERT_SPV_U32 = $(GLSL_VERT_SRC:.vert=.vert.spv.u32)
@@ -57,7 +51,7 @@ EXAMPLE_OUTS = $(EXAMPLE_SRCS:.c=.out)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 %.out: %.c 
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) -L. -l$(PROJECT_NAME) -I.
+	$(CC) $(CFLAGS) -I. -o $@ $< $(LDFLAGS) -L. -lowl
 
 $(EXAMPLE_OUTS): $(LIBRARY)
 
