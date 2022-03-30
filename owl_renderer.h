@@ -15,7 +15,6 @@ struct owl_renderer;
 #define OWL_RENDERER_MAX_DEVICE_OPTIONS_COUNT 8
 #define OWL_RENDERER_CLEAR_VALUES_COUNT 2
 #define OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT 32
-#define OWL_RENDERER_PIPELINE_TYPE_NONE OWL_RENDERER_PIPELINE_TYPE_COUNT
 
 enum owl_renderer_memory_visibility {
   OWL_RENDERER_MEMORY_VISIBILITY_CPU,
@@ -31,6 +30,7 @@ enum owl_renderer_pipeline_type {
   OWL_RENDERER_PIPELINE_TYPE_MODEL,
   OWL_RENDERER_PIPELINE_TYPE_COUNT
 };
+#define OWL_RENDERER_PIPELINE_TYPE_NONE OWL_RENDERER_PIPELINE_TYPE_COUNT
 
 typedef enum owl_code (*owl_renderer_init_vk_surface_callback)(
     struct owl_renderer const *renderer, void const *user_data,

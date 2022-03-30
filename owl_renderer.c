@@ -1,10 +1,10 @@
 #include "owl_renderer.h"
 
-#include "stb_image.h"
 #include "owl_client.h"
 #include "owl_draw_command.h"
 #include "owl_internal.h"
 #include "owl_model.h"
+#include "stb_image.h"
 
 #include <math.h>
 
@@ -600,9 +600,9 @@ owl_renderer_init_swapchain_(struct owl_renderer_init_desc const *desc,
                                        &renderer->swapchain_images_count,
                                        renderer->swapchain_images));
 
-  renderer->swapchain_clear_values[0].color.float32[0] = 0.0F;
-  renderer->swapchain_clear_values[0].color.float32[1] = 0.0F;
-  renderer->swapchain_clear_values[0].color.float32[2] = 0.0F;
+  renderer->swapchain_clear_values[0].color.float32[0] = 0.01F;
+  renderer->swapchain_clear_values[0].color.float32[1] = 0.01F;
+  renderer->swapchain_clear_values[0].color.float32[2] = 0.01F;
   renderer->swapchain_clear_values[0].color.float32[3] = 1.0F;
   renderer->swapchain_clear_values[1].depthStencil.depth = 1.0F;
   renderer->swapchain_clear_values[1].depthStencil.stencil = 0.0F;
@@ -3565,4 +3565,3 @@ void owl_renderer_deinit_image(struct owl_renderer *renderer,
   vkDestroyImage(renderer->device, renderer->image_manager_images[image->slot],
                  NULL);
 }
-

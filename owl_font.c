@@ -218,16 +218,16 @@ void owl_font_unload_file_(owl_byte *data) { OWL_FREE(data); }
 #define OWL_FONT_FIRST_CHAR ((owl_i32)(' '))
 #define OWL_FONT_CHAR_COUNT ((owl_i32)('~' - ' '))
 
+OWL_STATIC_ASSERT(
+    sizeof(struct owl_font_packed_char) == sizeof(stbtt_packedchar),
+    "owl_font_char and stbtt_packedchar must represent the same struct");
+
 enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
                             char const *path, struct owl_font *font) {
-  owl_i32 i;
   owl_byte *font_file_data;
   owl_byte *font_bitmap_data;
   stbtt_pack_context pack_context;
   struct owl_renderer_image_init_desc image_desc;
-
-
-  OWL_LOCAL_PERSIST stbtt_packedchar chars[OWL_FONT_CHAR_COUNT];
 
   enum owl_code code = OWL_SUCCESS;
 
@@ -249,41 +249,30 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
   stbtt_PackSetOversampling(&pack_context, 2, 2);
 
   if (!stbtt_PackFontRange(&pack_context, font_file_data, 0, size,
-                           OWL_FONT_FIRST_CHAR, OWL_FONT_CHAR_COUNT, chars)) {
+                           OWL_FONT_FIRST_CHAR, OWL_FONT_CHAR_COUNT,
+                           (stbtt_packedchar *)(&font->packed_chars[0]))) {
     code = OWL_ERROR_UNKNOWN;
     goto end_pack;
-  }
-
-  for (i = 0; i < OWL_FONT_CHAR_COUNT; ++i) {
-    stbtt_packedchar const *src = &chars[i];
-    struct owl_font_char *dst = &font->chars[i];
-
-    dst->x0 = src->x0;
-    dst->y0 = src->y0;
-    dst->x1 = src->x1;
-    dst->y1 = src->y1;
-    dst->offset0[0] = src->xoff;
-    dst->offset0[1] = src->yoff;
-    dst->offset1[0] = src->xoff2;
-    dst->offset1[1] = src->yoff2;
-    dst->x_advance = src->xadvance;
   }
 
   image_desc.source_type = OWL_RENDERER_IMAGE_SOURCE_TYPE_DATA;
   image_desc.source_path = NULL;
   image_desc.source_data = font_bitmap_data;
   image_desc.source_data_width = OWL_FONT_ATLAS_WIDTH;
-  image_desc.source_data_height= OWL_FONT_ATLAS_HEIGHT;
+  image_desc.source_data_height = OWL_FONT_ATLAS_HEIGHT;
   image_desc.source_data_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
   image_desc.use_default_sampler = 0;
   image_desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
-  image_desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
-  image_desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
-  image_desc.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  image_desc.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  image_desc.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  image_desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
+  image_desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
+  image_desc.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
+  image_desc.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
+  image_desc.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
 
-  owl_renderer_init_image(renderer, &image_desc, &font->atlas);
+  code = owl_renderer_init_image(renderer, &image_desc, &font->atlas);
+
+  if (OWL_SUCCESS != code)
+    goto end_pack;
 
 end_pack:
   stbtt_PackEnd(&pack_context);
@@ -303,40 +292,24 @@ void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font) {
 }
 
 enum owl_code owl_font_fill_glyph(struct owl_font const *font, char c,
-                                  owl_v2 offset,
-                                  struct owl_font_glyph *glyph) {
+                                  owl_v2 offset, struct owl_font_glyph *glyph) {
   stbtt_aligned_quad quad;
-  stbtt_packedchar packed_char;
-  struct owl_font_char const *current;
   enum owl_code code = OWL_SUCCESS;
 
-  current = &font->chars[(int)(c - OWL_FONT_FIRST_CHAR)];
-
-  packed_char.x0 = current->x0;
-  packed_char.y0 = current->y0;
-  packed_char.x1 = current->x1;
-  packed_char.y1 = current->y1;
-  packed_char.xoff = current->offset0[0];
-  packed_char.yoff = current->offset0[1];
-  packed_char.xoff2 = current->offset1[0];
-  packed_char.yoff2 = current->offset1[1];
-  packed_char.xadvance = current->x_advance;
-
-  stbtt_GetPackedQuad(&packed_char, OWL_FONT_ATLAS_WIDTH, OWL_FONT_ATLAS_HEIGHT,
+  stbtt_GetPackedQuad((stbtt_packedchar *)(&font->packed_chars[0]),
+                      OWL_FONT_ATLAS_WIDTH, OWL_FONT_ATLAS_HEIGHT,
                       c - OWL_FONT_FIRST_CHAR, &offset[0], &offset[1], &quad,
                       1);
 
-  OWL_V2_COPY(offset, glyph->offset);
-  OWL_V3_SET(quad.x0, -quad.y1, 0.0F, glyph->positions[0]);
-  OWL_V3_SET(quad.x0, -quad.y0, 0.0F, glyph->positions[1]);
-  OWL_V3_SET(quad.x1, -quad.y0, 0.0F, glyph->positions[2]);
-  OWL_V3_SET(quad.x1, -quad.y1, 0.0F, glyph->positions[3]);
+  OWL_V3_SET(quad.x0, quad.y0, 0.0F, glyph->positions[0]);
+  OWL_V3_SET(quad.x1, quad.y0, 0.0F, glyph->positions[1]);
+  OWL_V3_SET(quad.x0, quad.y1, 0.0F, glyph->positions[2]);
+  OWL_V3_SET(quad.x1, quad.y1, 0.0F, glyph->positions[3]);
 
-  OWL_V2_SET(quad.s0, quad.t1, glyph->uvs[0]);
-  OWL_V2_SET(quad.s0, quad.t0, glyph->uvs[1]);
-  OWL_V2_SET(quad.s1, quad.t0, glyph->uvs[2]);
+  OWL_V2_SET(quad.s0, quad.t0, glyph->uvs[0]);
+  OWL_V2_SET(quad.s1, quad.t0, glyph->uvs[1]);
+  OWL_V2_SET(quad.s0, quad.t1, glyph->uvs[2]);
   OWL_V2_SET(quad.s1, quad.t1, glyph->uvs[3]);
-
 
   return code;
 }

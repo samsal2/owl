@@ -12,23 +12,28 @@ LIBRARY							= libowl.a
 CFLAGS							=																													\
 	-std=c99																																		\
 	-O0																																					\
+	-g																																					\
 	-Wall																																				\
 	-Werror																																			\
 	-Wextra																																			\
+	-Wshadow																																		\
 	-pedantic																																		\
 	-pedantic-errors																														\
   -Ilibraries/glfw/macos/include																							\
-	-Ilibraries/vulkan/macos/include																						\
-  -fsanitize=address
+	-I$(VULKAN_SDK)/include																											\
+  -fstrict-aliasing																														\
+  -fsanitize=address																													\
+  -fsanitize=undefined
 
 LDFLAGS							=																													\
 	-Llibraries/glfw/macos/lib-universal																				\
 	-lglfw3																																			\
-  -Llibraries/vulkan/macos/lib																								\
+  -L$(VULKAN_SDK)/lib																													\
 	-lvulkan																																		\
 	-framework Cocoa																														\
 	-framework IOKit																														\
-  -fsanitize=address
+  -fsanitize=address																													\
+  -fsanitize=undefined
 
 
 glsl_vert_src = $(wildcard *.vert)

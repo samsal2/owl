@@ -14,9 +14,11 @@ tags
 *.o
 *.a
 *.out
+*.u32
 
 # macos
 .DS_Store
+*.dSYM
 
 # build
 build/

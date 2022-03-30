@@ -33,18 +33,23 @@ struct owl_draw_command_basic {
 
 enum owl_code
 owl_draw_command_submit_basic(struct owl_renderer *renderer,
-                              struct owl_camera const *cam,
+                              struct owl_camera const *camera,
                               struct owl_draw_command_basic const *command);
 
 struct owl_draw_command_quad {
   struct owl_renderer_image image;
   owl_m4 model;
+  /*
+   * 0 - 1
+   * | / |
+   * 2 - 3
+   */
   struct owl_draw_command_vertex vertices[4];
 };
 
 enum owl_code
 owl_draw_command_submit_quad(struct owl_renderer *renderer,
-                             struct owl_camera const *cam,
+                             struct owl_camera const *camera,
                              struct owl_draw_command_quad const *command);
 
 struct owl_draw_command_text {
