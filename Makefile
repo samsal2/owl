@@ -47,46 +47,30 @@ OBJS = $(SRCS:.c=.o)
 EXAMPLE_SRCS = $(wildcard examples/*.c)
 EXAMPLE_OUTS = $(EXAMPLE_SRCS:.c=.out)
 
-all: shaders library examples
-
-$(LIBRARY): $(OBJS)
-	$(AR) -cqsv $@ $^
-
 %.vert.spv.u32: %.vert
 	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
 
 %.frag.spv.u32: %.frag
 	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
 
-%.o: %.c $(GLSL_FRAG_SPV_U32) $(GLSL_VERT_SPV_U32)
+%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-%.out: %.c $(LIBRARY)
+%.out: %.c 
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) -L. -l$(PROJECT_NAME) -I.
 
-.PHONY: examples
-examples: $(EXAMPLE_OUTS)
+$(EXAMPLE_OUTS): $(LIBRARY)
 
-.PHONY: library
-library: $(LIBRARY)
+$(LIBRARY): $(OBJS)
+	$(AR) -cqsv $@ $^
 
-.PHONY: shaders
-shaders: $(GLSL_VERT_SPV_U32) $(GLSL_FRAG_SPV_U32)
-
-.PHONY: clean_shaders
-clean_shaders:
-	$(RMF_CMD) $(GLSL_FRAG_SPV_U32)
-	$(RMF_CMD) $(GLSL_VERT_SPV_U32)
-
-.PHONY: clean_examples
-clean_examples:
-	$(RMF_CMD) $(EXAMPLE_OUTS)
-
-.PHONY: clean_library
-clean_library:
-	$(RMF_CMD) $(OBJS)
-	$(RMF_CMD) $(LIBRARY)
+$(OBJS): $(GLSL_VERT_SPV_U32) $(GLSL_FRAG_SPV_U32)
 
 .PHONY: clean
-clean: clean_library clean_examples clean_shaders
+clean: 
+	$(RMF_CMD) $(GLSL_FRAG_SPV_U32)
+	$(RMF_CMD) $(GLSL_VERT_SPV_U32)
+	$(RMF_CMD) $(OBJS)
+	$(RMF_CMD) $(LIBRARY)
+	$(RMF_CMD) $(EXAMPLE_OUTS)
 
