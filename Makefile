@@ -1,4 +1,5 @@
 CC = clang
+RMF = rm -f
 GLSLANG_VALIDATOR = glslangValidator
 
 CFLAGS = -std=c99
@@ -28,7 +29,6 @@ LDFLAGS +=-framework IOKit
 LDFLAGS +=-fsanitize=address
 LDFLAGS +=-fsanitize=undefined
 
-RMF_CMD = rm -f
 
 PREFIX = /usr/local/
 PROJECT_NAME = owl
@@ -68,9 +68,9 @@ $(OBJS): $(GLSL_VERT_SPV_U32) $(GLSL_FRAG_SPV_U32)
 
 .PHONY: clean
 clean: 
-	$(RMF_CMD) $(GLSL_FRAG_SPV_U32)
-	$(RMF_CMD) $(GLSL_VERT_SPV_U32)
-	$(RMF_CMD) $(OBJS)
-	$(RMF_CMD) $(LIBRARY)
-	$(RMF_CMD) $(EXAMPLE_OUTS)
+	$(RMF) $(GLSL_FRAG_SPV_U32)
+	$(RMF) $(GLSL_VERT_SPV_U32)
+	$(RMF) $(OBJS)
+	$(RMF) $(LIBRARY)
+	$(RMF) $(EXAMPLE_OUTS)
 
