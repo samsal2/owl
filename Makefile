@@ -2,15 +2,14 @@ CC = clang
 RMF = rm -f
 GLSLANG_VALIDATOR = glslangValidator
 
-PREFIX = /usr/local/
-LIBRARY	= libowl.a
+LIBRARY = libowl.a
 
 CFLAGS = -std=c99
 CFLAGS += -O0
 CFLAGS += -g
 CFLAGS += -Ilibraries/glfw/macos/include
 CFLAGS += -I$(VULKAN_SDK)/include
-CFLAGS += -fstrict-aliasing							
+CFLAGS += -fstrict-aliasing
 CFLAGS += -fsanitize=address
 CFLAGS += -fsanitize=undefined
 CFLAGS += -Wall
@@ -30,17 +29,41 @@ LDFLAGS +=-lvulkan
 LDFLAGS +=-fsanitize=address
 LDFLAGS +=-fsanitize=undefined
 
-GLSL_VERT_SRC = $(wildcard *.vert)
-GLSL_VERT_SPV_U32 = $(GLSL_VERT_SRC:.vert=.vert.spv.u32)
+GLSLVSRC = $(wildcard *.vert)
+GLSLVSPV = $(GLSLVSRC:.vert=.vert.spv.u32)
 
-GLSL_FRAG_SRC = $(wildcard *.frag)
-GLSL_FRAG_SPV_U32 = $(GLSL_FRAG_SRC:.frag=.frag.spv.u32)
+GLSLFSRC = $(wildcard *.frag)
+GLSLFSPV = $(GLSLFSRC:.frag=.frag.spv.u32)
 
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
+DEPS = $(SRCS:.c=.d)
 
-EXAMPLE_SRCS = $(wildcard examples/*.c)
-EXAMPLE_OUTS = $(EXAMPLE_SRCS:.c=.out)
+EXSRCS = $(wildcard examples/*.c)
+EXOUTS = $(EXSRCS:.c=.out)
+
+all: examples library
+
+.PHONY: examples
+examples: $(EXOUTS)
+
+$(EXOUTS): $(LIBRARY)
+
+%.out: %.c $(LIBRARY)
+	$(CC) $(CFLAGS) -I. -o $@ $< $(LDFLAGS) -L. -lowl
+
+.PHONY: library
+-include $(DEPS)
+
+library: $(LIBRARY)
+
+$(LIBRARY): $(OBJS)
+	$(AR) -cqsv $@ $^
+
+$(OBJS): $(GLSLVSPV) $(GLSLFSPV)
+
+%.o: %.c
+	$(CC) -MMD $(CFLAGS) -o $@ -c $<
 
 %.vert.spv.u32: %.vert
 	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
@@ -48,27 +71,12 @@ EXAMPLE_OUTS = $(EXAMPLE_SRCS:.c=.out)
 %.frag.spv.u32: %.frag
 	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
 
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $<
-
-%.out: %.c 
-	$(CC) $(CFLAGS) -I. -o $@ $< $(LDFLAGS) -L. -lowl
-
-all: $(EXAMPLE_OUTS) $(LIBRARY) $(OBJS) $(GLSL_VERT_SPV_U32) \
-     $(GLSL_FRAG_SPV_U32)
-
-$(EXAMPLE_OUTS): $(LIBRARY)
-
-$(LIBRARY): $(OBJS)
-	$(AR) -cqsv $@ $^
-
-$(OBJS): $(GLSL_VERT_SPV_U32) $(GLSL_FRAG_SPV_U32)
-
 .PHONY: clean
-clean: 
-	$(RMF) $(GLSL_FRAG_SPV_U32)
-	$(RMF) $(GLSL_VERT_SPV_U32)
+clean:
+	$(RMF) $(GLSLFSPV)
+	$(RMF) $(GLSLVSPV)
 	$(RMF) $(OBJS)
+	$(RMF) $(DEPS)
 	$(RMF) $(LIBRARY)
-	$(RMF) $(EXAMPLE_OUTS)
+	$(RMF) $(EXOUTS)
 
