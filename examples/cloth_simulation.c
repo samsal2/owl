@@ -258,8 +258,8 @@ int main(void) {
   renderer = OWL_MALLOC(sizeof(*renderer));
   TEST(owl_renderer_init(&renderer_desc, renderer));
 
-  image_desc.source_type = OWL_RENDERER_IMAGE_SOURCE_TYPE_FILE;
-  image_desc.source_path = TPATH;
+  image_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
+  image_desc.src_path = TPATH;
   image_desc.use_default_sampler = 1;
   TEST(owl_renderer_init_image(renderer, &image_desc, &image));
 

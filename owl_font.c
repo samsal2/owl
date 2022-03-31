@@ -255,12 +255,12 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
     goto end_pack;
   }
 
-  image_desc.source_type = OWL_RENDERER_IMAGE_SOURCE_TYPE_DATA;
-  image_desc.source_path = NULL;
-  image_desc.source_data = font_bitmap_data;
-  image_desc.source_data_width = OWL_FONT_ATLAS_WIDTH;
-  image_desc.source_data_height = OWL_FONT_ATLAS_HEIGHT;
-  image_desc.source_data_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
+  image_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_DATA;
+  image_desc.src_path = NULL;
+  image_desc.src_data = font_bitmap_data;
+  image_desc.src_data_width = OWL_FONT_ATLAS_WIDTH;
+  image_desc.src_data_height = OWL_FONT_ATLAS_HEIGHT;
+  image_desc.src_data_pixel_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
   image_desc.use_default_sampler = 0;
   image_desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
   image_desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;

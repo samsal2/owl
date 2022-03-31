@@ -3218,30 +3218,31 @@ struct owl_renderer_image_load_state {
   struct owl_renderer_dynamic_heap_reference reference;
 };
 
-enum owl_code owl_renderer_init_image_load_state(
+OWL_INTERNAL enum owl_code owl_renderer_init_image_load_state_(
     struct owl_renderer *renderer,
     struct owl_renderer_image_init_desc const *desc,
     struct owl_renderer_image_load_state *state) {
   enum owl_code code = OWL_SUCCESS;
 
-  switch (desc->source_type) {
-  case OWL_RENDERER_IMAGE_SOURCE_TYPE_FILE: {
-    owl_i32 source_width;
-    owl_i32 source_height;
-    owl_i32 source_channels;
+  switch (desc->src_type) {
+  case OWL_RENDERER_IMAGE_SRC_TYPE_FILE: {
+    owl_i32 width;
+    owl_i32 height;
+    owl_i32 channels;
     owl_u64 size;
     owl_byte *data;
 
-    data = stbi_load(desc->source_path, &source_width, &source_height,
-                     &source_channels, STBI_rgb_alpha);
+    data = stbi_load(desc->src_path, &width, &height, &channels,
+                     STBI_rgb_alpha);
+
     if (!data) {
       code = OWL_ERROR_UNKNOWN;
       goto end;
     }
 
     state->format = OWL_RENDERER_PIXEL_FORMAT_R8G8B8A8_SRGB;
-    state->width = (owl_u32)source_width;
-    state->height = (owl_u32)source_height;
+    state->width = (owl_u32)width;
+    state->height = (owl_u32)height;
     size = owl_renderer_pixel_format_size(state->format) * state->width *
            state->height;
     code = owl_renderer_dynamic_heap_submit(renderer, size, data,
@@ -3253,15 +3254,15 @@ enum owl_code owl_renderer_init_image_load_state(
       goto end;
 
   } break;
-  case OWL_RENDERER_IMAGE_SOURCE_TYPE_DATA: {
+  case OWL_RENDERER_IMAGE_SRC_TYPE_DATA: {
     owl_u64 size;
 
-    state->format = desc->source_data_format;
-    state->width = (owl_u32)desc->source_data_width;
-    state->height = (owl_u32)desc->source_data_height;
+    state->format = desc->src_data_pixel_format;
+    state->width = (owl_u32)desc->src_data_width;
+    state->height = (owl_u32)desc->src_data_height;
     size = owl_renderer_pixel_format_size(state->format) * state->width *
            state->height;
-    code = owl_renderer_dynamic_heap_submit(renderer, size, desc->source_data,
+    code = owl_renderer_dynamic_heap_submit(renderer, size, desc->src_data,
                                             &state->reference);
 
     if (OWL_SUCCESS != code)
@@ -3287,7 +3288,7 @@ owl_renderer_init_image(struct owl_renderer *renderer,
   if (OWL_SUCCESS != code)
     goto end;
 
-  code = owl_renderer_init_image_load_state(renderer, desc, &state);
+  code = owl_renderer_init_image_load_state_(renderer, desc, &state);
 
   if (OWL_SUCCESS != code)
     goto end;

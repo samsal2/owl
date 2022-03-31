@@ -41,8 +41,8 @@ OWL_INTERNAL enum owl_code owl_model_load_images_(struct owl_renderer *renderer,
     if (OWL_SUCCESS != (code = owl_fix_uri_(gltf->images[i].uri, uri)))
       goto end;
 
-    desc.source_type = OWL_RENDERER_IMAGE_SOURCE_TYPE_FILE;
-    desc.source_path = uri;
+    desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
+    desc.src_path = uri;
     desc.use_default_sampler = 1;
 
     code = owl_renderer_init_image(renderer, &desc, &dst_image->image);

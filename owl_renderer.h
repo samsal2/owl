@@ -86,20 +86,20 @@ enum owl_renderer_sampler_addr_mode {
   OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER
 };
 
-enum owl_renderer_image_source_type {
-  OWL_RENDERER_IMAGE_SOURCE_TYPE_FILE,
-  OWL_RENDERER_IMAGE_SOURCE_TYPE_DATA
+enum owl_renderer_image_src_type {
+  OWL_RENDERER_IMAGE_SRC_TYPE_FILE,
+  OWL_RENDERER_IMAGE_SRC_TYPE_DATA
 };
 
 struct owl_renderer_image_init_desc {
-  enum owl_renderer_image_source_type source_type;
+  enum owl_renderer_image_src_type src_type;
 
-  char const *source_path;
+  char const *src_path;
 
-  owl_byte const *source_data;
-  owl_i32 source_data_width;
-  owl_i32 source_data_height;
-  enum owl_renderer_pixel_format source_data_format;
+  owl_byte const *src_data;
+  owl_i32 src_data_width;
+  owl_i32 src_data_height;
+  enum owl_renderer_pixel_format src_data_pixel_format;
 
   owl_b32 use_default_sampler;
   enum owl_renderer_sampler_mip_mode sampler_mip_mode;

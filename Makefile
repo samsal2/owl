@@ -17,6 +17,7 @@ CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -Wextra
 CFLAGS += -Wshadow
+CFLAGS += -Wvla
 CFLAGS += -pedantic
 CFLAGS += -pedantic-errors
 
@@ -53,7 +54,8 @@ EXAMPLE_OUTS = $(EXAMPLE_SRCS:.c=.out)
 %.out: %.c 
 	$(CC) $(CFLAGS) -I. -o $@ $< $(LDFLAGS) -L. -lowl
 
-all: $(EXAMPLE_OUTS) $(LIBRARY) $(OBJS) $(GLSL_VERT_SPV_U32) $(GLSL_FRAG_SPV_U32)
+all: $(EXAMPLE_OUTS) $(LIBRARY) $(OBJS) $(GLSL_VERT_SPV_U32) \
+     $(GLSL_FRAG_SPV_U32)
 
 $(EXAMPLE_OUTS): $(LIBRARY)
 
