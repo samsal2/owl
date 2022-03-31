@@ -3232,8 +3232,8 @@ OWL_INTERNAL enum owl_code owl_renderer_init_image_load_state_(
     owl_u64 size;
     owl_byte *data;
 
-    data = stbi_load(desc->src_path, &width, &height, &channels,
-                     STBI_rgb_alpha);
+    data =
+        stbi_load(desc->src_path, &width, &height, &channels, STBI_rgb_alpha);
 
     if (!data) {
       code = OWL_ERROR_UNKNOWN;
@@ -3467,7 +3467,6 @@ owl_renderer_init_image(struct owl_renderer *renderer,
       sampler_create_info.unnormalizedCoordinates = VK_FALSE;
 
     } else {
-
       sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
       sampler_create_info.pNext = NULL;
       sampler_create_info.flags = 0;
