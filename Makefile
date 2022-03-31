@@ -1,6 +1,6 @@
 CC = clang
 RMF = rm -f
-GLSLANG_VALIDATOR = glslangValidator
+GLSLANG = glslangValidator
 
 LIBRARY = libowl.a
 
@@ -17,8 +17,10 @@ CFLAGS += -Werror
 CFLAGS += -Wextra
 CFLAGS += -Wshadow
 CFLAGS += -Wvla
+CFLAGS += -Wstrict-prototypes
 CFLAGS += -pedantic
 CFLAGS += -pedantic-errors
+CFLAGS += -DOWL_ENABLE_VALIDATION
 
 LDFLAGS =-Llibraries/glfw/macos/lib-universal
 LDFLAGS +=-lglfw3
@@ -66,10 +68,10 @@ $(OBJS): $(GLSLVSPV) $(GLSLFSPV)
 	$(CC) -MMD $(CFLAGS) -o $@ -c $<
 
 %.vert.spv.u32: %.vert
-	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
+	$(GLSLANG) -V -x -o $@ $<
 
 %.frag.spv.u32: %.frag
-	$(GLSLANG_VALIDATOR) -V -x -o $@ $<
+	$(GLSLANG) -V -x -o $@ $<
 
 .PHONY: clean
 clean:

@@ -69,10 +69,4 @@ void owl_debug_log_(char const *f, int l, char const *fmt, ...);
 
 #endif /* NDEBUG */
 
-#if !defined(NDEBUG)
-
-#define OWL_ENABLE_VALIDATION
-
-#endif /* NDEBUG */
-
 #endif
