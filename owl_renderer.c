@@ -2337,8 +2337,7 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *desc,
   renderer->window_height = desc->window_height;
   renderer->framebuffer_width = desc->framebuffer_width;
   renderer->framebuffer_height = desc->framebuffer_height;
-  renderer->framebuffer_ratio =
-      (float)desc->framebuffer_width / (float)desc->framebuffer_height;
+  renderer->framebuffer_ratio = desc->framebuffer_ratio;
   renderer->immidiate_command_buffer = VK_NULL_HANDLE;
 
   if (OWL_SUCCESS != (code = owl_renderer_init_instance_(desc, renderer)))

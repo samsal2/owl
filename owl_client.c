@@ -95,12 +95,13 @@ OWL_INTERNAL void owl_keyboard_key_callback_(GLFWwindow *glfw, owl_i32 key,
 }
 
 OWL_INTERNAL enum owl_code
-owl_vk_surface_init_callback_(struct owl_renderer const *renderer,
-                              void const *data, VkSurfaceKHR *out) {
+owl_vk_create_surface_callback_(struct owl_renderer const *renderer,
+                                void const *data, VkSurfaceKHR *out) {
+  owl_i32 err;
   enum owl_code code = OWL_SUCCESS;
   struct owl_client const *c = data;
-  owl_i32 err =
-      glfwCreateWindowSurface(renderer->instance, c->window, NULL, out);
+
+  err = glfwCreateWindowSurface(renderer->instance, c->window, NULL, out);
 
   if (VK_SUCCESS != err)
     code = OWL_ERROR_BAD_INIT;
@@ -132,6 +133,9 @@ enum owl_code owl_client_init(struct owl_client_init_desc const *desc,
   glfwSetCursorPosCallback(client->window, owl_cursor_position_callback_);
   glfwSetMouseButtonCallback(client->window, owl_mouse_key_callback_);
   glfwSetKeyCallback(client->window, owl_keyboard_key_callback_);
+
+  client->framebuffer_ratio =
+      (float)client->framebuffer_width / (float)client->framebuffer_height;
 
   OWL_V2_ZERO(client->previous_cursor_position);
   OWL_V2_ZERO(client->cursor_position);
@@ -187,10 +191,11 @@ owl_client_fill_renderer_init_desc(struct owl_client const *client,
 
   desc->window_width = client->window_width;
   desc->window_height = client->window_height;
+  desc->framebuffer_ratio = client->framebuffer_ratio;
   desc->framebuffer_width = client->framebuffer_width;
   desc->framebuffer_height = client->framebuffer_height;
   desc->surface_user_data = client;
-  desc->create_surface = owl_vk_surface_init_callback_;
+  desc->create_surface = owl_vk_create_surface_callback_;
 
 #if defined(OWL_ENABLE_VALIDATION)
   desc->instance_extensions = owl_get_debug_instance_extensions_(&count);

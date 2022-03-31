@@ -39,6 +39,7 @@ typedef enum owl_code (*owl_renderer_init_vk_surface_callback)(
 struct owl_renderer_init_desc {
   char const *name;
 
+  float framebuffer_ratio;
   owl_i32 framebuffer_width;
   owl_i32 framebuffer_height;
   owl_i32 window_width;

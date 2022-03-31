@@ -155,6 +155,7 @@ enum owl_keyboard_key {
 struct owl_client {
   char const *title;
   void *window;
+  float framebuffer_ratio;
   owl_i32 framebuffer_width;
   owl_i32 framebuffer_height;
   owl_i32 window_width;
