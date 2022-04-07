@@ -54,7 +54,6 @@ owl_renderer_init_instance_(struct owl_renderer_init_desc const *desc,
   instance_create_info.enabledExtensionCount =
       (owl_u32)desc->instance_extensions_count;
   instance_create_info.ppEnabledExtensionNames = desc->instance_extensions;
-
   OWL_VK_CHECK(
       vkCreateInstance(&instance_create_info, NULL, &renderer->instance));
 
@@ -504,7 +503,7 @@ owl_renderer_ensure_present_mode_(struct owl_renderer *renderer) {
   owl_u32 modes_count;
   VkPresentModeKHR modes[OWL_MAX_PRESENT_MODES];
   enum owl_code code = OWL_SUCCESS;
-  VkPresentModeKHR const prefered = renderer->swapchain_present_mode;
+  VkPresentModeKHR const preferred = renderer->swapchain_present_mode;
 
   OWL_VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
       renderer->physical_device, renderer->surface, &modes_count, NULL));
@@ -518,7 +517,7 @@ owl_renderer_ensure_present_mode_(struct owl_renderer *renderer) {
       renderer->physical_device, renderer->surface, &modes_count, modes));
 
   for (i = 0; i < modes_count; ++i)
-    if (prefered ==
+    if (preferred ==
         (renderer->swapchain_present_mode = modes[modes_count - i - 1]))
       break;
 
@@ -622,26 +621,27 @@ owl_renderer_init_swapchain_views_(struct owl_renderer *renderer) {
   enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < renderer->swapchain_images_count; ++i) {
-    VkImageViewCreateInfo view_create_info;
+    VkImageViewCreateInfo image_view_create_info;
 
-    view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view_create_info.pNext = NULL;
-    view_create_info.flags = 0;
-    view_create_info.image = renderer->swapchain_images[i];
-    view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view_create_info.format = renderer->surface_format.format;
-    view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view_create_info.subresourceRange.baseMipLevel = 0;
-    view_create_info.subresourceRange.levelCount = 1;
-    view_create_info.subresourceRange.baseArrayLayer = 0;
-    view_create_info.subresourceRange.layerCount = 1;
+    image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    image_view_create_info.pNext = NULL;
+    image_view_create_info.flags = 0;
+    image_view_create_info.image = renderer->swapchain_images[i];
+    image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    image_view_create_info.format = renderer->surface_format.format;
+    image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.subresourceRange.aspectMask =
+        VK_IMAGE_ASPECT_COLOR_BIT;
+    image_view_create_info.subresourceRange.baseMipLevel = 0;
+    image_view_create_info.subresourceRange.levelCount = 1;
+    image_view_create_info.subresourceRange.baseArrayLayer = 0;
+    image_view_create_info.subresourceRange.layerCount = 1;
 
-    OWL_VK_CHECK(vkCreateImageView(renderer->device, &view_create_info, NULL,
-                                   &renderer->swapchain_views[i]));
+    OWL_VK_CHECK(vkCreateImageView(renderer->device, &image_view_create_info,
+                                   NULL, &renderer->swapchain_image_views[i]));
   }
 
   return code;
@@ -652,7 +652,8 @@ owl_renderer_deinit_swapchain_views_(struct owl_renderer *renderer) {
   owl_u32 i;
 
   for (i = 0; i < renderer->swapchain_images_count; ++i)
-    vkDestroyImageView(renderer->device, renderer->swapchain_views[i], NULL);
+    vkDestroyImageView(renderer->device, renderer->swapchain_image_views[i],
+                       NULL);
 }
 
 OWL_INTERNAL enum owl_code
@@ -899,26 +900,27 @@ owl_renderer_init_attachments_(struct owl_renderer *renderer) {
   }
 
   {
-    VkImageViewCreateInfo view_create_info;
+    VkImageViewCreateInfo image_view_create_info;
 
-    view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view_create_info.pNext = NULL;
-    view_create_info.flags = 0;
-    view_create_info.image = renderer->color_image;
-    view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view_create_info.format = renderer->surface_format.format;
-    view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view_create_info.subresourceRange.baseMipLevel = 0;
-    view_create_info.subresourceRange.levelCount = 1;
-    view_create_info.subresourceRange.baseArrayLayer = 0;
-    view_create_info.subresourceRange.layerCount = 1;
+    image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    image_view_create_info.pNext = NULL;
+    image_view_create_info.flags = 0;
+    image_view_create_info.image = renderer->color_image;
+    image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    image_view_create_info.format = renderer->surface_format.format;
+    image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.subresourceRange.aspectMask =
+        VK_IMAGE_ASPECT_COLOR_BIT;
+    image_view_create_info.subresourceRange.baseMipLevel = 0;
+    image_view_create_info.subresourceRange.levelCount = 1;
+    image_view_create_info.subresourceRange.baseArrayLayer = 0;
+    image_view_create_info.subresourceRange.layerCount = 1;
 
-    OWL_VK_CHECK(vkCreateImageView(renderer->device, &view_create_info, NULL,
-                                   &renderer->color_view));
+    OWL_VK_CHECK(vkCreateImageView(renderer->device, &image_view_create_info,
+                                   NULL, &renderer->color_view));
   }
 
   {
@@ -968,26 +970,27 @@ owl_renderer_init_attachments_(struct owl_renderer *renderer) {
   }
 
   {
-    VkImageViewCreateInfo view_create_info;
+    VkImageViewCreateInfo image_view_create_info;
 
-    view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view_create_info.pNext = NULL;
-    view_create_info.flags = 0;
-    view_create_info.image = renderer->depth_stencil_image;
-    view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view_create_info.format = renderer->depth_stencil_format;
-    view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    view_create_info.subresourceRange.baseMipLevel = 0;
-    view_create_info.subresourceRange.levelCount = 1;
-    view_create_info.subresourceRange.baseArrayLayer = 0;
-    view_create_info.subresourceRange.layerCount = 1;
+    image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    image_view_create_info.pNext = NULL;
+    image_view_create_info.flags = 0;
+    image_view_create_info.image = renderer->depth_stencil_image;
+    image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    image_view_create_info.format = renderer->depth_stencil_format;
+    image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.subresourceRange.aspectMask =
+        VK_IMAGE_ASPECT_DEPTH_BIT;
+    image_view_create_info.subresourceRange.baseMipLevel = 0;
+    image_view_create_info.subresourceRange.levelCount = 1;
+    image_view_create_info.subresourceRange.baseArrayLayer = 0;
+    image_view_create_info.subresourceRange.layerCount = 1;
 
-    OWL_VK_CHECK(vkCreateImageView(renderer->device, &view_create_info, NULL,
-                                   &renderer->depth_stencil_view));
+    OWL_VK_CHECK(vkCreateImageView(renderer->device, &image_view_create_info,
+                                   NULL, &renderer->depth_stencil_view));
   }
 
   return code;
@@ -1015,7 +1018,7 @@ owl_renderer_init_swapchain_framebuffers_(struct owl_renderer *renderer) {
 
     attachments[0] = renderer->color_view;
     attachments[1] = renderer->depth_stencil_view;
-    attachments[2] = renderer->swapchain_views[i];
+    attachments[2] = renderer->swapchain_image_views[i];
 
     framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_create_info.pNext = NULL;
@@ -2034,7 +2037,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *renderer, owl_u64 size) {
                              VK_WHOLE_SIZE, 0, &data));
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i)
-      renderer->dynamic_heap_datas[i] =
+      renderer->dynamic_heap_data[i] =
           &((owl_byte *)data)[i * renderer->dynamic_heap_buffer_aligned_size];
   }
 
@@ -2095,11 +2098,11 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *renderer, owl_u64 size) {
   {
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
       VkWriteDescriptorSet write;
-      VkDescriptorBufferInfo buffer;
+      VkDescriptorBufferInfo buffer_descriptor;
 
-      buffer.buffer = renderer->dynamic_heap_buffers[i];
-      buffer.offset = 0;
-      buffer.range = sizeof(struct owl_draw_command_uniform);
+      buffer_descriptor.buffer = renderer->dynamic_heap_buffers[i];
+      buffer_descriptor.offset = 0;
+      buffer_descriptor.range = sizeof(struct owl_draw_command_uniform);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
@@ -2109,7 +2112,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *renderer, owl_u64 size) {
       write.descriptorCount = 1;
       write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
       write.pImageInfo = NULL;
-      write.pBufferInfo = &buffer;
+      write.pBufferInfo = &buffer_descriptor;
       write.pTexelBufferView = NULL;
 
       vkUpdateDescriptorSets(renderer->device, 1, &write, 0, NULL);
@@ -2118,12 +2121,12 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *renderer, owl_u64 size) {
 
   {
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      VkDescriptorBufferInfo buffer;
+      VkDescriptorBufferInfo buffer_descriptor;
       VkWriteDescriptorSet write;
 
-      buffer.buffer = renderer->dynamic_heap_buffers[i];
-      buffer.offset = 0;
-      buffer.range = sizeof(struct owl_model_uniform);
+      buffer_descriptor.buffer = renderer->dynamic_heap_buffers[i];
+      buffer_descriptor.offset = 0;
+      buffer_descriptor.range = sizeof(struct owl_model_uniform);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
@@ -2133,7 +2136,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *renderer, owl_u64 size) {
       write.descriptorCount = 1;
       write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
       write.pImageInfo = NULL;
-      write.pBufferInfo = &buffer;
+      write.pBufferInfo = &buffer_descriptor;
       write.pTexelBufferView = NULL;
 
       vkUpdateDescriptorSets(renderer->device, 1, &write, 0, NULL);
@@ -2142,12 +2145,12 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *renderer, owl_u64 size) {
 
   {
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      VkDescriptorBufferInfo buffer;
+      VkDescriptorBufferInfo buffer_descriptor;
       VkWriteDescriptorSet write;
 
-      buffer.buffer = renderer->dynamic_heap_buffers[i];
-      buffer.offset = 0;
-      buffer.range = sizeof(struct owl_model_uniform_params);
+      buffer_descriptor.buffer = renderer->dynamic_heap_buffers[i];
+      buffer_descriptor.offset = 0;
+      buffer_descriptor.range = sizeof(struct owl_model_uniform_params);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
@@ -2157,7 +2160,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *renderer, owl_u64 size) {
       write.descriptorCount = 1;
       write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
       write.pImageInfo = NULL;
-      write.pBufferInfo = &buffer;
+      write.pBufferInfo = &buffer_descriptor;
       write.pTexelBufferView = NULL;
 
       vkUpdateDescriptorSets(renderer->device, 1, &write, 0, NULL);
@@ -2165,7 +2168,7 @@ owl_renderer_init_dynamic_heap_(struct owl_renderer *renderer, owl_u64 size) {
   }
 
   renderer->active_dynamic_heap_data =
-      renderer->dynamic_heap_datas[renderer->active_frame_index];
+      renderer->dynamic_heap_data[renderer->active_frame_index];
   renderer->active_dynamic_heap_buffer =
       renderer->dynamic_heap_buffers[renderer->active_frame_index];
   renderer->active_dynamic_heap_common_ubo_set =
@@ -2525,12 +2528,13 @@ owl_renderer_resize_swapchain(struct owl_renderer_init_desc const *desc,
                               struct owl_renderer *renderer) {
   enum owl_code code = OWL_SUCCESS;
 
+  OWL_DEBUG_LOG("resizing swapchain\n");
+
   renderer->window_width = desc->window_width;
   renderer->window_height = desc->window_height;
   renderer->framebuffer_width = desc->framebuffer_width;
   renderer->framebuffer_height = desc->framebuffer_height;
-  renderer->framebuffer_ratio =
-      (float)desc->framebuffer_width / (float)desc->framebuffer_height;
+  renderer->framebuffer_ratio = desc->framebuffer_ratio;
 
   OWL_VK_CHECK(vkDeviceWaitIdle(renderer->device));
 
@@ -2908,7 +2912,7 @@ owl_renderer_update_frame_actives_(struct owl_renderer *renderer) {
   renderer->active_frame_command_pool =
       renderer->frame_command_pools[renderer->active_frame_index];
   renderer->active_dynamic_heap_data =
-      renderer->dynamic_heap_datas[renderer->active_frame_index];
+      renderer->dynamic_heap_data[renderer->active_frame_index];
   renderer->active_dynamic_heap_buffer =
       renderer->dynamic_heap_buffers[renderer->active_frame_index];
   renderer->active_dynamic_heap_common_ubo_set =
@@ -3348,27 +3352,28 @@ owl_renderer_init_image(struct owl_renderer *renderer,
   }
 
   {
-    VkImageViewCreateInfo view_create_info;
+    VkImageViewCreateInfo image_view_create_info;
 
-    view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view_create_info.pNext = NULL;
-    view_create_info.flags = 0;
-    view_create_info.image = renderer->image_manager_images[image->slot];
-    view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view_create_info.format =
+    image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    image_view_create_info.pNext = NULL;
+    image_view_create_info.flags = 0;
+    image_view_create_info.image = renderer->image_manager_images[image->slot];
+    image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    image_view_create_info.format =
         owl_renderer_pixel_format_as_vk_format(state.format);
-    view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view_create_info.subresourceRange.baseMipLevel = 0;
-    view_create_info.subresourceRange.levelCount = state.mips;
-    view_create_info.subresourceRange.baseArrayLayer = 0;
-    view_create_info.subresourceRange.layerCount = 1;
+    image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.subresourceRange.aspectMask =
+        VK_IMAGE_ASPECT_COLOR_BIT;
+    image_view_create_info.subresourceRange.baseMipLevel = 0;
+    image_view_create_info.subresourceRange.levelCount = state.mips;
+    image_view_create_info.subresourceRange.baseArrayLayer = 0;
+    image_view_create_info.subresourceRange.layerCount = 1;
 
     OWL_VK_CHECK(
-        vkCreateImageView(renderer->device, &view_create_info, NULL,
+        vkCreateImageView(renderer->device, &image_view_create_info, NULL,
                           &renderer->image_manager_views[image->slot]));
   }
 

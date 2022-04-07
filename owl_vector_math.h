@@ -1,5 +1,5 @@
-#ifndef OWL_VECdstR_MATH_H_
-#define OWL_VECdstR_MATH_H_
+#ifndef OWL_VECTOR_MATH_H_
+#define OWL_VECTOR_MATH_H_
 
 #include "owl_types.h"
 
@@ -297,8 +297,8 @@ void owl_m4_make_rotate(float angle, owl_v3 const axis, owl_m4 out);
 
 void owl_m4_translate(owl_v3 const v, owl_m4 out);
 
-void owl_m4_ortho(float left, float right, float botdstm, float dstp,
-                  float near, float far, owl_m4 out);
+void owl_m4_ortho(float left, float right, float bot, float top, float near,
+                  float far, owl_m4 out);
 
 void owl_m4_perspective(float fov, float ratio, float near, float far,
                         owl_m4 out);

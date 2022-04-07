@@ -242,8 +242,8 @@ static struct owl_draw_command_text text_command;
 static struct owl_camera camera;
 
 #define UNSELECTED (owl_u32) - 1
-#define TPATH "../../assets/cloth.jpeg"
-#define FONTPATH "../../assets/Inconsolata-Regular.ttf"
+#define TPATH "../assets/cloth.jpeg"
+#define FONTPATH "../assets/Inconsolata-Regular.ttf"
 
 int main(void) {
   owl_u32 selected = UNSELECTED;
@@ -263,7 +263,7 @@ int main(void) {
   image_desc.use_default_sampler = 1;
   TEST(owl_renderer_init_image(renderer, &image_desc, &image));
 
-  TEST(owl_font_init(renderer, 128, FONTPATH, &font));
+  TEST(owl_font_init(renderer, 64, FONTPATH, &font));
 
   TEST(owl_camera_init(&camera));
 

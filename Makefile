@@ -5,6 +5,7 @@ GLSLANG = glslangValidator
 LIBRARY = libowl.a
 
 CFLAGS = -std=c99
+# CFLAGS += -Ofast
 CFLAGS += -O0
 CFLAGS += -g
 CFLAGS += -Ilibraries/glfw/macos/include
@@ -12,6 +13,7 @@ CFLAGS += -I$(VULKAN_SDK)/include
 CFLAGS += -fstrict-aliasing
 CFLAGS += -fsanitize=address
 CFLAGS += -fsanitize=undefined
+# CFLAGS += -flto
 CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -Wextra
@@ -20,14 +22,19 @@ CFLAGS += -Wvla
 CFLAGS += -Wstrict-prototypes
 CFLAGS += -pedantic
 CFLAGS += -pedantic-errors
+# CFLAGS += -DNDEBUG
 CFLAGS += -DOWL_ENABLE_VALIDATION
 
 LDFLAGS =-Llibraries/glfw/macos/lib-universal
+LDFLAGS +=-rpath libraries/glfw/macos/lib-universal
 LDFLAGS +=-lglfw3
 LDFLAGS +=-framework Cocoa
 LDFLAGS +=-framework IOKit
 LDFLAGS +=-L$(VULKAN_SDK)/lib
+LDFLAGS +=-rpath $(VULKAN_SDK)/lib
 LDFLAGS +=-lvulkan
+LDFLAGS +=-lm
+# LDFLAGS +=-flto
 LDFLAGS +=-fsanitize=address
 LDFLAGS +=-fsanitize=undefined
 

@@ -32,7 +32,7 @@ enum owl_renderer_pipeline_type {
 };
 #define OWL_RENDERER_PIPELINE_TYPE_NONE OWL_RENDERER_PIPELINE_TYPE_COUNT
 
-typedef enum owl_code (*owl_renderer_init_vk_surface_callback)(
+typedef enum owl_code (*owl_vk_create_surface_fn)(
     struct owl_renderer const *renderer, void const *user_data,
     VkSurfaceKHR *surface);
 
@@ -49,7 +49,7 @@ struct owl_renderer_init_desc {
   char const *const *instance_extensions;
 
   void const *surface_user_data;
-  owl_renderer_init_vk_surface_callback create_surface;
+  owl_vk_create_surface_fn create_surface;
 };
 
 struct owl_renderer_dynamic_heap_reference {
@@ -113,7 +113,7 @@ struct owl_renderer_image_init_desc {
 
 struct owl_renderer {
   /* ====================================================================== */
-  /* dims */
+  /* dimensions */
   /* ====================================================================== */
   float framebuffer_ratio;
   owl_i32 framebuffer_width;
@@ -149,9 +149,9 @@ struct owl_renderer {
   VkDevice device;
 
   owl_u32 graphics_queue_family_index;
-  VkQueue graphics_queue;
-
   owl_u32 present_queue_family_index;
+
+  VkQueue graphics_queue;
   VkQueue present_queue;
 
   VkPhysicalDeviceFeatures device_features;
@@ -176,7 +176,7 @@ struct owl_renderer {
 
   owl_u32 swapchain_images_count;
   VkImage swapchain_images[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES_COUNT];
-  VkImageView swapchain_views[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES_COUNT];
+  VkImageView swapchain_image_views[OWL_RENDERER_MAX_SWAPCHAIN_IMAGES_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -318,7 +318,7 @@ struct owl_renderer {
   VkDescriptorSet active_dynamic_heap_model_ubo_set;
   VkDescriptorSet active_dynamic_heap_model_ubo_params_set;
 
-  owl_byte *dynamic_heap_datas[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  owl_byte *dynamic_heap_data[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkBuffer dynamic_heap_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkDescriptorSet
       dynamic_heap_common_ubo_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
