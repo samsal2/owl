@@ -79,20 +79,20 @@ OWL_INTERNAL enum owl_code owl_font_init_atlas_(struct owl_renderer *renderer,
                                                 owl_byte const *data,
                                                 struct owl_font *font) {
   enum owl_code code = OWL_SUCCESS;
-  struct owl_renderer_image_init_desc desc;
+  struct owl_renderer_image_init_desc image_desc;
 
-  desc.source_type = OWL_RENDERER_IMAGE_SOURCE_TYPE_DATA;
-  desc.source_data = data;
-  desc.source_data_width = font->atlas_width;
-  desc.source_data_height = font->atlas_height;
-  desc.source_data_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
-  desc.use_default_sampler = 0;
-  desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
-  desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
-  desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
-  desc.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  desc.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
-  desc.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  image_desc.source_type = OWL_RENDERER_IMAGE_SOURCE_TYPE_DATA;
+  image_desc.source_data = data;
+  image_desc.source_data_width = font->atlas_width;
+  image_desc.source_data_height = font->atlas_height;
+  image_desc.source_data_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
+  image_desc.use_default_sampler = 0;
+  image_desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
+  image_desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
+  image_desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_LINEAR;
+  image_desc.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  image_desc.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
+  image_desc.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_BORDER;
 
   code = owl_renderer_init_image(renderer, &desc, &font->atlas);
 
@@ -211,8 +211,6 @@ end:
 
 void owl_font_unload_file_(owl_byte *data) { OWL_FREE(data); }
 
-#define OWL_FONT_ATLAS_WIDTH 1024
-#define OWL_FONT_ATLAS_HEIGHT 1024
 #define OWL_FONT_ATLAS_SIZE (OWL_FONT_ATLAS_WIDTH * OWL_FONT_ATLAS_HEIGHT)
 
 #define OWL_FONT_FIRST_CHAR ((owl_i32)(' '))
@@ -227,7 +225,7 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
   owl_byte *font_file_data;
   owl_byte *font_bitmap_data;
   stbtt_pack_context pack_context;
-  struct owl_renderer_image_init_desc image_desc;
+  struct owl_renderer_image_init_desc image_init_desc;
 
   enum owl_code code = OWL_SUCCESS;
 
@@ -248,6 +246,8 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
   /* FIXME(samuel): hardcoded */
   stbtt_PackSetOversampling(&pack_context, 2, 2);
 
+  /* HACK(samuel): idk if it's legal to alias a different type with the exact
+   * same layout, but "it works" so ill leave it at that*/
   if (!stbtt_PackFontRange(&pack_context, font_file_data, 0, size,
                            OWL_FONT_FIRST_CHAR, OWL_FONT_CHAR_COUNT,
                            (stbtt_packedchar *)(&font->packed_chars[0]))) {
@@ -255,21 +255,21 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
     goto end_pack;
   }
 
-  image_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_DATA;
-  image_desc.src_path = NULL;
-  image_desc.src_data = font_bitmap_data;
-  image_desc.src_data_width = OWL_FONT_ATLAS_WIDTH;
-  image_desc.src_data_height = OWL_FONT_ATLAS_HEIGHT;
-  image_desc.src_data_pixel_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
-  image_desc.use_default_sampler = 0;
-  image_desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
-  image_desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
-  image_desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
-  image_desc.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
-  image_desc.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
-  image_desc.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
+  image_init_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_DATA;
+  image_init_desc.src_path = NULL;
+  image_init_desc.src_data = font_bitmap_data;
+  image_init_desc.src_data_width = OWL_FONT_ATLAS_WIDTH;
+  image_init_desc.src_data_height = OWL_FONT_ATLAS_HEIGHT;
+  image_init_desc.src_data_pixel_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
+  image_init_desc.use_default_sampler = 0;
+  image_init_desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
+  image_init_desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
+  image_init_desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
+  image_init_desc.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
+  image_init_desc.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
+  image_init_desc.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
 
-  code = owl_renderer_init_image(renderer, &image_desc, &font->atlas);
+  code = owl_renderer_init_image(renderer, &image_init_desc, &font->atlas);
 
   if (OWL_SUCCESS != code)
     goto end_pack;

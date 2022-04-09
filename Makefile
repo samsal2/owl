@@ -19,14 +19,15 @@ CFLAGS += -Werror
 CFLAGS += -Wextra
 CFLAGS += -Wshadow
 CFLAGS += -Wvla
+CFLAGS += -Walloca
 CFLAGS += -Wstrict-prototypes
 CFLAGS += -pedantic
 CFLAGS += -pedantic-errors
 # CFLAGS += -DNDEBUG
 CFLAGS += -DOWL_ENABLE_VALIDATION
 
-LDFLAGS =-Llibraries/glfw/macos/lib-universal
-LDFLAGS +=-rpath libraries/glfw/macos/lib-universal
+LDFLAGS =-Llibraries/glfw/macos/lib-x86_64
+LDFLAGS +=-rpath libraries/glfw/macos/lib-x86_64
 LDFLAGS +=-lglfw3
 LDFLAGS +=-framework Cocoa
 LDFLAGS +=-framework IOKit

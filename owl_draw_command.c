@@ -93,16 +93,10 @@ owl_draw_command_submit_quad(struct owl_renderer *renderer,
   if (OWL_SUCCESS != code)
     goto end;
 
-#if 0
   OWL_M4_COPY(camera->projection, uniform.projection);
   OWL_M4_COPY(camera->view, uniform.view);
   OWL_M4_COPY(command->model, uniform.model);
-#else
-  OWL_UNUSED(camera);
-  OWL_M4_IDENTITY(uniform.projection);
-  OWL_M4_IDENTITY(uniform.view);
-  OWL_M4_IDENTITY(uniform.model);
-#endif
+
   size = sizeof(uniform);
   code = owl_renderer_dynamic_heap_submit(renderer, size, &uniform,
                                           &uniform_reference);
@@ -151,25 +145,29 @@ owl_draw_command_submit_text(struct owl_renderer *renderer,
     OWL_M4_IDENTITY(quad.model);
 
     OWL_V3_ADD(glyph.positions[0], offset, quad.vertices[0].position);
-    OWL_V3_INVERSE_SCALE(quad.vertices[0].position, 1024,
+    OWL_V3_INVERSE_SCALE(quad.vertices[0].position,
+                         renderer->framebuffer_height,
                          quad.vertices[0].position);
     OWL_V3_COPY(command->color, quad.vertices[0].color);
     OWL_V2_COPY(glyph.uvs[0], quad.vertices[0].uv);
 
     OWL_V3_ADD(glyph.positions[1], offset, quad.vertices[1].position);
-    OWL_V3_INVERSE_SCALE(quad.vertices[1].position, 1024,
+    OWL_V3_INVERSE_SCALE(quad.vertices[1].position,
+                         renderer->framebuffer_height,
                          quad.vertices[1].position);
     OWL_V3_COPY(command->color, quad.vertices[1].color);
     OWL_V2_COPY(glyph.uvs[1], quad.vertices[1].uv);
 
     OWL_V3_ADD(glyph.positions[2], offset, quad.vertices[2].position);
-    OWL_V3_INVERSE_SCALE(quad.vertices[2].position, 1024,
+    OWL_V3_INVERSE_SCALE(quad.vertices[2].position,
+                         renderer->framebuffer_height,
                          quad.vertices[2].position);
     OWL_V3_COPY(command->color, quad.vertices[2].color);
     OWL_V2_COPY(glyph.uvs[2], quad.vertices[2].uv);
 
     OWL_V3_ADD(glyph.positions[3], offset, quad.vertices[3].position);
-    OWL_V3_INVERSE_SCALE(quad.vertices[3].position, 1024,
+    OWL_V3_INVERSE_SCALE(quad.vertices[3].position,
+                         renderer->framebuffer_height,
                          quad.vertices[3].position);
     OWL_V3_COPY(command->color, quad.vertices[3].color);
     OWL_V2_COPY(glyph.uvs[3], quad.vertices[3].uv);

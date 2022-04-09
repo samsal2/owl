@@ -12,7 +12,7 @@ enum owl_code owl_camera_init(struct owl_camera *camera) {
   camera->ratio = 1.0F;
 
 #if 0
-  owl_m4_ortho(-2.0F, 2.0F, -2.0F, 2.0F, 0.1F, 10.0F, c->projection);
+  owl_m4_ortho(-2.0F, 2.0F, -2.0F, 2.0F, 0.1F, 10.0F, camera->projection);
 #else
   owl_m4_perspective(camera->fov, camera->ratio, camera->near, camera->far,
                      camera->projection);

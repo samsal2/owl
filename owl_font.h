@@ -4,6 +4,8 @@
 #include "owl_renderer.h"
 #include "owl_types.h"
 
+#define OWL_FONT_ATLAS_WIDTH 1024
+#define OWL_FONT_ATLAS_HEIGHT 1024
 #define OWL_FONT_FIRST_CHAR ((owl_i32)(' '))
 #define OWL_FONT_CHAR_COUNT ((owl_i32)('~' - ' '))
 

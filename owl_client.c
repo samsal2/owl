@@ -53,10 +53,11 @@ OWL_INTERNAL void owl_window_size_callback_(GLFWwindow *window, owl_i32 width,
 OWL_INTERNAL void owl_framebuffer_size_callback_(GLFWwindow *window,
                                                  owl_i32 width,
                                                  owl_i32 height) {
-  struct owl_client *c = glfwGetWindowUserPointer(window);
+  struct owl_client *client = glfwGetWindowUserPointer(window);
 
-  c->framebuffer_width = width;
-  c->framebuffer_height = height;
+  client->framebuffer_width = width;
+  client->framebuffer_height = height;
+  client->framebuffer_ratio = (float)width / (float)height;
 }
 
 OWL_INTERNAL void owl_cursor_position_callback_(GLFWwindow *window, double x,
@@ -218,5 +219,5 @@ void owl_client_poll_events(struct owl_client *client) {
   client->previous_time_stamp = client->time_stamp;
   client->time_stamp = glfwGetTime();
   client->delta_time_stamp = client->time_stamp - client->previous_time_stamp;
-  client->fps = 1.0F / client->delta_time_stamp;
+  client->fps = 1.0 / client->delta_time_stamp;
 }

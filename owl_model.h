@@ -70,6 +70,8 @@ struct owl_model_animation {
   owl_i32 slot;
 };
 
+/* NOTE(samuel): thought I knew how the alignment worked for the push constants,
+ * turns out I don't. Change it at your own risk*/
 struct owl_model_material_push_constant {
   owl_v4 base_color_factor;
   owl_v4 emissive_factor;
@@ -180,10 +182,8 @@ struct owl_model_skin_data {
   VkBuffer ssbo_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkDescriptorSet ssbo_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
 
-  owl_i32 inverse_bind_matrices_count;
-  owl_m4 inverse_bind_matrices[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
-
   owl_i32 joints_count;
+  owl_m4 inverse_bind_matrices[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
   struct owl_model_node joints[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
 };
 

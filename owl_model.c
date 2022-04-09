@@ -9,7 +9,9 @@
 #include <float.h>
 #include <stdio.h>
 
-#define OWL_MAX_URI_SIZE 128
+struct owl_model_uri {
+  char path[OWL_MODEL_MAX_NAME_LENGTH];
+};
 
 OWL_INTERNAL void const *
 owl_resolve_gltf_accessor_(struct cgltf_accessor const *accessor) {
@@ -18,11 +20,11 @@ owl_resolve_gltf_accessor_(struct cgltf_accessor const *accessor) {
   return &data[accessor->offset + view->offset];
 }
 
-OWL_INTERNAL enum owl_code owl_fix_uri_(char const *uri,
-                                        char fixed[OWL_MAX_URI_SIZE]) {
+OWL_INTERNAL enum owl_code owl_model_uri_init_(char const *src,
+                                               struct owl_model_uri *uri) {
   enum owl_code code = OWL_SUCCESS;
 
-  snprintf(fixed, OWL_MAX_URI_SIZE, "../assets/%s", uri);
+  snprintf(uri->path, OWL_MODEL_MAX_NAME_LENGTH, "../assets/%s", src);
 
   return code;
 }
@@ -33,25 +35,28 @@ OWL_INTERNAL enum owl_code owl_model_load_images_(struct owl_renderer *renderer,
   owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
-  for (i = 0; i < (int)gltf->images_count; ++i) {
-    char uri[OWL_MAX_URI_SIZE];
-    struct owl_renderer_image_init_desc desc;
+  for (i = 0; i < (owl_i32)gltf->images_count; ++i) {
+    struct owl_model_uri uri;
+    struct owl_renderer_image_init_desc image_init_desc;
     struct owl_model_image_data *dst_image = &model->images[i];
 
-    if (OWL_SUCCESS != (code = owl_fix_uri_(gltf->images[i].uri, uri)))
+    if (OWL_SUCCESS != (code = owl_model_uri_init_(gltf->images[i].uri, &uri)))
       goto end;
 
-    desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
-    desc.src_path = uri;
-    desc.use_default_sampler = 1;
+    image_init_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
+    image_init_desc.src_path = uri.path;
+    /* FIXME(samuel): if im not mistaken, gltf defines some sampler requirements
+     * . Completely ignoring it for now */
+    image_init_desc.use_default_sampler = 1;
 
-    code = owl_renderer_init_image(renderer, &desc, &dst_image->image);
+    code =
+        owl_renderer_init_image(renderer, &image_init_desc, &dst_image->image);
 
     if (OWL_SUCCESS != code)
       goto end;
   }
 
-  model->images_count = (int)gltf->images_count;
+  model->images_count = (owl_i32)gltf->images_count;
 
 end:
   return code;
@@ -66,11 +71,12 @@ owl_model_load_textures_(struct owl_renderer *renderer,
 
   OWL_UNUSED(renderer);
 
-  model->textures_count = (int)gltf->textures_count;
+  model->textures_count = (owl_i32)gltf->textures_count;
 
-  for (i = 0; i < (int)gltf->textures_count; ++i) {
+  for (i = 0; i < (owl_i32)gltf->textures_count; ++i) {
     struct cgltf_texture const *src_texture = &gltf->textures[i];
-    model->textures[i].image.slot = (int)(src_texture->image - gltf->images);
+    model->textures[i].image.slot =
+        (owl_i32)(src_texture->image - gltf->images);
   }
 
   return code;
@@ -85,14 +91,14 @@ owl_model_load_materials_(struct owl_renderer *renderer,
 
   OWL_UNUSED(renderer);
 
-  if (OWL_MODEL_MAX_MATERIALS_COUNT <= (int)gltf->materials_count) {
+  if (OWL_MODEL_MAX_MATERIALS_COUNT <= (owl_i32)gltf->materials_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
 
-  model->materials_count = (int)gltf->materials_count;
+  model->materials_count = (owl_i32)gltf->materials_count;
 
-  for (i = 0; i < (int)gltf->materials_count; ++i) {
+  for (i = 0; i < (owl_i32)gltf->materials_count; ++i) {
     struct cgltf_material const *src_material = &gltf->materials[i];
     struct owl_model_material_data *dst_material = &model->materials[i];
 
@@ -102,14 +108,15 @@ owl_model_load_materials_(struct owl_renderer *renderer,
                 dst_material->base_color_factor);
 
     dst_material->base_color_texture.slot =
-        (int)(src_material->pbr_metallic_roughness.base_color_texture.texture -
-              gltf->textures);
+        (owl_i32)(src_material->pbr_metallic_roughness.base_color_texture
+                      .texture -
+                  gltf->textures);
 
 #if 0
     OWL_ASSERT(src_material->normal_texture.texture);
 
     material_data->normal_texture.slot =
-        (int)(src_material->normal_texture.texture - gltf->textures);
+        (owl_i32)(src_material->normal_texture.texture - gltf->textures);
 #else
     /* HACK(samuel): currently we don't check for the normal texture */
     dst_material->normal_texture.slot = dst_material->base_color_texture.slot;
@@ -141,7 +148,7 @@ owl_find_gltf_attribute_(struct cgltf_primitive const *src_primitive,
   owl_i32 i;
   struct cgltf_attribute const *attribute = NULL;
 
-  for (i = 0; i < (int)src_primitive->attributes_count; ++i) {
+  for (i = 0; i < (owl_i32)src_primitive->attributes_count; ++i) {
     struct cgltf_attribute const *current = &src_primitive->attributes[i];
 
     if (!OWL_STRNCMP(current->name, attribute_name,
@@ -159,14 +166,14 @@ OWL_INTERNAL void
 owl_model_find_load_desc_capacities_(struct cgltf_data const *gltf,
                                      struct owl_model_load_state *state) {
   owl_i32 i;
-  for (i = 0; i < (int)gltf->nodes_count; ++i) {
+  for (i = 0; i < (owl_i32)gltf->nodes_count; ++i) {
     owl_i32 j;
     struct cgltf_node const *src_node = &gltf->nodes[i];
 
     if (!src_node->mesh)
       continue;
 
-    for (j = 0; j < (int)src_node->mesh->primitives_count; ++j) {
+    for (j = 0; j < (owl_i32)src_node->mesh->primitives_count; ++j) {
       struct cgltf_attribute const *attribute;
       struct cgltf_primitive const *primitive = &src_node->mesh->primitives[j];
 
@@ -235,7 +242,7 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
 
   OWL_UNUSED(renderer);
 
-  node.slot = (int)(src_node - gltf->nodes);
+  node.slot = (owl_i32)(src_node - gltf->nodes);
 
   if (OWL_MODEL_MAX_NODES_COUNT <= node.slot) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
@@ -245,19 +252,19 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
   dst_node = &model->nodes[node.slot];
 
   if (src_node->parent)
-    dst_node->parent.slot = (int)(src_node->parent - gltf->nodes);
+    dst_node->parent.slot = (owl_i32)(src_node->parent - gltf->nodes);
   else
     dst_node->parent.slot = OWL_MODEL_NODE_NO_PARENT_SLOT;
 
-  if (OWL_MODEL_NODE_MAX_CHILDREN_COUNT <= (int)src_node->children_count) {
+  if (OWL_MODEL_NODE_MAX_CHILDREN_COUNT <= (owl_i32)src_node->children_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
 
-  dst_node->children_count = (int)src_node->children_count;
+  dst_node->children_count = (owl_i32)src_node->children_count;
 
-  for (i = 0; i < (int)src_node->children_count; ++i)
-    dst_node->children[i].slot = (int)(src_node->children[i] - gltf->nodes);
+  for (i = 0; i < (owl_i32)src_node->children_count; ++i)
+    dst_node->children[i].slot = (owl_i32)(src_node->children[i] - gltf->nodes);
 
   if (src_node->name)
     OWL_STRNCPY(dst_node->name, src_node->name, OWL_MODEL_MAX_NAME_LENGTH);
@@ -285,7 +292,7 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
     OWL_M4_IDENTITY(dst_node->matrix);
 
   if (src_node->skin)
-    dst_node->skin.slot = (int)(src_node->skin - gltf->skins);
+    dst_node->skin.slot = (owl_i32)(src_node->skin - gltf->skins);
   else
     dst_node->skin.slot = OWL_MODEL_NODE_NO_SKIN_SLOT;
 
@@ -303,9 +310,9 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
     src_mesh = src_node->mesh;
     dst_mesh = &model->meshes[dst_node->mesh.slot];
 
-    dst_mesh->primitives_count = (int)src_mesh->primitives_count;
+    dst_mesh->primitives_count = (owl_i32)src_mesh->primitives_count;
 
-    for (i = 0; i < (int)src_mesh->primitives_count; ++i) {
+    for (i = 0; i < (owl_i32)src_mesh->primitives_count; ++i) {
       owl_i32 j;
       owl_i32 vertices_count = 0;
       owl_i32 indices_count = 0;
@@ -332,7 +339,7 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
 
       if ((attribute = owl_find_gltf_attribute_(src_primitive, "POSITION"))) {
         position = owl_resolve_gltf_accessor_(attribute->data);
-        vertices_count = (int)attribute->data->count;
+        vertices_count = (owl_i32)attribute->data->count;
       }
 
       if ((attribute = owl_find_gltf_attribute_(src_primitive, "NORMAL")))
@@ -382,34 +389,34 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
           OWL_V4_ZERO(vertex->weights0);
       }
 
-      indices_count = (int)src_primitive->indices->count;
+      indices_count = (owl_i32)src_primitive->indices->count;
 
       switch (src_primitive->indices->component_type) {
       case cgltf_component_type_r_32u: {
+        owl_u32 const *indices;
         owl_i32 offset = state->indices_count;
-        owl_u32 const *indices =
-            owl_resolve_gltf_accessor_(src_primitive->indices);
-        for (j = 0; j < (int)src_primitive->indices->count; ++j) {
+        indices = owl_resolve_gltf_accessor_(src_primitive->indices);
+        for (j = 0; j < (owl_i32)src_primitive->indices->count; ++j) {
           state->indices[offset + j] =
               indices[j] + (owl_u32)state->vertices_count;
         }
       } break;
 
       case cgltf_component_type_r_16u: {
+        owl_u16 const *indices;
         owl_i32 offset = state->indices_count;
-        owl_u16 const *indices =
-            owl_resolve_gltf_accessor_(src_primitive->indices);
-        for (j = 0; j < (int)src_primitive->indices->count; ++j) {
+        indices = owl_resolve_gltf_accessor_(src_primitive->indices);
+        for (j = 0; j < (owl_i32)src_primitive->indices->count; ++j) {
           state->indices[offset + j] =
               indices[j] + (owl_u16)state->vertices_count;
         }
       } break;
 
       case cgltf_component_type_r_8u: {
+        owl_u8 const *indices;
         owl_i32 offset = state->indices_count;
-        owl_u8 const *indices =
-            owl_resolve_gltf_accessor_(src_primitive->indices);
-        for (j = 0; j < (int)src_primitive->indices->count; ++j) {
+        indices = owl_resolve_gltf_accessor_(src_primitive->indices);
+        for (j = 0; j < (owl_i32)src_primitive->indices->count; ++j) {
           state->indices[offset + j] =
               indices[j] + (owl_u8)state->vertices_count;
         }
@@ -426,7 +433,7 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
       dst_primitive->first = (owl_u32)state->indices_count;
       dst_primitive->count = (owl_u32)indices_count;
       dst_primitive->material.slot =
-          (int)(src_primitive->material - gltf->materials);
+          (owl_i32)(src_primitive->material - gltf->materials);
 
       state->indices_count += indices_count;
       state->vertices_count += vertices_count;
@@ -530,6 +537,7 @@ owl_model_load_buffers_(struct owl_renderer *renderer,
 
     OWL_VK_CHECK(vkAllocateMemory(renderer->device, &memory_allocate_info, NULL,
                                   &model->indices_memory));
+
     OWL_VK_CHECK(vkBindBufferMemory(renderer->device, model->indices_buffer,
                                     model->indices_memory, 0));
   }
@@ -593,14 +601,14 @@ OWL_INTERNAL enum owl_code owl_model_load_nodes_(struct owl_renderer *renderer,
     model->nodes[i].skin.slot = -1;
   }
 
-  if (OWL_MODEL_MAX_NODES_COUNT <= (int)gltf->nodes_count) {
+  if (OWL_MODEL_MAX_NODES_COUNT <= (owl_i32)gltf->nodes_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end_err_deinit_load_state;
   }
 
-  model->nodes_count = (int)gltf->nodes_count;
+  model->nodes_count = (owl_i32)gltf->nodes_count;
 
-  for (i = 0; i < (int)gltf->nodes_count; ++i) {
+  for (i = 0; i < (owl_i32)gltf->nodes_count; ++i) {
     code = owl_model_load_node_(renderer, gltf, &gltf->nodes[i], &load_state,
                                 model);
 
@@ -608,15 +616,15 @@ OWL_INTERNAL enum owl_code owl_model_load_nodes_(struct owl_renderer *renderer,
       goto end_err_deinit_load_state;
   }
 
-  if (OWL_MODEL_MAX_NODE_ROOTS_COUNT <= (int)src_scene->nodes_count) {
+  if (OWL_MODEL_MAX_NODE_ROOTS_COUNT <= (owl_i32)src_scene->nodes_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end_err_deinit_load_state;
   }
 
-  model->roots_count = (int)src_scene->nodes_count;
+  model->roots_count = (owl_i32)src_scene->nodes_count;
 
-  for (i = 0; i < (int)src_scene->nodes_count; ++i)
-    model->roots[i].slot = (int)(src_scene->nodes[i] - gltf->nodes);
+  for (i = 0; i < (owl_i32)src_scene->nodes_count; ++i)
+    model->roots[i].slot = (owl_i32)(src_scene->nodes[i] - gltf->nodes);
 
   owl_model_load_buffers_(renderer, &load_state, model);
 
@@ -635,15 +643,15 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
 
   OWL_UNUSED(renderer);
 
-  if (OWL_MODEL_MAX_SKINS_COUNT <= (int)gltf->skins_count) {
+  if (OWL_MODEL_MAX_SKINS_COUNT <= (owl_i32)gltf->skins_count) {
     OWL_ASSERT(0);
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
 
-  model->skins_count = (int)gltf->skins_count;
+  model->skins_count = (owl_i32)gltf->skins_count;
 
-  for (i = 0; i < (int)gltf->skins_count; ++i) {
+  for (i = 0; i < (owl_i32)gltf->skins_count; ++i) {
     owl_i32 j;
     owl_m4 const *inverse_bind_matrices;
     struct cgltf_skin const *src_skin = &gltf->skins[i];
@@ -654,44 +662,29 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
     else
       OWL_STRNCPY(dst_skin->name, "NO NAME", OWL_MODEL_MAX_NAME_LENGTH);
 
-    dst_skin->skeleton_root.slot = (int)(src_skin->skeleton - gltf->nodes);
+    dst_skin->skeleton_root.slot = (owl_i32)(src_skin->skeleton - gltf->nodes);
 
-    if (OWL_MODEL_SKIN_MAX_JOINTS_COUNT <= (int)src_skin->joints_count) {
+    if (OWL_MODEL_SKIN_MAX_JOINTS_COUNT <= (owl_i32)src_skin->joints_count) {
       OWL_ASSERT(0);
       code = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 
-    dst_skin->joints_count = (int)src_skin->joints_count;
+    dst_skin->joints_count = (owl_i32)src_skin->joints_count;
 
-    for (j = 0; j < (int)src_skin->joints_count; ++j) {
+    for (j = 0; j < (owl_i32)src_skin->joints_count; ++j) {
 
-      dst_skin->joints[j].slot = (int)(src_skin->joints[j] - gltf->nodes);
+      dst_skin->joints[j].slot = (owl_i32)(src_skin->joints[j] - gltf->nodes);
 
       OWL_ASSERT(!OWL_STRNCMP(model->nodes[dst_skin->joints[j].slot].name,
                               src_skin->joints[j]->name,
                               OWL_MODEL_MAX_NAME_LENGTH));
     }
 
-    dst_skin->inverse_bind_matrices_count = 0;
-
-    if (!src_skin->inverse_bind_matrices)
-      continue;
-
-    if (OWL_MODEL_SKIN_MAX_JOINTS_COUNT <=
-        (int)src_skin->inverse_bind_matrices->count) {
-      OWL_ASSERT(0);
-      code = OWL_ERROR_OUT_OF_BOUNDS;
-      goto end;
-    }
-
-    dst_skin->inverse_bind_matrices_count =
-        (int)src_skin->inverse_bind_matrices->count;
-
     inverse_bind_matrices =
         owl_resolve_gltf_accessor_(src_skin->inverse_bind_matrices);
 
-    for (j = 0; j < (int)src_skin->inverse_bind_matrices->count; ++j)
+    for (j = 0; j < (owl_i32)src_skin->inverse_bind_matrices->count; ++j)
       OWL_M4_COPY(inverse_bind_matrices[j], dst_skin->inverse_bind_matrices[j]);
 
     {
@@ -801,7 +794,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
 
         OWL_M4_IDENTITY(ssbo->matrix);
 
-        for (k = 0; k < (int)src_skin->inverse_bind_matrices->count; ++k)
+        for (k = 0; k < (owl_i32)src_skin->inverse_bind_matrices->count; ++k)
           OWL_M4_COPY(inverse_bind_matrices[k], ssbo->joint_matices[k]);
 
         ssbo->joint_matrices_count = dst_skin->joints_count;
@@ -821,14 +814,14 @@ owl_model_load_animations_(struct owl_renderer *renderer,
 
   OWL_UNUSED(renderer);
 
-  if (OWL_MODEL_MAX_ANIMATIONS_COUNT <= (int)gltf->animations_count) {
+  if (OWL_MODEL_MAX_ANIMATIONS_COUNT <= (owl_i32)gltf->animations_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto end;
   }
 
-  model->animations_count = (int)gltf->animations_count;
+  model->animations_count = (owl_i32)gltf->animations_count;
 
-  for (i = 0; i < (int)gltf->animations_count; ++i) {
+  for (i = 0; i < (owl_i32)gltf->animations_count; ++i) {
     owl_i32 j;
     struct cgltf_animation const *src_animation;
     struct owl_model_animation_data *dst_animation;
@@ -839,17 +832,17 @@ owl_model_load_animations_(struct owl_renderer *renderer,
     dst_animation->current_time = 0.0F;
 
     if (OWL_MODEL_ANIMATION_MAX_SAMPLERS_COUNT <=
-        (int)src_animation->samplers_count) {
+        (owl_i32)src_animation->samplers_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 
-    dst_animation->samplers_count = (int)src_animation->samplers_count;
+    dst_animation->samplers_count = (owl_i32)src_animation->samplers_count;
 
     dst_animation->begin = FLT_MAX;
     dst_animation->end = FLT_MIN;
 
-    for (j = 0; j < (int)src_animation->samplers_count; ++j) {
+    for (j = 0; j < (owl_i32)src_animation->samplers_count; ++j) {
       owl_i32 k;
       float const *inputs;
       struct cgltf_animation_sampler const *src_sampler;
@@ -868,16 +861,16 @@ owl_model_load_animations_(struct owl_renderer *renderer,
       dst_sampler = &model->animation_samplers[sampler.slot];
 
       if (OWL_MODEL_ANIMATION_SAMPLER_MAX_INPUTS_COUNT <=
-          (int)src_sampler->input->count) {
+          (owl_i32)src_sampler->input->count) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
         goto end;
       }
 
-      dst_sampler->inputs_count = (int)src_sampler->input->count;
+      dst_sampler->inputs_count = (owl_i32)src_sampler->input->count;
 
       inputs = owl_resolve_gltf_accessor_(src_sampler->input);
 
-      for (k = 0; k < (int)src_sampler->input->count; ++k) {
+      for (k = 0; k < (owl_i32)src_sampler->input->count; ++k) {
         float const input = inputs[k];
 
         dst_sampler->inputs[k] = input;
@@ -890,19 +883,19 @@ owl_model_load_animations_(struct owl_renderer *renderer,
       }
 
       if (OWL_MODEL_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT <=
-          (int)src_sampler->output->count) {
+          (owl_i32)src_sampler->output->count) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
         goto end;
       }
 
-      dst_sampler->outputs_count = (int)src_sampler->output->count;
+      dst_sampler->outputs_count = (owl_i32)src_sampler->output->count;
 
       switch (src_sampler->output->type) {
       case cgltf_type_vec3: {
         owl_v3 const *outputs;
         outputs = owl_resolve_gltf_accessor_(src_sampler->output);
 
-        for (k = 0; k < (int)src_sampler->output->count; ++k) {
+        for (k = 0; k < (owl_i32)src_sampler->output->count; ++k) {
           OWL_V4_ZERO(dst_sampler->outputs[k]);
           OWL_V3_COPY(outputs[k], dst_sampler->outputs[k]);
         }
@@ -911,7 +904,7 @@ owl_model_load_animations_(struct owl_renderer *renderer,
       case cgltf_type_vec4: {
         owl_v4 const *outputs;
         outputs = owl_resolve_gltf_accessor_(src_sampler->output);
-        for (k = 0; k < (int)src_sampler->output->count; ++k)
+        for (k = 0; k < (owl_i32)src_sampler->output->count; ++k)
           OWL_V4_COPY(outputs[k], dst_sampler->outputs[k]);
       } break;
 
@@ -926,20 +919,20 @@ owl_model_load_animations_(struct owl_renderer *renderer,
         goto end;
       }
 
-      dst_sampler->interpolation = (int)src_sampler->interpolation;
+      dst_sampler->interpolation = (owl_i32)src_sampler->interpolation;
 
       dst_animation->samplers[j].slot = sampler.slot;
     }
 
     if (OWL_MODEL_ANIMATION_MAX_CHANNELS_COUNT <=
-        (int)src_animation->channels_count) {
+        (owl_i32)src_animation->channels_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
       goto end;
     }
 
-    dst_animation->channels_count = (int)src_animation->channels_count;
+    dst_animation->channels_count = (owl_i32)src_animation->channels_count;
 
-    for (j = 0; j < (int)src_animation->channels_count; ++j) {
+    for (j = 0; j < (owl_i32)src_animation->channels_count; ++j) {
       struct cgltf_animation_channel const *src_channel;
       struct owl_model_animation_channel channel;
       struct owl_model_animation_channel_data *dst_channel;
@@ -955,8 +948,9 @@ owl_model_load_animations_(struct owl_renderer *renderer,
 
       dst_channel = &model->animation_channels[channel.slot];
 
-      dst_channel->path = (int)src_channel->target_path;
-      dst_channel->node.slot = (int)(src_channel->target_node - gltf->nodes);
+      dst_channel->path = (owl_i32)src_channel->target_path;
+      dst_channel->node.slot =
+          (owl_i32)(src_channel->target_node - gltf->nodes);
       dst_channel->animation_sampler.slot =
           dst_animation
               ->samplers[(src_channel->sampler - src_animation->samplers)]
