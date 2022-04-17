@@ -13,6 +13,7 @@ CFLAGS += -I$(VULKAN_SDK)/include
 CFLAGS += -fstrict-aliasing
 CFLAGS += -fsanitize=address
 CFLAGS += -fsanitize=undefined
+CFLAGS += -fsanitize=bounds
 # CFLAGS += -flto
 CFLAGS += -Wall
 CFLAGS += -Werror
@@ -38,6 +39,7 @@ LDFLAGS +=-lm
 # LDFLAGS +=-flto
 LDFLAGS +=-fsanitize=address
 LDFLAGS +=-fsanitize=undefined
+LDFLAGS +=-fsanitize=bounds
 
 GLSLVSRC = $(wildcard *.vert)
 GLSLVSPV = $(GLSLVSRC:.vert=.vert.spv.u32)

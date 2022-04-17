@@ -8,6 +8,7 @@
 #define OWL_MODEL_NO_ANIMATION_SLOT -1
 #define OWL_MODEL_NODE_NO_SKIN_SLOT -1
 #define OWL_MODEL_NODE_NO_PARENT_SLOT -1
+#define OWL_MODEL_NO_TEXTURE_SLOT -1
 #define OWL_MODEL_MAX_PRIMITIVES_COUNT 128
 #define OWL_MODEL_MESH_MAX_PRIMITIVES_COUNT 128
 #define OWL_MODEL_MAX_NAME_LENGTH 128
@@ -79,7 +80,7 @@ struct owl_model_material_push_constant {
   owl_v4 specular_factor;
   float workflow;
   owl_i32 base_color_uv_set;
-  owl_i32 physical_descriptor_uv_set;
+  owl_i32 physical_desc_uv_set;
   owl_i32 normal_uv_set;
   owl_i32 occlusion_uv_set;
   owl_i32 emissive_uv_set;
@@ -156,6 +157,9 @@ struct owl_model_material_data {
   owl_i32 double_sided;
   struct owl_model_texture base_color_texture;
   struct owl_model_texture normal_texture;
+  struct owl_model_texture physical_desc_texture;
+  struct owl_model_texture occlusion_texture;
+  struct owl_model_texture emissive_texture;
   owl_v4 base_color_factor;
 };
 

@@ -113,12 +113,12 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
 
   if (FT_Err_Ok != (FT_New_Face(g_ft_library, path, 0, &face))) {
     code = OWL_ERROR_BAD_INIT;
-    goto end;
+    goto out;
   }
 
   if (FT_Err_Ok != FT_Set_Char_Size(face, 0, size << 6, 96, 96)) {
     code = OWL_ERROR_BAD_INIT;
-    goto end_err_done_face;
+    goto out_err_done_face;
   }
 
   owl_font_calc_dims_(face, &font->atlas_width, &font->atlas_height);
@@ -128,7 +128,7 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
 
   if (!data) {
     code = OWL_ERROR_BAD_ALLOC;
-    goto end_err_done_face;
+    goto out_err_done_face;
   }
 
   x = 0;
@@ -136,7 +136,7 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
   for (i = OWL_FIRST_CHAR; i < OWL_FONT_GLYPHS_COUNT; ++i) {
     if (FT_Err_Ok != FT_Load_Char(face, (unsigned)i, FT_LOAD_RENDER)) {
       code = OWL_ERROR_UNKNOWN;
-      goto end_err_free_data;
+      goto out_err_free_data;
     }
 
     owl_face_glyph_bitmap_copy_(face, x, font->atlas_width, font->atlas_height,
@@ -160,15 +160,15 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
   code = owl_font_init_atlas_(renderer, data, font);
 
   if (OWL_SUCCESS != code)
-    goto end_err_free_data;
+    goto out_err_free_data;
 
-end_err_free_data:
+out_err_free_data:
   OWL_FREE(data);
 
-end_err_done_face:
+out_err_done_face:
   FT_Done_Face(face);
 
-end:
+out:
   return code;
 }
 
@@ -186,7 +186,7 @@ enum owl_code owl_font_load_file_(char const *path, owl_byte **data) {
 
   if (!(file = fopen(path, "rb"))) {
     code = OWL_ERROR_UNKNOWN;
-    goto end;
+    goto out;
   }
 
   fseek(file, 0, SEEK_END);
@@ -197,15 +197,15 @@ enum owl_code owl_font_load_file_(char const *path, owl_byte **data) {
 
   if (!(*data = OWL_MALLOC(size))) {
     code = OWL_ERROR_BAD_ALLOC;
-    goto end_close_file;
+    goto out_close_file;
   }
 
   fread(*data, size, 1, file);
 
-end_close_file:
+out_close_file:
   fclose(file);
 
-end:
+out:
   return code;
 }
 
@@ -230,17 +230,17 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
   enum owl_code code = OWL_SUCCESS;
 
   if (OWL_SUCCESS != (code = owl_font_load_file_(path, &font_file_data)))
-    goto end;
+    goto out;
 
   if (!(font_bitmap_data = OWL_CALLOC(OWL_FONT_ATLAS_SIZE, sizeof(owl_byte)))) {
     code = OWL_ERROR_BAD_ALLOC;
-    goto end_unload_file;
+    goto out_unload_file;
   }
 
   if (!stbtt_PackBegin(&pack_context, font_bitmap_data, OWL_FONT_ATLAS_WIDTH,
                        OWL_FONT_ATLAS_HEIGHT, 0, 1, NULL)) {
     code = OWL_ERROR_UNKNOWN;
-    goto end_free_font_bitmap_data;
+    goto out_free_font_bitmap_data;
   }
 
   /* FIXME(samuel): hardcoded */
@@ -252,7 +252,7 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
                            OWL_FONT_FIRST_CHAR, OWL_FONT_CHAR_COUNT,
                            (stbtt_packedchar *)(&font->packed_chars[0]))) {
     code = OWL_ERROR_UNKNOWN;
-    goto end_pack;
+    goto out_end_pack;
   }
 
   image_init_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_DATA;
@@ -272,18 +272,18 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
   code = owl_renderer_init_image(renderer, &image_init_desc, &font->atlas);
 
   if (OWL_SUCCESS != code)
-    goto end_pack;
+    goto out_end_pack;
 
-end_pack:
+out_end_pack:
   stbtt_PackEnd(&pack_context);
 
-end_free_font_bitmap_data:
+out_free_font_bitmap_data:
   OWL_FREE(font_bitmap_data);
 
-end_unload_file:
+out_unload_file:
   owl_font_unload_file_(font_file_data);
 
-end:
+out:
   return code;
 }
 

@@ -16,7 +16,7 @@ layout (set = 0, binding = 0) uniform UBO {
 
 #define OWL_MODEL_SKIN_MAX_JOINTS_COUNT 128
 
-layout (std430, set = 3, binding = 0) readonly buffer SSBO {
+layout (std430, set = 4, binding = 0) readonly buffer SSBO {
   mat4 matrix;
 	mat4 joint_matrices[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
   int joint_matrices_count;

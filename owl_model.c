@@ -41,7 +41,7 @@ OWL_INTERNAL enum owl_code owl_model_load_images_(struct owl_renderer *renderer,
     struct owl_model_image_data *dst_image = &model->images[i];
 
     if (OWL_SUCCESS != (code = owl_model_uri_init_(gltf->images[i].uri, &uri)))
-      goto end;
+      goto out;
 
     image_init_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
     image_init_desc.src_path = uri.path;
@@ -53,12 +53,12 @@ OWL_INTERNAL enum owl_code owl_model_load_images_(struct owl_renderer *renderer,
         owl_renderer_init_image(renderer, &image_init_desc, &dst_image->image);
 
     if (OWL_SUCCESS != code)
-      goto end;
+      goto out;
   }
 
   model->images_count = (owl_i32)gltf->images_count;
 
-end:
+out:
   return code;
 }
 
@@ -93,7 +93,7 @@ owl_model_load_materials_(struct owl_renderer *renderer,
 
   if (OWL_MODEL_MAX_MATERIALS_COUNT <= (owl_i32)gltf->materials_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto end;
+    goto out;
   }
 
   model->materials_count = (owl_i32)gltf->materials_count;
@@ -118,8 +118,11 @@ owl_model_load_materials_(struct owl_renderer *renderer,
     material_data->normal_texture.slot =
         (owl_i32)(src_material->normal_texture.texture - gltf->textures);
 #else
-    /* HACK(samuel): currently we don't check for the normal texture */
     dst_material->normal_texture.slot = dst_material->base_color_texture.slot;
+    dst_material->physical_desc_texture.slot =
+        dst_material->base_color_texture.slot;
+    dst_material->occlusion_texture.slot = OWL_MODEL_NO_TEXTURE_SLOT;
+    dst_material->emissive_texture.slot = OWL_MODEL_NO_TEXTURE_SLOT;
 #endif
 
     /* FIXME(samuel): make sure this is right */
@@ -128,7 +131,7 @@ owl_model_load_materials_(struct owl_renderer *renderer,
     dst_material->double_sided = src_material->double_sided;
   }
 
-end:
+out:
   return code;
 }
 
@@ -154,11 +157,11 @@ owl_find_gltf_attribute_(struct cgltf_primitive const *src_primitive,
     if (!OWL_STRNCMP(current->name, attribute_name,
                      OWL_MODEL_MAX_NAME_LENGTH)) {
       attribute = current;
-      goto end;
+      goto out;
     }
   }
 
-end:
+out:
   return attribute;
 }
 
@@ -203,21 +206,21 @@ owl_model_init_load_state_(struct owl_renderer *renderer,
   size = (owl_u64)state->vertices_capacity * sizeof(*state->vertices);
   if (!(state->vertices = OWL_MALLOC(size))) {
     code = OWL_ERROR_BAD_ALLOC;
-    goto end;
+    goto out;
   }
 
   size = (owl_u64)state->indices_capacity * sizeof(owl_u32);
   if (!(state->indices = OWL_MALLOC(size))) {
     code = OWL_ERROR_BAD_ALLOC;
-    goto end_err_free_vertices;
+    goto out_err_free_vertices;
   }
 
-  goto end;
+  goto out;
 
-end_err_free_vertices:
+out_err_free_vertices:
   OWL_FREE(state->vertices);
 
-end:
+out:
   return code;
 }
 
@@ -234,7 +237,6 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
     struct owl_renderer *renderer, struct cgltf_data const *gltf,
     struct cgltf_node const *src_node, struct owl_model_load_state *state,
     struct owl_model *model) {
-
   owl_i32 i;
   struct owl_model_node node;
   struct owl_model_node_data *dst_node;
@@ -246,7 +248,7 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
 
   if (OWL_MODEL_MAX_NODES_COUNT <= node.slot) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto end;
+    goto out;
   }
 
   dst_node = &model->nodes[node.slot];
@@ -258,7 +260,7 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
 
   if (OWL_MODEL_NODE_MAX_CHILDREN_COUNT <= (owl_i32)src_node->children_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto end;
+    goto out;
   }
 
   dst_node->children_count = (owl_i32)src_node->children_count;
@@ -304,7 +306,7 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
 
     if (OWL_MODEL_MAX_MESHES_COUNT <= dst_node->mesh.slot) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
-      goto end;
+      goto out;
     }
 
     src_mesh = src_node->mesh;
@@ -332,7 +334,7 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
 
       if (OWL_MODEL_MAX_PRIMITIVES_COUNT <= primitive->slot) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
-        goto end;
+        goto out;
       }
 
       dst_primitive = &model->primitives[primitive->slot];
@@ -427,7 +429,7 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
       case cgltf_component_type_r_16:
       case cgltf_component_type_r_32f:
         code = OWL_ERROR_UNKNOWN;
-        goto end;
+        goto out;
       }
 
       dst_primitive->first = (owl_u32)state->indices_count;
@@ -440,7 +442,7 @@ OWL_INTERNAL enum owl_code owl_model_load_node_(
     }
   }
 
-end:
+out:
   return code;
 }
 
@@ -545,7 +547,7 @@ owl_model_load_buffers_(struct owl_renderer *renderer,
   code = owl_renderer_begin_immidiate_command_buffer(renderer);
 
   if (OWL_SUCCESS != code)
-    goto end;
+    goto out;
 
   {
     VkBufferCopy copy;
@@ -569,13 +571,14 @@ owl_model_load_buffers_(struct owl_renderer *renderer,
                     model->indices_buffer, 1, &copy);
   }
 
-  if (OWL_SUCCESS !=
-      (code = owl_renderer_end_immidiate_command_buffer(renderer)))
-    goto end;
+  code = owl_renderer_end_immidiate_command_buffer(renderer);
+
+  if (OWL_SUCCESS != code)
+    goto out;
 
   owl_renderer_clear_dynamic_heap_offset(renderer);
 
-end:
+out:
   OWL_ASSERT(OWL_SUCCESS == code);
   return;
 }
@@ -590,9 +593,10 @@ OWL_INTERNAL enum owl_code owl_model_load_nodes_(struct owl_renderer *renderer,
 
   src_scene = gltf->scene;
 
-  if (OWL_SUCCESS !=
-      (code = owl_model_init_load_state_(renderer, gltf, &load_state)))
-    goto end;
+  code = owl_model_init_load_state_(renderer, gltf, &load_state);
+
+  if (OWL_SUCCESS != code)
+    goto out;
 
   for (i = 0; i < OWL_MODEL_MAX_NODES_COUNT; ++i) {
     model->nodes[i].mesh.slot = -1;
@@ -603,7 +607,7 @@ OWL_INTERNAL enum owl_code owl_model_load_nodes_(struct owl_renderer *renderer,
 
   if (OWL_MODEL_MAX_NODES_COUNT <= (owl_i32)gltf->nodes_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto end_err_deinit_load_state;
+    goto out_err_deinit_load_state;
   }
 
   model->nodes_count = (owl_i32)gltf->nodes_count;
@@ -613,12 +617,12 @@ OWL_INTERNAL enum owl_code owl_model_load_nodes_(struct owl_renderer *renderer,
                                 model);
 
     if (OWL_SUCCESS != code)
-      goto end_err_deinit_load_state;
+      goto out_err_deinit_load_state;
   }
 
   if (OWL_MODEL_MAX_NODE_ROOTS_COUNT <= (owl_i32)src_scene->nodes_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto end_err_deinit_load_state;
+    goto out_err_deinit_load_state;
   }
 
   model->roots_count = (owl_i32)src_scene->nodes_count;
@@ -628,10 +632,10 @@ OWL_INTERNAL enum owl_code owl_model_load_nodes_(struct owl_renderer *renderer,
 
   owl_model_load_buffers_(renderer, &load_state, model);
 
-end_err_deinit_load_state:
+out_err_deinit_load_state:
   owl_model_deinit_load_state_(renderer, &load_state);
 
-end:
+out:
   return code;
 }
 
@@ -646,7 +650,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
   if (OWL_MODEL_MAX_SKINS_COUNT <= (owl_i32)gltf->skins_count) {
     OWL_ASSERT(0);
     code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto end;
+    goto out;
   }
 
   model->skins_count = (owl_i32)gltf->skins_count;
@@ -667,13 +671,12 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
     if (OWL_MODEL_SKIN_MAX_JOINTS_COUNT <= (owl_i32)src_skin->joints_count) {
       OWL_ASSERT(0);
       code = OWL_ERROR_OUT_OF_BOUNDS;
-      goto end;
+      goto out;
     }
 
     dst_skin->joints_count = (owl_i32)src_skin->joints_count;
 
     for (j = 0; j < (owl_i32)src_skin->joints_count; ++j) {
-
       dst_skin->joints[j].slot = (owl_i32)(src_skin->joints[j] - gltf->nodes);
 
       OWL_ASSERT(!OWL_STRNCMP(model->nodes[dst_skin->joints[j].slot].name,
@@ -752,7 +755,6 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
     }
 
     {
-
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j) {
         VkDescriptorBufferInfo buffer_descriptor;
         VkWriteDescriptorSet write;
@@ -801,7 +803,7 @@ OWL_INTERNAL enum owl_code owl_model_load_skins_(struct owl_renderer *renderer,
       }
     }
   }
-end:
+out:
   return code;
 }
 
@@ -816,7 +818,7 @@ owl_model_load_animations_(struct owl_renderer *renderer,
 
   if (OWL_MODEL_MAX_ANIMATIONS_COUNT <= (owl_i32)gltf->animations_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto end;
+    goto out;
   }
 
   model->animations_count = (owl_i32)gltf->animations_count;
@@ -834,7 +836,7 @@ owl_model_load_animations_(struct owl_renderer *renderer,
     if (OWL_MODEL_ANIMATION_MAX_SAMPLERS_COUNT <=
         (owl_i32)src_animation->samplers_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
-      goto end;
+      goto out;
     }
 
     dst_animation->samplers_count = (owl_i32)src_animation->samplers_count;
@@ -855,7 +857,7 @@ owl_model_load_animations_(struct owl_renderer *renderer,
 
       if (OWL_MODEL_MAX_SAMPLERS_COUNT <= sampler.slot) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
-        goto end;
+        goto out;
       }
 
       dst_sampler = &model->animation_samplers[sampler.slot];
@@ -863,7 +865,7 @@ owl_model_load_animations_(struct owl_renderer *renderer,
       if (OWL_MODEL_ANIMATION_SAMPLER_MAX_INPUTS_COUNT <=
           (owl_i32)src_sampler->input->count) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
-        goto end;
+        goto out;
       }
 
       dst_sampler->inputs_count = (owl_i32)src_sampler->input->count;
@@ -885,7 +887,7 @@ owl_model_load_animations_(struct owl_renderer *renderer,
       if (OWL_MODEL_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT <=
           (owl_i32)src_sampler->output->count) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
-        goto end;
+        goto out;
       }
 
       dst_sampler->outputs_count = (owl_i32)src_sampler->output->count;
@@ -916,7 +918,7 @@ owl_model_load_animations_(struct owl_renderer *renderer,
       case cgltf_type_mat4:
       default:
         code = OWL_ERROR_UNKNOWN;
-        goto end;
+        goto out;
       }
 
       dst_sampler->interpolation = (owl_i32)src_sampler->interpolation;
@@ -927,7 +929,7 @@ owl_model_load_animations_(struct owl_renderer *renderer,
     if (OWL_MODEL_ANIMATION_MAX_CHANNELS_COUNT <=
         (owl_i32)src_animation->channels_count) {
       code = OWL_ERROR_OUT_OF_BOUNDS;
-      goto end;
+      goto out;
     }
 
     dst_animation->channels_count = (owl_i32)src_animation->channels_count;
@@ -943,7 +945,7 @@ owl_model_load_animations_(struct owl_renderer *renderer,
 
       if (OWL_MODEL_MAX_CHANNELS_COUNT <= channel.slot) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
-        goto end;
+        goto out;
       }
 
       dst_channel = &model->animation_channels[channel.slot];
@@ -960,7 +962,7 @@ owl_model_load_animations_(struct owl_renderer *renderer,
     }
   }
 
-end:
+out:
   return code;
 }
 
@@ -994,38 +996,38 @@ enum owl_code owl_model_init(struct owl_renderer *renderer, char const *path,
 
   if (cgltf_result_success != cgltf_parse_file(&options, path, &data)) {
     code = OWL_ERROR_UNKNOWN;
-    goto end;
+    goto out;
   }
 
   if (cgltf_result_success != cgltf_load_buffers(&options, data, path)) {
     code = OWL_ERROR_UNKNOWN;
-    goto end_err_free_data;
+    goto out_err_free_data;
   }
 
   if (OWL_SUCCESS != (code = owl_model_load_images_(renderer, data, model)))
-    goto end_err_free_data;
+    goto out_err_free_data;
 
   if (OWL_SUCCESS != (code = owl_model_load_textures_(renderer, data, model)))
-    goto end_err_free_data;
+    goto out_err_free_data;
 
   if (OWL_SUCCESS != (code = owl_model_load_materials_(renderer, data, model)))
-    goto end_err_free_data;
+    goto out_err_free_data;
 
   if (OWL_SUCCESS != (code = owl_model_load_nodes_(renderer, data, model)))
-    goto end_err_free_data;
+    goto out_err_free_data;
 
   if (OWL_SUCCESS != (code = owl_model_load_skins_(renderer, data, model)))
-    goto end_err_free_data;
+    goto out_err_free_data;
 
   if (OWL_SUCCESS != (code = owl_model_load_animations_(renderer, data, model)))
-    goto end_err_free_data;
+    goto out_err_free_data;
 
-end_err_free_data:
+out_err_free_data:
   cgltf_free(data);
 
   owl_renderer_clear_dynamic_heap_offset(renderer);
 
-end:
+out:
   return code;
 }
 
@@ -1111,7 +1113,7 @@ owl_model_node_update_joints_(struct owl_model *model, owl_i32 frame,
     owl_model_node_update_joints_(model, frame, &dst_node->children[i]);
 
   if (OWL_MODEL_NODE_NO_SKIN_SLOT == dst_node->skin.slot)
-    goto end;
+    goto out;
 
   dst_skin = &model->skins[dst_node->skin.slot];
 
@@ -1126,7 +1128,7 @@ owl_model_node_update_joints_(struct owl_model *model, owl_i32 frame,
     owl_m4_multiply(inverse, tmp, ssbo->joint_matices[i]);
   }
 
-end:
+out:
   return;
 }
 
@@ -1150,7 +1152,7 @@ enum owl_code owl_model_update_animation(struct owl_model *model,
 
   if (OWL_MODEL_NO_ANIMATION_SLOT == animation) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto end;
+    goto out;
   }
 
   dst_animation = &model->animations[animation];
@@ -1207,7 +1209,7 @@ enum owl_code owl_model_update_animation(struct owl_model *model,
       default:
         OWL_ASSERT(0 && "unexpected path");
         code = OWL_ERROR_UNKNOWN;
-        goto end;
+        goto out;
       }
     }
   }
@@ -1216,6 +1218,6 @@ enum owl_code owl_model_update_animation(struct owl_model *model,
     owl_model_node_update_joints_(model, frame, &model->roots[i]);
   }
 
-end:
+out:
   return code;
 }

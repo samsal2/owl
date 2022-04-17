@@ -17,6 +17,9 @@ tags
 *.out
 *.u32
 
+# clangd
+compile_commands.json
+
 # macos
 .DS_Store
 *.dSYM
