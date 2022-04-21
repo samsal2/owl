@@ -60,9 +60,9 @@ library: $(OBJDIR)/$(LIBRARY)
 $(OBJDIR)/$(LIBRARY): $(OBJS)
 	$(AR) -cqsv $@ $^
 
-$(OBJS): $(GLSLVSPV) $(GLSLFSPV)
+$(OBJS): $(GLSLVSPV) $(GLSLFSPV) | $(OBJDIR)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -MMD $(CFLAGS) -o $@ -c $<
 
 $(OBJDIR):

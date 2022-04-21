@@ -347,7 +347,7 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *desc,
                                 struct owl_renderer *r);
 
 enum owl_code
-owl_renderer_resize_swapchain(struct owl_renderer_init_desc const *desc,
+owl_renderer_swapchain_resize(struct owl_renderer_init_desc const *desc,
                               struct owl_renderer *r);
 
 void owl_renderer_deinit(struct owl_renderer *r);

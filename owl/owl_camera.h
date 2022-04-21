@@ -15,15 +15,14 @@ struct owl_camera {
   owl_m4 view;
 };
 
-enum owl_code owl_camera_init(struct owl_camera *camera);
+enum owl_code owl_camera_init(struct owl_camera *c);
 
-void owl_camera_set_direction(struct owl_camera *camera, owl_v3 direction);
+void owl_camera_direction_set(struct owl_camera *c, owl_v3 dir);
 
-void owl_camera_set_pitch_yaw(struct owl_camera *camera, float pitch,
-                              float yaw);
+void owl_camera_set_pitch_yaw(struct owl_camera *c, float pitch, float yaw);
 
-void owl_camera_set_ratio(struct owl_camera *camera, float ratio);
+void owl_camera_ratio_set(struct owl_camera *c, float ratio);
 
-void owl_camera_deinit(struct owl_camera *camera);
+void owl_camera_deinit(struct owl_camera *c);
 
 #endif

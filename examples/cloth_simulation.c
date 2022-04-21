@@ -294,7 +294,7 @@ int main(void) {
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_init_desc);
-      owl_renderer_resize_swapchain(&renderer_init_desc, renderer);
+      owl_renderer_swapchain_resize(&renderer_init_desc, renderer);
       continue;
     }
 
@@ -311,7 +311,7 @@ int main(void) {
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_init_desc);
-      owl_renderer_resize_swapchain(&renderer_init_desc, renderer);
+      owl_renderer_swapchain_resize(&renderer_init_desc, renderer);
       continue;
     }
 

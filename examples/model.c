@@ -1,3 +1,4 @@
+#include "owl/owl_camera.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -68,8 +69,8 @@ int main(void) {
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_init_desc);
-      owl_renderer_resize_swapchain(&renderer_init_desc, renderer);
-      owl_camera_set_ratio(&camera, renderer->framebuffer_ratio);
+      owl_renderer_swapchain_resize(&renderer_init_desc, renderer);
+      owl_camera_ratio_set(&camera, renderer->framebuffer_ratio);
       continue;
     }
 
@@ -101,8 +102,8 @@ int main(void) {
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_init_desc);
-      owl_renderer_resize_swapchain(&renderer_init_desc, renderer);
-      owl_camera_set_ratio(&camera, renderer->framebuffer_ratio);
+      owl_renderer_swapchain_resize(&renderer_init_desc, renderer);
+      owl_camera_ratio_set(&camera, renderer->framebuffer_ratio);
       continue;
     }
 
