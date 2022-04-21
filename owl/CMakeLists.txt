@@ -24,36 +24,25 @@ target_sources(owl PRIVATE
   stb_truetype.c
   stb_truetype.h)
 
-set(GLSL_VERT_SHADERS 
+set(GLSL_SHADERS 
   owl_glsl_shader_basic.vert
   owl_glsl_shader_model.vert
-  owl_glsl_shader_pbr.vert)
-
-set(GLSL_FRAG_SHADERS 
+  owl_glsl_shader_pbr.vert
   owl_glsl_shader_basic.frag
   owl_glsl_shader_font.frag
   owl_glsl_shader_model.frag
   owl_glsl_shader_pbr.frag)
 
-foreach(SHADER IN LISTS GLSL_VERT_SHADERS)
+foreach(SHADER IN LISTS GLSL_SHADERS)
   get_filename_component(FILENAME ${SHADER} NAME)
   add_custom_command(OUTPUT ${FILENAME}.spv.u32
     COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${FILENAME}.spv.u32
     DEPENDS ${SHADER}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    list(APPEND VERT_SPV_SHADERS ${FILENAME}.spv.u32)
+    list(APPEND SPV_SHADERS ${FILENAME}.spv.u32)
 endForeach()
 
-foreach(SHADER IN LISTS GLSL_FRAG_SHADERS)
-  get_filename_component(FILENAME ${SHADER} NAME)
-  add_custom_command(OUTPUT ${FILENAME}_frag.spv.u32
-    COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${FILENAME}_frag.spv.u32
-    DEPENDS ${SHADER}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    list(APPEND FRAG_SPV_SHADERS ${FILENAME}_frag.spv.u32)
-endForeach()
-
-add_custom_target(shaders ALL DEPENDS ${VERT_SPV_SHADERS} ${FRAG_SPV_SHADERS})
+add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
 add_dependencies(owl shaders)
 
 
