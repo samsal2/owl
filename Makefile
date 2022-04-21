@@ -4,7 +4,6 @@ GLSLANG = glslangValidator
 
 LIBRARY = libowl.a
 
-OUTDIR  = build
 SRCDIR  = owl
 
 INCS    = -Ilibs/glfw/macos/include \
