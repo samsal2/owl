@@ -2341,11 +2341,13 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *desc,
   }
 
 #if defined(OWL_ENABLE_VALIDATION)
-  if (OWL_SUCCESS != (code = owl_renderer_debug_messenger_init_(r)))
+  if (OWL_SUCCESS != (code = owl_renderer_debug_messenger_init_(r))) {
     goto out_err_instance_deinit;
+  }
 
-  if (OWL_SUCCESS != (code = owl_renderer_surface_init_(desc, r)))
+  if (OWL_SUCCESS != (code = owl_renderer_surface_init_(desc, r))) {
     goto out_err_debug_messenger_deinit;
+  }
 #else  /* OWL_ENABLE_VALIDATION */
   if (OWL_SUCCESS != (code = owl_renderer_surface_init_(desc, r))) {
     goto out_err_instance_deinit;

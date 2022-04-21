@@ -16,6 +16,14 @@ INCS    = -Ilibraries/glfw/macos/include \
 CFLAGS  = -std=c99                       \
           -O0                            \
           -g                             \
+          -Wall                          \
+          -Wextra                        \
+          -Wshadow                       \
+          -Wvla                          \
+          -Walloca                       \
+          -pedantic                      \
+          -pedantic-errors               \
+          -Wdeclaration-after-statement  \
           -fstrict-aliasing              \
           -fsanitize=address             \
           -fsanitize=undefined           \
@@ -30,7 +38,7 @@ LIBS    = -Llibraries/glfw/macos/lib-x86_64      \
           -lvulkan                               \
           -lm																		 \
           -framework Cocoa                       \
-          -framework IOKit	                     \
+          -framework IOKit
 
 LDFLAGS = -fsanitize=address                    \
           -fsanitize=undefined                  \
