@@ -229,7 +229,7 @@ struct owl_renderer {
   VkDescriptorSetLayout fragment_ubo_set_layout;
   VkDescriptorSetLayout shared_ubo_set_layout;
   VkDescriptorSetLayout vertex_ssbo_set_layout;
-  VkDescriptorSetLayout sampler_image_set_layout;
+  VkDescriptorSetLayout image_set_layout;
   /* ====================================================================== */
 
   /* ====================================================================== */

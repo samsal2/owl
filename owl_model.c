@@ -445,8 +445,8 @@ OWL_INTERNAL void
 owl_model_buffers_load_(struct owl_renderer *r,
                         struct owl_model_load_state const *desc,
                         struct owl_model *model) {
-  struct owl_renderer_dynamic_heap_reference vertex_reference;
-  struct owl_renderer_dynamic_heap_reference index_reference;
+  struct owl_renderer_dynamic_heap_reference vref;
+  struct owl_renderer_dynamic_heap_reference iref;
   enum owl_code code = OWL_SUCCESS;
 
   OWL_ASSERT(owl_renderer_dynamic_heap_is_clear(r));
@@ -457,11 +457,10 @@ owl_model_buffers_load_(struct owl_renderer *r,
     owl_u64 size;
 
     size = (owl_u64)desc->vertices_capacity * sizeof(struct owl_model_vertex);
-    owl_renderer_dynamic_heap_submit(r, size, desc->vertices,
-                                     &vertex_reference);
+    owl_renderer_dynamic_heap_submit(r, size, desc->vertices, &vref);
 
     size = (owl_u64)desc->indices_capacity * sizeof(owl_u32);
-    owl_renderer_dynamic_heap_submit(r, size, desc->indices, &index_reference);
+    owl_renderer_dynamic_heap_submit(r, size, desc->indices, &iref);
   }
 
   {
@@ -546,22 +545,22 @@ owl_model_buffers_load_(struct owl_renderer *r,
   {
     VkBufferCopy copy;
 
-    copy.srcOffset = vertex_reference.offset;
+    copy.srcOffset = vref.offset;
     copy.dstOffset = 0;
     copy.size = (owl_u64)desc->vertices_count * sizeof(struct owl_model_vertex);
 
-    vkCmdCopyBuffer(r->immidiate_command_buffer, vertex_reference.buffer,
+    vkCmdCopyBuffer(r->immidiate_command_buffer, vref.buffer,
                     model->vertices_buffer, 1, &copy);
   }
 
   {
     VkBufferCopy copy;
 
-    copy.srcOffset = index_reference.offset;
+    copy.srcOffset = iref.offset;
     copy.dstOffset = 0;
     copy.size = (owl_u64)desc->indices_count * sizeof(owl_u32);
 
-    vkCmdCopyBuffer(r->immidiate_command_buffer, index_reference.buffer,
+    vkCmdCopyBuffer(r->immidiate_command_buffer, iref.buffer,
                     model->indices_buffer, 1, &copy);
   }
 
@@ -752,12 +751,12 @@ OWL_INTERNAL enum owl_code owl_model_skins_load_(struct owl_renderer *r,
 
     {
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j) {
-        VkDescriptorBufferInfo buffer_descriptor;
+        VkDescriptorBufferInfo buffer_info;
         VkWriteDescriptorSet write;
 
-        buffer_descriptor.buffer = skin_data->ssbo_buffers[j];
-        buffer_descriptor.offset = 0;
-        buffer_descriptor.range = skin_data->ssbo_buffer_size;
+        buffer_info.buffer = skin_data->ssbo_buffers[j];
+        buffer_info.offset = 0;
+        buffer_info.range = skin_data->ssbo_buffer_size;
 
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         write.pNext = NULL;
@@ -767,7 +766,7 @@ OWL_INTERNAL enum owl_code owl_model_skins_load_(struct owl_renderer *r,
         write.descriptorCount = 1;
         write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         write.pImageInfo = NULL;
-        write.pBufferInfo = &buffer_descriptor;
+        write.pBufferInfo = &buffer_info;
         write.pTexelBufferView = NULL;
 
         vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);

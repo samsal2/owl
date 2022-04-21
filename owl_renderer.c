@@ -1145,15 +1145,14 @@ owl_renderer_set_layouts_init_(struct owl_renderer *r) {
     set_layout_create_info.pBindings = bindings;
 
     OWL_VK_CHECK(vkCreateDescriptorSetLayout(r->device, &set_layout_create_info,
-                                             NULL,
-                                             &r->sampler_image_set_layout));
+                                             NULL, &r->image_set_layout));
   }
 
   return code;
 }
 
 OWL_INTERNAL void owl_renderer_set_layouts_deinit_(struct owl_renderer *r) {
-  vkDestroyDescriptorSetLayout(r->device, r->sampler_image_set_layout, NULL);
+  vkDestroyDescriptorSetLayout(r->device, r->image_set_layout, NULL);
   vkDestroyDescriptorSetLayout(r->device, r->vertex_ssbo_set_layout, NULL);
   vkDestroyDescriptorSetLayout(r->device, r->shared_ubo_set_layout, NULL);
   vkDestroyDescriptorSetLayout(r->device, r->fragment_ubo_set_layout, NULL);
@@ -1172,7 +1171,7 @@ owl_renderer_pipeline_layouts_init_(struct owl_renderer *r) {
     VkPipelineLayoutCreateInfo pipeline_layout_create_info;
 
     sets[0] = r->vertex_ubo_set_layout;
-    sets[1] = r->sampler_image_set_layout;
+    sets[1] = r->image_set_layout;
 
     pipeline_layout_create_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1197,9 +1196,9 @@ owl_renderer_pipeline_layouts_init_(struct owl_renderer *r) {
     push_constant.size = sizeof(struct owl_model_material_push_constant);
 
     sets[0] = r->shared_ubo_set_layout;
-    sets[1] = r->sampler_image_set_layout;
-    sets[2] = r->sampler_image_set_layout;
-    sets[3] = r->sampler_image_set_layout;
+    sets[1] = r->image_set_layout;
+    sets[2] = r->image_set_layout;
+    sets[3] = r->image_set_layout;
     sets[4] = r->vertex_ssbo_set_layout;
     sets[5] = r->fragment_ubo_set_layout;
 
@@ -2051,11 +2050,11 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 sz) {
   {
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
       VkWriteDescriptorSet write;
-      VkDescriptorBufferInfo buffer_descriptor;
+      VkDescriptorBufferInfo buffer_info;
 
-      buffer_descriptor.buffer = r->dynamic_heap_buffers[i];
-      buffer_descriptor.offset = 0;
-      buffer_descriptor.range = sizeof(struct owl_draw_command_uniform);
+      buffer_info.buffer = r->dynamic_heap_buffers[i];
+      buffer_info.offset = 0;
+      buffer_info.range = sizeof(struct owl_draw_command_uniform);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
@@ -2065,7 +2064,7 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 sz) {
       write.descriptorCount = 1;
       write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
       write.pImageInfo = NULL;
-      write.pBufferInfo = &buffer_descriptor;
+      write.pBufferInfo = &buffer_info;
       write.pTexelBufferView = NULL;
 
       vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);
@@ -2074,12 +2073,12 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 sz) {
 
   {
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      VkDescriptorBufferInfo buffer_descriptor;
+      VkDescriptorBufferInfo buffer_info;
       VkWriteDescriptorSet write;
 
-      buffer_descriptor.buffer = r->dynamic_heap_buffers[i];
-      buffer_descriptor.offset = 0;
-      buffer_descriptor.range = sizeof(struct owl_model_uniform);
+      buffer_info.buffer = r->dynamic_heap_buffers[i];
+      buffer_info.offset = 0;
+      buffer_info.range = sizeof(struct owl_model_uniform);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
@@ -2089,7 +2088,7 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 sz) {
       write.descriptorCount = 1;
       write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
       write.pImageInfo = NULL;
-      write.pBufferInfo = &buffer_descriptor;
+      write.pBufferInfo = &buffer_info;
       write.pTexelBufferView = NULL;
 
       vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);
@@ -2098,12 +2097,12 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 sz) {
 
   {
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      VkDescriptorBufferInfo buffer_descriptor;
+      VkDescriptorBufferInfo buffer_info;
       VkWriteDescriptorSet write;
 
-      buffer_descriptor.buffer = r->dynamic_heap_buffers[i];
-      buffer_descriptor.offset = 0;
-      buffer_descriptor.range = sizeof(struct owl_model_uniform_params);
+      buffer_info.buffer = r->dynamic_heap_buffers[i];
+      buffer_info.offset = 0;
+      buffer_info.range = sizeof(struct owl_model_uniform_params);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
@@ -2113,7 +2112,7 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 sz) {
       write.descriptorCount = 1;
       write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
       write.pImageInfo = NULL;
-      write.pBufferInfo = &buffer_descriptor;
+      write.pBufferInfo = &buffer_info;
       write.pTexelBufferView = NULL;
 
       vkUpdateDescriptorSets(r->device, 1, &write, 0, NULL);
@@ -3306,7 +3305,7 @@ owl_renderer_image_init(struct owl_renderer *r,
     VkDescriptorSetLayout layout;
     VkDescriptorSetAllocateInfo set_allocate_info;
 
-    layout = r->sampler_image_set_layout;
+    layout = r->image_set_layout;
 
     set_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     set_allocate_info.pNext = NULL;
