@@ -1,81 +1,83 @@
-CC = clang
-RMF = rm -f
+SRCDIR  = owl
+OBJDIR  = build
+SPVDIR  = owl
+
+CC      = clang
+RMF     = rm -f
+RMRF    = rm -rf
+MKDIRP  = mkdir -p
 GLSLANG = glslangValidator
 
 LIBRARY = libowl.a
 
-CFLAGS = -std=c99
-# CFLAGS += -Ofast
-CFLAGS += -O0
-CFLAGS += -g
-CFLAGS += -Ilibraries/glfw/macos/include
-CFLAGS += -I$(VULKAN_SDK)/include
-CFLAGS += -fstrict-aliasing
-CFLAGS += -fsanitize=address
-CFLAGS += -fsanitize=undefined
-CFLAGS += -fsanitize=bounds
-# CFLAGS += -flto
-CFLAGS += -Wall
-CFLAGS += -Werror
-CFLAGS += -Wextra
-CFLAGS += -Wshadow
-CFLAGS += -Wvla
-CFLAGS += -Walloca
-CFLAGS += -Wstrict-prototypes
-CFLAGS += -pedantic
-CFLAGS += -pedantic-errors
-# CFLAGS += -DNDEBUG
-CFLAGS += -DOWL_ENABLE_VALIDATION
+INCS    = -Ilibraries/glfw/macos/include \
+          -I$(VULKAN_SDK)/include        
 
-LDFLAGS =-Llibraries/glfw/macos/lib-x86_64
-LDFLAGS +=-rpath libraries/glfw/macos/lib-x86_64
-LDFLAGS +=-lglfw3
-LDFLAGS +=-framework Cocoa
-LDFLAGS +=-framework IOKit
-LDFLAGS +=-L$(VULKAN_SDK)/lib
-LDFLAGS +=-rpath $(VULKAN_SDK)/lib
-LDFLAGS +=-lvulkan
-LDFLAGS +=-lm
-# LDFLAGS +=-flto
-LDFLAGS +=-fsanitize=address
-LDFLAGS +=-fsanitize=undefined
-LDFLAGS +=-fsanitize=bounds
+CFLAGS  = -std=c99                       \
+          -O0                            \
+          -g                             \
+          -fstrict-aliasing              \
+          -fsanitize=address             \
+          -fsanitize=undefined           \
+          -fsanitize=bounds              \
+          $(INCS)
 
-GLSLVSRC = $(wildcard *.vert)
+LIBS    = -Llibraries/glfw/macos/lib-x86_64      \
+          -rpath libraries/glfw/macos/lib-x86_64 \
+          -lglfw3                                \
+          -L$(VULKAN_SDK)/lib                    \
+          -rpath $(VULKAN_SDK)/lib               \
+          -lvulkan                               \
+          -lm																		 \
+          -framework Cocoa                       \
+          -framework IOKit	                     \
+
+LDFLAGS = -fsanitize=address                    \
+          -fsanitize=undefined                  \
+          -fsanitize=bounds                     \
+          $(LIBS)
+
+SRCS = $(wildcard $(SRCDIR)/*.c)
+OBJS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS)) 
+DEPS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.d,$(SRCS)) 
+
+GLSLVSRC = $(wildcard $(SRCDIR)/*.vert)
 GLSLVSPV = $(GLSLVSRC:.vert=.vert.spv.u32)
 
-GLSLFSRC = $(wildcard *.frag)
+GLSLFSRC = $(wildcard $(SRCDIR)/*.frag)
 GLSLFSPV = $(GLSLFSRC:.frag=.frag.spv.u32)
 
-SRCS = $(wildcard *.c)
-OBJS = $(SRCS:.c=.o)
-DEPS = $(SRCS:.c=.d)
-
 EXSRCS = $(wildcard examples/*.c)
-EXOUTS = $(EXSRCS:.c=.out)
+EXOUTS = $(patsubst examples/%.c, $(OBJDIR)/%.out, $(EXSRCS)) 
 
-all: examples library
-
-.PHONY: examples
-examples: $(EXOUTS)
-
-$(EXOUTS): $(LIBRARY)
-
-%.out: %.c $(LIBRARY)
-	$(CC) $(CFLAGS) -I. -o $@ $< $(LDFLAGS) -L. -lowl
+all: examples library shaders
 
 .PHONY: library
 -include $(DEPS)
 
-library: $(LIBRARY)
+library: $(OBJDIR)/$(LIBRARY)
 
-$(LIBRARY): $(OBJS)
+$(OBJDIR)/$(LIBRARY): $(OBJS)
 	$(AR) -cqsv $@ $^
 
 $(OBJS): $(GLSLVSPV) $(GLSLFSPV)
 
-%.o: %.c
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 	$(CC) -MMD $(CFLAGS) -o $@ -c $<
+
+$(OBJDIR):
+	$(MKDIRP) $(OBJDIR)
+
+.PHONY: examples
+examples: $(EXOUTS)
+
+$(EXOUTS): $(OBJDIR)/$(LIBRARY)
+
+$(OBJDIR)/%.out: examples/%.c
+	$(CC) $(CFLAGS) -I. -o $@ $< $(LDFLAGS) -L$(OBJDIR) -lowl
+
+.PHONY: shaders
+shaders: $(GLSLVSPV) $(GLSLFSPV)
 
 %.vert.spv.u32: %.vert
 	$(GLSLANG) -V -x -o $@ $<
@@ -88,7 +90,6 @@ clean:
 	$(RMF) $(GLSLFSPV)
 	$(RMF) $(GLSLVSPV)
 	$(RMF) $(OBJS)
-	$(RMF) $(DEPS)
-	$(RMF) $(LIBRARY)
 	$(RMF) $(EXOUTS)
+	$(RMRF) $(OBJDIR)
 

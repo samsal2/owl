@@ -1,4 +1,4 @@
-#include <owl.h>
+#include <owl/owl.h>
 
 #include <stdio.h>
 

@@ -2303,8 +2303,8 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *desc,
   if (OWL_SUCCESS != (code = owl_renderer_surface_init_(desc, r)))
     goto out_err_debug_messenger_deinit;
 #else  /* OWL_ENABLE_VALIDATION */
-  if (OWL_SUCCESS != (code = owl_renderer_init_surface_(desc, renderer)))
-    goto out_err_deinit_instance;
+  if (OWL_SUCCESS != (code = owl_renderer_surface_init_(desc, r)))
+    goto out_err_instance_deinit;
 #endif /* OWL_ENABLE_VALIDATION */
 
   if (OWL_SUCCESS != (code = owl_renderer_device_init_(r)))
