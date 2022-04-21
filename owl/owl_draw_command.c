@@ -128,39 +128,44 @@ owl_draw_command_submit_text(struct owl_renderer *r,
                              struct owl_camera const *cam,
                              struct owl_draw_command_text const *cmd) {
   char const *l;
-  owl_v3 offset;
+  owl_v3 offset_in_pixels;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_V3_ZERO(offset);
+  /* FIXME(samuel): make sure scaling is right */
+  offset_in_pixels[0] = cmd->position[0] * r->framebuffer_width;
+  offset_in_pixels[1] = cmd->position[1] * r->framebuffer_height;
 
+  /* HACK(samuel): using framebuffer height to scale the z axis */
+  offset_in_pixels[2] = cmd->position[2] * r->framebuffer_height;
+  
   for (l = cmd->text; '\0' != *l; ++l) {
     struct owl_font_glyph glyph;
     struct owl_draw_command_quad quad;
 
-    owl_font_fill_glyph(cmd->font, *l, offset, &glyph);
+    owl_font_fill_glyph(cmd->font, *l, offset_in_pixels, &glyph);
 
     quad.image.slot = cmd->font->atlas.slot;
     OWL_M4_IDENTITY(quad.model);
 
-    OWL_V3_ADD(glyph.positions[0], offset, quad.vertices[0].position);
+    OWL_V3_ADD(glyph.positions[0], offset_in_pixels, quad.vertices[0].position);
     OWL_V3_INVERSE_SCALE(quad.vertices[0].position, r->framebuffer_height,
                          quad.vertices[0].position);
     OWL_V3_COPY(cmd->color, quad.vertices[0].color);
     OWL_V2_COPY(glyph.uvs[0], quad.vertices[0].uv);
 
-    OWL_V3_ADD(glyph.positions[1], offset, quad.vertices[1].position);
+    OWL_V3_ADD(glyph.positions[1], offset_in_pixels, quad.vertices[1].position);
     OWL_V3_INVERSE_SCALE(quad.vertices[1].position, r->framebuffer_height,
                          quad.vertices[1].position);
     OWL_V3_COPY(cmd->color, quad.vertices[1].color);
     OWL_V2_COPY(glyph.uvs[1], quad.vertices[1].uv);
 
-    OWL_V3_ADD(glyph.positions[2], offset, quad.vertices[2].position);
+    OWL_V3_ADD(glyph.positions[2], offset_in_pixels, quad.vertices[2].position);
     OWL_V3_INVERSE_SCALE(quad.vertices[2].position, r->framebuffer_height,
                          quad.vertices[2].position);
     OWL_V3_COPY(cmd->color, quad.vertices[2].color);
     OWL_V2_COPY(glyph.uvs[2], quad.vertices[2].uv);
 
-    OWL_V3_ADD(glyph.positions[3], offset, quad.vertices[3].position);
+    OWL_V3_ADD(glyph.positions[3], offset_in_pixels, quad.vertices[3].position);
     OWL_V3_INVERSE_SCALE(quad.vertices[3].position, r->framebuffer_height,
                          quad.vertices[3].position);
     OWL_V3_COPY(cmd->color, quad.vertices[3].color);

@@ -1,4 +1,3 @@
-#include "owl/owl_camera.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -57,12 +56,12 @@ int main(void) {
   model_command.skin = model;
 
   font = OWL_MALLOC(sizeof(*font));
-  CHECK(owl_font_init(renderer, 64, FONT_PATH, font));
+  CHECK(owl_font_init(renderer, 78, FONT_PATH, font));
 
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
-  OWL_V3_SET(-0.3F, -0.3F, 0.90, text_command.position);
+  OWL_V3_SET(-0.8F, -0.8F, 0.90, text_command.position);
   text_command.font = font;
-  text_command.scale = 0.05F;
+  text_command.scale = 20.0F;
 
   while (!owl_client_is_done(client)) {
     OWL_V2_COPY(client->cursor_position, model_command.light);

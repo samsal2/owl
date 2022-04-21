@@ -10,8 +10,10 @@ GLSLANG = glslangValidator
 
 LIBRARY = libowl.a
 
-INCS    = -Ilibraries/glfw/macos/include \
+INCS    = -Ilibs/glfw/macos/include \
           -I$(VULKAN_SDK)/include        
+
+DEFS    = -DOWL_ENABLE_VALIDATION
 
 CFLAGS  = -std=c99                       \
           -O0                            \
@@ -23,21 +25,21 @@ CFLAGS  = -std=c99                       \
           -Walloca                       \
           -pedantic                      \
           -pedantic-errors               \
-          -Wdeclaration-after-statement  \
           -fstrict-aliasing              \
           -fsanitize=address             \
           -fsanitize=undefined           \
           -fsanitize=bounds              \
-          $(INCS)
+          $(INCS)                        \
+          $(DEFS)
 
-LIBS    = -Llibraries/glfw/macos/lib-x86_64      \
-          -rpath libraries/glfw/macos/lib-x86_64 \
-          -lglfw3                                \
-          -L$(VULKAN_SDK)/lib                    \
-          -rpath $(VULKAN_SDK)/lib               \
-          -lvulkan                               \
-          -lm																		 \
-          -framework Cocoa                       \
+LIBS    = -Llibs/glfw/macos/lib-x86_64      \
+          -rpath libs/glfw/macos/lib-x86_64 \
+          -lglfw3                           \
+          -L$(VULKAN_SDK)/lib               \
+          -rpath $(VULKAN_SDK)/lib          \
+          -lvulkan                          \
+          -lm																\
+          -framework Cocoa                  \
           -framework IOKit
 
 LDFLAGS = -fsanitize=address                    \

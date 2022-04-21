@@ -1,0 +1,59 @@
+target_sources(owl PRIVATE
+  cgltf.c
+  cgltf.h
+  owl.h
+  owl_camera.c
+  owl_camera.h
+  owl_client.c
+  owl_client.h
+  owl_draw_command.c
+  owl_draw_command.h
+  owl_font.c
+  owl_font.h
+  owl_internal.c
+  owl_internal.h
+  owl_model.c
+  owl_model.h
+  owl_renderer.c
+  owl_renderer.h
+  owl_types.h
+  owl_vector_math.c
+  owl_vector_math.h
+  stb_image.c
+  stb_image.h
+  stb_truetype.c
+  stb_truetype.h)
+
+set(GLSL_VERT_SHADERS 
+  owl_glsl_shader_basic.vert
+  owl_glsl_shader_model.vert
+  owl_glsl_shader_pbr.vert)
+
+set(GLSL_FRAG_SHADERS 
+  owl_glsl_shader_basic.frag
+  owl_glsl_shader_font.frag
+  owl_glsl_shader_model.frag
+  owl_glsl_shader_pbr.frag)
+
+foreach(SHADER IN LISTS GLSL_VERT_SHADERS)
+  get_filename_component(FILENAME ${SHADER} NAME)
+  add_custom_command(OUTPUT ${FILENAME}.spv.u32
+    COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${FILENAME}.spv.u32
+    DEPENDS ${SHADER}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    list(APPEND VERT_SPV_SHADERS ${FILENAME}.spv.u32)
+endForeach()
+
+foreach(SHADER IN LISTS GLSL_FRAG_SHADERS)
+  get_filename_component(FILENAME ${SHADER} NAME)
+  add_custom_command(OUTPUT ${FILENAME}_frag.spv.u32
+    COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${FILENAME}_frag.spv.u32
+    DEPENDS ${SHADER}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    list(APPEND FRAG_SPV_SHADERS ${FILENAME}_frag.spv.u32)
+endForeach()
+
+add_custom_target(shaders ALL DEPENDS ${VERT_SPV_SHADERS} ${FRAG_SPV_SHADERS})
+add_dependencies(owl shaders)
+
+

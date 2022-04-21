@@ -53,7 +53,7 @@ owl_draw_command_submit_quad(struct owl_renderer *r,
                              struct owl_draw_command_quad const *cmd);
 
 struct owl_draw_command_text {
-  float scale;
+  float scale; /* FIXME(samuel): unused for now */
   owl_v3 color;
   owl_v3 position;
   char const *text;

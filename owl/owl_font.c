@@ -300,8 +300,8 @@ enum owl_code owl_font_fill_glyph(struct owl_font const *f, char c,
 
   stbtt_GetPackedQuad((stbtt_packedchar *)(&f->packed_chars[0]),
                       OWL_FONT_ATLAS_WIDTH, OWL_FONT_ATLAS_HEIGHT,
-                      c - OWL_FONT_FIRST_CHAR, &offset[0], &offset[1], &quad,
-                      1);
+                      c - OWL_FONT_FIRST_CHAR, &offset[0], &offset[1],
+                      &quad, 1);
 
   OWL_V3_SET(quad.x0, quad.y0, 0.0F, glyph->positions[0]);
   OWL_V3_SET(quad.x1, quad.y0, 0.0F, glyph->positions[1]);
