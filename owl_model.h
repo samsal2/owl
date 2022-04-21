@@ -269,10 +269,10 @@ struct owl_model {
   struct owl_model_animation_data animations[OWL_MODEL_MAX_ANIMATIONS_COUNT];
 };
 
-enum owl_code owl_model_init(struct owl_renderer *renderer, char const *path,
+enum owl_code owl_model_init(struct owl_renderer *r, char const *path,
                              struct owl_model *model);
 
-void owl_model_deinit(struct owl_renderer *renderer, struct owl_model *model);
+void owl_model_deinit(struct owl_renderer *r, struct owl_model *model);
 
 enum owl_code owl_model_update_animation(struct owl_model *model,
                                          owl_i32 animation, owl_i32 frame,

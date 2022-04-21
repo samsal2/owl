@@ -34,12 +34,12 @@ struct owl_font {
   struct owl_font_packed_char packed_chars[OWL_FONT_CHAR_COUNT];
 };
 
-enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
+enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 sz,
                             char const *path, struct owl_font *font);
 
-void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font);
+void owl_font_deinit(struct owl_renderer *r, struct owl_font *font);
 
-enum owl_code owl_font_fill_glyph(struct owl_font const *font, char c,
+enum owl_code owl_font_fill_glyph(struct owl_font const *f, char c,
                                   owl_v2 offset, struct owl_font_glyph *glyph);
 
 #endif

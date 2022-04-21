@@ -261,7 +261,7 @@ int main(void) {
   image_init_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
   image_init_desc.src_path = TPATH;
   image_init_desc.use_default_sampler = 1;
-  TEST(owl_renderer_init_image(renderer, &image_init_desc, &image));
+  TEST(owl_renderer_image_init(renderer, &image_init_desc, &image));
 
   TEST(owl_font_init(renderer, 64, FONTPATH, &font));
 
@@ -319,7 +319,7 @@ int main(void) {
   }
 
   owl_font_deinit(renderer, &font);
-  owl_renderer_deinit_image(renderer, &image);
+  owl_renderer_image_deinit(renderer, &image);
   owl_renderer_deinit(renderer);
   owl_client_deinit(client);
 }

@@ -220,7 +220,7 @@ OWL_STATIC_ASSERT(
     sizeof(struct owl_font_packed_char) == sizeof(stbtt_packedchar),
     "owl_font_char and stbtt_packedchar must represent the same struct");
 
-enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
+enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 sz,
                             char const *path, struct owl_font *font) {
   owl_byte *font_file_data;
   owl_byte *font_bitmap_data;
@@ -248,7 +248,7 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
 
   /* HACK(samuel): idk if it's legal to alias a different type with the exact
    * same layout, but "it works" so ill leave it at that*/
-  if (!stbtt_PackFontRange(&pack_context, font_file_data, 0, size,
+  if (!stbtt_PackFontRange(&pack_context, font_file_data, 0, sz,
                            OWL_FONT_FIRST_CHAR, OWL_FONT_CHAR_COUNT,
                            (stbtt_packedchar *)(&font->packed_chars[0]))) {
     code = OWL_ERROR_UNKNOWN;
@@ -269,7 +269,7 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
   image_init_desc.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
   image_init_desc.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
 
-  code = owl_renderer_init_image(renderer, &image_init_desc, &font->atlas);
+  code = owl_renderer_image_init(r, &image_init_desc, &font->atlas);
 
   if (OWL_SUCCESS != code)
     goto out_end_pack;
@@ -287,16 +287,16 @@ out:
   return code;
 }
 
-void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font) {
-  owl_renderer_deinit_image(renderer, &font->atlas);
+void owl_font_deinit(struct owl_renderer *r, struct owl_font *f) {
+  owl_renderer_image_deinit(r, &f->atlas);
 }
 
-enum owl_code owl_font_fill_glyph(struct owl_font const *font, char c,
+enum owl_code owl_font_fill_glyph(struct owl_font const *f, char c,
                                   owl_v2 offset, struct owl_font_glyph *glyph) {
   stbtt_aligned_quad quad;
   enum owl_code code = OWL_SUCCESS;
 
-  stbtt_GetPackedQuad((stbtt_packedchar *)(&font->packed_chars[0]),
+  stbtt_GetPackedQuad((stbtt_packedchar *)(&f->packed_chars[0]),
                       OWL_FONT_ATLAS_WIDTH, OWL_FONT_ATLAS_HEIGHT,
                       c - OWL_FONT_FIRST_CHAR, &offset[0], &offset[1], &quad,
                       1);
