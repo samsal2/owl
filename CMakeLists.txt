@@ -6,16 +6,16 @@ set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # declare the library 
-add_library(owl)
+add_library(${PROJECT_NAME})
 
 # add sources
-add_subdirectory(owl)
+add_subdirectory(${PROJECT_NAME})
 
 # find external libraries
 find_package(Vulkan REQUIRED FATAL_ERROR)
 
 # link libraries
-target_link_libraries(owl 
+target_link_libraries(${PROJECT_NAME} 
   PUBLIC ${Vulkan_LIBRARIES}
   PUBLIC "$<$<BOOL:APPLE>:"
             ${PROJECT_SOURCE_DIR}/libs/glfw/macos/lib-x86_64/libglfw3.a
@@ -24,7 +24,7 @@ target_link_libraries(owl
           ">")
 
 # includes
-target_include_directories(owl 
+target_include_directories(${PROJECT_NAME} 
   PUBLIC ${PROJECT_SOURCE_DIR}
   PUBLIC ${Vulkan_INCLUDE_DIR}
           "$<$<BOOL:APPLE>:"
@@ -32,10 +32,14 @@ target_include_directories(owl
           ">")
 
 # features
-target_compile_features(owl PRIVATE c_std_99)
+set_target_properties(${PROJECT_NAME}
+    PROPERTIES 
+        C_STANDARD          11
+        C_STANDARD_REQUIRED ON
+        C_EXTENSIONS        OFF)
 
 # compile options
-target_compile_options(owl PRIVATE
+target_compile_options(${PROJECT_NAME} PRIVATE
 	"$<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:"
     -std=c99
 		-Wall
@@ -60,14 +64,14 @@ target_compile_options(owl PRIVATE
   ">")
 
 # compile definitions
-target_compile_definitions(owl PRIVATE
+target_compile_definitions(${PROJECT_NAME} PRIVATE
   "$<$<CONFIG:DEBUG>:"
     OWL_ENABLE_VALIDATION
   ">")
 
 
 # link options
-target_link_options(owl PUBLIC
+target_link_options(${PROJECT_NAME} PUBLIC
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
 		-fsanitize=address
 		-fsanitize=undefined

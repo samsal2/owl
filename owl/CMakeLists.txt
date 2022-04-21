@@ -1,4 +1,4 @@
-target_sources(owl PRIVATE
+target_sources(${PROJECT_NAME} PRIVATE
   cgltf.c
   cgltf.h
   owl.h
@@ -43,6 +43,6 @@ foreach(SHADER IN LISTS GLSL_SHADERS)
 endForeach()
 
 add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
-add_dependencies(owl shaders)
+add_dependencies(${PROJECT_NAME} shaders)
 
 
