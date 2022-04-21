@@ -135,7 +135,7 @@ void owl_m4_ortho(float left, float right, float bottom, float top, float near,
 
 void owl_m4_perspective(float fov, float ratio, float near, float far,
                         owl_m4 out) {
-  float const focal_length = 1.0F / tanf(fov * 0.5f);
+  float const focal_length = 1.0F / tanf(fov * 0.5F);
   float const inv_diff_far_near = 1.0F / (far - near);
 
   out[0][0] = focal_length / ratio;
@@ -223,15 +223,38 @@ void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out) {
 }
 
 void owl_m4_multiply(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out) {
-  float a00 = lhs[0][0], a01 = lhs[0][1], a02 = lhs[0][2], a03 = lhs[0][3],
-        a10 = lhs[1][0], a11 = lhs[1][1], a12 = lhs[1][2], a13 = lhs[1][3],
-        a20 = lhs[2][0], a21 = lhs[2][1], a22 = lhs[2][2], a23 = lhs[2][3],
-        a30 = lhs[3][0], a31 = lhs[3][1], a32 = lhs[3][2], a33 = lhs[3][3],
-
-        b00 = rhs[0][0], b01 = rhs[0][1], b02 = rhs[0][2], b03 = rhs[0][3],
-        b10 = rhs[1][0], b11 = rhs[1][1], b12 = rhs[1][2], b13 = rhs[1][3],
-        b20 = rhs[2][0], b21 = rhs[2][1], b22 = rhs[2][2], b23 = rhs[2][3],
-        b30 = rhs[3][0], b31 = rhs[3][1], b32 = rhs[3][2], b33 = rhs[3][3];
+  float a00 = lhs[0][0];
+  float a01 = lhs[0][1];
+  float a02 = lhs[0][2];
+  float a03 = lhs[0][3];
+  float a10 = lhs[1][0];
+  float a11 = lhs[1][1];
+  float a12 = lhs[1][2];
+  float a13 = lhs[1][3];
+  float a20 = lhs[2][0];
+  float a21 = lhs[2][1];
+  float a22 = lhs[2][2];
+  float a23 = lhs[2][3];
+  float a30 = lhs[3][0];
+  float a31 = lhs[3][1];
+  float a32 = lhs[3][2];
+  float a33 = lhs[3][3];
+  float b00 = rhs[0][0];
+  float b01 = rhs[0][1];
+  float b02 = rhs[0][2];
+  float b03 = rhs[0][3];
+  float b10 = rhs[1][0];
+  float b11 = rhs[1][1];
+  float b12 = rhs[1][2];
+  float b13 = rhs[1][3];
+  float b20 = rhs[2][0];
+  float b21 = rhs[2][1];
+  float b22 = rhs[2][2];
+  float b23 = rhs[2][3];
+  float b30 = rhs[3][0];
+  float b31 = rhs[3][1];
+  float b32 = rhs[3][2];
+  float b33 = rhs[3][3];
 
   out[0][0] = a00 * b00 + a10 * b01 + a20 * b02 + a30 * b03;
   out[0][1] = a01 * b00 + a11 * b01 + a21 * b02 + a31 * b03;
@@ -329,7 +352,8 @@ void owl_m4_scale(owl_m4 const src, owl_v3 const scale, owl_m4 out) {
 
 OWL_INTERNAL void owl_v4_quat_lerp(owl_v4 const src, owl_v4 const dst, float t,
                                    owl_v4 dest) {
-  owl_v4 s, v;
+  owl_v4 s;
+  owl_v4 v;
 
   /* src + s * (to - src) */
   OWL_V4_SET(t, t, t, t, s);
@@ -340,18 +364,21 @@ OWL_INTERNAL void owl_v4_quat_lerp(owl_v4 const src, owl_v4 const dst, float t,
 
 void owl_v4_quat_slerp(owl_v4 const src, owl_v4 const dst, float t,
                        owl_v4 out) {
-  owl_v4 q1, q2;
-  float cosTheta, sinTheta, angle;
+  owl_v4 q1;
+  owl_v4 q2;
+  float cosTheta;
+  float sinTheta;
+  float angle;
 
   cosTheta = OWL_V4_DOT(src, dst);
   OWL_V4_COPY(src, q1);
 
-  if (OWL_FABSF(cosTheta) >= 1.0f) {
+  if (OWL_FABSF(cosTheta) >= 1.0F) {
     OWL_V4_COPY(q1, out);
     return;
   }
 
-  if (cosTheta < 0.0f) {
+  if (cosTheta < 0.0F) {
     OWL_V4_NEGATE(q1, q1);
     cosTheta = -cosTheta;
   }
@@ -359,7 +386,7 @@ void owl_v4_quat_slerp(owl_v4 const src, owl_v4 const dst, float t,
   sinTheta = OWL_SQRTF(1.0F - cosTheta * cosTheta);
 
   /* LERP to avoid zero division */
-  if (OWL_FABSF(sinTheta) < 0.001f) {
+  if (OWL_FABSF(sinTheta) < 0.001F) {
     owl_v4_quat_lerp(src, dst, t, out);
     return;
   }
@@ -376,10 +403,22 @@ void owl_v4_quat_slerp(owl_v4 const src, owl_v4 const dst, float t,
 void owl_m4_inverse(owl_m4 const mat, owl_m4 out) {
   float t[6];
   float det;
-  float a = mat[0][0], b = mat[0][1], c = mat[0][2], d = mat[0][3],
-        e = mat[1][0], f = mat[1][1], g = mat[1][2], h = mat[1][3],
-        i = mat[2][0], j = mat[2][1], k = mat[2][2], l = mat[2][3],
-        m = mat[3][0], n = mat[3][1], o = mat[3][2], p = mat[3][3];
+  float a = mat[0][0];
+  float b = mat[0][1];
+  float c = mat[0][2];
+  float d = mat[0][3];
+  float e = mat[1][0];
+  float f = mat[1][1];
+  float g = mat[1][2];
+  float h = mat[1][3];
+  float i = mat[2][0];
+  float j = mat[2][1];
+  float k = mat[2][2];
+  float l = mat[2][3];
+  float m = mat[3][0];
+  float n = mat[3][1];
+  float o = mat[3][2];
+  float p = mat[3][3];
 
   t[0] = k * p - o * l;
   t[1] = j * p - n * l;
@@ -422,7 +461,7 @@ void owl_m4_inverse(owl_m4 const mat, owl_m4 out) {
   out[2][3] = -(a * t[1] - b * t[3] + d * t[5]);
   out[3][3] = a * t[2] - b * t[4] + c * t[5];
 
-  det = 1.0f / (a * out[0][0] + b * out[1][0] + c * out[2][0] + d * out[3][0]);
+  det = 1.0F / (a * out[0][0] + b * out[1][0] + c * out[2][0] + d * out[3][0]);
 
   OWL_M4_SCALE(out, det, out);
 }

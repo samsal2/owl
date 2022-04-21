@@ -22,14 +22,16 @@ owl_draw_command_submit_basic(struct owl_renderer *r,
   size = (owl_u64)cmd->vertices_count * sizeof(*cmd->vertices);
   code = owl_renderer_dynamic_heap_submit(r, size, cmd->vertices, &vref);
 
-  if (OWL_SUCCESS != code)
+  if (OWL_SUCCESS != code) {
     goto out;
+  }
 
   size = (owl_u64)cmd->indices_count * sizeof(*cmd->indices);
   code = owl_renderer_dynamic_heap_submit(r, size, cmd->indices, &iref);
 
-  if (OWL_SUCCESS != code)
+  if (OWL_SUCCESS != code) {
     goto out;
+  }
 
   OWL_M4_COPY(cam->projection, ubo.projection);
   OWL_M4_COPY(cam->view, ubo.view);
@@ -38,8 +40,9 @@ owl_draw_command_submit_basic(struct owl_renderer *r,
   size = sizeof(ubo);
   code = owl_renderer_dynamic_heap_submit(r, size, &ubo, &uref);
 
-  if (OWL_SUCCESS != code)
+  if (OWL_SUCCESS != code) {
     goto out;
+  }
 
   sets[0] = uref.common_ubo_set;
   sets[1] = r->image_manager_sets[cmd->image.slot];
@@ -78,14 +81,16 @@ owl_draw_command_submit_quad(struct owl_renderer *r,
   size = OWL_ARRAY_SIZE(cmd->vertices) * sizeof(cmd->vertices[0]);
   code = owl_renderer_dynamic_heap_submit(r, size, cmd->vertices, &vref);
 
-  if (OWL_SUCCESS != code)
+  if (OWL_SUCCESS != code) {
     goto out;
+  }
 
   size = OWL_ARRAY_SIZE(indices) * sizeof(indices[0]);
   code = owl_renderer_dynamic_heap_submit(r, size, indices, &iref);
 
-  if (OWL_SUCCESS != code)
+  if (OWL_SUCCESS != code) {
     goto out;
+  }
 
   OWL_M4_COPY(cam->projection, ubo.projection);
   OWL_M4_COPY(cam->view, ubo.view);
@@ -94,8 +99,9 @@ owl_draw_command_submit_quad(struct owl_renderer *r,
   size = sizeof(ubo);
   code = owl_renderer_dynamic_heap_submit(r, size, &ubo, &uref);
 
-  if (OWL_SUCCESS != code)
+  if (OWL_SUCCESS != code) {
     goto out;
+  }
 
   sets[0] = uref.common_ubo_set;
   sets[1] = r->image_manager_sets[cmd->image.slot];
@@ -160,8 +166,9 @@ owl_draw_command_submit_text(struct owl_renderer *r,
     OWL_V3_COPY(cmd->color, quad.vertices[3].color);
     OWL_V2_COPY(glyph.uvs[3], quad.vertices[3].uv);
 
-    if (OWL_SUCCESS != code)
+    if (OWL_SUCCESS != code) {
       goto out;
+    }
 
     owl_draw_command_submit_quad(r, cam, &quad);
   }
@@ -196,17 +203,20 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *cam,
   for (i = 0; i < node_data->children_count; ++i) {
     code = owl_model_submit_node_(r, cam, cmd, &node_data->children[i]);
 
-    if (OWL_SUCCESS != code)
+    if (OWL_SUCCESS != code) {
       goto out;
+    }
   }
 
-  if (OWL_MODEL_NODE_NO_MESH_SLOT == node_data->mesh.slot)
+  if (OWL_MODEL_NODE_NO_MESH_SLOT == node_data->mesh.slot) {
     goto out;
+  }
 
   mesh_data = &model->meshes[node_data->mesh.slot];
 
-  if (!mesh_data->primitives_count)
+  if (!mesh_data->primitives_count) {
     goto out;
+  }
 
   skin_data = &model->skins[node_data->skin.slot];
   ssbo = skin_data->ssbo_datas[r->active_frame_index];
@@ -215,9 +225,10 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *cam,
 
   for (parent.slot = model->nodes[node->slot].parent.slot;
        OWL_MODEL_NODE_NO_PARENT_SLOT != parent.slot;
-       parent.slot = model->nodes[parent.slot].parent.slot)
+       parent.slot = model->nodes[parent.slot].parent.slot) {
     owl_m4_multiply(model->nodes[parent.slot].matrix, ssbo->matrix,
                     ssbo->matrix);
+  }
 
   OWL_M4_COPY(cmd->model, ubo.model);
   OWL_V4_ZERO(ubo_params.light_direction);
@@ -248,8 +259,9 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *cam,
     primitive.slot = mesh_data->primitives[i].slot;
     primitive_data = &model->primitives[primitive.slot];
 
-    if (!primitive_data->count)
+    if (!primitive_data->count) {
       continue;
+    }
 
     material.slot = primitive_data->material.slot;
     material_data = &model->materials[material.slot];
@@ -280,14 +292,16 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *cam,
     code = owl_renderer_dynamic_heap_submit(r, sizeof(ubo), &ubo,
                                             &uniform_reference);
 
-    if (OWL_SUCCESS != code)
+    if (OWL_SUCCESS != code) {
       goto out;
+    }
 
     code = owl_renderer_dynamic_heap_submit(r, sizeof(ubo_params), &ubo,
                                             &uniform_params_reference);
 
-    if (OWL_SUCCESS != code)
+    if (OWL_SUCCESS != code) {
       goto out;
+    }
 
     /* TODO(samuel): generic pipeline layout ordered by frequency */
     sets[0] = uniform_reference.model_ubo_set;
@@ -310,30 +324,36 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *cam,
     push_constant.workflow = 0;
 
     /* FIXME(samuel): add uv sets in material */
-    if (OWL_MODEL_NO_TEXTURE_SLOT == material_data->base_color_texture.slot)
+    if (OWL_MODEL_NO_TEXTURE_SLOT == material_data->base_color_texture.slot) {
       push_constant.base_color_uv_set = -1;
-    else
+    } else {
       push_constant.base_color_uv_set = 0;
+    }
 
-    if (OWL_MODEL_NO_TEXTURE_SLOT == material_data->physical_desc_texture.slot)
+    if (OWL_MODEL_NO_TEXTURE_SLOT ==
+        material_data->physical_desc_texture.slot) {
       push_constant.physical_desc_uv_set = -1;
-    else
+    } else {
       push_constant.physical_desc_uv_set = 0;
+    }
 
-    if (OWL_MODEL_NO_TEXTURE_SLOT == material_data->normal_texture.slot)
+    if (OWL_MODEL_NO_TEXTURE_SLOT == material_data->normal_texture.slot) {
       push_constant.normal_uv_set = -1;
-    else
+    } else {
       push_constant.normal_uv_set = 0;
+    }
 
-    if (OWL_MODEL_NO_TEXTURE_SLOT == material_data->occlusion_texture.slot)
+    if (OWL_MODEL_NO_TEXTURE_SLOT == material_data->occlusion_texture.slot) {
       push_constant.occlusion_uv_set = -1;
-    else
+    } else {
       push_constant.occlusion_uv_set = 0;
+    }
 
-    if (OWL_MODEL_NO_TEXTURE_SLOT == material_data->emissive_texture.slot)
+    if (OWL_MODEL_NO_TEXTURE_SLOT == material_data->emissive_texture.slot) {
       push_constant.emissive_uv_set = -1;
-    else
+    } else {
       push_constant.emissive_uv_set = 0;
+    }
 
     push_constant.metallic_factor = 0.0F;
     push_constant.roughness_factor = 0.0F;
@@ -377,8 +397,9 @@ owl_draw_command_submit_model(struct owl_renderer *r,
   for (i = 0; i < cmd->skin->roots_count; ++i) {
     code = owl_model_submit_node_(r, cam, cmd, &model->roots[i]);
 
-    if (OWL_SUCCESS != code)
+    if (OWL_SUCCESS != code) {
       goto out;
+    }
   }
 
 out:

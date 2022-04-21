@@ -106,8 +106,9 @@ owl_vk_create_surface_callback_(struct owl_renderer const *r,
 
   err = glfwCreateWindowSurface(r->instance, client->window, NULL, surface);
 
-  if (VK_SUCCESS != err)
+  if (VK_SUCCESS != err) {
     code = OWL_ERROR_BAD_INIT;
+  }
 
   return code;
 }
@@ -141,11 +142,13 @@ enum owl_code owl_client_init(struct owl_client_init_desc const *desc,
   OWL_V2_ZERO(c->previous_cursor_position);
   OWL_V2_ZERO(c->cursor_position);
 
-  for (i = 0; i < OWL_MOUSE_BUTTON_COUNT; ++i)
+  for (i = 0; i < OWL_MOUSE_BUTTON_COUNT; ++i) {
     c->mouse_buttons[i] = OWL_BUTTON_STATE_NONE;
+  }
 
-  for (i = 0; i < OWL_KEYBOARD_KEY_LAST; ++i)
+  for (i = 0; i < OWL_KEYBOARD_KEY_LAST; ++i) {
     c->keyboard_keys[i] = OWL_BUTTON_STATE_NONE;
+  }
 
   c->fps = 60.0F;
   c->delta_time_stamp = 0.16667;

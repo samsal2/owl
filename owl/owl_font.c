@@ -229,8 +229,9 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 sz,
 
   enum owl_code code = OWL_SUCCESS;
 
-  if (OWL_SUCCESS != (code = owl_font_load_file_(path, &font_file_data)))
+  if (OWL_SUCCESS != (code = owl_font_load_file_(path, &font_file_data))) {
     goto out;
+  }
 
   if (!(font_bitmap_data = OWL_CALLOC(OWL_FONT_ATLAS_SIZE, sizeof(owl_byte)))) {
     code = OWL_ERROR_BAD_ALLOC;
@@ -271,8 +272,9 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 sz,
 
   code = owl_renderer_image_init(r, &image_init_desc, &font->atlas);
 
-  if (OWL_SUCCESS != code)
+  if (OWL_SUCCESS != code) {
     goto out_end_pack;
+  }
 
 out_end_pack:
   stbtt_PackEnd(&pack_context);

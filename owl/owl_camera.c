@@ -25,7 +25,7 @@ enum owl_code owl_camera_init(struct owl_camera *c) {
   return code;
 }
 
-void owl_camera_direction_set(struct owl_camera *c, owl_v3 dir) {
+void owl_camera_direction_set(struct owl_camera *c, const owl_v3 dir) {
   OWL_V3_COPY(dir, c->direction);
   owl_m4_look(c->eye, c->direction, c->up, c->view);
 }
