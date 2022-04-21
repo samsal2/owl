@@ -294,8 +294,8 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
     node_data->skin.slot = OWL_MODEL_NODE_NO_SKIN_SLOT;
 
   if (gltf_node->mesh) {
-    struct cgltf_mesh const *src_mesh;
-    struct owl_model_mesh_data *dst_mesh;
+    struct cgltf_mesh const *gltf_mesh;
+    struct owl_model_mesh_data *mesh_data;
 
     node_data->mesh.slot = model->meshes_count++;
 
@@ -304,12 +304,12 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
       goto out;
     }
 
-    src_mesh = gltf_node->mesh;
-    dst_mesh = &model->meshes[node_data->mesh.slot];
+    gltf_mesh = gltf_node->mesh;
+    mesh_data = &model->meshes[node_data->mesh.slot];
 
-    dst_mesh->primitives_count = (owl_i32)src_mesh->primitives_count;
+    mesh_data->primitives_count = (owl_i32)gltf_mesh->primitives_count;
 
-    for (i = 0; i < (owl_i32)src_mesh->primitives_count; ++i) {
+    for (i = 0; i < (owl_i32)gltf_mesh->primitives_count; ++i) {
       owl_i32 j;
       owl_i32 vertices_count = 0;
       owl_i32 indices_count = 0;
@@ -321,10 +321,10 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
       float const *weights0 = NULL;
       struct cgltf_attribute const *attribute = NULL;
       struct owl_model_primitive *primitive = NULL;
-      struct owl_model_primitive_data *dst_primitive = NULL;
-      struct cgltf_primitive const *src_primitive = &src_mesh->primitives[i];
+      struct owl_model_primitive_data *primitive_data = NULL;
+      struct cgltf_primitive const *gltf_primitive = &gltf_mesh->primitives[i];
 
-      primitive = &dst_mesh->primitives[i];
+      primitive = &mesh_data->primitives[i];
       primitive->slot = model->primitives_count++;
 
       if (OWL_MODEL_MAX_PRIMITIVES_COUNT <= primitive->slot) {
@@ -332,26 +332,26 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
         goto out;
       }
 
-      dst_primitive = &model->primitives[primitive->slot];
+      primitive_data = &model->primitives[primitive->slot];
 
-      if ((attribute = owl_find_gltf_attribute_(src_primitive, "POSITION"))) {
+      if ((attribute = owl_find_gltf_attribute_(gltf_primitive, "POSITION"))) {
         position = owl_resolve_gltf_accessor_(attribute->data);
         vertices_count = (owl_i32)attribute->data->count;
       }
 
-      if ((attribute = owl_find_gltf_attribute_(src_primitive, "NORMAL")))
+      if ((attribute = owl_find_gltf_attribute_(gltf_primitive, "NORMAL")))
         normal = owl_resolve_gltf_accessor_(attribute->data);
 
-      if ((attribute = owl_find_gltf_attribute_(src_primitive, "TEXCOORD_0")))
+      if ((attribute = owl_find_gltf_attribute_(gltf_primitive, "TEXCOORD_0")))
         uv0 = owl_resolve_gltf_accessor_(attribute->data);
 
-      if ((attribute = owl_find_gltf_attribute_(src_primitive, "TEXCOORD_1")))
+      if ((attribute = owl_find_gltf_attribute_(gltf_primitive, "TEXCOORD_1")))
         uv1 = owl_resolve_gltf_accessor_(attribute->data);
 
-      if ((attribute = owl_find_gltf_attribute_(src_primitive, "JOINTS_0")))
+      if ((attribute = owl_find_gltf_attribute_(gltf_primitive, "JOINTS_0")))
         joints0 = owl_resolve_gltf_accessor_(attribute->data);
 
-      if ((attribute = owl_find_gltf_attribute_(src_primitive, "WEIGHTS_0")))
+      if ((attribute = owl_find_gltf_attribute_(gltf_primitive, "WEIGHTS_0")))
         weights0 = owl_resolve_gltf_accessor_(attribute->data);
 
       for (j = 0; j < vertices_count; ++j) {
@@ -386,14 +386,14 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
           OWL_V4_ZERO(vertex->weights0);
       }
 
-      indices_count = (owl_i32)src_primitive->indices->count;
+      indices_count = (owl_i32)gltf_primitive->indices->count;
 
-      switch (src_primitive->indices->component_type) {
+      switch (gltf_primitive->indices->component_type) {
       case cgltf_component_type_r_32u: {
         owl_u32 const *indices;
         owl_i32 offset = state->indices_count;
-        indices = owl_resolve_gltf_accessor_(src_primitive->indices);
-        for (j = 0; j < (owl_i32)src_primitive->indices->count; ++j) {
+        indices = owl_resolve_gltf_accessor_(gltf_primitive->indices);
+        for (j = 0; j < (owl_i32)gltf_primitive->indices->count; ++j) {
           state->indices[offset + j] =
               indices[j] + (owl_u32)state->vertices_count;
         }
@@ -402,8 +402,8 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
       case cgltf_component_type_r_16u: {
         owl_u16 const *indices;
         owl_i32 offset = state->indices_count;
-        indices = owl_resolve_gltf_accessor_(src_primitive->indices);
-        for (j = 0; j < (owl_i32)src_primitive->indices->count; ++j) {
+        indices = owl_resolve_gltf_accessor_(gltf_primitive->indices);
+        for (j = 0; j < (owl_i32)gltf_primitive->indices->count; ++j) {
           state->indices[offset + j] =
               indices[j] + (owl_u16)state->vertices_count;
         }
@@ -412,8 +412,8 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
       case cgltf_component_type_r_8u: {
         owl_u8 const *indices;
         owl_i32 offset = state->indices_count;
-        indices = owl_resolve_gltf_accessor_(src_primitive->indices);
-        for (j = 0; j < (owl_i32)src_primitive->indices->count; ++j) {
+        indices = owl_resolve_gltf_accessor_(gltf_primitive->indices);
+        for (j = 0; j < (owl_i32)gltf_primitive->indices->count; ++j) {
           state->indices[offset + j] =
               indices[j] + (owl_u8)state->vertices_count;
         }
@@ -427,10 +427,10 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
         goto out;
       }
 
-      dst_primitive->first = (owl_u32)state->indices_count;
-      dst_primitive->count = (owl_u32)indices_count;
-      dst_primitive->material.slot =
-          (owl_i32)(src_primitive->material - gltf->materials);
+      primitive_data->first = (owl_u32)state->indices_count;
+      primitive_data->count = (owl_u32)indices_count;
+      primitive_data->material.slot =
+          (owl_i32)(gltf_primitive->material - gltf->materials);
 
       state->indices_count += indices_count;
       state->vertices_count += vertices_count;
@@ -843,11 +843,11 @@ owl_model_animations_load_(struct owl_renderer *r,
     for (j = 0; j < (owl_i32)gltf_animation->samplers_count; ++j) {
       owl_i32 k;
       float const *inputs;
-      struct cgltf_animation_sampler const *src_sampler;
+      struct cgltf_animation_sampler const *gltf_sampler;
       struct owl_model_animation_sampler sampler;
-      struct owl_model_animation_sampler_data *dst_sampler;
+      struct owl_model_animation_sampler_data *sampler_data;
 
-      src_sampler = &gltf_animation->samplers[j];
+      gltf_sampler = &gltf_animation->samplers[j];
 
       sampler.slot = model->animation_samplers_count++;
 
@@ -856,22 +856,22 @@ owl_model_animations_load_(struct owl_renderer *r,
         goto out;
       }
 
-      dst_sampler = &model->animation_samplers[sampler.slot];
+      sampler_data = &model->animation_samplers[sampler.slot];
 
       if (OWL_MODEL_ANIMATION_SAMPLER_MAX_INPUTS_COUNT <=
-          (owl_i32)src_sampler->input->count) {
+          (owl_i32)gltf_sampler->input->count) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
         goto out;
       }
 
-      dst_sampler->inputs_count = (owl_i32)src_sampler->input->count;
+      sampler_data->inputs_count = (owl_i32)gltf_sampler->input->count;
 
-      inputs = owl_resolve_gltf_accessor_(src_sampler->input);
+      inputs = owl_resolve_gltf_accessor_(gltf_sampler->input);
 
-      for (k = 0; k < (owl_i32)src_sampler->input->count; ++k) {
+      for (k = 0; k < (owl_i32)gltf_sampler->input->count; ++k) {
         float const input = inputs[k];
 
-        dst_sampler->inputs[k] = input;
+        sampler_data->inputs[k] = input;
 
         if (input < animation_data->begin)
           animation_data->begin = input;
@@ -881,29 +881,29 @@ owl_model_animations_load_(struct owl_renderer *r,
       }
 
       if (OWL_MODEL_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT <=
-          (owl_i32)src_sampler->output->count) {
+          (owl_i32)gltf_sampler->output->count) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
         goto out;
       }
 
-      dst_sampler->outputs_count = (owl_i32)src_sampler->output->count;
+      sampler_data->outputs_count = (owl_i32)gltf_sampler->output->count;
 
-      switch (src_sampler->output->type) {
+      switch (gltf_sampler->output->type) {
       case cgltf_type_vec3: {
         owl_v3 const *outputs;
-        outputs = owl_resolve_gltf_accessor_(src_sampler->output);
+        outputs = owl_resolve_gltf_accessor_(gltf_sampler->output);
 
-        for (k = 0; k < (owl_i32)src_sampler->output->count; ++k) {
-          OWL_V4_ZERO(dst_sampler->outputs[k]);
-          OWL_V3_COPY(outputs[k], dst_sampler->outputs[k]);
+        for (k = 0; k < (owl_i32)gltf_sampler->output->count; ++k) {
+          OWL_V4_ZERO(sampler_data->outputs[k]);
+          OWL_V3_COPY(outputs[k], sampler_data->outputs[k]);
         }
       } break;
 
       case cgltf_type_vec4: {
         owl_v4 const *outputs;
-        outputs = owl_resolve_gltf_accessor_(src_sampler->output);
-        for (k = 0; k < (owl_i32)src_sampler->output->count; ++k)
-          OWL_V4_COPY(outputs[k], dst_sampler->outputs[k]);
+        outputs = owl_resolve_gltf_accessor_(gltf_sampler->output);
+        for (k = 0; k < (owl_i32)gltf_sampler->output->count; ++k)
+          OWL_V4_COPY(outputs[k], sampler_data->outputs[k]);
       } break;
 
       case cgltf_type_invalid:
@@ -917,7 +917,7 @@ owl_model_animations_load_(struct owl_renderer *r,
         goto out;
       }
 
-      dst_sampler->interpolation = (owl_i32)src_sampler->interpolation;
+      sampler_data->interpolation = (owl_i32)gltf_sampler->interpolation;
 
       animation_data->samplers[j].slot = sampler.slot;
     }
@@ -931,11 +931,11 @@ owl_model_animations_load_(struct owl_renderer *r,
     animation_data->channels_count = (owl_i32)gltf_animation->channels_count;
 
     for (j = 0; j < (owl_i32)gltf_animation->channels_count; ++j) {
-      struct cgltf_animation_channel const *src_channel;
+      struct cgltf_animation_channel const *gltf_channel;
       struct owl_model_animation_channel channel;
-      struct owl_model_animation_channel_data *dst_channel;
+      struct owl_model_animation_channel_data *channel_data;
 
-      src_channel = &gltf_animation->channels[j];
+      gltf_channel = &gltf_animation->channels[j];
 
       channel.slot = model->animation_channels_count++;
 
@@ -944,14 +944,14 @@ owl_model_animations_load_(struct owl_renderer *r,
         goto out;
       }
 
-      dst_channel = &model->animation_channels[channel.slot];
+      channel_data = &model->animation_channels[channel.slot];
 
-      dst_channel->path = (owl_i32)src_channel->target_path;
-      dst_channel->node.slot =
-          (owl_i32)(src_channel->target_node - gltf->nodes);
-      dst_channel->animation_sampler.slot =
+      channel_data->path = (owl_i32)gltf_channel->target_path;
+      channel_data->node.slot =
+          (owl_i32)(gltf_channel->target_node - gltf->nodes);
+      channel_data->animation_sampler.slot =
           animation_data
-              ->samplers[(src_channel->sampler - gltf_animation->samplers)]
+              ->samplers[(gltf_channel->sampler - gltf_animation->samplers)]
               .slot;
 
       animation_data->channels[j].slot = channel.slot;
