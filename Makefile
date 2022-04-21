@@ -1,14 +1,11 @@
-SRCDIR  = owl
-OBJDIR  = build
-SPVDIR  = owl
-
-CC      = clang
 RMF     = rm -f
 RMRF    = rm -rf
-MKDIRP  = mkdir -p
 GLSLANG = glslangValidator
 
 LIBRARY = libowl.a
+
+OUTDIR  = build
+SRCDIR  = owl
 
 INCS    = -Ilibs/glfw/macos/include \
           -I$(VULKAN_SDK)/include        
@@ -48,8 +45,8 @@ LDFLAGS = -fsanitize=address                    \
           $(LIBS)
 
 SRCS = $(wildcard $(SRCDIR)/*.c)
-OBJS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS)) 
-DEPS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.d,$(SRCS)) 
+OBJS = $(SRCS:.c=.o) 
+DEPS = $(SRCS:.c=.d)
 
 GLSLVSRC = $(wildcard $(SRCDIR)/*.vert)
 GLSLVSPV = $(GLSLVSRC:.vert=.vert.spv.u32)
@@ -58,33 +55,30 @@ GLSLFSRC = $(wildcard $(SRCDIR)/*.frag)
 GLSLFSPV = $(GLSLFSRC:.frag=.frag.spv.u32)
 
 EXSRCS = $(wildcard examples/*.c)
-EXOUTS = $(patsubst examples/%.c, $(OBJDIR)/%.out, $(EXSRCS)) 
+EXOUTS = $(EXSRCS:.c=.out) 
 
 all: examples library shaders
 
 .PHONY: library
 -include $(DEPS)
 
-library: $(OBJDIR)/$(LIBRARY)
+library: $(LIBRARY)
 
-$(OBJDIR)/$(LIBRARY): $(OBJS)
+$(LIBRARY): $(OBJS)
 	$(AR) -cqsv $@ $^
 
-$(OBJS): $(GLSLVSPV) $(GLSLFSPV) | $(OBJDIR)
+$(OBJS): $(GLSLVSPV) $(GLSLFSPV)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
+%.o: %.c
 	$(CC) -MMD $(CFLAGS) -o $@ -c $<
-
-$(OBJDIR):
-	$(MKDIRP) $(OBJDIR)
 
 .PHONY: examples
 examples: $(EXOUTS)
 
-$(EXOUTS): $(OBJDIR)/$(LIBRARY)
+$(EXOUTS): $(LIBRARY)
 
-$(OBJDIR)/%.out: examples/%.c
-	$(CC) $(CFLAGS) -I. -o $@ $< $(LDFLAGS) -L$(OBJDIR) -lowl
+%.out: %.c
+	$(CC) -I. $(CFLAGS) -o $@ $< $(LDFLAGS) -L. -lowl
 
 .PHONY: shaders
 shaders: $(GLSLVSPV) $(GLSLFSPV)
@@ -100,6 +94,6 @@ clean:
 	$(RMF) $(GLSLFSPV)
 	$(RMF) $(GLSLVSPV)
 	$(RMF) $(OBJS)
+	$(RMF) $(LIBRARY)
 	$(RMF) $(EXOUTS)
-	$(RMRF) $(OBJDIR)
 

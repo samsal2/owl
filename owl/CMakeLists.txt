@@ -33,6 +33,7 @@ set(GLSL_SHADERS
   owl_glsl_shader_model.frag
   owl_glsl_shader_pbr.frag)
 
+
 foreach(SHADER IN LISTS GLSL_SHADERS)
   get_filename_component(FILENAME ${SHADER} NAME)
   add_custom_command(OUTPUT ${FILENAME}.spv.u32
@@ -42,7 +43,7 @@ foreach(SHADER IN LISTS GLSL_SHADERS)
     list(APPEND SPV_SHADERS ${FILENAME}.spv.u32)
 endForeach()
 
-add_custom_target(shaders ALL DEPENDS ${SPV_SHADERS})
+add_custom_target(shaders DEPENDS ${SPV_SHADERS})
 add_dependencies(${PROJECT_NAME} shaders)
 
 
