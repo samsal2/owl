@@ -202,7 +202,7 @@ struct owl_renderer {
   /* color attachment */
   /* ====================================================================== */
   VkImage color_image;
-  VkImageView color_view;
+  VkImageView color_image_view;
   VkDeviceMemory color_memory;
   /* ====================================================================== */
 
@@ -211,7 +211,7 @@ struct owl_renderer {
   /* ====================================================================== */
   VkFormat depth_stencil_format;
   VkImage depth_stencil_image;
-  VkImageView depth_stencil_view;
+  VkImageView depth_stencil_image_view;
   VkDeviceMemory depth_stencil_memory;
   /* ====================================================================== */
 
@@ -335,7 +335,7 @@ struct owl_renderer {
 
   VkImage image_manager_images[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkDeviceMemory image_manager_memories[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
-  VkImageView image_manager_views[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
+  VkImageView image_manager_image_views[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
 
   /* TODO(samuel): image manager sampler cache */
   VkSampler image_manager_samplers[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];

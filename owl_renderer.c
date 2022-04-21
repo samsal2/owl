@@ -931,7 +931,7 @@ owl_renderer_init_attachments_(struct owl_renderer *renderer) {
     image_view_create_info.subresourceRange.layerCount = 1;
 
     OWL_VK_CHECK(vkCreateImageView(renderer->device, &image_view_create_info,
-                                   NULL, &renderer->color_view));
+                                   NULL, &renderer->color_image_view));
   }
 
   {
@@ -1001,7 +1001,7 @@ owl_renderer_init_attachments_(struct owl_renderer *renderer) {
     image_view_create_info.subresourceRange.layerCount = 1;
 
     OWL_VK_CHECK(vkCreateImageView(renderer->device, &image_view_create_info,
-                                   NULL, &renderer->depth_stencil_view));
+                                   NULL, &renderer->depth_stencil_image_view));
   }
 
   return code;
@@ -1009,11 +1009,12 @@ owl_renderer_init_attachments_(struct owl_renderer *renderer) {
 
 OWL_INTERNAL void
 owl_renderer_deinit_attachments_(struct owl_renderer *renderer) {
-  vkDestroyImageView(renderer->device, renderer->depth_stencil_view, NULL);
+  vkDestroyImageView(renderer->device, renderer->depth_stencil_image_view,
+                     NULL);
   vkFreeMemory(renderer->device, renderer->depth_stencil_memory, NULL);
   vkDestroyImage(renderer->device, renderer->depth_stencil_image, NULL);
 
-  vkDestroyImageView(renderer->device, renderer->color_view, NULL);
+  vkDestroyImageView(renderer->device, renderer->color_image_view, NULL);
   vkFreeMemory(renderer->device, renderer->color_memory, NULL);
   vkDestroyImage(renderer->device, renderer->color_image, NULL);
 }
@@ -1027,8 +1028,8 @@ owl_renderer_init_swapchain_framebuffers_(struct owl_renderer *renderer) {
     VkImageView attachments[3];
     VkFramebufferCreateInfo framebuffer_create_info;
 
-    attachments[0] = renderer->color_view;
-    attachments[1] = renderer->depth_stencil_view;
+    attachments[0] = renderer->color_image_view;
+    attachments[1] = renderer->depth_stencil_image_view;
     attachments[2] = renderer->swapchain_image_views[i];
 
     framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -2342,7 +2343,7 @@ owl_renderer_deinit_image_manager_(struct owl_renderer *renderer) {
     vkDestroySampler(renderer->device, renderer->image_manager_samplers[i],
                      NULL);
 
-    vkDestroyImageView(renderer->device, renderer->image_manager_views[i],
+    vkDestroyImageView(renderer->device, renderer->image_manager_image_views[i],
                        NULL);
 
     vkFreeMemory(renderer->device, renderer->image_manager_memories[i], NULL);
@@ -3393,7 +3394,7 @@ owl_renderer_init_image(struct owl_renderer *renderer,
 
     OWL_VK_CHECK(
         vkCreateImageView(renderer->device, &image_view_create_info, NULL,
-                          &renderer->image_manager_views[image->slot]));
+                          &renderer->image_manager_image_views[image->slot]));
   }
 
   {
@@ -3535,7 +3536,8 @@ owl_renderer_init_image(struct owl_renderer *renderer,
     sampler_descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     image_descriptor.sampler = VK_NULL_HANDLE;
-    image_descriptor.imageView = renderer->image_manager_views[image->slot];
+    image_descriptor.imageView =
+        renderer->image_manager_image_views[image->slot];
     image_descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -3584,7 +3586,7 @@ void owl_renderer_deinit_image(struct owl_renderer *renderer,
                    renderer->image_manager_samplers[image->slot], NULL);
 
   vkDestroyImageView(renderer->device,
-                     renderer->image_manager_views[image->slot], NULL);
+                     renderer->image_manager_image_views[image->slot], NULL);
 
   vkFreeMemory(renderer->device, renderer->image_manager_memories[image->slot],
                NULL);
