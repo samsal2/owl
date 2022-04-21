@@ -6,7 +6,6 @@
 #include "owl_model.h"
 #include "owl_renderer.h"
 #include "owl_vector_math.h"
-#include "vulkan/vulkan_core.h"
 
 enum owl_code
 owl_draw_command_submit_basic(struct owl_renderer *renderer,
