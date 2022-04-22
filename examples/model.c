@@ -90,13 +90,13 @@ int main(void) {
                                client->delta_time_stamp);
 #endif
 
-    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_MODEL);
-    owl_draw_command_submit_model(renderer, &camera, &model_command);
+    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_MODEL);
+    owl_draw_command_model_submit(renderer, &camera, &model_command);
 
 #if 1
     text_command.text = fmtfps(client->fps);
-    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_FONT);
-    owl_draw_command_submit_text(renderer, &camera, &text_command);
+    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_FONT);
+    owl_draw_command_text_submit(renderer, &camera, &text_command);
 #endif
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {

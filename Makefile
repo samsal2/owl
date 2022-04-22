@@ -1,6 +1,6 @@
 RMF     = rm -f
 RMRF    = rm -rf
-GLSLANG = glslangValidator
+GLSLANG = $(VULKAN_SDK)/bin/glslangValidator
 
 LIBRARY = libowl.a
 
@@ -93,6 +93,7 @@ clean:
 	$(RMF) $(GLSLFSPV)
 	$(RMF) $(GLSLVSPV)
 	$(RMF) $(OBJS)
+	$(RMF) $(DEPS)
 	$(RMF) $(LIBRARY)
 	$(RMF) $(EXOUTS)
 

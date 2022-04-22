@@ -1,3 +1,4 @@
+#include "owl/owl_renderer.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -299,15 +300,15 @@ int main(void) {
     }
 
 #if 1
-    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_MAIN);
+    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_MAIN);
 #else
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_WIRES);
 #endif
-    owl_draw_command_submit_basic(renderer, &camera, &cloth.command_);
+    owl_draw_command_basic_submit(renderer, &camera, &cloth.command_);
 
-    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_FONT);
+    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_FONT);
     text_command.text = fps_string(client->delta_time_stamp);
-    owl_draw_command_submit_text(renderer, &camera, &text_command);
+    owl_draw_command_text_submit(renderer, &camera, &text_command);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_init_desc);

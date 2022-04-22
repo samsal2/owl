@@ -1,6 +1,7 @@
 #ifndef OWL_RENDERER_H_
 #define OWL_RENDERER_H_
 
+#include "owl_internal.h"
 #include "owl_types.h"
 
 #include <vulkan/vulkan.h>
@@ -23,14 +24,14 @@ enum owl_renderer_memory_visibility {
   OWL_RENDERER_MEMORY_VISIBILITY_GPU
 };
 
-enum owl_renderer_pipeline_type {
-  OWL_RENDERER_PIPELINE_TYPE_MAIN,
-  OWL_RENDERER_PIPELINE_TYPE_WIRES,
-  OWL_RENDERER_PIPELINE_TYPE_FONT,
-  OWL_RENDERER_PIPELINE_TYPE_MODEL,
-  OWL_RENDERER_PIPELINE_TYPE_COUNT
+enum owl_renderer_pipeline {
+  OWL_RENDERER_PIPELINE_MAIN,
+  OWL_RENDERER_PIPELINE_WIRES,
+  OWL_RENDERER_PIPELINE_FONT,
+  OWL_RENDERER_PIPELINE_MODEL,
+  OWL_RENDERER_PIPELINE_COUNT
 };
-#define OWL_RENDERER_PIPELINE_TYPE_NONE OWL_RENDERER_PIPELINE_TYPE_COUNT
+#define OWL_RENDERER_PIPELINE_NONE OWL_RENDERER_PIPELINE_COUNT
 
 typedef enum owl_code (*owl_vk_create_surface_fn)(
     struct owl_renderer const *renderer, void const *user_data,
@@ -255,8 +256,8 @@ struct owl_renderer {
   VkPipeline active_pipeline;
   VkPipelineLayout active_pipeline_layout;
 
-  VkPipeline pipelines[OWL_RENDERER_PIPELINE_TYPE_COUNT];
-  VkPipelineLayout pipeline_layouts[OWL_RENDERER_PIPELINE_TYPE_COUNT];
+  VkPipeline pipelines[OWL_RENDERER_PIPELINE_COUNT];
+  VkPipelineLayout pipeline_layouts[OWL_RENDERER_PIPELINE_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -369,15 +370,15 @@ void owl_renderer_image_deinit(struct owl_renderer *r,
                                struct owl_renderer_image *img);
 
 void *owl_renderer_dynamic_heap_alloc(
-    struct owl_renderer *r, owl_u64 sz,
+    struct owl_renderer *r, owl_u64 size,
     struct owl_renderer_dynamic_heap_reference *ref);
 
 enum owl_code owl_renderer_dynamic_heap_submit(
-    struct owl_renderer *r, owl_u64 sz, void const *src,
+    struct owl_renderer *r, owl_u64 size, void const *src,
     struct owl_renderer_dynamic_heap_reference *ref);
 
 enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
-                                         enum owl_renderer_pipeline_type type);
+                                         enum owl_renderer_pipeline type);
 
 enum owl_code
 owl_renderer_immidiate_command_buffer_begin(struct owl_renderer *r);

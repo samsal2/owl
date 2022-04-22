@@ -33,7 +33,7 @@ set(GLSL_SHADERS
   owl_glsl_shader_model.frag
   owl_glsl_shader_pbr.frag)
 
-
+# for some reason this doesn't work until I interact with any CMake* file
 foreach(SHADER IN LISTS GLSL_SHADERS)
   get_filename_component(FILENAME ${SHADER} NAME)
   add_custom_command(OUTPUT ${FILENAME}.spv.u32

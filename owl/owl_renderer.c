@@ -1252,7 +1252,7 @@ OWL_INTERNAL enum owl_code owl_renderer_shaders_init_(struct owl_renderer *r) {
 
     /* TODO(samuel): Properly load code at runtime */
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "owl_glsl_shader_basic.vert.spv.u32"
+#include "owl_glsl_basic.vert.spv.u32"
     };
 
     shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1269,7 +1269,7 @@ OWL_INTERNAL enum owl_code owl_renderer_shaders_init_(struct owl_renderer *r) {
     VkShaderModuleCreateInfo shader_create_info;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "owl_glsl_shader_basic.frag.spv.u32"
+#include "owl_glsl_basic.frag.spv.u32"
     };
 
     shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1286,7 +1286,7 @@ OWL_INTERNAL enum owl_code owl_renderer_shaders_init_(struct owl_renderer *r) {
     VkShaderModuleCreateInfo shader_create_info;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "owl_glsl_shader_font.frag.spv.u32"
+#include "owl_glsl_font.frag.spv.u32"
     };
 
     shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1303,7 +1303,7 @@ OWL_INTERNAL enum owl_code owl_renderer_shaders_init_(struct owl_renderer *r) {
     VkShaderModuleCreateInfo shader_create_info;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "owl_glsl_shader_model.vert.spv.u32"
+#include "owl_glsl_model.vert.spv.u32"
     };
 
     shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1320,7 +1320,7 @@ OWL_INTERNAL enum owl_code owl_renderer_shaders_init_(struct owl_renderer *r) {
     VkShaderModuleCreateInfo shader_create_info;
 
     OWL_LOCAL_PERSIST owl_u32 const code[] = {
-#include "owl_glsl_shader_model.frag.spv.u32"
+#include "owl_glsl_model.frag.spv.u32"
     };
 
     shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1349,7 +1349,7 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
   owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
-  for (i = 0; i < OWL_RENDERER_PIPELINE_TYPE_COUNT; ++i) {
+  for (i = 0; i < OWL_RENDERER_PIPELINE_COUNT; ++i) {
     VkVertexInputBindingDescription vertex_binding_descriptions[8];
     VkVertexInputAttributeDescription vertex_attr_descriptions[8];
     VkPipelineVertexInputStateCreateInfo vertex_input_state;
@@ -1366,9 +1366,9 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     VkGraphicsPipelineCreateInfo pipeline_create_info;
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
       vertex_binding_descriptions[0].binding = 0;
       vertex_binding_descriptions[0].stride =
           sizeof(struct owl_draw_command_vertex);
@@ -1393,7 +1393,7 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
           offsetof(struct owl_draw_command_vertex, uv);
       break;
 
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MODEL:
       vertex_binding_descriptions[0].binding = 0;
       vertex_binding_descriptions[0].stride = sizeof(struct owl_model_vertex);
       vertex_binding_descriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -1437,9 +1437,9 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
       vertex_input_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
       vertex_input_state.pNext = NULL;
@@ -1452,7 +1452,7 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
           vertex_attr_descriptions;
       break;
 
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MODEL:
       vertex_input_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
       vertex_input_state.pNext = NULL;
@@ -1467,10 +1467,10 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
+    case OWL_RENDERER_PIPELINE_MODEL:
       input_assembly_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
       input_assembly_state.pNext = NULL;
@@ -1481,10 +1481,10 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
+    case OWL_RENDERER_PIPELINE_MODEL:
       viewport.x = 0.0F;
       viewport.y = 0.0F;
       viewport.width = r->swapchain_extent.width;
@@ -1495,10 +1495,10 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
+    case OWL_RENDERER_PIPELINE_MODEL:
       scissor.offset.x = 0;
       scissor.offset.y = 0;
       scissor.extent = r->swapchain_extent;
@@ -1506,10 +1506,10 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
+    case OWL_RENDERER_PIPELINE_MODEL:
       viewport_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
       viewport_state.pNext = NULL;
@@ -1522,8 +1522,8 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_FONT:
       rasterization_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
       rasterization_state.pNext = NULL;
@@ -1540,7 +1540,7 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
       rasterization_state.lineWidth = 1.0F;
       break;
 
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MODEL:
       rasterization_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
       rasterization_state.pNext = NULL;
@@ -1557,7 +1557,7 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
       rasterization_state.lineWidth = 1.0F;
       break;
 
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
+    case OWL_RENDERER_PIPELINE_WIRES:
       rasterization_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
       rasterization_state.pNext = NULL;
@@ -1576,10 +1576,10 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
+    case OWL_RENDERER_PIPELINE_MODEL:
       multisample_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
       multisample_state.pNext = NULL;
@@ -1594,9 +1594,9 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_MODEL:
       color_blend_attachment_states[0].blendEnable = VK_FALSE;
       color_blend_attachment_states[0].srcColorBlendFactor =
           VK_BLEND_FACTOR_ONE;
@@ -1613,7 +1613,7 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
           VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
       break;
 
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
+    case OWL_RENDERER_PIPELINE_FONT:
       color_blend_attachment_states[0].blendEnable = VK_TRUE;
       color_blend_attachment_states[0].srcColorBlendFactor =
           VK_BLEND_FACTOR_SRC_ALPHA;
@@ -1632,10 +1632,10 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
+    case OWL_RENDERER_PIPELINE_MODEL:
       color_blend_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
       color_blend_state.pNext = NULL;
@@ -1652,10 +1652,10 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
+    case OWL_RENDERER_PIPELINE_MODEL:
       depth_stencil_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
       depth_stencil_state.pNext = NULL;
@@ -1675,8 +1675,8 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
       stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
       stages[0].pNext = NULL;
       stages[0].flags = 0;
@@ -1694,7 +1694,7 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
       stages[1].pSpecializationInfo = NULL;
       break;
 
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
+    case OWL_RENDERER_PIPELINE_FONT:
       stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
       stages[0].pNext = NULL;
       stages[0].flags = 0;
@@ -1712,7 +1712,7 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
       stages[1].pSpecializationInfo = NULL;
       break;
 
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MODEL:
       stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
       stages[0].pNext = NULL;
       stages[0].flags = 0;
@@ -1732,22 +1732,22 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
       r->pipeline_layouts[i] = r->common_pipeline_layout;
       break;
 
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MODEL:
       r->pipeline_layouts[i] = r->model_pipeline_layout;
       break;
     }
 
     switch (i) {
-    case OWL_RENDERER_PIPELINE_TYPE_MAIN:
-    case OWL_RENDERER_PIPELINE_TYPE_WIRES:
-    case OWL_RENDERER_PIPELINE_TYPE_FONT:
-    case OWL_RENDERER_PIPELINE_TYPE_MODEL:
+    case OWL_RENDERER_PIPELINE_MAIN:
+    case OWL_RENDERER_PIPELINE_WIRES:
+    case OWL_RENDERER_PIPELINE_FONT:
+    case OWL_RENDERER_PIPELINE_MODEL:
       pipeline_create_info.sType =
           VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
       pipeline_create_info.pNext = NULL;
@@ -1780,14 +1780,10 @@ owl_renderer_pipelines_init_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL void owl_renderer_pipelines_deinit_(struct owl_renderer *r) {
-  vkDestroyPipeline(r->device, r->pipelines[OWL_RENDERER_PIPELINE_TYPE_MODEL],
-                    NULL);
-  vkDestroyPipeline(r->device, r->pipelines[OWL_RENDERER_PIPELINE_TYPE_FONT],
-                    NULL);
-  vkDestroyPipeline(r->device, r->pipelines[OWL_RENDERER_PIPELINE_TYPE_WIRES],
-                    NULL);
-  vkDestroyPipeline(r->device, r->pipelines[OWL_RENDERER_PIPELINE_TYPE_MAIN],
-                    NULL);
+  vkDestroyPipeline(r->device, r->pipelines[OWL_RENDERER_PIPELINE_MODEL], NULL);
+  vkDestroyPipeline(r->device, r->pipelines[OWL_RENDERER_PIPELINE_FONT], NULL);
+  vkDestroyPipeline(r->device, r->pipelines[OWL_RENDERER_PIPELINE_WIRES], NULL);
+  vkDestroyPipeline(r->device, r->pipelines[OWL_RENDERER_PIPELINE_MAIN], NULL);
 }
 
 OWL_INTERNAL enum owl_code
@@ -2622,14 +2618,12 @@ void owl_renderer_dynamic_heap_clear(struct owl_renderer *r) {
 }
 
 void *owl_renderer_dynamic_heap_alloc(
-    struct owl_renderer *r, owl_u64 sz,
+    struct owl_renderer *r, owl_u64 size,
     struct owl_renderer_dynamic_heap_reference *ref) {
   owl_byte *data = NULL;
   enum owl_code code = OWL_SUCCESS;
 
-  code = owl_renderer_dynamic_heap_reserve_(r, sz);
-
-  if (OWL_SUCCESS != code) {
+  if (OWL_SUCCESS != (code = owl_renderer_dynamic_heap_reserve_(r, size))) {
     goto out;
   }
 
@@ -2642,7 +2636,7 @@ void *owl_renderer_dynamic_heap_alloc(
 
   data = &r->active_dynamic_heap_data[r->dynamic_heap_offset];
 
-  r->dynamic_heap_offset = OWL_ALIGNU2(r->dynamic_heap_offset + sz,
+  r->dynamic_heap_offset = OWL_ALIGNU2(r->dynamic_heap_offset + size,
                                        r->dynamic_heap_buffer_alignment);
 
 out:
@@ -2650,17 +2644,17 @@ out:
 }
 
 enum owl_code owl_renderer_dynamic_heap_submit(
-    struct owl_renderer *r, owl_u64 sz, void const *src,
+    struct owl_renderer *r, owl_u64 size, void const *src,
     struct owl_renderer_dynamic_heap_reference *ref) {
   owl_byte *data;
   enum owl_code code = OWL_SUCCESS;
 
-  if (!(data = owl_renderer_dynamic_heap_alloc(r, sz, ref))) {
+  if (!(data = owl_renderer_dynamic_heap_alloc(r, size, ref))) {
     code = OWL_ERROR_BAD_ALLOC;
     goto out;
   }
 
-  OWL_MEMCPY(data, src, sz);
+  OWL_MEMCPY(data, src, size);
 
 out:
   return code;
@@ -2702,15 +2696,15 @@ owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
 }
 
 enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
-                                         enum owl_renderer_pipeline_type type) {
+                                         enum owl_renderer_pipeline pipeline) {
   enum owl_code code = OWL_SUCCESS;
 
-  if (OWL_RENDERER_PIPELINE_TYPE_NONE == type) {
+  if (OWL_RENDERER_PIPELINE_NONE == pipeline) {
     goto out;
   }
 
-  r->active_pipeline = r->pipelines[type];
-  r->active_pipeline_layout = r->pipeline_layouts[type];
+  r->active_pipeline = r->pipelines[pipeline];
+  r->active_pipeline_layout = r->pipeline_layouts[pipeline];
 
   vkCmdBindPipeline(r->active_frame_command_buffer,
                     VK_PIPELINE_BIND_POINT_GRAPHICS, r->active_pipeline);
@@ -2784,8 +2778,7 @@ owl_renderer_immidiate_command_buffer_end(struct owl_renderer *r) {
   return code;
 }
 
-OWL_INTERNAL enum owl_code
-owl_renderer_acquire_next_image_(struct owl_renderer *r) {
+OWL_INTERNAL enum owl_code owl_renderer_next_image_(struct owl_renderer *r) {
   VkResult result;
   enum owl_code code = OWL_SUCCESS;
 
@@ -2854,7 +2847,7 @@ OWL_INTERNAL void owl_renderer_begin_recording_(struct owl_renderer *r) {
 enum owl_code owl_renderer_begin_frame(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
-  if (OWL_SUCCESS != (code = owl_renderer_acquire_next_image_(r))) {
+  if (OWL_SUCCESS != (code = owl_renderer_next_image_(r))) {
     goto out;
   }
 
@@ -2916,7 +2909,7 @@ owl_renderer_present_swapchain_(struct owl_renderer *r) {
   return code;
 }
 
-OWL_INTERNAL void owl_renderer_update_frame_actives_(struct owl_renderer *r) {
+OWL_INTERNAL void owl_renderer_update_actives_(struct owl_renderer *r) {
   if (OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT == ++r->active_frame_index) {
     r->active_frame_index = 0;
   }
@@ -2950,7 +2943,7 @@ enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
     goto out;
   }
 
-  owl_renderer_update_frame_actives_(r);
+  owl_renderer_update_actives_(r);
   owl_renderer_dynamic_heap_clear(r);
   owl_renderer_dynamic_heap_clear_garbage_(r);
 

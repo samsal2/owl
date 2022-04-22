@@ -56,34 +56,34 @@ void owl_v4_normalize(owl_v4 const v, owl_v4 out) {
 }
 
 void owl_m4_make_rotate(float angle, owl_v3 const axis, owl_m4 out) {
-  owl_v3 normalized_axis;
+  owl_v3 naxis;
   owl_v3 v;
   owl_v3 vs;
 
-  float const cos_angle = OWL_COSF(angle);
-  float const sin_angle = OWL_SINF(angle);
-  float const inv_cos_angle = 1.0F - cos_angle;
+  float const cangle = OWL_COSF(angle);
+  float const sangle = OWL_SINF(angle);
+  float const icangle = 1.0F - cangle;
 
-  owl_v3_normalize(axis, normalized_axis);
-  OWL_V3_SCALE(normalized_axis, inv_cos_angle, v);
-  OWL_V3_SCALE(normalized_axis, sin_angle, vs);
-  OWL_V3_SCALE(normalized_axis, v[0], out[0]);
-  OWL_V3_SCALE(normalized_axis, v[1], out[1]);
-  OWL_V3_SCALE(normalized_axis, v[2], out[2]);
+  owl_v3_normalize(axis, naxis);
+  OWL_V3_SCALE(naxis, icangle, v);
+  OWL_V3_SCALE(naxis, sangle, vs);
+  OWL_V3_SCALE(naxis, v[0], out[0]);
+  OWL_V3_SCALE(naxis, v[1], out[1]);
+  OWL_V3_SCALE(naxis, v[2], out[2]);
 
-  out[0][0] += cos_angle;
+  out[0][0] += cangle;
   out[0][1] += vs[2];
   out[0][2] -= vs[1];
   out[0][3] = 0.0F;
 
   out[1][0] -= vs[2];
-  out[1][1] += cos_angle;
+  out[1][1] += cangle;
   out[1][2] += vs[0];
   out[1][3] = 0.0F;
 
   out[2][0] += vs[1];
   out[2][1] -= vs[0];
-  out[2][2] += cos_angle;
+  out[2][2] += cangle;
   out[2][3] = 0.0F;
 
   out[3][0] = 0.0F;
@@ -366,38 +366,38 @@ void owl_v4_quat_slerp(owl_v4 const src, owl_v4 const dst, float t,
                        owl_v4 out) {
   owl_v4 q1;
   owl_v4 q2;
-  float cosTheta;
-  float sinTheta;
+  float ctheta;
+  float stheta;
   float angle;
 
-  cosTheta = OWL_V4_DOT(src, dst);
+  ctheta = OWL_V4_DOT(src, dst);
   OWL_V4_COPY(src, q1);
 
-  if (OWL_FABSF(cosTheta) >= 1.0F) {
+  if (OWL_FABSF(ctheta) >= 1.0F) {
     OWL_V4_COPY(q1, out);
     return;
   }
 
-  if (cosTheta < 0.0F) {
+  if (ctheta < 0.0F) {
     OWL_V4_NEGATE(q1, q1);
-    cosTheta = -cosTheta;
+    ctheta = -ctheta;
   }
 
-  sinTheta = OWL_SQRTF(1.0F - cosTheta * cosTheta);
+  stheta = OWL_SQRTF(1.0F - ctheta * ctheta);
 
   /* LERP to avoid zero division */
-  if (OWL_FABSF(sinTheta) < 0.001F) {
+  if (OWL_FABSF(stheta) < 0.001F) {
     owl_v4_quat_lerp(src, dst, t, out);
     return;
   }
 
   /* SLERP */
-  angle = OWL_ACOSF(cosTheta);
+  angle = OWL_ACOSF(ctheta);
   OWL_V4_SCALE(q1, OWL_SINF((1.0F - t) * angle), q1);
   OWL_V4_SCALE(dst, OWL_SINF(t * angle), q2);
 
   OWL_V4_ADD(q1, q2, q1);
-  OWL_V4_SCALE(q1, 1.0F / sinTheta, out);
+  OWL_V4_SCALE(q1, 1.0F / stheta, out);
 }
 
 void owl_m4_inverse(owl_m4 const mat, owl_m4 out) {

@@ -331,7 +331,7 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
       float const *uv1 = NULL;
       owl_u16 const *joints0 = NULL;
       float const *weights0 = NULL;
-      struct cgltf_attribute const *attribute = NULL;
+      struct cgltf_attribute const *attr = NULL;
       struct owl_model_primitive *primitive = NULL;
       struct owl_model_primitive_data *primitive_data = NULL;
       struct cgltf_primitive const *gltf_primitive = &gltf_mesh->primitives[i];
@@ -346,31 +346,29 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
 
       primitive_data = &model->primitives[primitive->slot];
 
-      if ((attribute = owl_find_gltf_attribute_(gltf_primitive, "POSITION"))) {
-        position = owl_resolve_gltf_accessor_(attribute->data);
-        vertices_count = (owl_i32)attribute->data->count;
+      if ((attr = owl_find_gltf_attribute_(gltf_primitive, "POSITION"))) {
+        position = owl_resolve_gltf_accessor_(attr->data);
+        vertices_count = (owl_i32)attr->data->count;
       }
 
-      if ((attribute = owl_find_gltf_attribute_(gltf_primitive, "NORMAL"))) {
-        normal = owl_resolve_gltf_accessor_(attribute->data);
+      if ((attr = owl_find_gltf_attribute_(gltf_primitive, "NORMAL"))) {
+        normal = owl_resolve_gltf_accessor_(attr->data);
       }
 
-      if ((attribute =
-               owl_find_gltf_attribute_(gltf_primitive, "TEXCOORD_0"))) {
-        uv0 = owl_resolve_gltf_accessor_(attribute->data);
+      if ((attr = owl_find_gltf_attribute_(gltf_primitive, "TEXCOORD_0"))) {
+        uv0 = owl_resolve_gltf_accessor_(attr->data);
       }
 
-      if ((attribute =
-               owl_find_gltf_attribute_(gltf_primitive, "TEXCOORD_1"))) {
-        uv1 = owl_resolve_gltf_accessor_(attribute->data);
+      if ((attr = owl_find_gltf_attribute_(gltf_primitive, "TEXCOORD_1"))) {
+        uv1 = owl_resolve_gltf_accessor_(attr->data);
       }
 
-      if ((attribute = owl_find_gltf_attribute_(gltf_primitive, "JOINTS_0"))) {
-        joints0 = owl_resolve_gltf_accessor_(attribute->data);
+      if ((attr = owl_find_gltf_attribute_(gltf_primitive, "JOINTS_0"))) {
+        joints0 = owl_resolve_gltf_accessor_(attr->data);
       }
 
-      if ((attribute = owl_find_gltf_attribute_(gltf_primitive, "WEIGHTS_0"))) {
-        weights0 = owl_resolve_gltf_accessor_(attribute->data);
+      if ((attr = owl_find_gltf_attribute_(gltf_primitive, "WEIGHTS_0"))) {
+        weights0 = owl_resolve_gltf_accessor_(attr->data);
       }
 
       for (j = 0; j < vertices_count; ++j) {

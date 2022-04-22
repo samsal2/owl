@@ -8,7 +8,7 @@
 #include "owl_vector_math.h"
 
 enum owl_code
-owl_draw_command_submit_basic(struct owl_renderer *r,
+owl_draw_command_basic_submit(struct owl_renderer *r,
                               struct owl_camera const *cam,
                               struct owl_draw_command_basic const *cmd) {
   owl_u64 size;
@@ -66,7 +66,7 @@ out:
 }
 
 enum owl_code
-owl_draw_command_submit_quad(struct owl_renderer *r,
+owl_draw_command_quad_submit(struct owl_renderer *r,
                              struct owl_camera const *cam,
                              struct owl_draw_command_quad const *cmd) {
   owl_u64 size;
@@ -124,7 +124,7 @@ out:
 }
 
 enum owl_code
-owl_draw_command_submit_text(struct owl_renderer *r,
+owl_draw_command_text_submit(struct owl_renderer *r,
                              struct owl_camera const *cam,
                              struct owl_draw_command_text const *cmd) {
   char const *l;
@@ -137,7 +137,7 @@ owl_draw_command_submit_text(struct owl_renderer *r,
 
   /* HACK(samuel): using framebuffer height to scale the z axis */
   offset_in_pixels[2] = cmd->position[2] * r->framebuffer_height;
-  
+
   for (l = cmd->text; '\0' != *l; ++l) {
     struct owl_font_glyph glyph;
     struct owl_draw_command_quad quad;
@@ -175,7 +175,7 @@ owl_draw_command_submit_text(struct owl_renderer *r,
       goto out;
     }
 
-    owl_draw_command_submit_quad(r, cam, &quad);
+    owl_draw_command_quad_submit(r, cam, &quad);
   }
 
 out:
@@ -385,7 +385,7 @@ out:
 }
 
 enum owl_code
-owl_draw_command_submit_model(struct owl_renderer *r,
+owl_draw_command_model_submit(struct owl_renderer *r,
                               struct owl_camera const *cam,
                               struct owl_draw_command_model const *cmd) {
   owl_i32 i;
@@ -408,32 +408,5 @@ owl_draw_command_submit_model(struct owl_renderer *r,
   }
 
 out:
-  return code;
-}
-
-enum owl_code
-owl_draw_command_submit_grid(struct owl_renderer *r,
-                             struct owl_camera const *cam,
-                             struct owl_draw_command_grid const *cmd) {
-  struct owl_draw_command_uniform uniform;
-  struct owl_renderer_dynamic_heap_reference uniform_reference;
-  enum owl_code code = OWL_SUCCESS;
-
-  OWL_M4_COPY(cam->projection, uniform.projection);
-  OWL_M4_COPY(cam->view, uniform.view);
-  OWL_M4_IDENTITY(uniform.model); /* UNUSED */
-
-  owl_renderer_dynamic_heap_submit(r, sizeof(uniform), &uniform,
-                                   &uniform_reference);
-
-  vkCmdBindDescriptorSets(
-      r->active_frame_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-      r->active_pipeline_layout, 0, 1, &uniform_reference.common_ubo_set, 1,
-      &uniform_reference.offset32);
-
-  OWL_UNUSED(cmd);
-
-  vkCmdDraw(r->active_frame_command_buffer, 12, 1, 0, 0);
-
   return code;
 }

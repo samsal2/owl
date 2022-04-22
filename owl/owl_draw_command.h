@@ -32,7 +32,7 @@ struct owl_draw_command_basic {
 };
 
 enum owl_code
-owl_draw_command_submit_basic(struct owl_renderer *r,
+owl_draw_command_basic_submit(struct owl_renderer *r,
                               struct owl_camera const *cam,
                               struct owl_draw_command_basic const *cmd);
 
@@ -48,7 +48,7 @@ struct owl_draw_command_quad {
 };
 
 enum owl_code
-owl_draw_command_submit_quad(struct owl_renderer *r,
+owl_draw_command_quad_submit(struct owl_renderer *r,
                              struct owl_camera const *cam,
                              struct owl_draw_command_quad const *cmd);
 
@@ -61,7 +61,7 @@ struct owl_draw_command_text {
 };
 
 enum owl_code
-owl_draw_command_submit_text(struct owl_renderer *r,
+owl_draw_command_text_submit(struct owl_renderer *r,
                              struct owl_camera const *cam,
                              struct owl_draw_command_text const *cmd);
 
@@ -72,17 +72,8 @@ struct owl_draw_command_model {
 };
 
 enum owl_code
-owl_draw_command_submit_model(struct owl_renderer *r,
+owl_draw_command_model_submit(struct owl_renderer *r,
                               struct owl_camera const *cam,
                               struct owl_draw_command_model const *cmd);
-
-struct owl_draw_command_grid {
-  struct owl_infinite_grid const *grid;
-};
-
-enum owl_code
-owl_draw_command_submit_grid(struct owl_renderer *r,
-                             struct owl_camera const *cam,
-                             struct owl_draw_command_grid const *cmd);
 
 #endif
