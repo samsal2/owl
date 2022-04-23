@@ -124,7 +124,7 @@ static void init_cloth_(struct cloth *cloth) {
 }
 
 static void update_cloth(float dt, struct cloth *cloth) {
-  owl_u32 i;
+  owl_i32 i;
   for (i = 0; i < PARTICLE_COUNT; ++i) {
     owl_u32 j;
     owl_v3 tmp;
@@ -183,7 +183,7 @@ static void change_particle_position(owl_u32 id, owl_v2 const position,
 }
 
 static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
-  owl_u32 i;
+  owl_i32 i;
   owl_u32 current = 0;
   float min_dist = owl_v2_distance(pos, cloth->particles[current].position);
 

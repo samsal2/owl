@@ -9,6 +9,22 @@
 #include <float.h>
 #include <stdio.h>
 
+#if !defined(NDEBUG)
+
+#define OWL_VK_CHECK(e)                                                        \
+  do {                                                                         \
+    VkResult const result_ = e;                                                \
+    if (VK_SUCCESS != result_)                                                 \
+      OWL_DEBUG_LOG("OWL_VK_CHECK(%s) result = %i\n", #e, result_);            \
+    OWL_ASSERT(VK_SUCCESS == result_);                                         \
+  } while (0)
+
+#else /* NDEBUG */
+
+#define OWL_VK_CHECK(e) e
+
+#endif /* NDEBUG */
+
 struct owl_model_uri {
   char path[OWL_MODEL_MAX_NAME_LENGTH];
 };
@@ -559,9 +575,11 @@ owl_model_buffers_load_(struct owl_renderer *r,
                                     model->indices_memory, 0));
   }
 
-  code = owl_renderer_immidiate_command_buffer_begin(r);
+  if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_init(r))) {
+    goto out;
+  }
 
-  if (OWL_SUCCESS != code) {
+  if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_begin(r))) {
     goto out;
   }
 
@@ -587,11 +605,15 @@ owl_model_buffers_load_(struct owl_renderer *r,
                     model->indices_buffer, 1, &copy);
   }
 
-  code = owl_renderer_immidiate_command_buffer_end(r);
-
-  if (OWL_SUCCESS != code) {
+  if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_end(r))) {
     goto out;
   }
+
+  if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_submit(r))) {
+    goto out;
+  }
+
+  owl_renderer_immidiate_command_buffer_deinit(r);
 
   owl_renderer_dynamic_heap_clear(r);
 

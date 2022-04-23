@@ -381,9 +381,17 @@ enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
                                          enum owl_renderer_pipeline type);
 
 enum owl_code
+owl_renderer_immidiate_command_buffer_init(struct owl_renderer *r);
+
+enum owl_code
 owl_renderer_immidiate_command_buffer_begin(struct owl_renderer *r);
 
 enum owl_code owl_renderer_immidiate_command_buffer_end(struct owl_renderer *r);
+
+enum owl_code
+owl_renderer_immidiate_command_buffer_submit(struct owl_renderer *r);
+
+void owl_renderer_immidiate_command_buffer_deinit(struct owl_renderer *r);
 
 enum owl_code owl_renderer_begin_frame(struct owl_renderer *r);
 

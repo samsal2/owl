@@ -53,20 +53,4 @@ void owl_debug_log_(char const *f, int l, char const *fmt, ...);
 #define OWL_ALIGNU2(v, a) ((v) + (a)-1) & ~((a)-1)
 #define OWL_STATIC_ASSERT(e, msg) typedef char owl_static_assert_[!!(e)]
 
-#if !defined(NDEBUG)
-
-#define OWL_VK_CHECK(e)                                                        \
-  do {                                                                         \
-    VkResult const result_ = e;                                                \
-    if (VK_SUCCESS != result_)                                                 \
-      OWL_DEBUG_LOG("OWL_VK_CHECK(%s) result = %i\n", #e, result_);            \
-    OWL_ASSERT(VK_SUCCESS == result_);                                         \
-  } while (0)
-
-#else /* NDEBUG */
-
-#define OWL_VK_CHECK(e) e
-
-#endif /* NDEBUG */
-
 #endif

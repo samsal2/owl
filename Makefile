@@ -19,6 +19,7 @@ CFLAGS  = -std=c99                       \
           -Wshadow                       \
           -Wvla                          \
           -Walloca                       \
+          -Werror                        \
           -pedantic                      \
           -pedantic-errors               \
           -fstrict-aliasing              \
