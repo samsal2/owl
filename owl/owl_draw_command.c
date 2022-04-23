@@ -224,7 +224,7 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *cam,
   }
 
   skin_data = &model->skins[node_data->skin.slot];
-  ssbo = skin_data->ssbo_datas[r->active_frame_index];
+  ssbo = skin_data->ssbo_datas[r->active_frame];
 
   OWL_M4_COPY(model->nodes[node->slot].matrix, ssbo->matrix);
 
@@ -313,7 +313,7 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *cam,
     sets[1] = r->image_manager_sets[base_color_image_data->image.slot];
     sets[2] = r->image_manager_sets[normal_image_data->image.slot];
     sets[3] = r->image_manager_sets[physical_desc_image_data->image.slot];
-    sets[4] = skin_data->ssbo_sets[r->active_frame_index];
+    sets[4] = skin_data->ssbo_sets[r->active_frame];
     sets[5] = uniform_params_reference.model_ubo_params_set;
 
     offsets[0] = uniform_reference.offset32;

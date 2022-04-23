@@ -86,7 +86,7 @@ int main(void) {
     }
 
 #if 1
-    owl_model_update_animation(model, 0, renderer->active_frame_index,
+    owl_model_update_animation(model, 0, renderer->active_frame,
                                client->delta_time_stamp);
 #endif
 

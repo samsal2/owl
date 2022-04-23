@@ -429,8 +429,10 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
       switch (gltf_primitive->indices->component_type) {
       case cgltf_component_type_r_32u: {
         owl_u32 const *indices;
-        owl_i32 offset = state->indices_count;
+        owl_i32 const offset = state->indices_count;
+
         indices = owl_resolve_gltf_accessor_(gltf_primitive->indices);
+
         for (j = 0; j < (owl_i32)gltf_primitive->indices->count; ++j) {
           state->indices[offset + j] =
               indices[j] + (owl_u32)state->vertices_count;
@@ -439,8 +441,10 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
 
       case cgltf_component_type_r_16u: {
         owl_u16 const *indices;
-        owl_i32 offset = state->indices_count;
+        owl_i32 const offset = state->indices_count;
+
         indices = owl_resolve_gltf_accessor_(gltf_primitive->indices);
+
         for (j = 0; j < (owl_i32)gltf_primitive->indices->count; ++j) {
           state->indices[offset + j] =
               indices[j] + (owl_u16)state->vertices_count;
@@ -449,8 +453,10 @@ owl_model_node_load_(struct owl_renderer *r, struct cgltf_data const *gltf,
 
       case cgltf_component_type_r_8u: {
         owl_u8 const *indices;
-        owl_i32 offset = state->indices_count;
+        owl_i32 const offset = state->indices_count;
+
         indices = owl_resolve_gltf_accessor_(gltf_primitive->indices);
+
         for (j = 0; j < (owl_i32)gltf_primitive->indices->count; ++j) {
           state->indices[offset + j] =
               indices[j] + (owl_u8)state->vertices_count;
@@ -502,74 +508,73 @@ owl_model_buffers_load_(struct owl_renderer *r,
   }
 
   {
-    VkBufferCreateInfo buffer_create_info;
+    VkBufferCreateInfo info;
 
-    buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_create_info.pNext = NULL;
-    buffer_create_info.flags = 0;
-    buffer_create_info.size =
-        (owl_u64)desc->vertices_count * sizeof(struct owl_model_vertex);
-    buffer_create_info.usage =
+    info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.size = (owl_u64)desc->vertices_count * sizeof(struct owl_model_vertex);
+    info.usage =
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    buffer_create_info.queueFamilyIndexCount = 0;
-    buffer_create_info.pQueueFamilyIndices = 0;
+    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    info.queueFamilyIndexCount = 0;
+    info.pQueueFamilyIndices = 0;
 
-    OWL_VK_CHECK(vkCreateBuffer(r->device, &buffer_create_info, NULL,
-                                &model->vertices_buffer));
+    OWL_VK_CHECK(
+        vkCreateBuffer(r->device, &info, NULL, &model->vertices_buffer));
   }
 
   {
     VkMemoryRequirements requirements;
-    VkMemoryAllocateInfo memory_allocate_info;
+    VkMemoryAllocateInfo info;
 
     vkGetBufferMemoryRequirements(r->device, model->vertices_buffer,
                                   &requirements);
 
-    memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memory_allocate_info.pNext = NULL;
-    memory_allocate_info.allocationSize = requirements.size;
-    memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
+    info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    info.pNext = NULL;
+    info.allocationSize = requirements.size;
+    info.memoryTypeIndex = owl_renderer_find_memory_type(
         r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
-    OWL_VK_CHECK(vkAllocateMemory(r->device, &memory_allocate_info, NULL,
-                                  &model->vertices_memory));
+    OWL_VK_CHECK(
+        vkAllocateMemory(r->device, &info, NULL, &model->vertices_memory));
     OWL_VK_CHECK(vkBindBufferMemory(r->device, model->vertices_buffer,
                                     model->vertices_memory, 0));
   }
 
   {
-    VkBufferCreateInfo buffer_create_info;
+    VkBufferCreateInfo info;
 
-    buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_create_info.pNext = NULL;
-    buffer_create_info.flags = 0;
-    buffer_create_info.size = (owl_u64)desc->indices_count * sizeof(owl_u32);
-    buffer_create_info.usage =
+    info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.size = (owl_u64)desc->indices_count * sizeof(owl_u32);
+    info.usage =
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    buffer_create_info.queueFamilyIndexCount = 0;
-    buffer_create_info.pQueueFamilyIndices = 0;
+    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    info.queueFamilyIndexCount = 0;
+    info.pQueueFamilyIndices = 0;
 
-    OWL_VK_CHECK(vkCreateBuffer(r->device, &buffer_create_info, NULL,
-                                &model->indices_buffer));
+    OWL_VK_CHECK(
+        vkCreateBuffer(r->device, &info, NULL, &model->indices_buffer));
   }
 
   {
     VkMemoryRequirements requirements;
-    VkMemoryAllocateInfo memory_allocate_info;
+    VkMemoryAllocateInfo info;
 
     vkGetBufferMemoryRequirements(r->device, model->indices_buffer,
                                   &requirements);
 
-    memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memory_allocate_info.pNext = NULL;
-    memory_allocate_info.allocationSize = requirements.size;
-    memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
+    info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    info.pNext = NULL;
+    info.allocationSize = requirements.size;
+    info.memoryTypeIndex = owl_renderer_find_memory_type(
         r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
-    OWL_VK_CHECK(vkAllocateMemory(r->device, &memory_allocate_info, NULL,
-                                  &model->indices_memory));
+    OWL_VK_CHECK(
+        vkAllocateMemory(r->device, &info, NULL, &model->indices_memory));
 
     OWL_VK_CHECK(vkBindBufferMemory(r->device, model->indices_buffer,
                                     model->indices_memory, 0));
@@ -735,28 +740,28 @@ OWL_INTERNAL enum owl_code owl_model_skins_load_(struct owl_renderer *r,
     }
 
     {
-      VkBufferCreateInfo buffer_create_info;
+      VkBufferCreateInfo info;
 
       skin_data->ssbo_buffer_size = sizeof(struct owl_model_skin_ssbo_data);
 
-      buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-      buffer_create_info.pNext = NULL;
-      buffer_create_info.flags = 0;
-      buffer_create_info.size = skin_data->ssbo_buffer_size;
-      buffer_create_info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-      buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-      buffer_create_info.queueFamilyIndexCount = 0;
-      buffer_create_info.pQueueFamilyIndices = NULL;
+      info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      info.size = skin_data->ssbo_buffer_size;
+      info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+      info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      info.queueFamilyIndexCount = 0;
+      info.pQueueFamilyIndices = NULL;
 
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j) {
-        OWL_VK_CHECK(vkCreateBuffer(r->device, &buffer_create_info, NULL,
+        OWL_VK_CHECK(vkCreateBuffer(r->device, &info, NULL,
                                     &skin_data->ssbo_buffers[j]));
       }
     }
 
     {
       VkMemoryRequirements requirements;
-      VkMemoryAllocateInfo memory_allocate_info;
+      VkMemoryAllocateInfo info;
 
       vkGetBufferMemoryRequirements(r->device, skin_data->ssbo_buffers[0],
                                     &requirements);
@@ -765,16 +770,15 @@ OWL_INTERNAL enum owl_code owl_model_skins_load_(struct owl_renderer *r,
       skin_data->ssbo_buffer_aligned_size =
           OWL_ALIGNU2(skin_data->ssbo_buffer_size, requirements.alignment);
 
-      memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-      memory_allocate_info.pNext = NULL;
-      memory_allocate_info.allocationSize =
-          skin_data->ssbo_buffer_aligned_size *
-          OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
-      memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
+      info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      info.pNext = NULL;
+      info.allocationSize = skin_data->ssbo_buffer_aligned_size *
+                            OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
+      info.memoryTypeIndex = owl_renderer_find_memory_type(
           r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT);
 
-      OWL_VK_CHECK(vkAllocateMemory(r->device, &memory_allocate_info, NULL,
-                                    &skin_data->ssbo_memory));
+      OWL_VK_CHECK(
+          vkAllocateMemory(r->device, &info, NULL, &skin_data->ssbo_memory));
 
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j) {
         OWL_VK_CHECK(vkBindBufferMemory(
@@ -785,21 +789,20 @@ OWL_INTERNAL enum owl_code owl_model_skins_load_(struct owl_renderer *r,
 
     {
       VkDescriptorSetLayout layouts[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-      VkDescriptorSetAllocateInfo set_allocate_info;
+      VkDescriptorSetAllocateInfo info;
 
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++j) {
         layouts[j] = r->vertex_ssbo_set_layout;
       }
 
-      set_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-      set_allocate_info.pNext = NULL;
-      set_allocate_info.descriptorPool = r->common_set_pool;
-      set_allocate_info.descriptorSetCount =
-          OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
-      set_allocate_info.pSetLayouts = layouts;
+      info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+      info.pNext = NULL;
+      info.descriptorPool = r->common_set_pool;
+      info.descriptorSetCount = OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
+      info.pSetLayouts = layouts;
 
-      OWL_VK_CHECK(vkAllocateDescriptorSets(r->device, &set_allocate_info,
-                                            skin_data->ssbo_sets));
+      OWL_VK_CHECK(
+          vkAllocateDescriptorSets(r->device, &info, skin_data->ssbo_sets));
     }
 
     {
