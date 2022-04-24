@@ -33,17 +33,20 @@ set(GLSL_SHADERS
   owl_glsl_model.frag
   owl_glsl_pbr.frag)
 
-# for some reason this doesn't work until I interact with any CMake* file
-foreach(SHADER IN LISTS GLSL_SHADERS)
-  get_filename_component(FILENAME ${SHADER} NAME)
-  add_custom_command(OUTPUT ${FILENAME}.spv.u32
-    COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${FILENAME}.spv.u32
-    DEPENDS ${SHADER}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    list(APPEND SPV_SHADERS ${FILENAME}.spv.u32)
-endForeach()
+# idk how to fix this
+if ("${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}" STREQUAL "")
+  message(AUTHOR_WARNING "missing Vulkan_GLSLANG_VALIDATOR_EXECUTABLE, won't compile shaders") 
+else ()
+  foreach(SHADER IN LISTS GLSL_SHADERS)
+    get_filename_component(FILENAME ${SHADER} NAME)
+    add_custom_command(OUTPUT ${FILENAME}.spv.u32
+      COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${FILENAME}.spv.u32
+      DEPENDS ${SHADER}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      list(APPEND SPV_SHADERS ${FILENAME}.spv.u32)
+  endForeach()
 
-add_custom_target(shaders DEPENDS ${SPV_SHADERS})
-add_dependencies(${PROJECT_NAME} shaders)
-
+  add_custom_target(shaders DEPENDS ${SPV_SHADERS})
+  add_dependencies(${PROJECT_NAME} shaders)
+endif ()
 

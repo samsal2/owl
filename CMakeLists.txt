@@ -1,10 +1,6 @@
-cmake_minimum_required(VERSION 3.17.3)
+cmake_minimum_required(VERSION 3.23.1)
 
 project(owl)
-
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_C_EXTENSIONS OFF)
 
 # declare the library 
 add_library(${PROJECT_NAME})
@@ -13,7 +9,7 @@ add_library(${PROJECT_NAME})
 add_subdirectory(${PROJECT_NAME})
 
 # find external libraries
-find_package(Vulkan REQUIRED FATAL_ERROR)
+find_package(Vulkan REQUIRED)
 
 # link libraries
 target_link_libraries(${PROJECT_NAME} 
