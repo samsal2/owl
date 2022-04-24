@@ -425,8 +425,8 @@ owl_renderer_surface_format_ensure_(struct owl_renderer const *r) {
     goto out;
   }
 
-  vkres = (vkGetPhysicalDeviceSurfaceFormatsKHR(r->physical_device, r->surface,
-                                                &formats_count, formats));
+  vkres = vkGetPhysicalDeviceSurfaceFormatsKHR(r->physical_device, r->surface,
+                                                &formats_count, formats);
 
   if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code_(vkres))) {
     goto out_free_formats;
@@ -479,9 +479,8 @@ out:
 }
 
 OWL_INTERNAL owl_u32
-owl_renderer_get_queue_count_(struct owl_renderer const *renderer) {
-  if (renderer->graphics_queue_family_index ==
-      renderer->present_queue_family_index) {
+owl_renderer_get_queue_count_(struct owl_renderer const *r) {
+  if (r->graphics_queue_family_index == r->present_queue_family_index) {
     return 1;
   }
 
@@ -2842,32 +2841,32 @@ out:
   return code;
 }
 
-void owl_renderer_deinit(struct owl_renderer *renderer) {
-  OWL_VK_CHECK(vkDeviceWaitIdle(renderer->device));
+void owl_renderer_deinit(struct owl_renderer *r) {
+  OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
-  owl_renderer_image_manager_deinit_(renderer);
-  owl_renderer_dynamic_heap_deinit_(renderer);
-  owl_renderer_garbage_deinit_(renderer);
-  owl_renderer_frame_sync_deinit_(renderer);
-  owl_renderer_frame_commands_deinit_(renderer);
-  owl_renderer_pipelines_deinit_(renderer);
-  owl_renderer_shaders_deinit_(renderer);
-  owl_renderer_pipeline_layouts_deinit_(renderer);
-  owl_renderer_set_layouts_deinit_(renderer);
-  owl_renderer_swapchain_framebuffers_deinit_(renderer);
-  owl_renderer_attachments_deinit_(renderer);
-  owl_renderer_main_render_pass_deinit_(renderer);
-  owl_renderer_pools_deinit_(renderer);
-  owl_renderer_swapchain_image_views_deinit_(renderer);
-  owl_renderer_swapchain_deinit_(renderer);
-  owl_renderer_device_deinit_(renderer);
-  owl_renderer_surface_deinit_(renderer);
+  owl_renderer_image_manager_deinit_(r);
+  owl_renderer_dynamic_heap_deinit_(r);
+  owl_renderer_garbage_deinit_(r);
+  owl_renderer_frame_sync_deinit_(r);
+  owl_renderer_frame_commands_deinit_(r);
+  owl_renderer_pipelines_deinit_(r);
+  owl_renderer_shaders_deinit_(r);
+  owl_renderer_pipeline_layouts_deinit_(r);
+  owl_renderer_set_layouts_deinit_(r);
+  owl_renderer_swapchain_framebuffers_deinit_(r);
+  owl_renderer_attachments_deinit_(r);
+  owl_renderer_main_render_pass_deinit_(r);
+  owl_renderer_pools_deinit_(r);
+  owl_renderer_swapchain_image_views_deinit_(r);
+  owl_renderer_swapchain_deinit_(r);
+  owl_renderer_device_deinit_(r);
+  owl_renderer_surface_deinit_(r);
 
 #if defined(OWL_ENABLE_VALIDATION)
-  owl_renderer_debug_messenger_deinit_(renderer);
+  owl_renderer_debug_messenger_deinit_(r);
 #endif /* OWL_ENABLE_VALIDATION */
 
-  owl_renderer_instance_deinit_(renderer);
+  owl_renderer_instance_deinit_(r);
 }
 
 OWL_INTERNAL enum owl_code
