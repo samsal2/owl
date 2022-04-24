@@ -97,4 +97,5 @@ clean:
 	$(RMF) $(DEPS)
 	$(RMF) $(LIBRARY)
 	$(RMF) $(EXOUTS)
+	$(RMRF) examples/*.dSYM
 

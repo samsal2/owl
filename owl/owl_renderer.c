@@ -2267,13 +2267,13 @@ OWL_INTERNAL void owl_renderer_garbage_deinit_(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 sz) {
+owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
   owl_i32 i;
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
   r->dynamic_heap_offset = 0;
-  r->dynamic_heap_buffer_size = sz;
+  r->dynamic_heap_buffer_size = size;
 
   /* init buffers */
   {
@@ -2282,7 +2282,7 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 sz) {
     info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     info.pNext = NULL;
     info.flags = 0;
-    info.size = sz;
+    info.size = size;
     info.usage =
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -2310,7 +2310,7 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 sz) {
 
     r->dynamic_heap_buffer_alignment = requirements.alignment;
     r->dynamic_heap_buffer_aligned_size =
-        OWL_ALIGNU2(sz, requirements.alignment);
+        OWL_ALIGNU2(size, requirements.alignment);
 
     info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     info.pNext = NULL;
@@ -2871,9 +2871,9 @@ void owl_renderer_deinit(struct owl_renderer *renderer) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_dynamic_heap_reserve_(struct owl_renderer *r, owl_u64 sz) {
+owl_renderer_dynamic_heap_reserve_(struct owl_renderer *r, owl_u64 size) {
   enum owl_code code = OWL_SUCCESS;
-  owl_u64 required = r->dynamic_heap_offset + sz;
+  owl_u64 required = r->dynamic_heap_offset + size;
 
   if (required < r->dynamic_heap_buffer_size) {
     goto out;

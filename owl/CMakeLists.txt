@@ -25,13 +25,13 @@ target_sources(${PROJECT_NAME} PRIVATE
   stb_truetype.h)
 
 set(GLSL_SHADERS 
-  owl_glsl_shader_basic.vert
-  owl_glsl_shader_model.vert
-  owl_glsl_shader_pbr.vert
-  owl_glsl_shader_basic.frag
-  owl_glsl_shader_font.frag
-  owl_glsl_shader_model.frag
-  owl_glsl_shader_pbr.frag)
+  owl_glsl_basic.vert
+  owl_glsl_model.vert
+  owl_glsl_pbr.vert
+  owl_glsl_basic.frag
+  owl_glsl_font.frag
+  owl_glsl_model.frag
+  owl_glsl_pbr.frag)
 
 # for some reason this doesn't work until I interact with any CMake* file
 foreach(SHADER IN LISTS GLSL_SHADERS)

@@ -29,7 +29,7 @@ target_include_directories(${PROJECT_NAME}
   PUBLIC ${PROJECT_SOURCE_DIR}
   PUBLIC ${Vulkan_INCLUDE_DIR}
           "$<$<BOOL:APPLE>:"
-            ${PROJECT_SOURCE_DIR}/libs/glfw/macos/include>
+            ${PROJECT_SOURCE_DIR}/libs/glfw/macos/include
           ">")
 
 # features
