@@ -493,7 +493,7 @@ owl_model_buffers_load_(struct owl_renderer *r,
   struct owl_renderer_dynamic_heap_reference iref;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_dynamic_heap_is_clear(r));
+  OWL_ASSERT(owl_renderer_dynamic_heap_is_offset_clear(r));
   OWL_ASSERT(desc->vertices_count == desc->vertices_capacity);
   OWL_ASSERT(desc->indices_count == desc->indices_capacity);
 
@@ -620,7 +620,7 @@ owl_model_buffers_load_(struct owl_renderer *r,
 
   owl_renderer_immidiate_command_buffer_deinit(r);
 
-  owl_renderer_dynamic_heap_clear(r);
+  owl_renderer_dynamic_heap_clear_offset(r);
 
 out:
   OWL_ASSERT(OWL_SUCCESS == code);
@@ -1027,7 +1027,7 @@ enum owl_code owl_model_init(struct owl_renderer *r, char const *path,
   struct cgltf_data *data = NULL;
   enum owl_code code = OWL_SUCCESS;
 
-  OWL_ASSERT(owl_renderer_dynamic_heap_is_clear(r));
+  OWL_ASSERT(owl_renderer_dynamic_heap_is_offset_clear(r));
 
   OWL_MEMSET(&options, 0, sizeof(options));
   OWL_MEMSET(model, 0, sizeof(*model));
@@ -1086,7 +1086,7 @@ enum owl_code owl_model_init(struct owl_renderer *r, char const *path,
 out_err_free_data:
   cgltf_free(data);
 
-  owl_renderer_dynamic_heap_clear(r);
+  owl_renderer_dynamic_heap_clear_offset(r);
 
 out:
   return code;

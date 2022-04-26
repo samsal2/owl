@@ -57,7 +57,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 		-fsanitize=bounds
   ">"
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Release>>:"
-		-O3
+		-Ofast
   ">")
 
 # compile definitions

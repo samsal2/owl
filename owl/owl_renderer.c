@@ -75,8 +75,8 @@ owl_renderer_instance_init_(struct owl_renderer_init_desc const *desc,
   info.enabledLayerCount = OWL_ARRAY_SIZE(debug_validation_layers);
   info.ppEnabledLayerNames = debug_validation_layers;
 #else  /* OWL_ENABLE_VALIDATION */
-  instance_info.enabledLayerCount = 0;
-  instance_info.ppEnabledLayerNames = NULL;
+  info.enabledLayerCount = 0;
+  info.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
   info.enabledExtensionCount = (owl_u32)desc->instance_extensions_count;
   info.ppEnabledExtensionNames = desc->instance_extensions;
@@ -426,7 +426,7 @@ owl_renderer_surface_format_ensure_(struct owl_renderer const *r) {
   }
 
   vkres = vkGetPhysicalDeviceSurfaceFormatsKHR(r->physical_device, r->surface,
-                                                &formats_count, formats);
+                                               &formats_count, formats);
 
   if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code_(vkres))) {
     goto out_free_formats;
@@ -641,7 +641,7 @@ owl_renderer_swapchain_init_(struct owl_renderer_init_desc const *desc,
 #if 1
   r->swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
 #else
-  renderer->swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+  r->swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 #endif
 
   if (OWL_SUCCESS != (code = owl_renderer_present_mode_ensure_(r))) {
@@ -2969,7 +2969,8 @@ out:
   return code;
 }
 
-owl_b32 owl_renderer_dynamic_heap_is_clear(struct owl_renderer const *r) {
+owl_b32
+owl_renderer_dynamic_heap_is_offset_clear(struct owl_renderer const *r) {
   return 0 == r->dynamic_heap_offset;
 }
 
@@ -2978,7 +2979,7 @@ owl_renderer_dynamic_heap_clear_garbage_(struct owl_renderer *r) {
   owl_renderer_garbage_deinit_(r);
 }
 
-void owl_renderer_dynamic_heap_clear(struct owl_renderer *r) {
+void owl_renderer_dynamic_heap_clear_offset(struct owl_renderer *r) {
   r->dynamic_heap_offset = 0;
 }
 
@@ -3008,7 +3009,7 @@ out:
   return data;
 }
 
-extern enum owl_code owl_renderer_dynamic_heap_submit(
+enum owl_code owl_renderer_dynamic_heap_submit(
     struct owl_renderer *r, owl_u64 size, void const *src,
     struct owl_renderer_dynamic_heap_reference *ref) {
   owl_byte *data;
@@ -3354,7 +3355,7 @@ enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
   }
 
   owl_renderer_update_actives_(r);
-  owl_renderer_dynamic_heap_clear(r);
+  owl_renderer_dynamic_heap_clear_offset(r);
   owl_renderer_dynamic_heap_clear_garbage_(r);
 
 out:
@@ -3467,6 +3468,8 @@ OWL_INTERNAL enum owl_code owl_renderer_image_transition_(
   VkPipelineStageFlags dst = VK_PIPELINE_STAGE_NONE_KHR;
   enum owl_code code = OWL_SUCCESS;
 
+  OWL_ASSERT(r->immidiate_command_buffer);
+
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
   barrier.pNext = NULL;
   /* image_memory_barrier.srcAccessMask = Defined later */
@@ -3537,6 +3540,8 @@ OWL_INTERNAL enum owl_code owl_renderer_image_generate_mips_(
   owl_i32 height;
   VkImageMemoryBarrier barrier;
   enum owl_code code = OWL_SUCCESS;
+
+  OWL_ASSERT(r->immidiate_command_buffer);
 
   if (1 == desc->mips || 0 == desc->mips) {
     goto out;
@@ -3694,7 +3699,7 @@ out:
 void owl_renderer_image_load_state_deinit_(
     struct owl_renderer *r, struct owl_renderer_image_load_state *state) {
   OWL_UNUSED(state);
-  owl_renderer_dynamic_heap_clear(r);
+  owl_renderer_dynamic_heap_clear_offset(r);
 }
 
 enum owl_code
@@ -3705,7 +3710,7 @@ owl_renderer_image_init(struct owl_renderer *r,
   enum owl_code code = OWL_SUCCESS;
   struct owl_renderer_image_load_state state;
 
-  OWL_ASSERT(owl_renderer_dynamic_heap_is_clear(r));
+  OWL_ASSERT(owl_renderer_dynamic_heap_is_offset_clear(r));
 
   code = owl_renderer_image_load_state_init_(r, desc, &state);
 
@@ -4001,8 +4006,8 @@ out:
   return code;
 }
 
-extern void owl_renderer_image_deinit(struct owl_renderer *r,
-                                      struct owl_renderer_image *img) {
+void owl_renderer_image_deinit(struct owl_renderer *r,
+                               struct owl_renderer_image *img) {
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
   OWL_ASSERT(r->image_manager_slots[img->slot]);
 
