@@ -15,7 +15,7 @@
 #define OWL_WAIT_FOR_FENCES_TIMEOUT (owl_u64) - 1
 #define OWL_QUEUE_FAMILY_INDEX_NONE (owl_u32) - 1
 
-OWL_GLOBAL char const *const required_device_extensions[] = {
+OWL_GLOBAL char const *const device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 #if defined(OWL_ENABLE_VALIDATION)
@@ -30,9 +30,10 @@ OWL_GLOBAL char const *const debug_validation_layers[] = {
 #define OWL_VK_CHECK(e)                                                        \
   do {                                                                         \
     VkResult const result_ = e;                                                \
-    if (VK_SUCCESS != result_)                                                 \
+    if (VK_SUCCESS != result_) {                                               \
       OWL_DEBUG_LOG("OWL_VK_CHECK(%s) result = %i\n", #e, result_);            \
-    OWL_ASSERT(VK_SUCCESS == result_);                                         \
+      OWL_ASSERT(0);                                                           \
+    }                                                                          \
   } while (0)
 
 #else /* NDEBUG */
@@ -291,14 +292,14 @@ owl_validate_device_extensions_(owl_u32 extensions_count,
                                 VkExtensionProperties const *extensions) {
   owl_i32 i;
   owl_i32 found = 1;
-  owl_b32 extensions_found[OWL_ARRAY_SIZE(required_device_extensions)];
+  owl_b32 extensions_found[OWL_ARRAY_SIZE(device_extensions)];
 
   OWL_MEMSET(extensions_found, 0, sizeof(extensions_found));
 
   for (i = 0; i < (owl_i32)extensions_count; ++i) {
     owl_u32 j;
-    for (j = 0; j < OWL_ARRAY_SIZE(required_device_extensions); ++j) {
-      if (!OWL_STRNCMP(required_device_extensions[j],
+    for (j = 0; j < OWL_ARRAY_SIZE(device_extensions); ++j) {
+      if (!OWL_STRNCMP(device_extensions[j],
                        extensions[i].extensionName,
                        VK_MAX_EXTENSION_NAME_SIZE)) {
         extensions_found[j] = 1;
@@ -306,7 +307,7 @@ owl_validate_device_extensions_(owl_u32 extensions_count,
     }
   }
 
-  for (i = 0; i < (owl_i32)OWL_ARRAY_SIZE(required_device_extensions); ++i) {
+  for (i = 0; i < (owl_i32)OWL_ARRAY_SIZE(device_extensions); ++i) {
     if (!extensions_found[i]) {
       found = 0;
       goto out;
@@ -535,9 +536,8 @@ OWL_INTERNAL enum owl_code owl_renderer_device_init_(struct owl_renderer *r) {
   device_info.pQueueCreateInfos = queue_infos;
   device_info.enabledLayerCount = 0;      /* deprecated */
   device_info.ppEnabledLayerNames = NULL; /* deprecated */
-  device_info.enabledExtensionCount =
-      OWL_ARRAY_SIZE(required_device_extensions);
-  device_info.ppEnabledExtensionNames = required_device_extensions;
+  device_info.enabledExtensionCount = OWL_ARRAY_SIZE(device_extensions);
+  device_info.ppEnabledExtensionNames = device_extensions;
   device_info.pEnabledFeatures = &r->device_features;
 
   vkres = vkCreateDevice(r->physical_device, &device_info, NULL, &r->device);
@@ -3298,26 +3298,28 @@ OWL_INTERNAL void owl_renderer_submit_graphics_(struct owl_renderer *r) {
 OWL_INTERNAL enum owl_code
 owl_renderer_present_swapchain_(struct owl_renderer *r) {
   VkResult vkres;
-  VkPresentInfoKHR info;
   enum owl_code code = OWL_SUCCESS;
+  
+  {
+    VkPresentInfoKHR info;
+    info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    info.pNext = NULL;
+    info.waitSemaphoreCount = 1;
+    info.pWaitSemaphores = &r->active_render_done_semaphore;
+    info.swapchainCount = 1;
+    info.pSwapchains = &r->swapchain;
+    info.pImageIndices = &r->active_swapchain_image_index;
+    info.pResults = NULL;
 
-  info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-  info.pNext = NULL;
-  info.waitSemaphoreCount = 1;
-  info.pWaitSemaphores = &r->active_render_done_semaphore;
-  info.swapchainCount = 1;
-  info.pSwapchains = &r->swapchain;
-  info.pImageIndices = &r->active_swapchain_image_index;
-  info.pResults = NULL;
+    vkres = vkQueuePresentKHR(r->present_queue, &info);
 
-  vkres = vkQueuePresentKHR(r->present_queue, &info);
-
-  if (VK_ERROR_OUT_OF_DATE_KHR == vkres) {
-    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-  } else if (VK_SUBOPTIMAL_KHR == vkres) {
-    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-  } else if (VK_ERROR_SURFACE_LOST_KHR == vkres) {
-    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+    if (VK_ERROR_OUT_OF_DATE_KHR == vkres) {
+      code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+    } else if (VK_SUBOPTIMAL_KHR == vkres) {
+      code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+    } else if (VK_ERROR_SURFACE_LOST_KHR == vkres) {
+      code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+    }
   }
 
   return code;
@@ -3895,7 +3897,7 @@ owl_renderer_image_init(struct owl_renderer *r,
   {
     VkSamplerCreateInfo info;
 
-    if (desc->use_default_sampler) {
+    if (desc->sampler_use_default) {
       info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
       info.pNext = NULL;
       info.flags = 0;

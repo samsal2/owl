@@ -8,9 +8,9 @@
 #include "owl_vector_math.h"
 
 enum owl_code
-owl_draw_command_basic_submit(struct owl_renderer *r,
-                              struct owl_camera const *cam,
-                              struct owl_draw_command_basic const *cmd) {
+owl_draw_command_basic_submit(struct owl_draw_command_basic const *cmd,
+                              struct owl_renderer *r,
+                              struct owl_camera const *cam) {
   owl_u64 size;
   VkDescriptorSet sets[2];
   struct owl_draw_command_uniform ubo;
@@ -66,9 +66,9 @@ out:
 }
 
 enum owl_code
-owl_draw_command_quad_submit(struct owl_renderer *r,
-                             struct owl_camera const *cam,
-                             struct owl_draw_command_quad const *cmd) {
+owl_draw_command_quad_submit(struct owl_draw_command_quad const *cmd,
+                             struct owl_renderer *r,
+                             struct owl_camera const *cam) {
   owl_u64 size;
   VkDescriptorSet sets[2];
   struct owl_draw_command_uniform ubo;
@@ -124,9 +124,9 @@ out:
 }
 
 enum owl_code
-owl_draw_command_text_submit(struct owl_renderer *r,
-                             struct owl_camera const *cam,
-                             struct owl_draw_command_text const *cmd) {
+owl_draw_command_text_submit(struct owl_draw_command_text const *cmd, 
+                             struct owl_renderer *r,
+                             struct owl_camera const *cam) {
   char const *l;
   owl_v3 offset_in_pixels;
   enum owl_code code = OWL_SUCCESS;
@@ -175,7 +175,7 @@ owl_draw_command_text_submit(struct owl_renderer *r,
       goto out;
     }
 
-    owl_draw_command_quad_submit(r, cam, &quad);
+    owl_draw_command_quad_submit(&quad, r, cam);
   }
 
 out:
@@ -183,8 +183,9 @@ out:
 }
 
 OWL_INTERNAL enum owl_code
-owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *cam,
-                       struct owl_draw_command_model const *cmd,
+owl_model_node_submit_(struct owl_draw_command_model const *cmd,
+                       struct owl_renderer *r, 
+                       struct owl_camera const *cam,
                        struct owl_model_node const *node) {
   owl_i32 i;
   struct owl_model_node parent;
@@ -206,7 +207,7 @@ owl_model_submit_node_(struct owl_renderer *r, struct owl_camera const *cam,
   node_data = &model->nodes[node->slot];
 
   for (i = 0; i < node_data->children_count; ++i) {
-    code = owl_model_submit_node_(r, cam, cmd, &node_data->children[i]);
+    code = owl_model_node_submit_(cmd, r, cam, &node_data->children[i]);
 
     if (OWL_SUCCESS != code) {
       goto out;
@@ -385,9 +386,9 @@ out:
 }
 
 enum owl_code
-owl_draw_command_model_submit(struct owl_renderer *r,
-                              struct owl_camera const *cam,
-                              struct owl_draw_command_model const *cmd) {
+owl_draw_command_model_submit(struct owl_draw_command_model const *cmd,
+                              struct owl_renderer *r,
+                              struct owl_camera const *cam) {
   owl_i32 i;
   owl_u64 offset = 0;
   enum owl_code code = OWL_SUCCESS;
@@ -400,7 +401,7 @@ owl_draw_command_model_submit(struct owl_renderer *r,
                        VK_INDEX_TYPE_UINT32);
 
   for (i = 0; i < cmd->skin->roots_count; ++i) {
-    code = owl_model_submit_node_(r, cam, cmd, &model->roots[i]);
+    code = owl_model_node_submit_(cmd, r, cam, &model->roots[i]);
 
     if (OWL_SUCCESS != code) {
       goto out;

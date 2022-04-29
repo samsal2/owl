@@ -65,7 +65,7 @@ OWL_INTERNAL enum owl_code owl_model_images_load_(struct owl_renderer *r,
     image_init_desc.src_path = uri.path;
     /* FIXME(samuel): if im not mistaken, gltf defines some sampler requirements
      * . Completely ignoring it for now */
-    image_init_desc.use_default_sampler = 1;
+    image_init_desc.sampler_use_default = 1;
 
     code = owl_renderer_image_init(r, &image_init_desc, &image_data->image);
 

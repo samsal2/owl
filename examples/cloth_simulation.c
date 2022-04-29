@@ -261,7 +261,7 @@ int main(void) {
 
   image_init_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
   image_init_desc.src_path = TPATH;
-  image_init_desc.use_default_sampler = 1;
+  image_init_desc.sampler_use_default = 1;
   TEST(owl_renderer_image_init(renderer, &image_init_desc, &image));
 
   TEST(owl_font_init(renderer, 64, FONTPATH, &font));
@@ -304,11 +304,11 @@ int main(void) {
 #else
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_WIRES);
 #endif
-    owl_draw_command_basic_submit(renderer, &camera, &cloth.command_);
+    owl_draw_command_basic_submit(&cloth.command_, renderer, &camera);
 
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_FONT);
     text_command.text = fps_string(client->delta_time_stamp);
-    owl_draw_command_text_submit(renderer, &camera, &text_command);
+    owl_draw_command_text_submit(&text_command, renderer, &camera);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_init_desc);

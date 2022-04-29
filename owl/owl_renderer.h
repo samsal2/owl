@@ -103,7 +103,7 @@ struct owl_renderer_image_init_desc {
   owl_i32 src_data_height;
   enum owl_renderer_pixel_format src_data_pixel_format;
 
-  owl_b32 use_default_sampler;
+  owl_b32 sampler_use_default;
   enum owl_renderer_sampler_mip_mode sampler_mip_mode;
   enum owl_renderer_sampler_filter sampler_min_filter;
   enum owl_renderer_sampler_filter sampler_mag_filter;

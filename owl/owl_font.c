@@ -262,7 +262,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 sz,
   image_init_desc.src_data_width = OWL_FONT_ATLAS_WIDTH;
   image_init_desc.src_data_height = OWL_FONT_ATLAS_HEIGHT;
   image_init_desc.src_data_pixel_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
-  image_init_desc.use_default_sampler = 0;
+  image_init_desc.sampler_use_default = 0;
   image_init_desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
   image_init_desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
   image_init_desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
