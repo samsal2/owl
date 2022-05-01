@@ -11,22 +11,22 @@ INCS    = -Ilibs/glfw/macos/include \
 
 DEFS    = -DOWL_ENABLE_VALIDATION
 
-CFLAGS  = -std=c99                       \
-          -O0                            \
-          -g                             \
-          -Wall                          \
-          -Wextra                        \
-          -Wshadow                       \
-          -Wvla                          \
-          -Walloca                       \
-          -Werror                        \
-          -pedantic                      \
-          -pedantic-errors               \
-          -fstrict-aliasing              \
-          -fsanitize=address             \
-          -fsanitize=undefined           \
-          -fsanitize=bounds              \
-          $(INCS)                        \
+CFLAGS  = -std=c99             \
+          -O0                  \
+          -g                   \
+          -Wall                \
+          -Wextra              \
+          -Wshadow             \
+          -Wvla                \
+          -Walloca             \
+          -Werror              \
+          -pedantic            \
+          -pedantic-errors     \
+          -fstrict-aliasing    \
+          -fsanitize=address   \
+          -fsanitize=undefined \
+          -fsanitize=bounds    \
+          $(INCS)              \
           $(DEFS)
 
 LIBS    = -Llibs/glfw/macos/lib-x86_64      \
@@ -39,9 +39,9 @@ LIBS    = -Llibs/glfw/macos/lib-x86_64      \
           -framework Cocoa                  \
           -framework IOKit
 
-LDFLAGS = -fsanitize=address                    \
-          -fsanitize=undefined                  \
-          -fsanitize=bounds                     \
+LDFLAGS = -fsanitize=address   \
+          -fsanitize=undefined \
+          -fsanitize=bounds    \
           $(LIBS)
 
 SRCS = $(wildcard $(SRCDIR)/*.c)
