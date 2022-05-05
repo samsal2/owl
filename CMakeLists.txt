@@ -22,6 +22,7 @@ target_link_libraries(${PROJECT_NAME}
 
 # includes
 target_include_directories(${PROJECT_NAME} 
+  PRIVATE ${CMAKE_BINARY_DIR}
   PUBLIC ${PROJECT_SOURCE_DIR}
   PUBLIC ${Vulkan_INCLUDE_DIR}
           "$<$<BOOL:APPLE>:"

@@ -39,11 +39,11 @@ if ("${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}" STREQUAL "")
 else ()
   foreach(SHADER IN LISTS GLSL_SHADERS)
     get_filename_component(FILENAME ${SHADER} NAME)
-    add_custom_command(OUTPUT ${FILENAME}.spv.u32
-      COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${FILENAME}.spv.u32
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/${FILENAME}.spv.u32
+      COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${CMAKE_BINARY_DIR}/${FILENAME}.spv.u32
       DEPENDS ${SHADER}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      list(APPEND SPV_SHADERS ${FILENAME}.spv.u32)
+      list(APPEND SPV_SHADERS ${CMAKE_BINARY_DIR}/${FILENAME}.spv.u32)
   endForeach()
 
   add_custom_target(shaders DEPENDS ${SPV_SHADERS})
