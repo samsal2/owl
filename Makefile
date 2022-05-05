@@ -1,101 +1,98 @@
-RMF     = rm -f
-RMRF    = rm -rf
+VERSION = 0.0.1
+
+SRCDIR = owl
+BUILDDIR = build
+
+RMF = rm -f
+RMRF = rm -rf
+MKDIR = mkdir
+
+VULKANINC = $(VULKAN_SDK)/include
+VULKANLIB = $(VULKAN_SDK)/lib
 GLSLANG = $(VULKAN_SDK)/bin/glslangValidator
 
-LIBRARY = libowl.a
+GLFWINC = libs/glfw/macos/include
+GLFWLIB = libs/glfw/macos/lib-x86_64/
 
-SRCDIR  = owl
+INCS = -I$(VULKANINC) \
+       -I$(GLFWINC)   \
+       -I$(BUILDDIR)
 
-INCS    = -Ilibs/glfw/macos/include \
-          -I$(VULKAN_SDK)/include        
+LIBS = -rpath $(GLFWLIB)   \
+       -L$(GLFWLIB)       \
+       -lglfw3            \
+       -framework Cocoa   \
+       -framework IOKit   \
+       -rpath $(VULKANLIB) \
+       -L$(VULKANLIB)     \
+       -lvulkan           \
+       -lm
 
-DEFS    = -DOWL_ENABLE_VALIDATION
+DEFS = -DOWL_ENABLE_VALIDATION
 
-CFLAGS  = -std=c99             \
-          -O0                  \
-          -g                   \
-          -Wall                \
-          -Wextra              \
-          -Wshadow             \
-          -Wvla                \
-          -Walloca             \
-          -Werror              \
-          -pedantic            \
-          -pedantic-errors     \
-          -fstrict-aliasing    \
-          -fsanitize=address   \
-          -fsanitize=undefined \
-          -fsanitize=bounds    \
-          $(INCS)              \
-          $(DEFS)
+OWLCFLAGS = -Wall             \
+            -Wextra           \
+            -Wshadow          \
+            -Werror           \
+            -pedantic         \
+            -pedantic-errors  \
+            $(INCS)           \
+            $(DEFS)           \
+            $(CFLAGS)
 
-LIBS    = -Llibs/glfw/macos/lib-x86_64      \
-          -rpath libs/glfw/macos/lib-x86_64 \
-          -lglfw3                           \
-          -L$(VULKAN_SDK)/lib               \
-          -rpath $(VULKAN_SDK)/lib          \
-          -lvulkan                          \
-          -lm																\
-          -framework Cocoa                  \
-          -framework IOKit
-
-LDFLAGS = -fsanitize=address   \
-          -fsanitize=undefined \
-          -fsanitize=bounds    \
-          $(LIBS)
+OWLLDFLAGS = $(LIBS)    \
+             $(LDFLAGS)
+ 
+EXSRCS = $(wildcard examples/*.c)
+EXOUTS = $(EXSRCS:examples/%.c=$(BUILDDIR)/%.out) 
 
 SRCS = $(wildcard $(SRCDIR)/*.c)
-OBJS = $(SRCS:.c=.o) 
-DEPS = $(SRCS:.c=.d)
+OBJS = $(SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o) 
+DEPS = $(SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.d)
 
 GLSLVSRC = $(wildcard $(SRCDIR)/*.vert)
-GLSLVSPV = $(GLSLVSRC:.vert=.vert.spv.u32)
+GLSLVSPV = $(GLSLVSRC:$(SRCDIR)/%.vert=$(BUILDDIR)/%.vert.spv.u32)
 
 GLSLFSRC = $(wildcard $(SRCDIR)/*.frag)
-GLSLFSPV = $(GLSLFSRC:.frag=.frag.spv.u32)
-
-EXSRCS = $(wildcard examples/*.c)
-EXOUTS = $(EXSRCS:.c=.out) 
+GLSLFSPV = $(GLSLFSRC:$(SRCDIR)/%.frag=$(BUILDDIR)/%.frag.spv.u32)
 
 all: examples library shaders
-
-.PHONY: library
--include $(DEPS)
-
-library: $(LIBRARY)
-
-$(LIBRARY): $(OBJS)
-	$(AR) -cqsv $@ $^
-
-$(OBJS): $(GLSLVSPV) $(GLSLFSPV)
-
-%.o: %.c
-	$(CC) -MMD $(CFLAGS) -o $@ -c $<
 
 .PHONY: examples
 examples: $(EXOUTS)
 
-$(EXOUTS): $(LIBRARY)
+$(EXOUTS): $(BUILDDIR)/libowl.a
 
-%.out: %.c
-	$(CC) -I. $(CFLAGS) -o $@ $< $(LDFLAGS) -L. -lowl
+$(info $(EXOUTS))
+
+$(BUILDDIR)/%.out: examples/%.c | $(BUILDDIR)
+	$(CC) -I. $(OWLCFLAGS) -o $@ $< $(OWLLDFLAGS) -L$(BUILDDIR) -lowl
+
+.PHONY: library
+-include $(DEPS)
+library: $(BUILDDIR)/libowl.a
+
+$(BUILDDIR)/libowl.a: $(OBJS)
+	$(AR) -cqsv $@ $^
+
+$(OBJS): $(GLSLVSPV) $(GLSLFSPV)
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c | $(BUILDDIR)
+	$(CC) -MMD $(OWLCFLAGS) -o $@ -c $<
 
 .PHONY: shaders
 shaders: $(GLSLVSPV) $(GLSLFSPV)
 
-%.vert.spv.u32: %.vert
+$(BUILDDIR)/%.vert.spv.u32: $(SRCDIR)/%.vert | $(BUILDDIR)
 	$(GLSLANG) -V -x -o $@ $<
 
-%.frag.spv.u32: %.frag
+$(BUILDDIR)/%.frag.spv.u32: $(SRCDIR)/%.frag | $(BUILDDIR)
 	$(GLSLANG) -V -x -o $@ $<
+
+$(BUILDDIR):
+	$(MKDIR) $(BUILDDIR)
 
 .PHONY: clean
 clean:
-	$(RMF) $(GLSLFSPV)
-	$(RMF) $(GLSLVSPV)
-	$(RMF) $(OBJS)
-	$(RMF) $(DEPS)
-	$(RMF) $(LIBRARY)
-	$(RMF) $(EXOUTS)
-	$(RMRF) examples/*.dSYM
+	$(RMRF) $(BUILDDIR)
 
