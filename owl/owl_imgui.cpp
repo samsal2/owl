@@ -6,7 +6,6 @@
 #include "owl_client.h"
 #include "owl_renderer.h"
 #include "owl_types.h"
-#include "vulkan/vulkan_core.h"
 
 #include <cstdarg>
 
@@ -49,6 +48,8 @@ enum owl_code owl_imgui_init(struct owl_client *c, struct owl_renderer *r,
     return code;
   }
 
+  ImGui::GetIO().Fonts->AddFontFromFileTTF("../assets/Inconsolata-Regular.ttf", 16.0F);
+
   ImGui_ImplVulkan_CreateFontsTexture(r->immidiate_command_buffer);
 
   if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_end(r))) {
@@ -76,6 +77,7 @@ void owl_imgui_deinit(struct owl_renderer *r, struct owl_imgui *im) {
 
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
 }
 
 void owl_imgui_begin_frame(struct owl_imgui *im) {

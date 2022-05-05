@@ -98,18 +98,19 @@ int main(void) {
     owl_draw_command_model_submit(&model_command, renderer, &camera);
 
     owl_imgui_begin_frame(&imgui);
+    {
+      owl_imgui_begin(&imgui, "Hello world!");
 
-    owl_imgui_begin(&imgui, "Hello world!");
+      owl_imgui_text(&imgui, "This is some useful text.");
+      owl_imgui_color_edit_v3(&imgui, "color!", text_command.color);
+      owl_imgui_sliderf(&imgui, "text size!", &text_command.scale, 1.0F, 10.0F);
 
-    owl_imgui_text(&imgui, "This is some useful text.");
-
-    owl_imgui_end(&imgui);
-
+      owl_imgui_end(&imgui);
+    }
     owl_imgui_render(&imgui, renderer);
-
     owl_imgui_end_frame(&imgui);
 
-#if 0
+#if 1
     text_command.text = fmtfps(client->fps);
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_FONT);
     owl_draw_command_text_submit(&text_command, renderer, &camera);
