@@ -1,3 +1,4 @@
+#include "owl/owl_imgui.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -12,6 +13,7 @@ static struct owl_draw_command_model model_command;
 static struct owl_camera camera;
 static struct owl_font *font;
 static struct owl_draw_command_text text_command;
+static struct owl_imgui imgui;
 
 #define MODEL_PATH "../assets/CesiumMan.gltf"
 #define FONT_PATH "../assets/Inconsolata-Regular.ttf"
@@ -58,6 +60,8 @@ int main(void) {
   font = OWL_MALLOC(sizeof(*font));
   CHECK(owl_font_init(renderer, 78, FONT_PATH, font));
 
+  CHECK(owl_imgui_init(client, renderer, &imgui));
+
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
   OWL_V3_SET(-0.8F, -0.8F, 0.90, text_command.position);
   text_command.font = font;
@@ -93,7 +97,19 @@ int main(void) {
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_MODEL);
     owl_draw_command_model_submit(&model_command, renderer, &camera);
 
-#if 1
+    owl_imgui_begin_frame(&imgui);
+
+    owl_imgui_begin(&imgui, "Hello world!");
+
+    owl_imgui_text(&imgui, "This is some useful text.");
+
+    owl_imgui_end(&imgui);
+
+    owl_imgui_render(&imgui, renderer);
+
+    owl_imgui_end_frame(&imgui);
+
+#if 0
     text_command.text = fmtfps(client->fps);
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_FONT);
     owl_draw_command_text_submit(&text_command, renderer, &camera);
@@ -108,6 +124,7 @@ int main(void) {
 
     owl_client_poll_events(client);
   }
+  owl_imgui_deinit(renderer, &imgui);
 
   owl_font_deinit(renderer, font);
   OWL_FREE(font);

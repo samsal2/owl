@@ -3,7 +3,6 @@
 
 #include "owl_types.h"
 
-/* math */
 #define OWL_DEG_AS_RAD(a) ((a)*0.01745329252F)
 #define OWL_RAD_AS_DEG(a) ((a)*57.2957795131F)
 

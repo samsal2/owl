@@ -1,6 +1,10 @@
 #ifndef OWL_RENDERER_H_
 #define OWL_RENDERER_H_
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "owl_internal.h"
 #include "owl_types.h"
 
@@ -140,7 +144,7 @@ struct owl_renderer {
   /* ====================================================================== */
   /* sampling */
   /* ====================================================================== */
-  VkSampleCountFlags msaa_sample_count;
+  VkSampleCountFlagBits msaa_sample_count;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -395,5 +399,9 @@ void owl_renderer_immidiate_command_buffer_deinit(struct owl_renderer *r);
 enum owl_code owl_renderer_begin_frame(struct owl_renderer *r);
 
 enum owl_code owl_renderer_end_frame(struct owl_renderer *r);
+
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
 
 #endif

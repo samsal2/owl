@@ -16,27 +16,31 @@ GLSLANG = $(VULKAN_SDK)/bin/glslangValidator
 GLFWINC = libs/glfw/macos/include
 GLFWLIB = libs/glfw/macos/lib-x86_64/
 
-INCS = -I$(VULKANINC) -I$(GLFWINC) -I$(BUILDDIR)
+INC = -I$(VULKANINC) -I$(GLFWINC) -I$(BUILDDIR)
 
-LIBS = -rpath $(GLFWLIB) -L$(GLFWLIB) -lglfw3      \
-       -framework Cocoa -framework IOKit           \
-       -rpath $(VULKANLIB) -L$(VULKANLIB) -lvulkan \
-       -lm
+LIB = -rpath $(GLFWLIB) -L$(GLFWLIB) -lglfw3      \
+      -framework Cocoa -framework IOKit -lm       \
+      -rpath $(VULKANLIB) -L$(VULKANLIB) -lvulkan
 
-DEFS = -DOWL_ENABLE_VALIDATION
+DEF = -DOWL_ENABLE_VALIDATION
 
-OWLCFLAGS = -Wall -Wextra -Wshadow -Werror \
-            -pedantic -pedantic-errors     \
-            $(INCS) $(DEFS) $(CFLAGS)
+WARN = -Wall -Wextra -Wshadow -Werror -pedantic -pedantic-errors
 
-OWLLDFLAGS = $(LIBS) $(LDFLAGS)
+OWLCFLAGS = $(WARN) $(INC) $(DEF) $(CFLAGS)
+OWLLDFLAGS = $(LIB) $(LDFLAGS)
  
-EXSRCS = $(wildcard examples/*.c)
-EXOUTS = $(EXSRCS:examples/%.c=$(BUILDDIR)/%.out) 
+OWLCXXFLAGS = -std=c++11 $(INC) $(DEF) $(CXXFLAGS)
 
-SRCS = $(wildcard $(SRCDIR)/*.c)
-OBJS = $(SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.o) 
-DEPS = $(SRCS:$(SRCDIR)/%.c=$(BUILDDIR)/%.d)
+EXSRC = $(wildcard examples/*.c)
+EXOUT = $(EXSRC:examples/%.c=$(BUILDDIR)/%.out) 
+
+CSRC = $(wildcard $(SRCDIR)/*.c)
+COBJ = $(CSRC:$(SRCDIR)/%.c=$(BUILDDIR)/%.o) 
+CDEP = $(CSRC:$(SRCDIR)/%.c=$(BUILDDIR)/%.d)
+
+CXXSRC = $(wildcard $(SRCDIR)/*.cpp)
+CXXOBJ = $(CXXSRC:$(SRCDIR)/%.cpp=$(BUILDDIR)/%.o) 
+CXXDEP = $(CXXSRC:$(SRCDIR)/%.cpp=$(BUILDDIR)/%.d)
 
 GLSLVSRC = $(wildcard $(SRCDIR)/*.vert)
 GLSLVSPV = $(GLSLVSRC:$(SRCDIR)/%.vert=$(BUILDDIR)/%.vert.spv.u32)
@@ -47,24 +51,28 @@ GLSLFSPV = $(GLSLFSRC:$(SRCDIR)/%.frag=$(BUILDDIR)/%.frag.spv.u32)
 all: examples library shaders
 
 .PHONY: examples
-examples: $(EXOUTS)
+examples: $(EXOUT)
 
-$(EXOUTS): $(BUILDDIR)/libowl.a
+$(EXOUT): $(BUILDDIR)/libowl.a
 
 $(BUILDDIR)/%.out: examples/%.c | $(BUILDDIR)
-	$(CC) -I. $(OWLCFLAGS) -o $@ $< $(OWLLDFLAGS) -L$(BUILDDIR) -lowl
+	$(CC) -I. $(OWLCFLAGS) -o $@ $< $(OWLLDFLAGS) -L$(BUILDDIR) -lowl -lstdc++
 
 .PHONY: library
--include $(DEPS)
+-include $(CDEP)
+-include $(CXXDEP)
 library: $(BUILDDIR)/libowl.a
 
-$(BUILDDIR)/libowl.a: $(OBJS)
+$(BUILDDIR)/libowl.a: $(COBJ) $(CXXOBJ)
 	$(AR) -cqsv $@ $^
 
-$(OBJS): $(GLSLVSPV) $(GLSLFSPV)
+$(COBJ): $(GLSLVSPV) $(GLSLFSPV)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c | $(BUILDDIR)
 	$(CC) -MMD $(OWLCFLAGS) -o $@ -c $<
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp | $(BUILDDIR)
+	$(CXX) -MMD $(OWLCXXFLAGS) -o $@ -c $<
 
 .PHONY: shaders
 shaders: $(GLSLVSPV) $(GLSLFSPV)
