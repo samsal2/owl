@@ -59,6 +59,19 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   ">"
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Release>>:"
 		-Ofast
+  ">"
+	"$<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:"
+    -std=c++11
+  ">"
+	"$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<CONFIG:Debug>>:"
+		-O0
+		-g
+		-fsanitize=address
+		-fsanitize=undefined
+		-fsanitize=bounds
+  ">"
+	"$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<CONFIG:Release>>:"
+		-Ofast
   ">")
 
 # compile definitions
@@ -71,6 +84,11 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 # link options
 target_link_options(${PROJECT_NAME} PUBLIC
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
+		-fsanitize=address
+		-fsanitize=undefined
+		-fsanitize=bounds
+  ">"
+	"$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<CONFIG:Debug>>:"
 		-fsanitize=address
 		-fsanitize=undefined
 		-fsanitize=bounds

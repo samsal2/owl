@@ -98,9 +98,6 @@ OWL_INTERNAL void owl_renderer_instance_deinit_(struct owl_renderer *r) {
 
 #if defined(OWL_ENABLE_VALIDATION)
 
-#define OWL_VK_GET_INSTANCE_PROC_ADDR(i, fn)                                   \
-  ((PFN_##fn)vkGetInstanceProcAddr((i), #fn))
-
 #include <stdio.h>
 static VKAPI_ATTR VKAPI_CALL VkBool32 owl_vk_debug_callback_(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -140,8 +137,9 @@ owl_renderer_debug_messenger_init_(struct owl_renderer *r) {
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  vkCreateDebugUtilsMessengerEXT = OWL_VK_GET_INSTANCE_PROC_ADDR(
-      r->instance, vkCreateDebugUtilsMessengerEXT);
+  vkCreateDebugUtilsMessengerEXT =
+      (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+          r->instance, "vkCreateDebugUtilsMessengerEXT");
 
   OWL_ASSERT(vkCreateDebugUtilsMessengerEXT);
 
@@ -171,8 +169,9 @@ out:
 OWL_INTERNAL void owl_renderer_debug_messenger_deinit_(struct owl_renderer *r) {
   PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
 
-  vkDestroyDebugUtilsMessengerEXT = OWL_VK_GET_INSTANCE_PROC_ADDR(
-      r->instance, vkDestroyDebugUtilsMessengerEXT);
+  vkDestroyDebugUtilsMessengerEXT =
+      (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+          r->instance, "vkDestroyDebugUtilsMessengerEXT");
 
   OWL_ASSERT(vkDestroyDebugUtilsMessengerEXT);
 
@@ -299,8 +298,7 @@ owl_validate_device_extensions_(owl_u32 extensions_count,
   for (i = 0; i < (owl_i32)extensions_count; ++i) {
     owl_u32 j;
     for (j = 0; j < OWL_ARRAY_SIZE(device_extensions); ++j) {
-      if (!OWL_STRNCMP(device_extensions[j],
-                       extensions[i].extensionName,
+      if (!OWL_STRNCMP(device_extensions[j], extensions[i].extensionName,
                        VK_MAX_EXTENSION_NAME_SIZE)) {
         extensions_found[j] = 1;
       }
@@ -3299,7 +3297,7 @@ OWL_INTERNAL enum owl_code
 owl_renderer_present_swapchain_(struct owl_renderer *r) {
   VkResult vkres;
   enum owl_code code = OWL_SUCCESS;
-  
+
   {
     VkPresentInfoKHR info;
     info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

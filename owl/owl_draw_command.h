@@ -33,7 +33,7 @@ struct owl_draw_command_basic {
 
 enum owl_code
 owl_draw_command_basic_submit(struct owl_draw_command_basic const *cmd,
-                              struct owl_renderer *r, 
+                              struct owl_renderer *r,
                               struct owl_camera const *cam);
 
 struct owl_draw_command_quad {

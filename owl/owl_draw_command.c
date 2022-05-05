@@ -124,7 +124,7 @@ out:
 }
 
 enum owl_code
-owl_draw_command_text_submit(struct owl_draw_command_text const *cmd, 
+owl_draw_command_text_submit(struct owl_draw_command_text const *cmd,
                              struct owl_renderer *r,
                              struct owl_camera const *cam) {
   char const *l;
@@ -182,11 +182,9 @@ out:
   return code;
 }
 
-OWL_INTERNAL enum owl_code
-owl_model_node_submit_(struct owl_draw_command_model const *cmd,
-                       struct owl_renderer *r, 
-                       struct owl_camera const *cam,
-                       struct owl_model_node const *node) {
+OWL_INTERNAL enum owl_code owl_draw_command_model_node_submit_(
+    struct owl_draw_command_model const *cmd, struct owl_renderer *r,
+    struct owl_camera const *cam, struct owl_model_node const *node) {
   owl_i32 i;
   struct owl_model_node parent;
   struct owl_model const *model;
@@ -207,7 +205,8 @@ owl_model_node_submit_(struct owl_draw_command_model const *cmd,
   node_data = &model->nodes[node->slot];
 
   for (i = 0; i < node_data->children_count; ++i) {
-    code = owl_model_node_submit_(cmd, r, cam, &node_data->children[i]);
+    code = owl_draw_command_model_node_submit_(cmd, r, cam,
+                                               &node_data->children[i]);
 
     if (OWL_SUCCESS != code) {
       goto out;
@@ -236,6 +235,7 @@ owl_model_node_submit_(struct owl_draw_command_model const *cmd,
                     ssbo->matrix);
   }
 
+  /* FIXME(samuel): find a way to make this global */
   OWL_M4_COPY(cmd->model, ubo.model);
   OWL_V4_ZERO(ubo_params.light_direction);
 
@@ -401,7 +401,7 @@ owl_draw_command_model_submit(struct owl_draw_command_model const *cmd,
                        VK_INDEX_TYPE_UINT32);
 
   for (i = 0; i < cmd->skin->roots_count; ++i) {
-    code = owl_model_node_submit_(cmd, r, cam, &model->roots[i]);
+    code = owl_draw_command_model_node_submit_(cmd, r, cam, &model->roots[i]);
 
     if (OWL_SUCCESS != code) {
       goto out;

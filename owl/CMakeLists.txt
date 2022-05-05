@@ -1,6 +1,19 @@
 target_sources(${PROJECT_NAME} PRIVATE
   cgltf.c
   cgltf.h
+  imconfig.h
+  imgui.cpp
+  imgui.h
+  imgui_draw.cpp
+  imgui_impl_glfw.cpp
+  imgui_impl_glfw.h
+  imgui_impl_vulkan.cpp
+  imgui_impl_vulkan.h
+  imgui_internal.h
+  imgui_tables.cpp
+  imgui_widgets.cpp
+  imstb_rectpack.h
+  imstb_truetype.h
   owl.h
   owl_camera.c
   owl_camera.h

@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static struct owl_client_init_desc client_init_desc;
+static struct owl_client_init_desc client_desc;
 static struct owl_client *client;
-static struct owl_renderer_init_desc renderer_init_desc;
+static struct owl_renderer_init_desc renderer_desc;
 static struct owl_renderer *renderer;
 static struct owl_model *model;
 static struct owl_draw_command_model model_command;
@@ -32,15 +32,15 @@ char const *fmtfps(double d) {
   } while (0)
 
 int main(void) {
-  client_init_desc.height = 600;
-  client_init_desc.width = 600;
-  client_init_desc.title = "model";
+  client_desc.height = 600;
+  client_desc.width = 600;
+  client_desc.title = "model";
   client = OWL_MALLOC(sizeof(*client));
-  CHECK(owl_client_init(&client_init_desc, client));
+  CHECK(owl_client_init(&client_desc, client));
 
-  CHECK(owl_client_fill_renderer_init_desc(client, &renderer_init_desc));
+  CHECK(owl_client_fill_renderer_init_desc(client, &renderer_desc));
   renderer = OWL_MALLOC(sizeof(*renderer));
-  CHECK(owl_renderer_init(&renderer_init_desc, renderer));
+  CHECK(owl_renderer_init(&renderer_desc, renderer));
 
   CHECK(owl_camera_init(&camera));
 
@@ -67,8 +67,8 @@ int main(void) {
     OWL_V2_COPY(client->cursor_position, model_command.light);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
-      owl_client_fill_renderer_init_desc(client, &renderer_init_desc);
-      owl_renderer_swapchain_resize(&renderer_init_desc, renderer);
+      owl_client_fill_renderer_init_desc(client, &renderer_desc);
+      owl_renderer_swapchain_resize(&renderer_desc, renderer);
       owl_camera_ratio_set(&camera, renderer->framebuffer_ratio);
       continue;
     }
@@ -100,8 +100,8 @@ int main(void) {
 #endif
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
-      owl_client_fill_renderer_init_desc(client, &renderer_init_desc);
-      owl_renderer_swapchain_resize(&renderer_init_desc, renderer);
+      owl_client_fill_renderer_init_desc(client, &renderer_desc);
+      owl_renderer_swapchain_resize(&renderer_desc, renderer);
       owl_camera_ratio_set(&camera, renderer->framebuffer_ratio);
       continue;
     }

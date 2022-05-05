@@ -377,7 +377,7 @@ enum owl_code owl_renderer_dynamic_heap_submit(
     struct owl_renderer_dynamic_heap_reference *ref);
 
 enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
-                                         enum owl_renderer_pipeline type);
+                                         enum owl_renderer_pipeline pipeline);
 
 enum owl_code
 owl_renderer_immidiate_command_buffer_init(struct owl_renderer *r);
