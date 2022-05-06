@@ -310,7 +310,7 @@ int main(void) {
     text_command.text = fps_string(client->delta_time_stamp);
     owl_draw_command_text_submit(&text_command, renderer, &camera);
 
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_end_frame(renderer)) {
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_init_desc);
       owl_renderer_swapchain_resize(&renderer_init_desc, renderer);
       continue;

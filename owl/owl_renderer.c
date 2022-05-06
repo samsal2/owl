@@ -824,7 +824,7 @@ OWL_INTERNAL enum owl_code owl_renderer_pools_init_(struct owl_renderer *r) {
     info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     info.pNext = NULL;
     info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    info.maxSets = 80;
+    info.maxSets = 256 * OWL_ARRAY_SIZE(sizes);
     info.poolSizeCount = OWL_ARRAY_SIZE(sizes);
     info.pPoolSizes = sizes;
 
@@ -2272,7 +2272,6 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
   r->dynamic_heap_offset = 0;
   r->dynamic_heap_buffer_size = size;
 
-  /* init buffers */
   {
     VkBufferCreateInfo info;
 
@@ -2297,7 +2296,6 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
     }
   }
 
-  /* init memory */
   {
     VkMemoryRequirements requirements;
     VkMemoryAllocateInfo info;
@@ -2323,7 +2321,6 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
     }
   }
 
-  /* bind buffers to memory */
   {
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
       vkres = vkBindBufferMemory(r->device, r->dynamic_heap_buffers[i],
@@ -2336,7 +2333,6 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
     }
   }
 
-  /* map memory */
   {
     void *data;
 
@@ -3344,7 +3340,7 @@ OWL_INTERNAL void owl_renderer_update_actives_(struct owl_renderer *r) {
       r->dynamic_heap_model_ubo_params_sets[r->active_frame];
 }
 
-enum owl_code owl_renderer_end_frame(struct owl_renderer *r) {
+enum owl_code owl_renderer_frame_end(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   owl_renderer_end_recording_(r);

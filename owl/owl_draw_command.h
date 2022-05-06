@@ -53,7 +53,7 @@ owl_draw_command_quad_submit(struct owl_draw_command_quad const *cmd,
                              struct owl_camera const *cam);
 
 struct owl_draw_command_text {
-  float scale; /* FIXME(samuel): unused for now */
+  float scale; /* FIXME(samuel): scaling on the y axis causes issues, use 1 */
   owl_v3 color;
   owl_v3 position;
   char const *text;

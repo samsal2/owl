@@ -4,8 +4,8 @@
 #include "owl_renderer.h"
 #include "owl_types.h"
 
-#define OWL_FONT_ATLAS_WIDTH 1024
-#define OWL_FONT_ATLAS_HEIGHT 1024
+#define OWL_FONT_ATLAS_WIDTH 1024 
+#define OWL_FONT_ATLAS_HEIGHT 1024 
 #define OWL_FONT_FIRST_CHAR ((owl_i32)(' '))
 #define OWL_FONT_CHAR_COUNT ((owl_i32)('~' - ' '))
 
@@ -34,7 +34,7 @@ struct owl_font {
   struct owl_font_packed_char packed_chars[OWL_FONT_CHAR_COUNT];
 };
 
-enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 sz,
+enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
                             char const *path, struct owl_font *font);
 
 void owl_font_deinit(struct owl_renderer *r, struct owl_font *font);

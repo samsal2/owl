@@ -220,28 +220,28 @@ OWL_STATIC_ASSERT(
     sizeof(struct owl_font_packed_char) == sizeof(stbtt_packedchar),
     "owl_font_char and stbtt_packedchar must represent the same struct");
 
-enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 sz,
+enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
                             char const *path, struct owl_font *font) {
-  owl_byte *font_file_data;
-  owl_byte *font_bitmap_data;
+  owl_byte *file;
+  owl_byte *bitmap;
   stbtt_pack_context pack_context;
   struct owl_renderer_image_init_desc image_init_desc;
 
   enum owl_code code = OWL_SUCCESS;
 
-  if (OWL_SUCCESS != (code = owl_font_load_file_(path, &font_file_data))) {
+  if (OWL_SUCCESS != (code = owl_font_load_file_(path, &file))) {
     goto out;
   }
 
-  if (!(font_bitmap_data = OWL_CALLOC(OWL_FONT_ATLAS_SIZE, sizeof(owl_byte)))) {
+  if (!(bitmap = OWL_CALLOC(OWL_FONT_ATLAS_SIZE, sizeof(owl_byte)))) {
     code = OWL_ERROR_BAD_ALLOC;
     goto out_unload_file;
   }
 
-  if (!stbtt_PackBegin(&pack_context, font_bitmap_data, OWL_FONT_ATLAS_WIDTH,
+  if (!stbtt_PackBegin(&pack_context, bitmap, OWL_FONT_ATLAS_WIDTH,
                        OWL_FONT_ATLAS_HEIGHT, 0, 1, NULL)) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_free_font_bitmap_data;
+    goto out_free_bitmap;
   }
 
   /* FIXME(samuel): hardcoded */
@@ -249,8 +249,8 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 sz,
 
   /* HACK(samuel): idk if it's legal to alias a different type with the exact
    * same layout, but "it works" so ill leave it at that*/
-  if (!stbtt_PackFontRange(&pack_context, font_file_data, 0, sz,
-                           OWL_FONT_FIRST_CHAR, OWL_FONT_CHAR_COUNT,
+  if (!stbtt_PackFontRange(&pack_context, file, 0, size, OWL_FONT_FIRST_CHAR,
+                           OWL_FONT_CHAR_COUNT,
                            (stbtt_packedchar *)(&font->packed_chars[0]))) {
     code = OWL_ERROR_UNKNOWN;
     goto out_end_pack;
@@ -258,7 +258,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 sz,
 
   image_init_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_DATA;
   image_init_desc.src_path = NULL;
-  image_init_desc.src_data = font_bitmap_data;
+  image_init_desc.src_data = bitmap;
   image_init_desc.src_data_width = OWL_FONT_ATLAS_WIDTH;
   image_init_desc.src_data_height = OWL_FONT_ATLAS_HEIGHT;
   image_init_desc.src_data_pixel_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
@@ -279,11 +279,11 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 sz,
 out_end_pack:
   stbtt_PackEnd(&pack_context);
 
-out_free_font_bitmap_data:
-  OWL_FREE(font_bitmap_data);
+out_free_bitmap:
+  OWL_FREE(bitmap);
 
 out_unload_file:
-  owl_font_unload_file_(font_file_data);
+  owl_font_unload_file_(file);
 
 out:
   return code;

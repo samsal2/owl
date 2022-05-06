@@ -5,11 +5,11 @@ project(owl)
 # declare the library 
 add_library(${PROJECT_NAME})
 
-# add sources
-add_subdirectory(${PROJECT_NAME})
-
 # find external libraries
 find_package(Vulkan REQUIRED)
+
+# add sources
+add_subdirectory(${PROJECT_NAME})
 
 # link libraries
 target_link_libraries(${PROJECT_NAME} 

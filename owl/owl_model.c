@@ -40,7 +40,7 @@ OWL_INTERNAL enum owl_code owl_model_uri_init_(char const *src,
                                                struct owl_model_uri *uri) {
   enum owl_code code = OWL_SUCCESS;
 
-  snprintf(uri->path, OWL_MODEL_MAX_NAME_LENGTH, "../assets/%s", src);
+  snprintf(uri->path, OWL_MODEL_MAX_NAME_LENGTH, "../../assets/%s", src);
 
   return code;
 }

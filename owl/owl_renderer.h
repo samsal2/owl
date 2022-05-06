@@ -15,7 +15,7 @@ struct owl_renderer;
 
 #define OWL_RENDERER_MEMORY_TYPE_NONE (owl_u32) - 1
 #define OWL_RENDERER_MAX_SWAPCHAIN_IMAGES_COUNT 8
-#define OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT 2
+#define OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT 3
 #define OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT 8
 #define OWL_RENDERER_MAX_DEVICE_OPTIONS_COUNT 8
 #define OWL_RENDERER_CLEAR_VALUES_COUNT 2
@@ -398,7 +398,7 @@ void owl_renderer_immidiate_command_buffer_deinit(struct owl_renderer *r);
 
 enum owl_code owl_renderer_begin_frame(struct owl_renderer *r);
 
-enum owl_code owl_renderer_end_frame(struct owl_renderer *r);
+enum owl_code owl_renderer_frame_end(struct owl_renderer *r);
 
 #if defined(__cplusplus)
 } /* extern "C" */

@@ -7,6 +7,7 @@ MV = mv
 RMF = rm -f
 RMRF = rm -rf
 MKDIR = mkdir
+MKDIRP = mkdir -p
 BEAR = bear
 
 VULKANINC = $(VULKAN_SDK)/include
@@ -22,7 +23,7 @@ LIB = -rpath $(GLFWLIB) -L$(GLFWLIB) -lglfw3      \
       -framework Cocoa -framework IOKit -lm       \
       -rpath $(VULKANLIB) -L$(VULKANLIB) -lvulkan
 
-DEF = -DOWL_ENABLE_VALIDATION
+DEF = 
 
 WARN = -Wall -Wextra -Wshadow -Werror -pedantic -pedantic-errors
 
@@ -32,7 +33,7 @@ OWLLDFLAGS = $(LIB) $(LDFLAGS)
 OWLCXXFLAGS = -std=c++11 $(INC) $(DEF) $(CXXFLAGS)
 
 EXSRC = $(wildcard examples/*.c)
-EXOUT = $(EXSRC:examples/%.c=$(BUILDDIR)/%.out) 
+EXOUT = $(EXSRC:examples/%.c=$(BUILDDIR)/%) 
 
 CSRC = $(wildcard $(SRCDIR)/*.c)
 COBJ = $(CSRC:$(SRCDIR)/%.c=$(BUILDDIR)/%.o) 
@@ -55,7 +56,7 @@ examples: $(EXOUT)
 
 $(EXOUT): $(BUILDDIR)/libowl.a
 
-$(BUILDDIR)/%.out: examples/%.c | $(BUILDDIR)
+$(BUILDDIR)/%: examples/%.c | $(BUILDDIR)
 	$(CC) -I. $(OWLCFLAGS) -o $@ $< $(OWLLDFLAGS) -L$(BUILDDIR) -lowl -lstdc++
 
 .PHONY: library

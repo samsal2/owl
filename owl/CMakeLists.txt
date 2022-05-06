@@ -5,6 +5,7 @@ target_sources(${PROJECT_NAME} PRIVATE
   imgui.cpp
   imgui.h
   imgui_draw.cpp
+  imgui_demo.cpp
   imgui_impl_glfw.cpp
   imgui_impl_glfw.h
   imgui_impl_vulkan.cpp
@@ -25,6 +26,8 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_font.h
   owl_internal.c
   owl_internal.h
+  owl_imgui.cpp
+  owl_imgui.h
   owl_model.c
   owl_model.h
   owl_renderer.c
