@@ -10,7 +10,7 @@
 #include <vulkan/vulkan.h>
 /* clang-format on */
 
-OWL_INTERNAL enum owl_mouse_button owl_as_mouse_key_(owl_i32 type) {
+OWL_INTERNAL enum owl_mouse_button owl_as_mouse_key(owl_i32 type) {
   switch (type) {
   case GLFW_MOUSE_BUTTON_LEFT:
     return OWL_MOUSE_BUTTON_LEFT;
@@ -26,7 +26,7 @@ OWL_INTERNAL enum owl_mouse_button owl_as_mouse_key_(owl_i32 type) {
   }
 }
 
-OWL_INTERNAL enum owl_button_state owl_as_mouse_state_(owl_i32 state) {
+OWL_INTERNAL enum owl_button_state owl_as_mouse_state(owl_i32 state) {
   switch (state) {
   case GLFW_PRESS:
     return OWL_BUTTON_STATE_PRESS;
@@ -42,16 +42,16 @@ OWL_INTERNAL enum owl_button_state owl_as_mouse_state_(owl_i32 state) {
   }
 }
 
-OWL_INTERNAL void owl_window_size_callback_(GLFWwindow *win, owl_i32 w,
-                                            owl_i32 h) {
+OWL_INTERNAL void owl_client_window_size_callback(GLFWwindow *win, owl_i32 w,
+                                                  owl_i32 h) {
   struct owl_client *client = glfwGetWindowUserPointer(win);
 
   client->window_width = w;
   client->window_height = h;
 }
 
-OWL_INTERNAL void owl_framebuffer_size_callback_(GLFWwindow *win, owl_i32 w,
-                                                 owl_i32 h) {
+OWL_INTERNAL void owl_client_framebuffer_size_callback(GLFWwindow *win,
+                                                       owl_i32 w, owl_i32 h) {
   struct owl_client *client = glfwGetWindowUserPointer(win);
 
   client->framebuffer_width = w;
@@ -59,8 +59,8 @@ OWL_INTERNAL void owl_framebuffer_size_callback_(GLFWwindow *win, owl_i32 w,
   client->framebuffer_ratio = (float)w / (float)h;
 }
 
-OWL_INTERNAL void owl_cursor_position_callback_(GLFWwindow *win, double x,
-                                                double y) {
+OWL_INTERNAL void owl_client_cursor_position_callback(GLFWwindow *win, double x,
+                                                      double y) {
   struct owl_client *client = glfwGetWindowUserPointer(win);
 
   OWL_V2_COPY(client->cursor_position, client->previous_cursor_position);
@@ -75,31 +75,33 @@ OWL_INTERNAL void owl_cursor_position_callback_(GLFWwindow *win, double x,
              client->delta_cursor_position);
 }
 
-OWL_INTERNAL void owl_mouse_key_callback_(GLFWwindow *win, owl_i32 button,
-                                          owl_i32 action, owl_i32 mod) {
+OWL_INTERNAL void owl_client_mouse_keys_callback(GLFWwindow *win,
+                                                 owl_i32 button, owl_i32 action,
+                                                 owl_i32 mod) {
   struct owl_client *client = glfwGetWindowUserPointer(win);
-  enum owl_mouse_button key = owl_as_mouse_key_(button);
+  enum owl_mouse_button key = owl_as_mouse_key(button);
 
   OWL_UNUSED(mod);
 
-  client->mouse_buttons[key] = owl_as_mouse_state_(action);
+  client->mouse_buttons[key] = owl_as_mouse_state(action);
 }
 
-OWL_INTERNAL void owl_keyboard_key_callback_(GLFWwindow *glfw, owl_i32 key,
-                                             owl_i32 code, owl_i32 action,
-                                             owl_i32 mods) {
+OWL_INTERNAL void owl_client_keyboard_keys_callback(GLFWwindow *glfw,
+                                                    owl_i32 key, owl_i32 code,
+                                                    owl_i32 action,
+                                                    owl_i32 mods) {
   struct owl_client *client = glfwGetWindowUserPointer(glfw);
 
   OWL_UNUSED(code);
   OWL_UNUSED(action);
   OWL_UNUSED(mods);
 
-  client->keyboard_keys[key] = owl_as_mouse_state_(action);
+  client->keyboard_keys[key] = owl_as_mouse_state(action);
 }
 
 OWL_INTERNAL enum owl_code
-owl_vk_create_surface_callback_(struct owl_renderer const *r,
-                                void const *user_data, VkSurfaceKHR *surface) {
+owl_vk_create_surface_callback(struct owl_renderer const *r,
+                               void const *user_data, VkSurfaceKHR *surface) {
   owl_i32 err;
   enum owl_code code = OWL_SUCCESS;
   struct owl_client const *client = user_data;
@@ -130,11 +132,12 @@ enum owl_code owl_client_init(struct owl_client_init_desc const *desc,
   glfwGetWindowSize(c->window, &c->window_width, &c->window_height);
   glfwGetFramebufferSize(c->window, &c->framebuffer_width,
                          &c->framebuffer_height);
-  glfwSetWindowSizeCallback(c->window, owl_window_size_callback_);
-  glfwSetFramebufferSizeCallback(c->window, owl_framebuffer_size_callback_);
-  glfwSetCursorPosCallback(c->window, owl_cursor_position_callback_);
-  glfwSetMouseButtonCallback(c->window, owl_mouse_key_callback_);
-  glfwSetKeyCallback(c->window, owl_keyboard_key_callback_);
+  glfwSetWindowSizeCallback(c->window, owl_client_window_size_callback);
+  glfwSetFramebufferSizeCallback(c->window,
+                                 owl_client_framebuffer_size_callback);
+  glfwSetCursorPosCallback(c->window, owl_client_cursor_position_callback);
+  glfwSetMouseButtonCallback(c->window, owl_client_mouse_keys_callback);
+  glfwSetKeyCallback(c->window, owl_client_keyboard_keys_callback);
 
   c->framebuffer_ratio =
       (float)c->framebuffer_width / (float)c->framebuffer_height;
@@ -170,7 +173,7 @@ void owl_client_deinit(struct owl_client *c) {
 #define OWL_MAX_EXTENSIONS 64
 
 OWL_INTERNAL char const *const *
-owl_get_debug_instance_extensions_(owl_u32 *count) {
+owl_get_debug_instance_extensions(owl_u32 *count) {
   char const *const *extensions;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_EXTENSIONS];
 
@@ -199,10 +202,10 @@ owl_client_fill_renderer_init_desc(struct owl_client const *client,
   desc->framebuffer_width = client->framebuffer_width;
   desc->framebuffer_height = client->framebuffer_height;
   desc->surface_user_data = client;
-  desc->create_surface = owl_vk_create_surface_callback_;
+  desc->create_surface = owl_vk_create_surface_callback;
 
 #if defined(OWL_ENABLE_VALIDATION)
-  desc->instance_extensions = owl_get_debug_instance_extensions_(&count);
+  desc->instance_extensions = owl_get_debug_instance_extensions(&count);
 #else  /* OWL_ENABLE_VALIDATION */
   desc->instance_extensions = glfwGetRequiredInstanceExtensions(&count);
 #endif /* OWL_ENABLE_VALIDATION */

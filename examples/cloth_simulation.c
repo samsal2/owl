@@ -35,7 +35,7 @@ struct cloth {
   struct owl_draw_command_vertex vertices_[PARTICLE_COUNT];
 };
 
-static void init_cloth_(struct cloth *cloth) {
+static void base_init_cloth(struct cloth *cloth) {
   owl_u32 i, j;
 
   for (i = 0; i < CLOTH_H; ++i) {
@@ -203,7 +203,7 @@ static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
 void init_cloth(struct cloth *cloth, struct owl_renderer_image *image) {
   owl_v3 position;
 
-  init_cloth_(cloth);
+  base_init_cloth(cloth);
 
   cloth->command_.image.slot = image->slot;
   cloth->command_.indices_count = IDXS_COUNT;

@@ -203,7 +203,7 @@ out:
   return code;
 }
 
-OWL_INTERNAL enum owl_code owl_draw_command_model_node_submit_(
+OWL_INTERNAL enum owl_code owl_draw_command_model_node_submit(
     struct owl_draw_command_model const *cmd, struct owl_renderer *r,
     struct owl_camera const *cam, struct owl_model_node const *node) {
   owl_i32 i;
@@ -226,8 +226,8 @@ OWL_INTERNAL enum owl_code owl_draw_command_model_node_submit_(
   node_data = &model->nodes[node->slot];
 
   for (i = 0; i < node_data->children_count; ++i) {
-    code = owl_draw_command_model_node_submit_(cmd, r, cam,
-                                               &node_data->children[i]);
+    code = owl_draw_command_model_node_submit(cmd, r, cam,
+                                              &node_data->children[i]);
 
     if (OWL_SUCCESS != code) {
       goto out;
@@ -422,7 +422,7 @@ owl_draw_command_model_submit(struct owl_draw_command_model const *cmd,
                        VK_INDEX_TYPE_UINT32);
 
   for (i = 0; i < cmd->skin->roots_count; ++i) {
-    code = owl_draw_command_model_node_submit_(cmd, r, cam, &model->roots[i]);
+    code = owl_draw_command_model_node_submit(cmd, r, cam, &model->roots[i]);
 
     if (OWL_SUCCESS != code) {
       goto out;

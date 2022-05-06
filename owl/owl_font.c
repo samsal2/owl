@@ -22,7 +22,7 @@
 OWL_GLOBAL owl_i32 g_ft_library_reference_count = 0;
 OWL_GLOBAL FT_Library g_ft_library;
 
-OWL_INTERNAL void owl_ensure_ft_library_(void) {
+OWL_INTERNAL void owl_ensure_ft_library(void) {
   FT_Error err = FT_Err_Ok;
 
   if (!(g_ft_library_reference_count++))
@@ -32,14 +32,14 @@ OWL_INTERNAL void owl_ensure_ft_library_(void) {
   OWL_ASSERT(FT_Err_Ok == err);
 }
 
-OWL_INTERNAL void owl_decrement_ft_library_count_(void) {
+OWL_INTERNAL void owl_decrement_ft_library_count(void) {
   OWL_ASSERT(g_ft_library_reference_count);
 
   if (!--g_ft_library_reference_count)
     FT_Done_FreeType(g_ft_library);
 }
 
-OWL_INTERNAL void owl_font_calc_dims_(FT_Face face, owl_i32 *width,
+OWL_INTERNAL void owl_font_calc_dims(FT_Face face, owl_i32 *width,
                                       owl_i32 *height) {
   owl_i32 i;
 
@@ -54,7 +54,7 @@ OWL_INTERNAL void owl_font_calc_dims_(FT_Face face, owl_i32 *width,
   }
 }
 
-OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face, owl_i32 x_offset,
+OWL_INTERNAL void owl_face_glyph_bitmap_copy(FT_Face face, owl_i32 x_offset,
                                               owl_i32 atlas_width,
                                               owl_i32 atlas_height,
                                               owl_byte *data) {
@@ -75,7 +75,7 @@ OWL_INTERNAL void owl_face_glyph_bitmap_copy_(FT_Face face, owl_i32 x_offset,
   }
 }
 
-OWL_INTERNAL enum owl_code owl_font_init_atlas_(struct owl_renderer *renderer,
+OWL_INTERNAL enum owl_code owl_font_init_atlas(struct owl_renderer *renderer,
                                                 owl_byte const *data,
                                                 struct owl_font *font) {
   enum owl_code code = OWL_SUCCESS;
@@ -107,7 +107,7 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
   FT_Face face;
   enum owl_code code = OWL_SUCCESS;
 
-  owl_ensure_ft_library_();
+  owl_ensure_ft_library();
 
   font->size = size;
 
@@ -121,7 +121,7 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
     goto out_err_done_face;
   }
 
-  owl_font_calc_dims_(face, &font->atlas_width, &font->atlas_height);
+  owl_font_calc_dims(face, &font->atlas_width, &font->atlas_height);
 
   data = OWL_CALLOC((owl_u64)(font->atlas_width * font->atlas_height),
                     sizeof(owl_u8));
@@ -139,7 +139,7 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
       goto out_err_free_data;
     }
 
-    owl_face_glyph_bitmap_copy_(face, x, font->atlas_width, font->atlas_height,
+    owl_face_glyph_bitmap_copy(face, x, font->atlas_width, font->atlas_height,
                                 data);
 
     /* set the current glyph data */
@@ -157,7 +157,7 @@ enum owl_code owl_font_init(struct owl_renderer *renderer, owl_i32 size,
     x += (int)face->glyph->bitmap.width + OWL_FONT_X_OFFSET_PAD;
   }
 
-  code = owl_font_init_atlas_(renderer, data, font);
+  code = owl_font_init_atlas(renderer, data, font);
 
   if (OWL_SUCCESS != code)
     goto out_err_free_data;
@@ -174,11 +174,11 @@ out:
 
 void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font) {
   owl_renderer_deinit_image(renderer, &font->atlas);
-  owl_decrement_ft_library_count_();
+  owl_decrement_ft_library_count();
 }
 #else
 
-enum owl_code owl_font_load_file_(char const *path, owl_byte **data) {
+enum owl_code owl_font_load_file(char const *path, owl_byte **data) {
   owl_u64 sz;
   FILE *file;
 
@@ -209,7 +209,7 @@ out:
   return code;
 }
 
-void owl_font_unload_file_(owl_byte *data) { OWL_FREE(data); }
+void owl_font_unload_file(owl_byte *data) { OWL_FREE(data); }
 
 #define OWL_FONT_ATLAS_SIZE (OWL_FONT_ATLAS_WIDTH * OWL_FONT_ATLAS_HEIGHT)
 
@@ -229,7 +229,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
 
   enum owl_code code = OWL_SUCCESS;
 
-  if (OWL_SUCCESS != (code = owl_font_load_file_(path, &file))) {
+  if (OWL_SUCCESS != (code = owl_font_load_file(path, &file))) {
     goto out;
   }
 
@@ -241,7 +241,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
   if (!stbtt_PackBegin(&pack_context, bitmap, OWL_FONT_ATLAS_WIDTH,
                        OWL_FONT_ATLAS_HEIGHT, 0, 1, NULL)) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_free_bitmap;
+    goto out_bitmap_free;
   }
 
   /* FIXME(samuel): hardcoded */
@@ -279,11 +279,11 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
 out_end_pack:
   stbtt_PackEnd(&pack_context);
 
-out_free_bitmap:
+out_bitmap_free:
   OWL_FREE(bitmap);
 
 out_unload_file:
-  owl_font_unload_file_(file);
+  owl_font_unload_file(file);
 
 out:
   return code;
