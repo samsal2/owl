@@ -50,15 +50,17 @@ set(GLSL_SHADERS
   owl_glsl_pbr.frag)
 
 if ("${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}" STREQUAL "")
-  message(AUTHOR_WARNING "missing Vulkan_GLSLANG_VALIDATOR_EXECUTABLE, please compile shaders manually") 
+  message(AUTHOR_WARNING "missing Vulkan_GLSLANG_VALIDATOR_EXECUTABLE"
+                         "please compile shaders manually ${GLSL_SHADERS}") 
 else ()
   foreach(SHADER IN LISTS GLSL_SHADERS)
     get_filename_component(FILENAME ${SHADER} NAME)
-    add_custom_command(OUTPUT ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${FILENAME}.spv.u32
-      COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${FILENAME}.spv.u32
+    set(OUT ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${FILENAME}.spv.u32)
+    add_custom_command(OUTPUT ${OUT}
+      COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${OUT}
       DEPENDS ${SHADER}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      list(APPEND SPV_SHADERS ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${FILENAME}.spv.u32)
+      list(APPEND SPV_SHADERS ${OUT})
   endForeach()
 
   add_custom_target(shaders DEPENDS ${SPV_SHADERS})
