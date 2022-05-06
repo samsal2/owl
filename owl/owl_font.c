@@ -179,7 +179,7 @@ void owl_font_deinit(struct owl_renderer *renderer, struct owl_font *font) {
 #else
 
 enum owl_code owl_font_load_file_(char const *path, owl_byte **data) {
-  owl_u64 size;
+  owl_u64 sz;
   FILE *file;
 
   enum owl_code code = OWL_SUCCESS;
@@ -191,16 +191,16 @@ enum owl_code owl_font_load_file_(char const *path, owl_byte **data) {
 
   fseek(file, 0, SEEK_END);
 
-  size = ftell(file);
+  sz = ftell(file);
 
   fseek(file, 0, SEEK_SET);
 
-  if (!(*data = OWL_MALLOC(size))) {
+  if (!(*data = OWL_MALLOC(sz))) {
     code = OWL_ERROR_BAD_ALLOC;
     goto out_close_file;
   }
 
-  fread(*data, size, 1, file);
+  fread(*data, sz, 1, file);
 
 out_close_file:
   fclose(file);

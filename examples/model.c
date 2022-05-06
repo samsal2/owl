@@ -1,4 +1,5 @@
 #include "owl/owl_imgui.h"
+#include "owl/owl_renderer.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -69,7 +70,7 @@ int main(void) {
   while (!owl_client_is_done(client)) {
     OWL_V2_COPY(client->cursor_position, model_command.light);
 
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_begin(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_desc);
       owl_renderer_swapchain_resize(&renderer_desc, renderer);
       owl_camera_ratio_set(&camera, renderer->framebuffer_ratio);

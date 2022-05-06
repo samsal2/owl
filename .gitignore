@@ -10,15 +10,6 @@ format.sh
 # ctags
 tags
 
-# c
-*.o
-*.d
-*.out
-*.u32
-
-# clangd
-compile_commands.json
-
 # macos
 .DS_Store
 *.dSYM

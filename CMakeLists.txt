@@ -5,6 +5,21 @@ project(owl)
 # declare the library 
 add_library(${PROJECT_NAME})
 
+# features
+set_target_properties(${PROJECT_NAME}
+    PROPERTIES 
+        C_STANDARD          99
+        C_STANDARD_REQUIRED ON
+        C_EXTENSIONS        OFF)
+
+#         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+#         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+#         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 # find external libraries
 find_package(Vulkan REQUIRED)
 
@@ -22,19 +37,11 @@ target_link_libraries(${PROJECT_NAME}
 
 # includes
 target_include_directories(${PROJECT_NAME} 
-  PRIVATE ${CMAKE_BINARY_DIR}
   PUBLIC ${PROJECT_SOURCE_DIR}
   PUBLIC ${Vulkan_INCLUDE_DIR}
           "$<$<BOOL:APPLE>:"
             ${PROJECT_SOURCE_DIR}/libs/glfw/macos/include
           ">")
-
-# features
-set_target_properties(${PROJECT_NAME}
-    PROPERTIES 
-        C_STANDARD          99
-        C_STANDARD_REQUIRED ON
-        C_EXTENSIONS        OFF)
 
 # compile options
 target_compile_options(${PROJECT_NAME} PRIVATE

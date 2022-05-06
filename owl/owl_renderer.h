@@ -57,7 +57,7 @@ struct owl_renderer_init_desc {
   owl_vk_create_surface_fn create_surface;
 };
 
-struct owl_renderer_dynamic_heap_reference {
+struct owl_renderer_frame_heap_reference {
   owl_u32 offset32;
   owl_u64 offset;
   VkBuffer buffer;
@@ -288,7 +288,7 @@ struct owl_renderer {
   /* ====================================================================== */
 
   /* ====================================================================== */
-  /* dynamic heap garbage */
+  /* frame heap garbage */
   /* ====================================================================== */
   owl_i32 garbage_memories_count;
   VkDeviceMemory garbage_memories[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
@@ -296,41 +296,37 @@ struct owl_renderer {
   owl_i32 garbage_buffers_count;
   VkBuffer garbage_buffers[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
-  owl_i32 garbage_common_ubo_sets_count;
-  VkDescriptorSet garbage_common_ubo_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
+  owl_i32 garbage_common_sets_count;
+  VkDescriptorSet garbage_common_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
-  owl_i32 garbage_model_ubo_sets_count;
-  VkDescriptorSet garbage_model_ubo_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
+  owl_i32 garbage_model2_sets_count;
+  VkDescriptorSet garbage_model1_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
 
-  owl_i32 garbage_model_ubo_params_sets_count;
-  VkDescriptorSet
-      garbage_model_ubo_params_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
+  owl_i32 garbage_model1_sets_count;
+  VkDescriptorSet garbage_model2_sets[OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
   /* dynamic heap resources */
   /* ====================================================================== */
-  VkDeviceMemory dynamic_heap_memory;
+  VkDeviceMemory frame_heap_memory;
 
-  owl_u64 dynamic_heap_offset;
-  owl_u64 dynamic_heap_buffer_size;
-  owl_u64 dynamic_heap_buffer_alignment;
-  owl_u64 dynamic_heap_buffer_aligned_size;
+  owl_u64 frame_heap_offset;
+  owl_u64 frame_heap_buffer_size;
+  owl_u64 frame_heap_buffer_alignment;
+  owl_u64 frame_heap_buffer_aligned_size;
 
-  owl_byte *active_dynamic_heap_data;
-  VkBuffer active_dynamic_heap_buffer;
-  VkDescriptorSet active_dynamic_heap_common_ubo_set;
-  VkDescriptorSet active_dynamic_heap_model_ubo_set;
-  VkDescriptorSet active_dynamic_heap_model_ubo_params_set;
+  owl_byte *active_frame_heap_data;
+  VkBuffer active_frame_heap_buffer;
+  VkDescriptorSet active_frame_heap_common_set;
+  VkDescriptorSet active_frame_heap_model1_set;
+  VkDescriptorSet active_frame_heap_model2_set;
 
-  owl_byte *dynamic_heap_data[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-  VkBuffer dynamic_heap_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-  VkDescriptorSet
-      dynamic_heap_common_ubo_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-  VkDescriptorSet
-      dynamic_heap_model_ubo_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-  VkDescriptorSet
-      dynamic_heap_model_ubo_params_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  owl_byte *frame_heap_data[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkBuffer frame_heap_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkDescriptorSet frame_heap_common_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkDescriptorSet frame_heap_model1_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  VkDescriptorSet frame_heap_model2_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -342,7 +338,6 @@ struct owl_renderer {
   VkDeviceMemory image_manager_memories[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkImageView image_manager_image_views[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
 
-  /* TODO(samuel): image manager sampler cache */
   VkSampler image_manager_samplers[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   VkDescriptorSet image_manager_sets[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
   /* ====================================================================== */
@@ -360,9 +355,9 @@ owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
                                       VkMemoryRequirements const *req,
                                       enum owl_renderer_memory_visibility vis);
 
-owl_b32 owl_renderer_dynamic_heap_is_offset_clear(struct owl_renderer const *r);
+owl_b32 owl_renderer_frame_heap_is_offset_clear(struct owl_renderer const *r);
 
-void owl_renderer_dynamic_heap_clear_offset(struct owl_renderer *r);
+void owl_renderer_frame_heap_clear_offset(struct owl_renderer *r);
 
 enum owl_code
 owl_renderer_image_init(struct owl_renderer *r,
@@ -372,13 +367,14 @@ owl_renderer_image_init(struct owl_renderer *r,
 void owl_renderer_image_deinit(struct owl_renderer *r,
                                struct owl_renderer_image *img);
 
-void *owl_renderer_dynamic_heap_alloc(
-    struct owl_renderer *r, owl_u64 size,
-    struct owl_renderer_dynamic_heap_reference *ref);
+void *
+owl_renderer_frame_heap_alloc(struct owl_renderer *r, owl_u64 sz,
+                              struct owl_renderer_frame_heap_reference *ref);
 
-enum owl_code owl_renderer_dynamic_heap_submit(
-    struct owl_renderer *r, owl_u64 size, void const *src,
-    struct owl_renderer_dynamic_heap_reference *ref);
+enum owl_code
+owl_renderer_frame_heap_submit(struct owl_renderer *r, owl_u64 sz,
+                               void const *src,
+                               struct owl_renderer_frame_heap_reference *ref);
 
 enum owl_code owl_renderer_bind_pipeline(struct owl_renderer *r,
                                          enum owl_renderer_pipeline pipeline);
@@ -396,7 +392,7 @@ owl_renderer_immidiate_command_buffer_submit(struct owl_renderer *r);
 
 void owl_renderer_immidiate_command_buffer_deinit(struct owl_renderer *r);
 
-enum owl_code owl_renderer_begin_frame(struct owl_renderer *r);
+enum owl_code owl_renderer_frame_begin(struct owl_renderer *r);
 
 enum owl_code owl_renderer_frame_end(struct owl_renderer *r);
 

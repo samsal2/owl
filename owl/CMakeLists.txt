@@ -49,20 +49,26 @@ set(GLSL_SHADERS
   owl_glsl_model.frag
   owl_glsl_pbr.frag)
 
-# idk how to fix this
 if ("${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}" STREQUAL "")
-  message(AUTHOR_WARNING "missing Vulkan_GLSLANG_VALIDATOR_EXECUTABLE, won't compile shaders") 
+  message(AUTHOR_WARNING "missing Vulkan_GLSLANG_VALIDATOR_EXECUTABLE, please compile shaders manually") 
 else ()
   foreach(SHADER IN LISTS GLSL_SHADERS)
     get_filename_component(FILENAME ${SHADER} NAME)
-    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/${FILENAME}.spv.u32
-      COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${CMAKE_BINARY_DIR}/${FILENAME}.spv.u32
+    add_custom_command(OUTPUT ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${FILENAME}.spv.u32
+      COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${SHADER} -V -x -o ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${FILENAME}.spv.u32
       DEPENDS ${SHADER}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      list(APPEND SPV_SHADERS ${CMAKE_BINARY_DIR}/${FILENAME}.spv.u32)
+      list(APPEND SPV_SHADERS ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${FILENAME}.spv.u32)
   endForeach()
 
   add_custom_target(shaders DEPENDS ${SPV_SHADERS})
   add_dependencies(${PROJECT_NAME} shaders)
 endif ()
+
+
+message(AUTHOR_WARNING ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+
+target_include_directories(${PROJECT_NAME} 
+  PRIVATE ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+
 

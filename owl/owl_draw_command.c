@@ -11,23 +11,23 @@ enum owl_code
 owl_draw_command_basic_submit(struct owl_draw_command_basic const *cmd,
                               struct owl_renderer *r,
                               struct owl_camera const *cam) {
-  owl_u64 size;
+  owl_u64 sz;
   VkDescriptorSet sets[2];
   struct owl_draw_command_uniform ubo;
-  struct owl_renderer_dynamic_heap_reference vref;
-  struct owl_renderer_dynamic_heap_reference iref;
-  struct owl_renderer_dynamic_heap_reference uref;
+  struct owl_renderer_frame_heap_reference vref;
+  struct owl_renderer_frame_heap_reference iref;
+  struct owl_renderer_frame_heap_reference uref;
   enum owl_code code = OWL_SUCCESS;
 
-  size = (owl_u64)cmd->vertices_count * sizeof(*cmd->vertices);
-  code = owl_renderer_dynamic_heap_submit(r, size, cmd->vertices, &vref);
+  sz = (owl_u64)cmd->vertices_count * sizeof(*cmd->vertices);
+  code = owl_renderer_frame_heap_submit(r, sz, cmd->vertices, &vref);
 
   if (OWL_SUCCESS != code) {
     goto out;
   }
 
-  size = (owl_u64)cmd->indices_count * sizeof(*cmd->indices);
-  code = owl_renderer_dynamic_heap_submit(r, size, cmd->indices, &iref);
+  sz = (owl_u64)cmd->indices_count * sizeof(*cmd->indices);
+  code = owl_renderer_frame_heap_submit(r, sz, cmd->indices, &iref);
 
   if (OWL_SUCCESS != code) {
     goto out;
@@ -37,8 +37,8 @@ owl_draw_command_basic_submit(struct owl_draw_command_basic const *cmd,
   OWL_M4_COPY(cam->view, ubo.view);
   OWL_M4_COPY(cmd->model, ubo.model);
 
-  size = sizeof(ubo);
-  code = owl_renderer_dynamic_heap_submit(r, size, &ubo, &uref);
+  sz = sizeof(ubo);
+  code = owl_renderer_frame_heap_submit(r, sz, &ubo, &uref);
 
   if (OWL_SUCCESS != code) {
     goto out;
@@ -69,24 +69,24 @@ enum owl_code
 owl_draw_command_quad_submit(struct owl_draw_command_quad const *cmd,
                              struct owl_renderer *r,
                              struct owl_camera const *cam) {
-  owl_u64 size;
+  owl_u64 sz;
   VkDescriptorSet sets[2];
   struct owl_draw_command_uniform ubo;
-  struct owl_renderer_dynamic_heap_reference vref;
-  struct owl_renderer_dynamic_heap_reference iref;
-  struct owl_renderer_dynamic_heap_reference uref;
+  struct owl_renderer_frame_heap_reference vref;
+  struct owl_renderer_frame_heap_reference iref;
+  struct owl_renderer_frame_heap_reference uref;
   enum owl_code code = OWL_SUCCESS;
   owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
 
-  size = OWL_ARRAY_SIZE(cmd->vertices) * sizeof(cmd->vertices[0]);
-  code = owl_renderer_dynamic_heap_submit(r, size, cmd->vertices, &vref);
+  sz = OWL_ARRAY_SIZE(cmd->vertices) * sizeof(cmd->vertices[0]);
+  code = owl_renderer_frame_heap_submit(r, sz, cmd->vertices, &vref);
 
   if (OWL_SUCCESS != code) {
     goto out;
   }
 
-  size = OWL_ARRAY_SIZE(indices) * sizeof(indices[0]);
-  code = owl_renderer_dynamic_heap_submit(r, size, indices, &iref);
+  sz = OWL_ARRAY_SIZE(indices) * sizeof(indices[0]);
+  code = owl_renderer_frame_heap_submit(r, sz, indices, &iref);
 
   if (OWL_SUCCESS != code) {
     goto out;
@@ -96,8 +96,8 @@ owl_draw_command_quad_submit(struct owl_draw_command_quad const *cmd,
   OWL_M4_COPY(cam->view, ubo.view);
   OWL_M4_COPY(cmd->model, ubo.model);
 
-  size = sizeof(ubo);
-  code = owl_renderer_dynamic_heap_submit(r, size, &ubo, &uref);
+  sz = sizeof(ubo);
+  code = owl_renderer_frame_heap_submit(r, sz, &ubo, &uref);
 
   if (OWL_SUCCESS != code) {
     goto out;
@@ -264,8 +264,8 @@ OWL_INTERNAL enum owl_code owl_draw_command_model_node_submit_(
     owl_u32 offsets[2];
     VkDescriptorSet sets[6];
     struct owl_model_primitive primitive;
-    struct owl_renderer_dynamic_heap_reference uniform_reference;
-    struct owl_renderer_dynamic_heap_reference uniform_params_reference;
+    struct owl_renderer_frame_heap_reference uniform_reference;
+    struct owl_renderer_frame_heap_reference uniform_params_reference;
     struct owl_model_material material;
     struct owl_model_texture base_color_texture;
     struct owl_model_texture normal_texture;
@@ -316,15 +316,15 @@ OWL_INTERNAL enum owl_code owl_draw_command_model_node_submit_(
     OWL_V4_ZERO(ubo.light);
     OWL_V3_COPY(cmd->light, ubo.light);
 
-    code = owl_renderer_dynamic_heap_submit(r, sizeof(ubo), &ubo,
-                                            &uniform_reference);
+    code = owl_renderer_frame_heap_submit(r, sizeof(ubo), &ubo,
+                                          &uniform_reference);
 
     if (OWL_SUCCESS != code) {
       goto out;
     }
 
-    code = owl_renderer_dynamic_heap_submit(r, sizeof(ubo_params), &ubo,
-                                            &uniform_params_reference);
+    code = owl_renderer_frame_heap_submit(r, sizeof(ubo_params), &ubo,
+                                          &uniform_params_reference);
 
     if (OWL_SUCCESS != code) {
       goto out;

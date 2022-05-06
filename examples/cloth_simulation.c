@@ -293,7 +293,7 @@ int main(void) {
 
     update_cloth(1.0F / 60.0F, &cloth);
 
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_begin_frame(renderer)) {
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_begin(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_init_desc);
       owl_renderer_swapchain_resize(&renderer_init_desc, renderer);
       continue;

@@ -2219,9 +2219,9 @@ OWL_INTERNAL enum owl_code owl_renderer_garbage_init_(struct owl_renderer *r) {
 
   r->garbage_buffers_count = 0;
   r->garbage_memories_count = 0;
-  r->garbage_common_ubo_sets_count = 0;
-  r->garbage_model_ubo_sets_count = 0;
-  r->garbage_model_ubo_params_sets_count = 0;
+  r->garbage_common_sets_count = 0;
+  r->garbage_model2_sets_count = 0;
+  r->garbage_model1_sets_count = 0;
 
   return code;
 }
@@ -2229,26 +2229,26 @@ OWL_INTERNAL enum owl_code owl_renderer_garbage_init_(struct owl_renderer *r) {
 OWL_INTERNAL void owl_renderer_garbage_deinit_(struct owl_renderer *r) {
   owl_i32 i;
 
-  for (i = 0; i < r->garbage_model_ubo_params_sets_count; ++i) {
+  for (i = 0; i < r->garbage_model1_sets_count; ++i) {
     vkFreeDescriptorSets(r->device, r->common_set_pool, 1,
-                         &r->garbage_model_ubo_params_sets[i]);
+                         &r->garbage_model2_sets[i]);
   }
 
-  r->garbage_model_ubo_params_sets_count = 0;
+  r->garbage_model1_sets_count = 0;
 
-  for (i = 0; i < r->garbage_model_ubo_sets_count; ++i) {
+  for (i = 0; i < r->garbage_model2_sets_count; ++i) {
     vkFreeDescriptorSets(r->device, r->common_set_pool, 1,
-                         &r->garbage_model_ubo_sets[i]);
+                         &r->garbage_model1_sets[i]);
   }
 
-  r->garbage_model_ubo_sets_count = 0;
+  r->garbage_model2_sets_count = 0;
 
-  for (i = 0; i < r->garbage_common_ubo_sets_count; ++i) {
+  for (i = 0; i < r->garbage_common_sets_count; ++i) {
     vkFreeDescriptorSets(r->device, r->common_set_pool, 1,
-                         &r->garbage_common_ubo_sets[i]);
+                         &r->garbage_common_sets[i]);
   }
 
-  r->garbage_common_ubo_sets_count = 0;
+  r->garbage_common_sets_count = 0;
 
   for (i = 0; i < r->garbage_memories_count; ++i) {
     vkFreeMemory(r->device, r->garbage_memories[i], NULL);
@@ -2263,14 +2263,14 @@ OWL_INTERNAL void owl_renderer_garbage_deinit_(struct owl_renderer *r) {
   r->garbage_buffers_count = 0;
 }
 
-OWL_INTERNAL enum owl_code
-owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
+OWL_INTERNAL enum owl_code owl_renderer_frame_heap_init_(struct owl_renderer *r,
+                                                         owl_u64 sz) {
   owl_i32 i;
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  r->dynamic_heap_offset = 0;
-  r->dynamic_heap_buffer_size = size;
+  r->frame_heap_offset = 0;
+  r->frame_heap_buffer_size = sz;
 
   {
     VkBufferCreateInfo info;
@@ -2278,7 +2278,7 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
     info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     info.pNext = NULL;
     info.flags = 0;
-    info.size = size;
+    info.size = sz;
     info.usage =
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -2287,11 +2287,10 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
     info.pQueueFamilyIndices = NULL;
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      vkres =
-          vkCreateBuffer(r->device, &info, NULL, &r->dynamic_heap_buffers[i]);
+      vkres = vkCreateBuffer(r->device, &info, NULL, &r->frame_heap_buffers[i]);
 
       if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code_(vkres))) {
-        goto out_err_dynamic_heap_buffers_deinit;
+        goto out_err_frame_heap_buffers_deinit;
       }
     }
   }
@@ -2300,35 +2299,34 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
     VkMemoryRequirements requirements;
     VkMemoryAllocateInfo info;
 
-    vkGetBufferMemoryRequirements(r->device, r->dynamic_heap_buffers[0],
+    vkGetBufferMemoryRequirements(r->device, r->frame_heap_buffers[0],
                                   &requirements);
 
-    r->dynamic_heap_buffer_alignment = requirements.alignment;
-    r->dynamic_heap_buffer_aligned_size =
-        OWL_ALIGNU2(size, requirements.alignment);
+    r->frame_heap_buffer_alignment = requirements.alignment;
+    r->frame_heap_buffer_aligned_size = OWL_ALIGNU2(sz, requirements.alignment);
 
     info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     info.pNext = NULL;
-    info.allocationSize = r->dynamic_heap_buffer_aligned_size *
-                          OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
+    info.allocationSize =
+        r->frame_heap_buffer_aligned_size * OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
     info.memoryTypeIndex = owl_renderer_find_memory_type(
         r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT);
 
-    vkres = vkAllocateMemory(r->device, &info, NULL, &r->dynamic_heap_memory);
+    vkres = vkAllocateMemory(r->device, &info, NULL, &r->frame_heap_memory);
 
     if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code_(vkres))) {
-      goto out_err_dynamic_heap_buffers_deinit;
+      goto out_err_frame_heap_buffers_deinit;
     }
   }
 
   {
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      vkres = vkBindBufferMemory(r->device, r->dynamic_heap_buffers[i],
-                                 r->dynamic_heap_memory,
-                                 i * r->dynamic_heap_buffer_aligned_size);
+      vkres = vkBindBufferMemory(r->device, r->frame_heap_buffers[i],
+                                 r->frame_heap_memory,
+                                 i * r->frame_heap_buffer_aligned_size);
 
       if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code_(vkres))) {
-        goto out_err_dynamic_heap_memory_deinit;
+        goto out_err_frame_heap_memory_deinit;
       }
     }
   }
@@ -2336,16 +2334,16 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
   {
     void *data;
 
-    vkres = vkMapMemory(r->device, r->dynamic_heap_memory, 0, VK_WHOLE_SIZE, 0,
+    vkres = vkMapMemory(r->device, r->frame_heap_memory, 0, VK_WHOLE_SIZE, 0,
                         &data);
 
     if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code_(vkres))) {
-      goto out_err_dynamic_heap_memory_deinit;
+      goto out_err_frame_heap_memory_deinit;
     }
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      r->dynamic_heap_data[i] =
-          &((owl_byte *)data)[i * r->dynamic_heap_buffer_aligned_size];
+      r->frame_heap_data[i] =
+          &((owl_byte *)data)[i * r->frame_heap_buffer_aligned_size];
     }
   }
 
@@ -2363,11 +2361,11 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
     info.descriptorSetCount = OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
     info.pSetLayouts = layouts;
 
-    vkres = vkAllocateDescriptorSets(r->device, &info,
-                                     r->dynamic_heap_common_ubo_sets);
+    vkres =
+        vkAllocateDescriptorSets(r->device, &info, r->frame_heap_common_sets);
 
     if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code_(vkres))) {
-      goto out_err_dynamic_heap_memory_unmap;
+      goto out_err_frame_heap_memory_unmap;
     }
   }
 
@@ -2385,11 +2383,11 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
     info.descriptorSetCount = OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
     info.pSetLayouts = layouts;
 
-    vkres = vkAllocateDescriptorSets(r->device, &info,
-                                     r->dynamic_heap_model_ubo_sets);
+    vkres =
+        vkAllocateDescriptorSets(r->device, &info, r->frame_heap_model1_sets);
 
     if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code_(vkres))) {
-      goto out_err_dynamic_heap_common_ubo_sets_deinit;
+      goto out_err_frame_heap_common_ubo_sets_deinit;
     }
   }
 
@@ -2407,11 +2405,11 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
     info.descriptorSetCount = OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
     info.pSetLayouts = layouts;
 
-    vkres = vkAllocateDescriptorSets(r->device, &info,
-                                     r->dynamic_heap_model_ubo_params_sets);
+    vkres =
+        vkAllocateDescriptorSets(r->device, &info, r->frame_heap_model2_sets);
 
     if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code_(vkres))) {
-      goto out_err_dynamic_heap_model_ubo_sets_deinit;
+      goto out_err_frame_heap_model_ubo_sets_deinit;
     }
   }
 
@@ -2420,13 +2418,13 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
       VkWriteDescriptorSet write;
       VkDescriptorBufferInfo buffer;
 
-      buffer.buffer = r->dynamic_heap_buffers[i];
+      buffer.buffer = r->frame_heap_buffers[i];
       buffer.offset = 0;
       buffer.range = sizeof(struct owl_draw_command_uniform);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
-      write.dstSet = r->dynamic_heap_common_ubo_sets[i];
+      write.dstSet = r->frame_heap_common_sets[i];
       write.dstBinding = 0;
       write.dstArrayElement = 0;
       write.descriptorCount = 1;
@@ -2444,13 +2442,13 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
       VkDescriptorBufferInfo buffer;
       VkWriteDescriptorSet write;
 
-      buffer.buffer = r->dynamic_heap_buffers[i];
+      buffer.buffer = r->frame_heap_buffers[i];
       buffer.offset = 0;
       buffer.range = sizeof(struct owl_model_uniform);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
-      write.dstSet = r->dynamic_heap_model_ubo_sets[i];
+      write.dstSet = r->frame_heap_model1_sets[i];
       write.dstBinding = 0;
       write.dstArrayElement = 0;
       write.descriptorCount = 1;
@@ -2468,13 +2466,13 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
       VkDescriptorBufferInfo buffer;
       VkWriteDescriptorSet write;
 
-      buffer.buffer = r->dynamic_heap_buffers[i];
+      buffer.buffer = r->frame_heap_buffers[i];
       buffer.offset = 0;
       buffer.range = sizeof(struct owl_model_uniform_params);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
-      write.dstSet = r->dynamic_heap_model_ubo_params_sets[i];
+      write.dstSet = r->frame_heap_model2_sets[i];
       write.dstBinding = 0;
       write.dstArrayElement = 0;
       write.descriptorCount = 1;
@@ -2487,72 +2485,69 @@ owl_renderer_dynamic_heap_init_(struct owl_renderer *r, owl_u64 size) {
     }
   }
 
-  r->active_dynamic_heap_data = r->dynamic_heap_data[r->active_frame];
+  r->active_frame_heap_data = r->frame_heap_data[r->active_frame];
 
-  r->active_dynamic_heap_buffer = r->dynamic_heap_buffers[r->active_frame];
+  r->active_frame_heap_buffer = r->frame_heap_buffers[r->active_frame];
 
-  r->active_dynamic_heap_common_ubo_set =
-      r->dynamic_heap_common_ubo_sets[r->active_frame];
+  r->active_frame_heap_common_set = r->frame_heap_common_sets[r->active_frame];
 
-  r->active_dynamic_heap_model_ubo_set =
-      r->dynamic_heap_model_ubo_sets[r->active_frame];
+  r->active_frame_heap_model1_set = r->frame_heap_model1_sets[r->active_frame];
 
-  r->active_dynamic_heap_model_ubo_params_set =
-      r->dynamic_heap_model_ubo_params_sets[r->active_frame];
+  r->active_frame_heap_model2_set = r->frame_heap_model2_sets[r->active_frame];
 
   goto out;
 
-out_err_dynamic_heap_model_ubo_sets_deinit:
+out_err_frame_heap_model_ubo_sets_deinit:
   vkFreeDescriptorSets(r->device, r->common_set_pool,
                        OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
-                       r->dynamic_heap_common_ubo_sets);
+                       r->frame_heap_common_sets);
 
-out_err_dynamic_heap_common_ubo_sets_deinit:
+out_err_frame_heap_common_ubo_sets_deinit:
   vkFreeDescriptorSets(r->device, r->common_set_pool,
                        OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
-                       r->dynamic_heap_common_ubo_sets);
+                       r->frame_heap_common_sets);
 
-out_err_dynamic_heap_memory_unmap:
-  vkUnmapMemory(r->device, r->dynamic_heap_memory);
+out_err_frame_heap_memory_unmap:
+  vkUnmapMemory(r->device, r->frame_heap_memory);
 
-out_err_dynamic_heap_memory_deinit:
-  vkFreeMemory(r->device, r->dynamic_heap_memory, NULL);
+out_err_frame_heap_memory_deinit:
+  vkFreeMemory(r->device, r->frame_heap_memory, NULL);
 
   i = OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
 
-out_err_dynamic_heap_buffers_deinit:
+out_err_frame_heap_buffers_deinit:
   for (i = i - 1; i >= 0; --i) {
-    vkDestroyBuffer(r->device, r->dynamic_heap_buffers[i], NULL);
+    vkDestroyBuffer(r->device, r->frame_heap_buffers[i], NULL);
   }
 
 out:
   return code;
 }
 
-OWL_INTERNAL void owl_renderer_dynamic_heap_deinit_(struct owl_renderer *r) {
+OWL_INTERNAL void owl_renderer_frame_heap_deinit_(struct owl_renderer *r) {
   owl_i32 i;
 
   vkFreeDescriptorSets(r->device, r->common_set_pool,
                        OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
-                       r->dynamic_heap_model_ubo_params_sets);
+                       r->frame_heap_model2_sets);
 
   vkFreeDescriptorSets(r->device, r->common_set_pool,
                        OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
-                       r->dynamic_heap_model_ubo_sets);
+                       r->frame_heap_model1_sets);
 
   vkFreeDescriptorSets(r->device, r->common_set_pool,
                        OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT,
-                       r->dynamic_heap_common_ubo_sets);
+                       r->frame_heap_common_sets);
 
-  vkFreeMemory(r->device, r->dynamic_heap_memory, NULL);
+  vkFreeMemory(r->device, r->frame_heap_memory, NULL);
 
   for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-    vkDestroyBuffer(r->device, r->dynamic_heap_buffers[i], NULL);
+    vkDestroyBuffer(r->device, r->frame_heap_buffers[i], NULL);
   }
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_dynamic_heap_move_to_garbage_(struct owl_renderer *r) {
+owl_renderer_frame_heap_move_to_garbage_(struct owl_renderer *r) {
   owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
@@ -2566,14 +2561,14 @@ owl_renderer_dynamic_heap_move_to_garbage_(struct owl_renderer *r) {
     }
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      r->garbage_buffers[prev + i] = r->dynamic_heap_buffers[i];
+      r->garbage_buffers[prev + i] = r->frame_heap_buffers[i];
     }
 
     r->garbage_buffers_count = next;
   }
 
   {
-    owl_i32 prev = r->garbage_common_ubo_sets_count;
+    owl_i32 prev = r->garbage_common_sets_count;
     owl_i32 next = prev + OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT <= next) {
@@ -2582,14 +2577,14 @@ owl_renderer_dynamic_heap_move_to_garbage_(struct owl_renderer *r) {
     }
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      r->garbage_common_ubo_sets[prev + i] = r->dynamic_heap_common_ubo_sets[i];
+      r->garbage_common_sets[prev + i] = r->frame_heap_common_sets[i];
     }
 
-    r->garbage_common_ubo_sets_count = next;
+    r->garbage_common_sets_count = next;
   }
 
   {
-    owl_i32 prev = r->garbage_model_ubo_sets_count;
+    owl_i32 prev = r->garbage_model2_sets_count;
     owl_i32 next = prev + OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT <= next) {
@@ -2598,14 +2593,14 @@ owl_renderer_dynamic_heap_move_to_garbage_(struct owl_renderer *r) {
     }
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      r->garbage_model_ubo_sets[prev + i] = r->dynamic_heap_model_ubo_sets[i];
+      r->garbage_model1_sets[prev + i] = r->frame_heap_model1_sets[i];
     }
 
-    r->garbage_model_ubo_sets_count = next;
+    r->garbage_model2_sets_count = next;
   }
 
   {
-    owl_i32 prev = r->garbage_model_ubo_params_sets_count;
+    owl_i32 prev = r->garbage_model1_sets_count;
     owl_i32 next = prev + OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
 
     if (OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT <= next) {
@@ -2614,11 +2609,10 @@ owl_renderer_dynamic_heap_move_to_garbage_(struct owl_renderer *r) {
     }
 
     for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
-      r->garbage_model_ubo_params_sets[prev + i] =
-          r->dynamic_heap_model_ubo_params_sets[i];
+      r->garbage_model2_sets[prev + i] = r->frame_heap_model2_sets[i];
     }
 
-    r->garbage_model_ubo_sets_count = next;
+    r->garbage_model2_sets_count = next;
   }
 
   {
@@ -2630,16 +2624,16 @@ owl_renderer_dynamic_heap_move_to_garbage_(struct owl_renderer *r) {
       goto out;
     }
 
-    r->garbage_memories[prev + 0] = r->dynamic_heap_memory;
+    r->garbage_memories[prev + 0] = r->frame_heap_memory;
 
     r->garbage_memories_count = next;
   }
 
-  r->active_dynamic_heap_data = NULL;
-  r->active_dynamic_heap_buffer = VK_NULL_HANDLE;
-  r->active_dynamic_heap_common_ubo_set = VK_NULL_HANDLE;
-  r->active_dynamic_heap_model_ubo_set = VK_NULL_HANDLE;
-  r->active_dynamic_heap_model_ubo_params_set = VK_NULL_HANDLE;
+  r->active_frame_heap_data = NULL;
+  r->active_frame_heap_buffer = VK_NULL_HANDLE;
+  r->active_frame_heap_common_set = VK_NULL_HANDLE;
+  r->active_frame_heap_model1_set = VK_NULL_HANDLE;
+  r->active_frame_heap_model2_set = VK_NULL_HANDLE;
 
 out:
   return code;
@@ -2765,18 +2759,18 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *desc,
     goto out_err_frame_sync_deinit;
   }
 
-  if (OWL_SUCCESS != (code = owl_renderer_dynamic_heap_init_(r, 1 << 24))) {
+  if (OWL_SUCCESS != (code = owl_renderer_frame_heap_init_(r, 1 << 24))) {
     goto out_err_garbage_deinit;
   }
 
   if (OWL_SUCCESS != (code = owl_renderer_image_manager_init_(r))) {
-    goto out_err_dynamic_heap_deinit;
+    goto out_err_frame_heap_deinit;
   }
 
   goto out;
 
-out_err_dynamic_heap_deinit:
-  owl_renderer_dynamic_heap_deinit_(r);
+out_err_frame_heap_deinit:
+  owl_renderer_frame_heap_deinit_(r);
 
 out_err_garbage_deinit:
   owl_renderer_garbage_deinit_(r);
@@ -2839,7 +2833,7 @@ void owl_renderer_deinit(struct owl_renderer *r) {
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
   owl_renderer_image_manager_deinit_(r);
-  owl_renderer_dynamic_heap_deinit_(r);
+  owl_renderer_frame_heap_deinit_(r);
   owl_renderer_garbage_deinit_(r);
   owl_renderer_frame_sync_deinit_(r);
   owl_renderer_frame_commands_deinit_(r);
@@ -2864,23 +2858,23 @@ void owl_renderer_deinit(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL enum owl_code
-owl_renderer_dynamic_heap_reserve_(struct owl_renderer *r, owl_u64 size) {
+owl_renderer_frame_heap_reserve_(struct owl_renderer *r, owl_u64 size) {
   enum owl_code code = OWL_SUCCESS;
-  owl_u64 required = r->dynamic_heap_offset + size;
+  owl_u64 required = r->frame_heap_offset + size;
 
-  if (required < r->dynamic_heap_buffer_size) {
+  if (required < r->frame_heap_buffer_size) {
     goto out;
   }
 
-  vkUnmapMemory(r->device, r->dynamic_heap_memory);
+  vkUnmapMemory(r->device, r->frame_heap_memory);
 
-  code = owl_renderer_dynamic_heap_move_to_garbage_(r);
+  code = owl_renderer_frame_heap_move_to_garbage_(r);
 
   if (OWL_SUCCESS != code) {
     goto out;
   }
 
-  code = owl_renderer_dynamic_heap_init_(r, 2 * required);
+  code = owl_renderer_frame_heap_init_(r, 2 * required);
 
   if (OWL_SUCCESS != code) {
     goto out;
@@ -2963,58 +2957,58 @@ out:
   return code;
 }
 
-owl_b32
-owl_renderer_dynamic_heap_is_offset_clear(struct owl_renderer const *r) {
-  return 0 == r->dynamic_heap_offset;
+owl_b32 owl_renderer_frame_heap_is_offset_clear(struct owl_renderer const *r) {
+  return 0 == r->frame_heap_offset;
 }
 
 OWL_INTERNAL void
-owl_renderer_dynamic_heap_clear_garbage_(struct owl_renderer *r) {
+owl_renderer_frame_heap_clear_garbage_(struct owl_renderer *r) {
   owl_renderer_garbage_deinit_(r);
 }
 
-void owl_renderer_dynamic_heap_clear_offset(struct owl_renderer *r) {
-  r->dynamic_heap_offset = 0;
+void owl_renderer_frame_heap_clear_offset(struct owl_renderer *r) {
+  r->frame_heap_offset = 0;
 }
 
-void *owl_renderer_dynamic_heap_alloc(
-    struct owl_renderer *r, owl_u64 size,
-    struct owl_renderer_dynamic_heap_reference *ref) {
+void *
+owl_renderer_frame_heap_alloc(struct owl_renderer *r, owl_u64 sz,
+                              struct owl_renderer_frame_heap_reference *ref) {
   owl_byte *data = NULL;
   enum owl_code code = OWL_SUCCESS;
 
-  if (OWL_SUCCESS != (code = owl_renderer_dynamic_heap_reserve_(r, size))) {
+  if (OWL_SUCCESS != (code = owl_renderer_frame_heap_reserve_(r, sz))) {
     goto out;
   }
 
-  ref->offset32 = (owl_u32)r->dynamic_heap_offset;
-  ref->offset = r->dynamic_heap_offset;
-  ref->buffer = r->active_dynamic_heap_buffer;
-  ref->common_ubo_set = r->active_dynamic_heap_common_ubo_set;
-  ref->model_ubo_set = r->active_dynamic_heap_model_ubo_set;
-  ref->model_ubo_params_set = r->active_dynamic_heap_model_ubo_params_set;
+  ref->offset32 = (owl_u32)r->frame_heap_offset;
+  ref->offset = r->frame_heap_offset;
+  ref->buffer = r->active_frame_heap_buffer;
+  ref->common_ubo_set = r->active_frame_heap_common_set;
+  ref->model_ubo_set = r->active_frame_heap_model1_set;
+  ref->model_ubo_params_set = r->active_frame_heap_model2_set;
 
-  data = &r->active_dynamic_heap_data[r->dynamic_heap_offset];
+  data = &r->active_frame_heap_data[r->frame_heap_offset];
 
-  r->dynamic_heap_offset = OWL_ALIGNU2(r->dynamic_heap_offset + size,
-                                       r->dynamic_heap_buffer_alignment);
+  r->frame_heap_offset =
+      OWL_ALIGNU2(r->frame_heap_offset + sz, r->frame_heap_buffer_alignment);
 
 out:
   return data;
 }
 
-enum owl_code owl_renderer_dynamic_heap_submit(
-    struct owl_renderer *r, owl_u64 size, void const *src,
-    struct owl_renderer_dynamic_heap_reference *ref) {
+enum owl_code
+owl_renderer_frame_heap_submit(struct owl_renderer *r, owl_u64 sz,
+                               void const *src,
+                               struct owl_renderer_frame_heap_reference *ref) {
   owl_byte *data;
   enum owl_code code = OWL_SUCCESS;
 
-  if (!(data = owl_renderer_dynamic_heap_alloc(r, size, ref))) {
+  if (!(data = owl_renderer_frame_heap_alloc(r, sz, ref))) {
     code = OWL_ERROR_BAD_ALLOC;
     goto out;
   }
 
-  OWL_MEMCPY(data, src, size);
+  OWL_MEMCPY(data, src, sz);
 
 out:
   return code;
@@ -3252,7 +3246,7 @@ OWL_INTERNAL void owl_renderer_begin_recording_(struct owl_renderer *r) {
   }
 }
 
-enum owl_code owl_renderer_begin_frame(struct owl_renderer *r) {
+enum owl_code owl_renderer_frame_begin(struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
 
   if (OWL_SUCCESS != (code = owl_renderer_next_image_(r))) {
@@ -3330,14 +3324,11 @@ OWL_INTERNAL void owl_renderer_update_actives_(struct owl_renderer *r) {
   r->active_render_done_semaphore = r->render_done_semaphores[r->active_frame];
   r->active_frame_command_buffer = r->frame_command_buffers[r->active_frame];
   r->active_frame_command_pool = r->frame_command_pools[r->active_frame];
-  r->active_dynamic_heap_data = r->dynamic_heap_data[r->active_frame];
-  r->active_dynamic_heap_buffer = r->dynamic_heap_buffers[r->active_frame];
-  r->active_dynamic_heap_common_ubo_set =
-      r->dynamic_heap_common_ubo_sets[r->active_frame];
-  r->active_dynamic_heap_model_ubo_set =
-      r->dynamic_heap_model_ubo_sets[r->active_frame];
-  r->active_dynamic_heap_model_ubo_params_set =
-      r->dynamic_heap_model_ubo_params_sets[r->active_frame];
+  r->active_frame_heap_data = r->frame_heap_data[r->active_frame];
+  r->active_frame_heap_buffer = r->frame_heap_buffers[r->active_frame];
+  r->active_frame_heap_common_set = r->frame_heap_common_sets[r->active_frame];
+  r->active_frame_heap_model1_set = r->frame_heap_model1_sets[r->active_frame];
+  r->active_frame_heap_model2_set = r->frame_heap_model2_sets[r->active_frame];
 }
 
 enum owl_code owl_renderer_frame_end(struct owl_renderer *r) {
@@ -3351,8 +3342,8 @@ enum owl_code owl_renderer_frame_end(struct owl_renderer *r) {
   }
 
   owl_renderer_update_actives_(r);
-  owl_renderer_dynamic_heap_clear_offset(r);
-  owl_renderer_dynamic_heap_clear_garbage_(r);
+  owl_renderer_frame_heap_clear_offset(r);
+  owl_renderer_frame_heap_clear_garbage_(r);
 
 out:
   return code;
@@ -3632,7 +3623,7 @@ struct owl_renderer_image_load_state {
   owl_u32 height;
   owl_u32 mips;
   enum owl_renderer_pixel_format format;
-  struct owl_renderer_dynamic_heap_reference reference;
+  struct owl_renderer_frame_heap_reference reference;
 };
 
 OWL_INTERNAL enum owl_code owl_renderer_image_load_state_init_(
@@ -3645,7 +3636,7 @@ OWL_INTERNAL enum owl_code owl_renderer_image_load_state_init_(
     owl_i32 width;
     owl_i32 height;
     owl_i32 channels;
-    owl_u64 size;
+    owl_u64 sz;
     owl_byte *data;
 
     data =
@@ -3659,9 +3650,9 @@ OWL_INTERNAL enum owl_code owl_renderer_image_load_state_init_(
     state->format = OWL_RENDERER_PIXEL_FORMAT_R8G8B8A8_SRGB;
     state->width = (owl_u32)width;
     state->height = (owl_u32)height;
-    size = state->width * state->height *
-           owl_renderer_pixel_format_size(state->format);
-    code = owl_renderer_dynamic_heap_submit(r, size, data, &state->reference);
+    sz = state->width * state->height *
+         owl_renderer_pixel_format_size(state->format);
+    code = owl_renderer_frame_heap_submit(r, sz, data, &state->reference);
 
     stbi_image_free(data);
 
@@ -3670,15 +3661,15 @@ OWL_INTERNAL enum owl_code owl_renderer_image_load_state_init_(
     }
   } break;
   case OWL_RENDERER_IMAGE_SRC_TYPE_DATA: {
-    owl_u64 size;
+    owl_u64 sz;
 
     state->format = desc->src_data_pixel_format;
     state->width = (owl_u32)desc->src_data_width;
     state->height = (owl_u32)desc->src_data_height;
-    size = state->width * state->height *
-           owl_renderer_pixel_format_size(state->format);
-    code = owl_renderer_dynamic_heap_submit(r, size, desc->src_data,
-                                            &state->reference);
+    sz = state->width * state->height *
+         owl_renderer_pixel_format_size(state->format);
+    code = owl_renderer_frame_heap_submit(r, sz, desc->src_data,
+                                          &state->reference);
 
     if (OWL_SUCCESS != code) {
       goto out;
@@ -3695,7 +3686,7 @@ out:
 void owl_renderer_image_load_state_deinit_(
     struct owl_renderer *r, struct owl_renderer_image_load_state *state) {
   OWL_UNUSED(state);
-  owl_renderer_dynamic_heap_clear_offset(r);
+  owl_renderer_frame_heap_clear_offset(r);
 }
 
 enum owl_code
@@ -3706,7 +3697,7 @@ owl_renderer_image_init(struct owl_renderer *r,
   enum owl_code code = OWL_SUCCESS;
   struct owl_renderer_image_load_state state;
 
-  OWL_ASSERT(owl_renderer_dynamic_heap_is_offset_clear(r));
+  OWL_ASSERT(owl_renderer_frame_heap_is_offset_clear(r));
 
   code = owl_renderer_image_load_state_init_(r, desc, &state);
 
