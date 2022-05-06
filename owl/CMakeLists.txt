@@ -65,9 +65,6 @@ else ()
   add_dependencies(${PROJECT_NAME} shaders)
 endif ()
 
-
-message(AUTHOR_WARNING ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
-
 target_include_directories(${PROJECT_NAME} 
   PRIVATE ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
 
