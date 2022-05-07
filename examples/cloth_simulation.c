@@ -231,11 +231,11 @@ char const *fps_string(double time) {
     }                                                                          \
   } while (0)
 
-static struct owl_client_init_desc client_init_desc;
+static struct owl_client_init_desc client_desc;
 static struct owl_client *client;
-static struct owl_renderer_init_desc renderer_init_desc;
+static struct owl_renderer_init_desc renderer_desc;
 static struct owl_renderer *renderer;
-static struct owl_renderer_image_init_desc image_init_desc;
+static struct owl_renderer_image_init_desc image_desc;
 static struct owl_renderer_image image;
 static struct cloth cloth;
 static struct owl_font font;
@@ -249,20 +249,20 @@ static struct owl_camera camera;
 int main(void) {
   owl_u32 selected = UNSELECTED;
 
-  client_init_desc.height = 600;
-  client_init_desc.width = 600;
-  client_init_desc.title = "cloth-sim";
+  client_desc.height = 600;
+  client_desc.width = 600;
+  client_desc.title = "cloth-sim";
   client = OWL_MALLOC(sizeof(*client));
-  TEST(owl_client_init(&client_init_desc, client));
+  TEST(owl_client_init(&client_desc, client));
 
-  TEST(owl_client_fill_renderer_init_desc(client, &renderer_init_desc));
+  TEST(owl_client_fill_renderer_init_desc(client, &renderer_desc));
   renderer = OWL_MALLOC(sizeof(*renderer));
-  TEST(owl_renderer_init(&renderer_init_desc, renderer));
+  TEST(owl_renderer_init(&renderer_desc, renderer));
 
-  image_init_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
-  image_init_desc.src_path = TPATH;
-  image_init_desc.sampler_use_default = 1;
-  TEST(owl_renderer_image_init(renderer, &image_init_desc, &image));
+  image_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
+  image_desc.src_path = TPATH;
+  image_desc.sampler_use_default = 1;
+  TEST(owl_renderer_image_init(renderer, &image_desc, &image));
 
   TEST(owl_font_init(renderer, 64, FONTPATH, &font));
 
@@ -294,8 +294,8 @@ int main(void) {
     update_cloth(1.0F / 60.0F, &cloth);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_begin(renderer)) {
-      owl_client_fill_renderer_init_desc(client, &renderer_init_desc);
-      owl_renderer_swapchain_resize(&renderer_init_desc, renderer);
+      owl_client_fill_renderer_init_desc(client, &renderer_desc);
+      owl_renderer_swapchain_resize(&renderer_desc, renderer);
       continue;
     }
 
@@ -311,8 +311,8 @@ int main(void) {
     owl_draw_command_text_submit(&text_command, renderer, &camera);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end(renderer)) {
-      owl_client_fill_renderer_init_desc(client, &renderer_init_desc);
-      owl_renderer_swapchain_resize(&renderer_init_desc, renderer);
+      owl_client_fill_renderer_init_desc(client, &renderer_desc);
+      owl_renderer_swapchain_resize(&renderer_desc, renderer);
       continue;
     }
 

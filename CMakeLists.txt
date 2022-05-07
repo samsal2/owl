@@ -12,10 +12,6 @@ set_target_properties(${PROJECT_NAME}
         C_STANDARD_REQUIRED ON
         C_EXTENSIONS        OFF)
 
-#         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-#         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-#         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -26,25 +22,26 @@ find_package(Vulkan REQUIRED)
 # add sources
 add_subdirectory(${PROJECT_NAME})
 
+add_subdirectory(libs/glfw)
+add_subdirectory(libs/imgui)
+add_subdirectory(libs/stb)
+add_subdirectory(libs/cgltf)
+
 # link libraries
 target_link_libraries(${PROJECT_NAME} 
   PUBLIC ${Vulkan_LIBRARIES}
-  PUBLIC "$<$<BOOL:APPLE>:"
-            ${PROJECT_SOURCE_DIR}/libs/glfw/macos/lib-x86_64/libglfw3.a
-            "-framework Cocoa"
-            "-framework IOKit"
-          ">")
+  PRIVATE cgltf
+  PRIVATE imgui
+  PRIVATE glfw
+  PRIVATE stb)
 
 # includes
 target_include_directories(${PROJECT_NAME} 
-  PUBLIC ${PROJECT_SOURCE_DIR}
   PUBLIC ${Vulkan_INCLUDE_DIR}
-          "$<$<BOOL:APPLE>:"
-            ${PROJECT_SOURCE_DIR}/libs/glfw/macos/include
-          ">")
+  PUBLIC ${PROJECT_SOURCE_DIR})
 
 # compile options
-target_compile_options(${PROJECT_NAME} PRIVATE
+target_compile_options(${PROJECT_NAME} PUBLIC
 	"$<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:"
     -std=c99
 		-Wall
@@ -81,13 +78,6 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 		-Ofast
   ">")
 
-# compile definitions
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-  "$<$<CONFIG:DEBUG>:"
-    OWL_ENABLE_VALIDATION
-  ">")
-
-
 # link options
 target_link_options(${PROJECT_NAME} PUBLIC
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
@@ -100,6 +90,14 @@ target_link_options(${PROJECT_NAME} PUBLIC
 		-fsanitize=undefined
 		-fsanitize=bounds
   ">")
+
+# compile definitions
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+  "$<$<CONFIG:DEBUG>:"
+    OWL_ENABLE_VALIDATION
+  ">")
+
+
 
 # add examples
 add_subdirectory(examples)

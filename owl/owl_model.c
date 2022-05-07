@@ -53,20 +53,20 @@ OWL_INTERNAL enum owl_code owl_model_images_load(struct owl_renderer *r,
 
   for (i = 0; i < (owl_i32)gltf->images_count; ++i) {
     struct owl_model_uri uri;
-    struct owl_renderer_image_init_desc image_init_desc;
+    struct owl_renderer_image_init_desc image_desc;
     struct owl_model_image_data *image_data = &model->images[i];
 
     if (OWL_SUCCESS != (code = owl_model_uri_init(gltf->images[i].uri, &uri))) {
       goto out;
     }
 
-    image_init_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
-    image_init_desc.src_path = uri.path;
+    image_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
+    image_desc.src_path = uri.path;
     /* FIXME(samuel): if im not mistaken, gltf defines some sampler requirements
      * . Completely ignoring it for now */
-    image_init_desc.sampler_use_default = 1;
+    image_desc.sampler_use_default = 1;
 
-    code = owl_renderer_image_init(r, &image_init_desc, &image_data->image);
+    code = owl_renderer_image_init(r, &image_desc, &image_data->image);
 
     if (OWL_SUCCESS != code) {
       goto out;

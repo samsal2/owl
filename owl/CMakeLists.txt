@@ -1,6 +1,4 @@
 target_sources(${PROJECT_NAME} PRIVATE
-  cgltf.c
-  cgltf.h
   owl.h
   owl_camera.c
   owl_camera.h
@@ -20,11 +18,7 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_renderer.h
   owl_types.h
   owl_vector_math.c
-  owl_vector_math.h
-  stb_image.c
-  stb_image.h
-  stb_truetype.c
-  stb_truetype.h)
+  owl_vector_math.h)
 
 set(GLSL_SHADERS 
   owl_glsl_basic.vert
