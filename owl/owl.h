@@ -9,6 +9,7 @@
 #include "owl_internal.h"
 #include "owl_model.h"
 #include "owl_renderer.h"
+#include "owl_ui_stats.h"
 #include "owl_vector_math.h"
 
 #endif

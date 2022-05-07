@@ -6,6 +6,7 @@
 #include "owl_model.h"
 #include "owl_types.h"
 #include "stb_image.h"
+#include "vulkan/vulkan_core.h"
 
 #include <math.h>
 
@@ -14,6 +15,7 @@
 #define OWL_ACQUIRE_IMAGE_TIMEOUT (owl_u64) - 1
 #define OWL_WAIT_FOR_FENCES_TIMEOUT (owl_u64) - 1
 #define OWL_QUEUE_FAMILY_INDEX_NONE (owl_u32) - 1
+#define OWL_ALL_SAMPLE_FLAG_BITS (owl_u32) - 1
 
 OWL_GLOBAL char const *const device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -326,6 +328,7 @@ owl_renderer_physical_device_select(struct owl_renderer *r) {
     owl_u32 has_formats;
     owl_u32 has_modes;
     owl_u32 extensions_count;
+    VkPhysicalDeviceFeatures features;
     VkExtensionProperties *extensions;
 
     r->physical_device = r->device_options[i];
@@ -352,14 +355,14 @@ owl_renderer_physical_device_select(struct owl_renderer *r) {
       continue;
     }
 
-    if (!owl_renderer_query_families(r, &r->graphics_queue_family_index,
-                                     &r->present_queue_family_index)) {
+    if (!owl_renderer_query_families(r, &r->graphics_queue_family,
+                                     &r->present_queue_family)) {
       continue;
     }
 
-    vkGetPhysicalDeviceFeatures(r->physical_device, &r->device_features);
+    vkGetPhysicalDeviceFeatures(r->physical_device, &features);
 
-    if (!r->device_features.samplerAnisotropy) {
+    if (!features.samplerAnisotropy) {
       continue;
     }
 
@@ -390,10 +393,6 @@ owl_renderer_physical_device_select(struct owl_renderer *r) {
 
     OWL_FREE(extensions);
 
-    vkGetPhysicalDeviceProperties(r->physical_device, &r->device_properties);
-
-    vkGetPhysicalDeviceMemoryProperties(r->physical_device,
-                                        &r->device_memory_properties);
     code = OWL_SUCCESS;
     goto out;
   }
@@ -456,10 +455,15 @@ out:
 
 OWL_INTERNAL enum owl_code
 owl_renderer_msaa_sampler_count_ensure(struct owl_renderer const *r) {
+  VkPhysicalDeviceProperties properties;
+
   enum owl_code code = OWL_SUCCESS;
-  VkSampleCountFlags const supported_samples =
-      r->device_properties.limits.framebufferColorSampleCounts &
-      r->device_properties.limits.framebufferDepthSampleCounts;
+  VkSampleCountFlags limit = OWL_ALL_SAMPLE_FLAG_BITS;
+
+  vkGetPhysicalDeviceProperties(r->physical_device, &properties);
+
+  limit &= properties.limits.framebufferColorSampleCounts;
+  limit &= properties.limits.framebufferDepthSampleCounts;
 
   if (VK_SAMPLE_COUNT_1_BIT & r->msaa_sample_count) {
     OWL_ASSERT(0 && "disabling multisampling is not supported");
@@ -467,7 +471,7 @@ owl_renderer_msaa_sampler_count_ensure(struct owl_renderer const *r) {
     goto out;
   }
 
-  if (!(supported_samples & r->msaa_sample_count)) {
+  if (!(limit & r->msaa_sample_count)) {
     OWL_ASSERT(0 && "msaa_sample_count is not supported");
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -478,6 +482,7 @@ out:
 }
 
 OWL_INTERNAL enum owl_code owl_renderer_device_init(struct owl_renderer *r) {
+  VkPhysicalDeviceFeatures features;
   VkDeviceCreateInfo device_info;
   VkDeviceQueueCreateInfo queue_infos[2];
   float const priority = 1.0F;
@@ -491,6 +496,8 @@ OWL_INTERNAL enum owl_code owl_renderer_device_init(struct owl_renderer *r) {
   if (OWL_SUCCESS != (code = owl_renderer_physical_device_select(r))) {
     goto out;
   }
+
+  vkGetPhysicalDeviceFeatures(r->physical_device, &features);
 
   r->surface_format.format = VK_FORMAT_B8G8R8A8_SRGB;
   r->surface_format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
@@ -507,21 +514,21 @@ OWL_INTERNAL enum owl_code owl_renderer_device_init(struct owl_renderer *r) {
   queue_infos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_infos[0].pNext = NULL;
   queue_infos[0].flags = 0;
-  queue_infos[0].queueFamilyIndex = r->graphics_queue_family_index;
+  queue_infos[0].queueFamilyIndex = r->graphics_queue_family;
   queue_infos[0].queueCount = 1;
   queue_infos[0].pQueuePriorities = &priority;
 
   queue_infos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_infos[1].pNext = NULL;
   queue_infos[1].flags = 0;
-  queue_infos[1].queueFamilyIndex = r->present_queue_family_index;
+  queue_infos[1].queueFamilyIndex = r->present_queue_family;
   queue_infos[1].queueCount = 1;
   queue_infos[1].pQueuePriorities = &priority;
 
   device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   device_info.pNext = NULL;
   device_info.flags = 0;
-  if (r->graphics_queue_family_index == r->present_queue_family_index) {
+  if (r->graphics_queue_family == r->present_queue_family) {
     device_info.queueCreateInfoCount = 1;
   } else {
     device_info.queueCreateInfoCount = 2;
@@ -531,7 +538,7 @@ OWL_INTERNAL enum owl_code owl_renderer_device_init(struct owl_renderer *r) {
   device_info.ppEnabledLayerNames = NULL; /* deprecated */
   device_info.enabledExtensionCount = OWL_ARRAY_SIZE(device_extensions);
   device_info.ppEnabledExtensionNames = device_extensions;
-  device_info.pEnabledFeatures = &r->device_features;
+  device_info.pEnabledFeatures = &features;
 
   vkres = vkCreateDevice(r->physical_device, &device_info, NULL, &r->device);
 
@@ -539,11 +546,9 @@ OWL_INTERNAL enum owl_code owl_renderer_device_init(struct owl_renderer *r) {
     goto out;
   }
 
-  vkGetDeviceQueue(r->device, r->graphics_queue_family_index, 0,
-                   &r->graphics_queue);
+  vkGetDeviceQueue(r->device, r->graphics_queue_family, 0, &r->graphics_queue);
 
-  vkGetDeviceQueue(r->device, r->present_queue_family_index, 0,
-                   &r->present_queue);
+  vkGetDeviceQueue(r->device, r->present_queue_family, 0, &r->present_queue);
 
 out:
   return code;
@@ -624,8 +629,8 @@ owl_renderer_swapchain_init(struct owl_renderer_init_desc const *desc,
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  families[0] = r->graphics_queue_family_index;
-  families[1] = r->present_queue_family_index;
+  families[0] = r->graphics_queue_family;
+  families[1] = r->present_queue_family;
 
   r->swapchain_extent.width = (owl_u32)desc->framebuffer_width;
   r->swapchain_extent.height = (owl_u32)desc->framebuffer_height;
@@ -665,7 +670,7 @@ owl_renderer_swapchain_init(struct owl_renderer_init_desc const *desc,
   info.clipped = VK_TRUE;
   info.oldSwapchain = VK_NULL_HANDLE;
 
-  if (r->graphics_queue_family_index == r->present_queue_family_index) {
+  if (r->graphics_queue_family == r->present_queue_family) {
     info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     info.queueFamilyIndexCount = 0;
     info.pQueueFamilyIndices = NULL;
@@ -783,7 +788,7 @@ OWL_INTERNAL enum owl_code owl_renderer_pools_init(struct owl_renderer *r) {
     info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     info.pNext = NULL;
     info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    info.queueFamilyIndex = r->graphics_queue_family_index;
+    info.queueFamilyIndex = r->graphics_queue_family;
 
     vkres =
         vkCreateCommandPool(r->device, &info, NULL, &r->transient_command_pool);
@@ -2046,7 +2051,7 @@ owl_renderer_frame_commands_init(struct owl_renderer *r) {
     info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     info.pNext = NULL;
     info.flags = 0;
-    info.queueFamilyIndex = r->graphics_queue_family_index;
+    info.queueFamilyIndex = r->graphics_queue_family;
 
     vkres =
         vkCreateCommandPool(r->device, &info, NULL, &r->frame_command_pools[i]);
@@ -3010,30 +3015,34 @@ owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
                                       VkMemoryRequirements const *req,
                                       enum owl_renderer_memory_visibility vis) {
   owl_i32 i;
-  VkMemoryPropertyFlags property;
+  VkPhysicalDeviceMemoryProperties properties;
+  VkMemoryPropertyFlags visibility;
+
   owl_u32 const filter = req->memoryTypeBits;
 
   switch (vis) {
   case OWL_RENDERER_MEMORY_VISIBILITY_CPU:
-    property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    visibility = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     break;
   case OWL_RENDERER_MEMORY_VISIBILITY_CPU_CACHED:
-    property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-               VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    visibility = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                 VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
     break;
   case OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT:
-    property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    visibility = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     break;
   case OWL_RENDERER_MEMORY_VISIBILITY_GPU:
-    property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    visibility = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     break;
   }
 
-  for (i = 0; i < (owl_i32)r->device_memory_properties.memoryTypeCount; ++i) {
-    owl_u32 f = r->device_memory_properties.memoryTypes[i].propertyFlags;
+  vkGetPhysicalDeviceMemoryProperties(r->physical_device, &properties);
 
-    if ((f & property) && (filter & (1U << i))) {
+  for (i = 0; i < (owl_i32)properties.memoryTypeCount; ++i) {
+    owl_u32 flags = properties.memoryTypes[i].propertyFlags;
+
+    if ((flags & visibility) && (filter & (1U << i))) {
       return i;
     }
   }

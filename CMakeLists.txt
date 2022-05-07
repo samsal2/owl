@@ -19,13 +19,13 @@ set_target_properties(${PROJECT_NAME}
 # find external libraries
 find_package(Vulkan REQUIRED)
 
-# add sources
-add_subdirectory(${PROJECT_NAME})
-
 add_subdirectory(libs/glfw)
 add_subdirectory(libs/imgui)
 add_subdirectory(libs/stb)
 add_subdirectory(libs/cgltf)
+
+# add sources
+add_subdirectory(${PROJECT_NAME})
 
 # link libraries
 target_link_libraries(${PROJECT_NAME} 

@@ -29,7 +29,7 @@ enum owl_code owl_imgui_init(struct owl_client *c, struct owl_renderer *r,
   info.Instance = r->instance;
   info.PhysicalDevice = r->physical_device;
   info.Device = r->device;
-  info.QueueFamily = r->graphics_queue_family_index;
+  info.QueueFamily = r->graphics_queue_family;
   info.Queue = r->graphics_queue;
   info.PipelineCache = VK_NULL_HANDLE;
   info.DescriptorPool = r->common_set_pool;

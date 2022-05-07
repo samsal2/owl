@@ -1,5 +1,3 @@
-#include "owl/owl_imgui.h"
-#include "owl/owl_renderer.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -12,8 +10,6 @@ static struct owl_renderer *renderer;
 static struct owl_model *model;
 static struct owl_draw_command_model model_command;
 static struct owl_camera camera;
-static struct owl_font *font;
-static struct owl_draw_command_text text_command;
 static struct owl_imgui imgui;
 
 #define MODEL_PATH "../../assets/CesiumMan.gltf"
@@ -48,14 +44,6 @@ int main(void) {
 
   model = OWL_MALLOC(sizeof(*model));
   CHECK(owl_model_init(renderer, MODEL_PATH, model));
-
-#if 0
-  font = OWL_MALLOC(sizeof(*font));
-  CHECK(owl_font_init(renderer, 64, "../../assets/Inconsolata-Regular.ttf",
-                      font));
-#else
-  OWL_UNUSED(font);
-#endif
 
   OWL_V3_SET(0.0F, 0.0F, 1.9F, model_command.light);
   OWL_M4_IDENTITY(model_command.model);
@@ -99,41 +87,8 @@ int main(void) {
 
 #if 1
     owl_imgui_begin_frame(&imgui);
-    {
-      owl_v2 position = {-1.0F, -1.0F};
-      owl_v2 pivot = {0.0F, 0.0F};
-      owl_v2 size = {150.0F, client->window_height};
-
-      owl_imgui_set_next_window_position(&imgui, position, 0, pivot);
-      owl_imgui_set_next_window_size(&imgui, size, 0);
-
-      owl_imgui_begin(&imgui, "Hello world!",
-                      OWL_IMGUI_WINDOW_FLAGS_NO_MOVE |
-                          OWL_IMGUI_WINDOW_FLAGS_NO_RESIZE |
-                          OWL_IMGUI_WINDOW_FLAGS_NO_COLLAPSE |
-                          OWL_IMGUI_WINDOW_FLAGS_NO_TITLE_BAR);
-
-      owl_imgui_text(&imgui, "Framerate %.2F", owl_imgui_framerate(&imgui));
-
-      owl_imgui_end(&imgui);
-
-      owl_imgui_demo_window(&imgui);
-    }
-    owl_imgui_render(&imgui, renderer);
+    { owl_ui_stats_draw(renderer, &imgui); }
     owl_imgui_end_frame(&imgui);
-#endif
-
-#if 0
-    text_command.scale = 1.0F;
-    text_command.text = fmtfps(1 / client->delta_time_stamp);
-    text_command.font = font;
-    OWL_V3_SET(-0.9F, -0.9F, 0.0F, text_command.position);
-    OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
-
-    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_FONT);
-    owl_draw_command_text_submit(&text_command, renderer, &camera);
-#else
-    OWL_UNUSED(text_command);
 #endif
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end(renderer)) {
@@ -147,11 +102,6 @@ int main(void) {
   }
 
   owl_imgui_deinit(renderer, &imgui);
-
-#if 0
-  owl_font_deinit(renderer, font);
-  OWL_FREE(font);
-#endif
 
   owl_camera_deinit(&camera);
 
