@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.23.1)
 
 project(owl)
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 # declare the library 
 add_library(${PROJECT_NAME})
 
@@ -11,10 +15,6 @@ set_target_properties(${PROJECT_NAME}
         C_STANDARD          99
         C_STANDARD_REQUIRED ON
         C_EXTENSIONS        OFF)
-
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # find external libraries
 find_package(Vulkan REQUIRED)
