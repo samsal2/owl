@@ -6,7 +6,6 @@
 #include "owl_model.h"
 #include "owl_types.h"
 #include "stb_image.h"
-#include "vulkan/vulkan_core.h"
 
 #include <math.h>
 
@@ -16,6 +15,7 @@
 #define OWL_WAIT_FOR_FENCES_TIMEOUT (owl_u64) - 1
 #define OWL_QUEUE_FAMILY_INDEX_NONE (owl_u32) - 1
 #define OWL_ALL_SAMPLE_FLAG_BITS (owl_u32) - 1
+#define OWL_JUST_ENOUGH_DESCRIPTORS_COUNT 256
 
 OWL_GLOBAL char const *const device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -485,6 +485,7 @@ OWL_INTERNAL enum owl_code owl_renderer_device_init(struct owl_renderer *r) {
   VkPhysicalDeviceFeatures features;
   VkDeviceCreateInfo device_info;
   VkDeviceQueueCreateInfo queue_infos[2];
+
   float const priority = 1.0F;
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
@@ -807,28 +808,28 @@ OWL_INTERNAL enum owl_code owl_renderer_pools_init(struct owl_renderer *r) {
     VkDescriptorPoolSize sizes[6];
     VkDescriptorPoolCreateInfo info;
 
-    sizes[0].descriptorCount = 256;
+    sizes[0].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS_COUNT;
     sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
-    sizes[1].descriptorCount = 256;
+    sizes[1].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS_COUNT;
     sizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
 
-    sizes[2].descriptorCount = 256;
+    sizes[2].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS_COUNT;
     sizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 
-    sizes[3].descriptorCount = 256;
+    sizes[3].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS_COUNT;
     sizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
-    sizes[4].descriptorCount = 256;
+    sizes[4].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS_COUNT;
     sizes[4].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-    sizes[5].descriptorCount = 256;
+    sizes[5].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS_COUNT;
     sizes[5].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
     info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     info.pNext = NULL;
     info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    info.maxSets = 256 * OWL_ARRAY_SIZE(sizes);
+    info.maxSets = OWL_JUST_ENOUGH_DESCRIPTORS_COUNT * OWL_ARRAY_SIZE(sizes);
     info.poolSizeCount = OWL_ARRAY_SIZE(sizes);
     info.pPoolSizes = sizes;
 
@@ -1189,6 +1190,7 @@ OWL_INTERNAL void owl_renderer_attachments_deinit(struct owl_renderer *r) {
 OWL_INTERNAL enum owl_code
 owl_renderer_swapchain_framebuffers_init(struct owl_renderer *r) {
   owl_i32 i;
+
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
