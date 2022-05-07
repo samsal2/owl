@@ -225,7 +225,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
   owl_byte *file;
   owl_byte *bitmap;
   stbtt_pack_context pack_context;
-  struct owl_renderer_image_init_desc image_init_desc;
+  struct owl_renderer_image_init_desc image_desc;
 
   enum owl_code code = OWL_SUCCESS;
 
@@ -241,14 +241,14 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
   if (!stbtt_PackBegin(&pack_context, bitmap, OWL_FONT_ATLAS_WIDTH,
                        OWL_FONT_ATLAS_HEIGHT, 0, 1, NULL)) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_bitmap_free;
+    goto out_free_bitmap;
   }
 
   /* FIXME(samuel): hardcoded */
   stbtt_PackSetOversampling(&pack_context, 2, 2);
 
   /* HACK(samuel): idk if it's legal to alias a different type with the exact
-   * same layout, but "it works" so ill leave it at that*/
+   * same layout, but it _works_ so ill leave it at that*/
   if (!stbtt_PackFontRange(&pack_context, file, 0, size, OWL_FONT_FIRST_CHAR,
                            OWL_FONT_CHAR_COUNT,
                            (stbtt_packedchar *)(&font->packed_chars[0]))) {
@@ -256,21 +256,21 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
     goto out_end_pack;
   }
 
-  image_init_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_DATA;
-  image_init_desc.src_path = NULL;
-  image_init_desc.src_data = bitmap;
-  image_init_desc.src_data_width = OWL_FONT_ATLAS_WIDTH;
-  image_init_desc.src_data_height = OWL_FONT_ATLAS_HEIGHT;
-  image_init_desc.src_data_pixel_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
-  image_init_desc.sampler_use_default = 0;
-  image_init_desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
-  image_init_desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
-  image_init_desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
-  image_init_desc.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
-  image_init_desc.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
-  image_init_desc.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
+  image_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_DATA;
+  image_desc.src_path = NULL;
+  image_desc.src_data = bitmap;
+  image_desc.src_data_width = OWL_FONT_ATLAS_WIDTH;
+  image_desc.src_data_height = OWL_FONT_ATLAS_HEIGHT;
+  image_desc.src_data_pixel_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
+  image_desc.sampler_use_default = 0;
+  image_desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
+  image_desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
+  image_desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
+  image_desc.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
+  image_desc.sampler_wrap_v = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
+  image_desc.sampler_wrap_w = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;
 
-  code = owl_renderer_image_init(r, &image_init_desc, &font->atlas);
+  code = owl_renderer_image_init(r, &image_desc, &font->atlas);
 
   if (OWL_SUCCESS != code) {
     goto out_end_pack;
@@ -279,7 +279,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
 out_end_pack:
   stbtt_PackEnd(&pack_context);
 
-out_bitmap_free:
+out_free_bitmap:
   OWL_FREE(bitmap);
 
 out_unload_file:
