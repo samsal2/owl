@@ -19,7 +19,7 @@ struct owl_renderer;
 #define OWL_RENDERER_MAX_GARBAGE_ITEMS_COUNT 8
 #define OWL_RENDERER_MAX_DEVICE_OPTIONS_COUNT 8
 #define OWL_RENDERER_CLEAR_VALUES_COUNT 2
-#define OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT 32
+#define OWL_RENDERER_IMAGE_POOL_SLOTS_COUNT 32
 
 enum owl_renderer_memory_visibility {
   OWL_RENDERER_MEMORY_VISIBILITY_CPU,
@@ -328,14 +328,14 @@ struct owl_renderer {
   /* ====================================================================== */
   /* image manager resources */
   /* ====================================================================== */
-  owl_i32 image_manager_slots[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
+  owl_i32 image_pool_slots[OWL_RENDERER_IMAGE_POOL_SLOTS_COUNT];
 
-  VkImage image_manager_images[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
-  VkDeviceMemory image_manager_memories[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
-  VkImageView image_manager_image_views[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
+  VkImage image_pool_images[OWL_RENDERER_IMAGE_POOL_SLOTS_COUNT];
+  VkDeviceMemory image_pool_memories[OWL_RENDERER_IMAGE_POOL_SLOTS_COUNT];
+  VkImageView image_pool_image_views[OWL_RENDERER_IMAGE_POOL_SLOTS_COUNT];
 
-  VkSampler image_manager_samplers[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
-  VkDescriptorSet image_manager_sets[OWL_RENDERER_IMAGE_MANAGER_SLOTS_COUNT];
+  VkSampler image_pool_samplers[OWL_RENDERER_IMAGE_POOL_SLOTS_COUNT];
+  VkDescriptorSet image_pool_sets[OWL_RENDERER_IMAGE_POOL_SLOTS_COUNT];
   /* ====================================================================== */
 };
 

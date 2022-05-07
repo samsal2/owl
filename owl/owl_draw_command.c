@@ -45,7 +45,7 @@ owl_draw_command_basic_submit(struct owl_draw_command_basic const *cmd,
   }
 
   sets[0] = uref.common_ubo_set;
-  sets[1] = r->image_manager_sets[cmd->image.slot];
+  sets[1] = r->image_pool_sets[cmd->image.slot];
 
   vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &vref.buffer,
                          &vref.offset);
@@ -104,7 +104,7 @@ owl_draw_command_quad_submit(struct owl_draw_command_quad const *cmd,
   }
 
   sets[0] = uref.common_ubo_set;
-  sets[1] = r->image_manager_sets[cmd->image.slot];
+  sets[1] = r->image_pool_sets[cmd->image.slot];
 
   vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &vref.buffer,
                          &vref.offset);
@@ -332,9 +332,9 @@ OWL_INTERNAL enum owl_code owl_draw_command_model_node_submit(
 
     /* TODO(samuel): generic pipeline layout ordered by frequency */
     sets[0] = uniform_reference.model_ubo_set;
-    sets[1] = r->image_manager_sets[base_color_image_data->image.slot];
-    sets[2] = r->image_manager_sets[normal_image_data->image.slot];
-    sets[3] = r->image_manager_sets[physical_desc_image_data->image.slot];
+    sets[1] = r->image_pool_sets[base_color_image_data->image.slot];
+    sets[2] = r->image_pool_sets[normal_image_data->image.slot];
+    sets[3] = r->image_pool_sets[physical_desc_image_data->image.slot];
     sets[4] = skin_data->ssbo_sets[r->active_frame];
     sets[5] = uniform_params_reference.model_ubo_params_set;
 
