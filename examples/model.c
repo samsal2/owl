@@ -10,7 +10,6 @@ static struct owl_renderer *renderer;
 static struct owl_model *model;
 static struct owl_draw_command_model model_command;
 static struct owl_camera camera;
-static struct owl_imgui imgui;
 
 #define MODEL_PATH "../../assets/CesiumMan.gltf"
 
@@ -53,8 +52,6 @@ int main(void) {
   }
   model_command.skin = model;
 
-  CHECK(owl_imgui_init(client, renderer, &imgui));
-
   while (!owl_client_is_done(client)) {
     OWL_V2_COPY(client->cursor_position, model_command.light);
 
@@ -85,12 +82,6 @@ int main(void) {
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_MODEL);
     owl_draw_command_model_submit(&model_command, renderer, &camera);
 
-#if 1
-    owl_imgui_begin_frame(&imgui);
-    { owl_ui_stats_draw(renderer, &imgui); }
-    owl_imgui_end_frame(&imgui);
-#endif
-
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end(renderer)) {
       owl_client_fill_renderer_init_desc(client, &renderer_desc);
       owl_renderer_swapchain_resize(&renderer_desc, renderer);
@@ -100,8 +91,6 @@ int main(void) {
 
     owl_client_poll_events(client);
   }
-
-  owl_imgui_deinit(renderer, &imgui);
 
   owl_camera_deinit(&camera);
 

@@ -12,7 +12,7 @@ add_library(${PROJECT_NAME})
 # features
 set_target_properties(${PROJECT_NAME}
     PROPERTIES 
-        C_STANDARD          99
+        C_STANDARD          11 # the cimgui.h header requires C11...
         C_STANDARD_REQUIRED ON
         C_EXTENSIONS        OFF)
 
@@ -20,7 +20,7 @@ set_target_properties(${PROJECT_NAME}
 find_package(Vulkan REQUIRED)
 
 add_subdirectory(deps/glfw)
-add_subdirectory(deps/imgui)
+add_subdirectory(deps/cimgui)
 add_subdirectory(deps/stb)
 add_subdirectory(deps/cgltf)
 
@@ -31,7 +31,7 @@ add_subdirectory(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME} 
   PUBLIC ${Vulkan_LIBRARIES}
   PRIVATE cgltf
-  PRIVATE imgui
+  PRIVATE cimgui
   PRIVATE glfw
   PRIVATE stb)
 
@@ -43,7 +43,6 @@ target_include_directories(${PROJECT_NAME}
 # compile options
 target_compile_options(${PROJECT_NAME} PUBLIC
 	"$<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:"
-    -std=c99
 		-Wall
 		-Wshadow
 		-Wextra

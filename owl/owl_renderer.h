@@ -303,7 +303,7 @@ struct owl_renderer {
   /* ====================================================================== */
 
   /* ====================================================================== */
-  /* dynamic heap resources */
+  /* frame heap resources */
   /* ====================================================================== */
   VkDeviceMemory frame_heap_memory;
 
@@ -351,9 +351,9 @@ owl_u32 owl_renderer_find_memory_type(struct owl_renderer const *r,
                                       VkMemoryRequirements const *req,
                                       enum owl_renderer_memory_visibility vis);
 
-owl_b32 owl_renderer_frame_heap_is_offset_clear(struct owl_renderer const *r);
+owl_b32 owl_renderer_frame_heap_offset_is_clear(struct owl_renderer const *r);
 
-void owl_renderer_frame_heap_clear_offset(struct owl_renderer *r);
+void owl_renderer_frame_heap_offset_clear(struct owl_renderer *r);
 
 enum owl_code
 owl_renderer_image_init(struct owl_renderer *r,

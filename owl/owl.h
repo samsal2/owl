@@ -5,7 +5,6 @@
 #include "owl_client.h"
 #include "owl_draw_command.h"
 #include "owl_font.h"
-#include "owl_imgui.h"
 #include "owl_internal.h"
 #include "owl_model.h"
 #include "owl_renderer.h"

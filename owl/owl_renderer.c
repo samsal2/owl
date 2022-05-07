@@ -7,6 +7,9 @@
 #include "owl_types.h"
 #include "stb_image.h"
 
+#define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
+#include "cimgui.h"
+
 #include <math.h>
 
 #define OWL_MAX_PRESENT_MODES 16
@@ -59,6 +62,7 @@ owl_renderer_instance_init(struct owl_renderer_init_desc const *desc,
                            struct owl_renderer *r) {
   VkApplicationInfo app;
   VkInstanceCreateInfo info;
+
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
@@ -321,6 +325,7 @@ out:
 OWL_INTERNAL enum owl_code
 owl_renderer_physical_device_select(struct owl_renderer *r) {
   owl_i32 i;
+
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
@@ -408,6 +413,7 @@ owl_renderer_surface_format_ensure(struct owl_renderer const *r) {
   owl_i32 i;
   owl_u32 formats_count;
   VkSurfaceFormatKHR *formats;
+
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
@@ -1614,6 +1620,7 @@ OWL_INTERNAL void owl_renderer_shaders_deinit(struct owl_renderer *r) {
 
 OWL_INTERNAL enum owl_code owl_renderer_pipelines_init(struct owl_renderer *r) {
   owl_i32 i;
+
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
@@ -2048,6 +2055,7 @@ OWL_INTERNAL void owl_renderer_pipelines_deinit(struct owl_renderer *r) {
 OWL_INTERNAL enum owl_code
 owl_renderer_frame_commands_init(struct owl_renderer *r) {
   owl_i32 i;
+
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
@@ -2124,6 +2132,7 @@ OWL_INTERNAL void owl_renderer_frame_commands_deinit(struct owl_renderer *r) {
 OWL_INTERNAL enum owl_code
 owl_renderer_frame_sync_init(struct owl_renderer *r) {
   owl_i32 i;
+
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
@@ -2271,6 +2280,7 @@ OWL_INTERNAL void owl_renderer_garbage_deinit(struct owl_renderer *r) {
 OWL_INTERNAL enum owl_code owl_renderer_frame_heap_init(struct owl_renderer *r,
                                                         owl_u64 sz) {
   owl_i32 i;
+
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
@@ -2973,7 +2983,7 @@ out:
   return code;
 }
 
-owl_b32 owl_renderer_frame_heap_is_offset_clear(struct owl_renderer const *r) {
+owl_b32 owl_renderer_frame_heap_offset_is_clear(struct owl_renderer const *r) {
   return 0 == r->frame_heap_offset;
 }
 
@@ -2982,7 +2992,7 @@ owl_renderer_frame_heap_clear_garbage(struct owl_renderer *r) {
   owl_renderer_garbage_deinit(r);
 }
 
-void owl_renderer_frame_heap_clear_offset(struct owl_renderer *r) {
+void owl_renderer_frame_heap_offset_clear(struct owl_renderer *r) {
   r->frame_heap_offset = 0;
 }
 
@@ -3211,7 +3221,7 @@ void owl_renderer_immidiate_command_buffer_deinit(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL enum owl_code owl_renderer_next_image(struct owl_renderer *r) {
-  VkResult vkres;
+  VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
   vkres =
@@ -3314,8 +3324,7 @@ OWL_INTERNAL void owl_renderer_submit_graphics(struct owl_renderer *r) {
 
 OWL_INTERNAL enum owl_code
 owl_renderer_present_swapchain(struct owl_renderer *r) {
-  VkResult vkres;
-
+  VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
   {
@@ -3372,7 +3381,7 @@ enum owl_code owl_renderer_frame_end(struct owl_renderer *r) {
   }
 
   owl_renderer_update_actives(r);
-  owl_renderer_frame_heap_clear_offset(r);
+  owl_renderer_frame_heap_offset_clear(r);
   owl_renderer_frame_heap_clear_garbage(r);
 
 out:
@@ -3722,7 +3731,7 @@ out:
 void owl_renderer_image_load_state_deinit(
     struct owl_renderer *r, struct owl_renderer_image_load_state *state) {
   OWL_UNUSED(state);
-  owl_renderer_frame_heap_clear_offset(r);
+  owl_renderer_frame_heap_offset_clear(r);
 }
 
 enum owl_code
@@ -3733,7 +3742,7 @@ owl_renderer_image_init(struct owl_renderer *r,
   enum owl_code code = OWL_SUCCESS;
   struct owl_renderer_image_load_state state;
 
-  OWL_ASSERT(owl_renderer_frame_heap_is_offset_clear(r));
+  OWL_ASSERT(owl_renderer_frame_heap_offset_is_clear(r));
 
   code = owl_renderer_image_load_state_init(r, desc, &state);
 
