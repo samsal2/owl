@@ -5,4 +5,3 @@ float owl_io_framerate(void);
 float owl_io_delta_time(void);
 
 #endif
-

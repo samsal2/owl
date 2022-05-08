@@ -1,8 +1,8 @@
 #include "owl_ui.h"
 
+#include "owl_model.h"
 #include "owl_renderer.h"
 #include "owl_vector_math.h"
-#include "owl_model.h"
 
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "cimgui.h"
@@ -24,10 +24,9 @@ void owl_ui_end(struct owl_renderer *r) {
       igGetDrawData(), r->active_frame_command_buffer, VK_NULL_HANDLE);
 }
 
-
-void owl_ui_renderer_stats_draw(struct owl_ui_renderer_state *rs, struct owl_renderer *r) {
+void owl_ui_renderer_stats_draw(struct owl_ui_renderer_state *rs,
+                                struct owl_renderer *r) {
   OWL_UNUSED(rs);
-
 
   igBegin("Stats", NULL, 0);
   {
@@ -48,7 +47,8 @@ void owl_ui_renderer_stats_draw(struct owl_ui_renderer_state *rs, struct owl_ren
   igShowDemoWindow(NULL);
 }
 
-void owl_ui_model_stats_draw(struct owl_ui_model_state *ms, struct owl_model *m) {
+void owl_ui_model_stats_draw(struct owl_ui_model_state *ms,
+                             struct owl_model *m) {
   owl_i32 i;
 
   OWL_UNUSED(m);
@@ -62,7 +62,7 @@ void owl_ui_model_stats_draw(struct owl_ui_model_state *ms, struct owl_model *m)
       ImVec2 uv1;
       ImVec4 tint;
       ImVec4 border;
-   
+
       sz.x = 200.0F;
       sz.y = sz.x;
 
@@ -71,7 +71,7 @@ void owl_ui_model_stats_draw(struct owl_ui_model_state *ms, struct owl_model *m)
 
       uv1.x = 1.0F;
       uv1.y = 1.0F;
-    
+
       tint.x = 1.0F;
       tint.y = 1.0F;
       tint.z = 1.0F;
@@ -82,7 +82,6 @@ void owl_ui_model_stats_draw(struct owl_ui_model_state *ms, struct owl_model *m)
       border.z = 1.0F;
       border.w = 1.0F;
 
-
       igImage(ms->ui_sets[i], sz, uv0, uv1, tint, border);
       igSeparator();
     }
@@ -91,8 +90,9 @@ void owl_ui_model_stats_draw(struct owl_ui_model_state *ms, struct owl_model *m)
   igEnd();
 }
 
-enum owl_code owl_ui_renderer_state_init(struct owl_renderer *r, struct owl_ui_renderer_state *rs) {
-  enum owl_code code = OWL_SUCCESS;  
+enum owl_code owl_ui_renderer_state_init(struct owl_renderer *r,
+                                         struct owl_ui_renderer_state *rs) {
+  enum owl_code code = OWL_SUCCESS;
 
   OWL_UNUSED(r);
   OWL_UNUSED(rs);
@@ -100,22 +100,25 @@ enum owl_code owl_ui_renderer_state_init(struct owl_renderer *r, struct owl_ui_r
   return code;
 }
 
-void owl_ui_renderer_state_deinit(struct owl_renderer *r, struct owl_ui_renderer_state *rs) {
+void owl_ui_renderer_state_deinit(struct owl_renderer *r,
+                                  struct owl_ui_renderer_state *rs) {
   OWL_UNUSED(r);
   OWL_UNUSED(rs);
 }
 
-enum owl_code owl_ui_model_state_init(struct owl_renderer const *r, struct owl_model const *m, struct owl_ui_model_state *ms) {
-  owl_i32 i;   
-  
-  enum owl_code code = OWL_SUCCESS;  
+enum owl_code owl_ui_model_state_init(struct owl_renderer const *r,
+                                      struct owl_model const *m,
+                                      struct owl_ui_model_state *ms) {
+  owl_i32 i;
+
+  enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < m->images_count; ++i) {
-    owl_i32 const slot = m->images[i].image.slot;  
-    
-    ms->ui_sets[i] = ImGui_ImplVulkan_AddTexture(r->image_pool_samplers[slot], 
-                                r->image_pool_image_views[slot], 
-                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    owl_i32 const slot = m->images[i].image.slot;
+
+    ms->ui_sets[i] = ImGui_ImplVulkan_AddTexture(
+        r->image_pool_samplers[slot], r->image_pool_image_views[slot],
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   }
 
   ms->ui_sets_count = m->images_count;
@@ -123,8 +126,9 @@ enum owl_code owl_ui_model_state_init(struct owl_renderer const *r, struct owl_m
   return code;
 }
 
-
-void owl_ui_model_state_deinit(struct owl_renderer const *r, struct owl_model const *m, struct owl_ui_model_state *ms) {
+void owl_ui_model_state_deinit(struct owl_renderer const *r,
+                               struct owl_model const *m,
+                               struct owl_ui_model_state *ms) {
   OWL_UNUSED(r);
   OWL_UNUSED(m);
   OWL_UNUSED(ms);
