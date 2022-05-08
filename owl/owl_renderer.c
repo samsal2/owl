@@ -3570,16 +3570,16 @@ owl_renderer_image_init(struct owl_renderer *r,
 
   OWL_ASSERT(owl_renderer_frame_heap_offset_is_clear(r));
 
-  code = owl_renderer_image_load_state_init(r, info, &state);
+  code = owl_renderer_image_pool_find_slot(r, imgd);
 
   if (OWL_SUCCESS != code) {
     goto out;
   }
 
-  code = owl_renderer_image_pool_find_slot(r, imgd);
+  code = owl_renderer_image_load_state_init(r, info, &state);
 
   if (OWL_SUCCESS != code) {
-    goto out_image_load_state_deinit;
+    goto out_err_image_pool_slot_unselect;
   }
 
   {
@@ -3609,7 +3609,7 @@ owl_renderer_image_init(struct owl_renderer *r,
                           &r->image_pool_images[*imgd]);
 
     if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code(vkres))) {
-      goto out_err_image_pool_slot_unselect;
+      goto out_err_image_load_state_deinit;
     }
   }
 
@@ -3844,7 +3844,9 @@ owl_renderer_image_init(struct owl_renderer *r,
     vkUpdateDescriptorSets(r->device, OWL_ARRAY_SIZE(writes), writes, 0, NULL);
   }
 
-  goto out_image_load_state_deinit;
+  owl_renderer_image_load_state_deinit(r, &state);
+
+  goto out;
 
 out_err_immidiate_command_buffer_deinit:
   owl_renderer_immidiate_command_buffer_deinit(r);
@@ -3862,11 +3864,11 @@ out_err_memory_deinit:
 out_err_image_deinit:
   vkDestroyImage(r->device, r->image_pool_images[*imgd], NULL);
 
+out_err_image_load_state_deinit:
+  owl_renderer_image_load_state_deinit(r, &state);
+
 out_err_image_pool_slot_unselect:
   r->image_pool_slots[*imgd] = 0;
-
-out_image_load_state_deinit:
-  owl_renderer_image_load_state_deinit(r, &state);
 
 out:
   return code;
@@ -3913,12 +3915,12 @@ OWL_INTERNAL enum owl_code owl_renderer_font_load_file(char const *path,
 
   if (!(*data = OWL_MALLOC(sz))) {
     code = OWL_ERROR_BAD_ALLOC;
-    goto out_close_file;
+    goto out_file_close;
   }
 
   fread(*data, sz, 1, file);
 
-out_close_file:
+out_file_close:
   fclose(file);
 
 out:
@@ -4033,10 +4035,6 @@ owl_renderer_font_init(struct owl_renderer *r,
   OWL_FREE(bitmap);
 
   owl_renderer_font_file_unload(file);
-
-  if (OWL_RENDERER_FONT_NONE == r->active_font) {
-    r->active_font = *fd;
-  }
 
   goto out;
 
