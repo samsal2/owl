@@ -20,7 +20,7 @@ set_target_properties(${PROJECT_NAME}
 find_package(Vulkan REQUIRED)
 
 add_subdirectory(deps/glfw)
-add_subdirectory(deps/cimgui)
+# add_subdirectory(deps/cimgui)
 add_subdirectory(deps/stb)
 add_subdirectory(deps/cgltf)
 
@@ -31,7 +31,6 @@ add_subdirectory(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME} 
   PUBLIC ${Vulkan_LIBRARIES}
   PRIVATE cgltf
-  PRIVATE cimgui
   PRIVATE glfw
   PRIVATE stb)
 

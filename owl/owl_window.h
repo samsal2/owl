@@ -5,6 +5,8 @@
 
 struct owl_renderer_init_desc;
 
+struct owl_io;
+
 struct owl_window_init_desc {
   char const *title;
   owl_i32 width;
@@ -35,5 +37,8 @@ void owl_window_poll_events(struct owl_window *w);
 owl_i32 owl_window_is_done(struct owl_window *w);
 
 void owl_window_handle_resize(struct owl_window *w);
+
+void owl_window_bind_io(struct owl_window *w, struct owl_io *io);
+
 
 #endif

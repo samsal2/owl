@@ -71,7 +71,7 @@ int main(void) {
 
 #if 1
     owl_model_update_animation(model, 0, renderer->active_frame,
-                               owl_io_delta_time());
+                               renderer->time_stamp_delta);
 #endif
 
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_MODEL);

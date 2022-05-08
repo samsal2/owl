@@ -133,48 +133,38 @@ owl_draw_command_text_submit(struct owl_draw_command_text const *cmd,
   enum owl_code code = OWL_SUCCESS;
 
   /* FIXME(samuel): make sure scaling is right */
-  offset[0] = cmd->position[0] * r->framebuffer_width;
-  offset[1] = cmd->position[1] * r->framebuffer_height;
+  offset[0] = cmd->position[0]; 
+  offset[1] = cmd->position[1];
 
   /* HACK(samuel): using framebuffer height to scale the z axis */
-  offset[2] = cmd->position[2] * r->framebuffer_height;
+  offset[2] = cmd->position[2];
+
+  OWL_V3_ZERO(offset);
 
   for (l = cmd->text; '\0' != *l; ++l) {
     owl_v3 p0;
     owl_v3 p1;
     owl_v3 p2;
     owl_v3 p3;
-    owl_v3 tmp;
+    owl_v3 scale;
     struct owl_font_glyph glyph;
     struct owl_draw_command_quad quad;
 
-    OWL_V3_COPY(offset, tmp);
-    owl_font_fill_glyph(cmd->font, *l, tmp, &glyph);
-    OWL_V3_SUB(tmp, offset, tmp);
-    OWL_V3_SCALE(tmp, cmd->scale, tmp);
-    OWL_V3_ADD(tmp, offset, offset);
+    scale[0] = cmd->scale / (float)r->window_width;
+    scale[1] = cmd->scale / (float)r->window_height;
+    scale[2] = 0.0F;
+    
+    owl_font_fill_glyph(cmd->font, *l, offset, &glyph);
 
     quad.image.slot = cmd->font->atlas.slot;
     OWL_M4_IDENTITY(quad.model);
 
+    owl_m4_scale(quad.model, scale, quad.model);
+
     OWL_V3_COPY(glyph.positions[0], p0);
-
-    OWL_V3_SUB(glyph.positions[1], p0, tmp);
-    OWL_V3_SCALE(tmp, cmd->scale, tmp);
-    OWL_V3_ADD(p0, tmp, p1);
-
-    OWL_V3_SUB(glyph.positions[2], p0, tmp);
-    OWL_V3_SCALE(tmp, cmd->scale, tmp);
-    OWL_V3_ADD(p0, tmp, p2);
-
-    OWL_V3_SUB(glyph.positions[3], p0, tmp);
-    OWL_V3_SCALE(tmp, cmd->scale, tmp);
-    OWL_V3_ADD(p0, tmp, p3);
-
-    OWL_V3_INVERSE_SCALE(p0, r->framebuffer_height, p0);
-    OWL_V3_INVERSE_SCALE(p1, r->framebuffer_height, p1);
-    OWL_V3_INVERSE_SCALE(p2, r->framebuffer_height, p2);
-    OWL_V3_INVERSE_SCALE(p3, r->framebuffer_height, p3);
+    OWL_V3_COPY(glyph.positions[1], p1);
+    OWL_V3_COPY(glyph.positions[2], p2);
+    OWL_V3_COPY(glyph.positions[3], p3);
 
     OWL_V3_COPY(p0, quad.vertices[0].position);
     OWL_V3_COPY(cmd->color, quad.vertices[0].color);

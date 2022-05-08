@@ -11,12 +11,6 @@
 #include <vulkan/vulkan.h>
 /* clang-format on */
 
-/* clang-format off */
-#define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
-#include <cimgui.h>
-#include <cimgui_impl.h>
-/* clang-format on */
-
 #if 0
 OWL_INTERNAL enum owl_window_mouse_button owl_as_mouse_key(owl_i32 type) {
   switch (type) {
@@ -124,26 +118,6 @@ owl_vk_create_surface_callback(struct owl_renderer const *r,
   return code;
 }
 
-OWL_INTERNAL enum owl_code
-owl_window_imgui_init(struct owl_window_init_desc const *desc,
-                      struct owl_window const *w) {
-  enum owl_code code = OWL_SUCCESS;
-
-  OWL_UNUSED(desc);
-
-  igCreateContext(NULL);
-
-  igStyleColorsClassic(igGetStyle());
-
-  if (!ImGui_ImplGlfw_InitForVulkan(w->data, true)) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
-
-out:
-  return code;
-}
-
 enum owl_code owl_window_init(struct owl_window_init_desc const *desc,
                               struct owl_window *w) {
   enum owl_code code = OWL_SUCCESS;
@@ -161,10 +135,6 @@ enum owl_code owl_window_init(struct owl_window_init_desc const *desc,
   if (!(w->data)) {
     code = OWL_ERROR_UNKNOWN;
     goto out_err_glfw_deinit;
-  }
-
-  if (OWL_SUCCESS != (code = owl_window_imgui_init(desc, w))) {
-    goto out_err_glfw_window_deinit;
   }
 
   glfwSetWindowUserPointer(w->data, w);
@@ -186,9 +156,6 @@ enum owl_code owl_window_init(struct owl_window_init_desc const *desc,
 
   goto out;
 
-out_err_glfw_window_deinit:
-  glfwDestroyWindow(w->data);
-
 out_err_glfw_deinit:
   glfwTerminate();
 
@@ -197,10 +164,6 @@ out:
 }
 
 void owl_window_deinit(struct owl_window *w) {
-
-  ImGui_ImplGlfw_Shutdown();
-  igDestroyContext(igGetCurrentContext());
-
   glfwDestroyWindow(w->data);
   glfwTerminate();
 }
@@ -271,10 +234,4 @@ void owl_window_handle_resize(struct owl_window *w) {
 
   w->framebuffer_ratio =
       (float)w->framebuffer_width / (float)w->framebuffer_height;
-}
-
-float owl_window_delta_time(struct owl_window const *w) {
-  OWL_UNUSED(w);
-
-  return igGetIO()->DeltaTime;
 }

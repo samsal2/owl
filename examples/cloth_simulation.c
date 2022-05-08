@@ -263,15 +263,16 @@ int main(void) {
   image_desc.sampler_use_default = 1;
   TEST(owl_renderer_image_init(renderer, &image_desc, &image));
 
-  TEST(owl_font_init(renderer, 64, FONTPATH, &font));
+  TEST(owl_font_init(renderer, 40, FONTPATH, &font));
 
   TEST(owl_camera_init(&camera));
 
   init_cloth(&cloth, &image);
 
+  text_command.scale = 2.0F;
   text_command.font = &font;
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
-  OWL_V3_SET(-0.5F, -0.5F, -1.0F, text_command.position);
+  OWL_V3_SET(0.0F, 0.0F, 0.0F, text_command.position);
 
   while (!owl_window_is_done(window)) {
 #if 0
@@ -299,15 +300,17 @@ int main(void) {
       continue;
     }
 
+#if 0
 #if 1
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_MAIN);
 #else
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_WIRES);
 #endif
     owl_draw_command_basic_submit(&cloth.command_, renderer, &camera);
+#endif
 
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_FONT);
-    text_command.text = fps_string(1 / owl_io_framerate());
+    text_command.text = "wtf???";
     owl_draw_command_text_submit(&text_command, renderer, &camera);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end(renderer)) {
