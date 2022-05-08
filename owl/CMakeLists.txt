@@ -6,8 +6,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_window.h
   owl_draw_command.c
   owl_draw_command.h
-  owl_font.c
-  owl_font.h
   owl_internal.c
   owl_internal.h
   owl_model.c

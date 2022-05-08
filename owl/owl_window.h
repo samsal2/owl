@@ -3,11 +3,11 @@
 
 #include "owl_types.h"
 
-struct owl_renderer_init_desc;
+struct owl_renderer_init_info;
 
 struct owl_io;
 
-struct owl_window_init_desc {
+struct owl_window_init_info {
   char const *title;
   owl_i32 width;
   owl_i32 height;
@@ -23,14 +23,14 @@ struct owl_window {
   owl_i32 window_height;
 };
 
-enum owl_code owl_window_init(struct owl_window_init_desc const *desc,
+enum owl_code owl_window_init(struct owl_window_init_info const *info,
                               struct owl_window *w);
 
 void owl_window_deinit(struct owl_window *w);
 
 enum owl_code
-owl_window_fill_renderer_init_desc(struct owl_window const *w,
-                                   struct owl_renderer_init_desc *desc);
+owl_window_fill_renderer_init_info(struct owl_window const *w,
+                                   struct owl_renderer_init_info *info);
 
 void owl_window_poll_events(struct owl_window *w);
 

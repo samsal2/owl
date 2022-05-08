@@ -4,72 +4,43 @@
 #include "owl_renderer.h"
 #include "owl_types.h"
 
-#define OWL_MODEL_NODE_NO_MESH_SLOT -1
-#define OWL_MODEL_NO_ANIMATION_SLOT -1
-#define OWL_MODEL_NODE_NO_SKIN_SLOT -1
-#define OWL_MODEL_NODE_NO_PARENT_SLOT -1
-#define OWL_MODEL_NO_TEXTURE_SLOT -1
-#define OWL_MODEL_MAX_PRIMITIVES_COUNT 128
-#define OWL_MODEL_MESH_MAX_PRIMITIVES_COUNT 128
+#define OWL_MODEL_MESH_NONE -1
+#define OWL_MODEL_ANIM_NONE -1
+#define OWL_MODEL_SKIN_NONE -1
+#define OWL_MODEL_NODE_PARENT_NONE -1
+#define OWL_MODEL_TEXTURE_NONE -1
+#define OWL_MODEL_MAX_PRIMITIVE_COUNT 128
+#define OWL_MODEL_MESH_MAX_PRIMITIVE_COUNT 128
 #define OWL_MODEL_MAX_NAME_LENGTH 128
-#define OWL_MODEL_MAX_IMAGES_COUNT 16
-#define OWL_MODEL_MAX_NODE_ROOTS_COUNT 128
-#define OWL_MODEL_MAX_NODES_COUNT 128
-#define OWL_MODEL_MAX_TEXTURES_COUNT 8
-#define OWL_MODEL_MAX_MATERIALS_COUNT 8
+#define OWL_MODEL_MAX_IMAGE_COUNT 16
+#define OWL_MODEL_MAX_NODE_ROOT_COUNT 128
+#define OWL_MODEL_MAX_NODE_COUNT 128
+#define OWL_MODEL_MAX_TEXTURE_COUNT 8
+#define OWL_MODEL_MAX_MATERIAL_COUNT 8
 #define OWL_MODEL_NODE_MAX_CHILDREN_COUNT 128
-#define OWL_MODEL_MAX_MESHES_COUNT 128
-#define OWL_MODEL_SKIN_MAX_JOINTS_COUNT 128
-#define OWL_MODEL_ANIMATION_SAMPLER_MAX_INPUTS_COUNT 128
-#define OWL_MODEL_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT 128
-#define OWL_MODEL_MAX_SKINS_COUNT 128
-#define OWL_MODEL_MAX_SAMPLERS_COUNT 128
-#define OWL_MODEL_MAX_CHANNELS_COUNT 128
-#define OWL_MODEL_ANIMATION_MAX_SAMPLERS_COUNT 128
-#define OWL_MODEL_ANIMATION_MAX_CHANNELS_COUNT 128
-#define OWL_MODEL_MAX_ANIMATIONS_COUNT 128
+#define OWL_MODEL_MAX_MESH_COUNT 128
+#define OWL_MODEL_SKIN_MAX_JOINT_COUNT 128
+#define OWL_MODEL_ANIM_SAMPLER_MAX_INPUT_COUNT 128
+#define OWL_MODEL_ANIM_SAMPLER_MAX_OUTPUT_COUNT 128
+#define OWL_MODEL_MAX_SKIN_COUNT 128
+#define OWL_MODEL_MAX_SAMPLER_COUNT 128
+#define OWL_MODEL_MAX_CHAN_COUNT 128
+#define OWL_MODEL_ANIM_MAX_SAMPLER_COUNT 128
+#define OWL_MODEL_ANIM_MAX_CHAN_COUNT 128
+#define OWL_MODEL_MAX_ANIM_COUNT 128
 
 struct owl_renderer;
 
-struct owl_model_node {
-  owl_i32 slot;
-};
-
-struct owl_model_mesh {
-  owl_i32 slot;
-};
-
-struct owl_model_texture {
-  owl_i32 slot;
-};
-
-struct owl_model_material {
-  owl_i32 slot;
-};
-
-struct owl_model_primitive {
-  owl_i32 slot;
-};
-
-struct owl_model_image {
-  owl_i32 slot;
-};
-
-struct owl_model_skin {
-  owl_i32 slot;
-};
-
-struct owl_model_animation_sampler {
-  owl_i32 slot;
-};
-
-struct owl_model_animation_channel {
-  owl_i32 slot;
-};
-
-struct owl_model_animation {
-  owl_i32 slot;
-};
+typedef owl_i32 owl_model_node_descriptor;
+typedef owl_i32 owl_model_mesh_descriptor;
+typedef owl_i32 owl_model_texture_descriptor;
+typedef owl_i32 owl_model_material_descriptor;
+typedef owl_i32 owl_model_primitive_descriptor;
+typedef owl_i32 owl_model_image_descriptor;
+typedef owl_i32 owl_model_skin_descriptor;
+typedef owl_i32 owl_model_anim_sampler_descriptor;
+typedef owl_i32 owl_model_anim_chan_descriptor;
+typedef owl_i32 owl_model_anim_descriptor;
 
 /* NOTE(samuel): thought I knew how the alignment worked for the push constants,
  * turns out I don't. Change it at your own risk*/
@@ -110,18 +81,18 @@ struct owl_model_vertex {
   owl_v4 weights0;
 };
 
-struct owl_model_primitive_data {
+struct owl_model_primitive {
   owl_u32 first;
   owl_u32 count;
-  struct owl_model_material material;
+  owl_model_material_descriptor material;
 };
 
-struct owl_model_mesh_data {
-  owl_i32 primitives_count;
-  struct owl_model_primitive primitives[OWL_MODEL_MESH_MAX_PRIMITIVES_COUNT];
+struct owl_model_mesh {
+  owl_i32 primitive_count;
+  owl_model_primitive_descriptor primitives[OWL_MODEL_MESH_MAX_PRIMITIVE_COUNT];
 };
 
-struct owl_model_node_data {
+struct owl_model_node {
   char name[OWL_MODEL_MAX_NAME_LENGTH];
 
   owl_v3 translation;
@@ -129,20 +100,20 @@ struct owl_model_node_data {
   owl_v4 rotation;
   owl_m4 matrix;
 
-  struct owl_model_node parent;
-  struct owl_model_mesh mesh;
-  struct owl_model_skin skin;
+  owl_model_node_descriptor parent;
+  owl_model_mesh_descriptor mesh;
+  owl_model_skin_descriptor skin;
 
-  owl_i32 children_count;
-  struct owl_model_node children[OWL_MODEL_NODE_MAX_CHILDREN_COUNT];
+  owl_i32 child_count;
+  owl_model_node_descriptor children[OWL_MODEL_NODE_MAX_CHILDREN_COUNT];
 };
 
-struct owl_model_image_data {
-  struct owl_renderer_image image;
+struct owl_model_image {
+  owl_renderer_image_descriptor renderer_image;
 };
 
-struct owl_model_texture_data {
-  struct owl_model_image image;
+struct owl_model_texture {
+  owl_model_image_descriptor model_image;
 };
 
 enum owl_alpha_mode {
@@ -151,27 +122,35 @@ enum owl_alpha_mode {
   OWL_ALPHA_MODE_BLEND
 };
 
-struct owl_model_material_data {
+struct owl_model_material {
   enum owl_alpha_mode alpha_mode;
   float alpha_cutoff;
   owl_i32 double_sided;
-  struct owl_model_texture base_color_texture;
-  struct owl_model_texture normal_texture;
-  struct owl_model_texture physical_desc_texture;
-  struct owl_model_texture occlusion_texture;
-  struct owl_model_texture emissive_texture;
+  owl_model_texture_descriptor base_color_texture;
+  owl_model_texture_descriptor normal_texture;
+  owl_model_texture_descriptor physical_desc_texture;
+  owl_model_texture_descriptor occlusion_texture;
+  owl_model_texture_descriptor emissive_texture;
   owl_v4 base_color_factor;
 };
 
-struct owl_model_skin_ssbo_data {
+struct owl_model_skin_ssbo {
   owl_m4 matrix;
-  owl_m4 joint_matices[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
-  owl_i32 joint_matrices_count;
+  owl_m4 joint_matices[OWL_MODEL_SKIN_MAX_JOINT_COUNT];
+  owl_i32 joint_matrice_count;
 };
 
-struct owl_model_skin_data {
+struct owl_model_skin {
   char name[OWL_MODEL_MAX_NAME_LENGTH];
-  struct owl_model_node skeleton_root;
+  owl_model_node_descriptor skeleton_root;
+
+  VkBuffer ssbo_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkDescriptorSet ssbo_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+
+  owl_m4 inverse_bind_matrices[OWL_MODEL_SKIN_MAX_JOINT_COUNT];
+
+  owl_i32 joint_count;
+  owl_model_node_descriptor joints[OWL_MODEL_SKIN_MAX_JOINT_COUNT];
 
   VkDeviceMemory ssbo_memory;
 
@@ -180,48 +159,38 @@ struct owl_model_skin_data {
   owl_u64 ssbo_buffer_aligned_size;
 
   /* NOTE(samuel): directly mapped skin joint data */
-  struct owl_model_skin_ssbo_data
-      *ssbo_datas[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-
-  VkBuffer ssbo_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-  VkDescriptorSet ssbo_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
-
-  owl_i32 joints_count;
-  owl_m4 inverse_bind_matrices[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
-  struct owl_model_node joints[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
+  struct owl_model_skin_ssbo *ssbo_datas[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
 };
 
-struct owl_model_animation_sampler_data {
+struct owl_model_anim_sampler {
   owl_i32 interpolation;
 
-  owl_i32 inputs_count;
-  float inputs[OWL_MODEL_ANIMATION_SAMPLER_MAX_INPUTS_COUNT];
+  owl_i32 input_count;
+  float inputs[OWL_MODEL_ANIM_SAMPLER_MAX_INPUT_COUNT];
 
-  owl_i32 outputs_count;
-  owl_v4 outputs[OWL_MODEL_ANIMATION_SAMPLER_MAX_OUTPUTS_COUNT];
+  owl_i32 output_count;
+  owl_v4 outputs[OWL_MODEL_ANIM_SAMPLER_MAX_OUTPUT_COUNT];
 };
 
-struct owl_model_animation_channel_data {
+struct owl_model_anim_chan {
   owl_i32 path;
 
-  struct owl_model_node node;
-  struct owl_model_animation_sampler animation_sampler;
+  owl_model_node_descriptor node;
+  owl_model_anim_sampler_descriptor anim_sampler;
 };
 
-struct owl_model_animation_data {
+struct owl_model_anim {
   char name[OWL_MODEL_MAX_NAME_LENGTH];
 
   float current_time;
   float begin;
   float end;
 
-  owl_i32 samplers_count;
-  struct owl_model_animation_sampler
-      samplers[OWL_MODEL_ANIMATION_MAX_SAMPLERS_COUNT];
+  owl_i32 sampler_count;
+  owl_model_anim_sampler_descriptor samplers[OWL_MODEL_ANIM_MAX_SAMPLER_COUNT];
 
-  owl_i32 channels_count;
-  struct owl_model_animation_channel
-      channels[OWL_MODEL_ANIMATION_MAX_CHANNELS_COUNT];
+  owl_i32 chan_count;
+  owl_model_anim_chan_descriptor chans[OWL_MODEL_ANIM_MAX_CHAN_COUNT];
 };
 
 struct owl_model {
@@ -231,42 +200,40 @@ struct owl_model {
   VkBuffer indices_buffer;
   VkDeviceMemory indices_memory;
 
-  struct owl_model_animation active_animation;
+  owl_model_anim_descriptor active_anim;
 
-  owl_i32 roots_count;
-  struct owl_model_node roots[OWL_MODEL_MAX_NODE_ROOTS_COUNT];
+  owl_i32 root_count;
+  owl_model_node_descriptor roots[OWL_MODEL_MAX_NODE_ROOT_COUNT];
 
-  owl_i32 nodes_count;
-  struct owl_model_node_data nodes[OWL_MODEL_MAX_NODES_COUNT];
+  owl_i32 node_count;
+  struct owl_model_node nodes[OWL_MODEL_MAX_NODE_COUNT];
 
-  owl_i32 images_count;
-  struct owl_model_image_data images[OWL_MODEL_MAX_IMAGES_COUNT];
+  owl_i32 image_count;
+  struct owl_model_image images[OWL_MODEL_MAX_IMAGE_COUNT];
 
-  owl_i32 textures_count;
-  struct owl_model_texture_data textures[OWL_MODEL_MAX_TEXTURES_COUNT];
+  owl_i32 texture_count;
+  struct owl_model_texture textures[OWL_MODEL_MAX_TEXTURE_COUNT];
 
-  owl_i32 materials_count;
-  struct owl_model_material_data materials[OWL_MODEL_MAX_MATERIALS_COUNT];
+  owl_i32 material_count;
+  struct owl_model_material materials[OWL_MODEL_MAX_MATERIAL_COUNT];
 
-  owl_i32 meshes_count;
-  struct owl_model_mesh_data meshes[OWL_MODEL_MAX_MESHES_COUNT];
+  owl_i32 mesh_count;
+  struct owl_model_mesh meshes[OWL_MODEL_MAX_MESH_COUNT];
 
-  owl_i32 primitives_count;
-  struct owl_model_primitive_data primitives[OWL_MODEL_MAX_PRIMITIVES_COUNT];
+  owl_i32 primitive_count;
+  struct owl_model_primitive primitives[OWL_MODEL_MAX_PRIMITIVE_COUNT];
 
-  owl_i32 skins_count;
-  struct owl_model_skin_data skins[OWL_MODEL_MAX_SKINS_COUNT];
+  owl_i32 skin_count;
+  struct owl_model_skin skins[OWL_MODEL_MAX_SKIN_COUNT];
 
-  owl_i32 animation_samplers_count;
-  struct owl_model_animation_sampler_data
-      animation_samplers[OWL_MODEL_MAX_SAMPLERS_COUNT];
+  owl_i32 anim_sampler_count;
+  struct owl_model_anim_sampler anim_samplers[OWL_MODEL_MAX_SAMPLER_COUNT];
 
-  owl_i32 animation_channels_count;
-  struct owl_model_animation_channel_data
-      animation_channels[OWL_MODEL_MAX_CHANNELS_COUNT];
+  owl_i32 anim_chan_count;
+  struct owl_model_anim_chan anim_chans[OWL_MODEL_MAX_CHAN_COUNT];
 
-  owl_i32 animations_count;
-  struct owl_model_animation_data animations[OWL_MODEL_MAX_ANIMATIONS_COUNT];
+  owl_i32 anim_count;
+  struct owl_model_anim anims[OWL_MODEL_MAX_ANIM_COUNT];
 };
 
 enum owl_code owl_model_init(struct owl_renderer *r, char const *path,
@@ -274,8 +241,8 @@ enum owl_code owl_model_init(struct owl_renderer *r, char const *path,
 
 void owl_model_deinit(struct owl_renderer *r, struct owl_model *model);
 
-enum owl_code owl_model_update_animation(struct owl_model *model,
-                                         owl_i32 animation, owl_i32 frame,
-                                         float dt);
+enum owl_code owl_model_anim_update(struct owl_model *model,
+                                    owl_model_anim_descriptor animd,
+                                    owl_i32 frame, float dt);
 
 #endif

@@ -13,6 +13,8 @@ void owl_ui_renderer_stats_draw(struct owl_ui_renderer_state *rs,
   char buffer[256];
   struct owl_draw_command_text cmd;
 
+  OWL_UNUSED(rs);
+
   snprintf(buffer, sizeof(buffer), "framerate: %.2f fps",
            1.0 / r->time_stamp_delta);
 
@@ -24,13 +26,12 @@ void owl_ui_renderer_stats_draw(struct owl_ui_renderer_state *rs,
   cmd.position[1] = -0.98F;
   cmd.position[2] = 0.0F;
   cmd.text = buffer;
-  cmd.font = rs->font;
 
   owl_draw_command_text_submit(&cmd, r, cam);
 
   if ((r->active_frame - 1) < 0) {
     snprintf(buffer, sizeof(buffer), "frame_heap_offset: %llu bytes",
-             r->frame_heap_offsets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT - 1]);
+             r->frame_heap_offsets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT - 1]);
   } else {
     snprintf(buffer, sizeof(buffer), "frame_heap_offset: %llu bytes",
              r->frame_heap_offsets[r->active_frame - 1]);
@@ -61,13 +62,11 @@ void owl_ui_model_stats_draw(struct owl_ui_model_state *ms,
 }
 
 enum owl_code owl_ui_renderer_state_init(struct owl_renderer *r,
-                                         struct owl_font const *f,
                                          struct owl_ui_renderer_state *rs) {
   enum owl_code code = OWL_SUCCESS;
 
   OWL_UNUSED(r);
-
-  rs->font = f;
+  OWL_UNUSED(rs);
 
   return code;
 }

@@ -21,13 +21,13 @@ struct owl_draw_command_uniform {
 };
 
 struct owl_draw_command_basic {
-  struct owl_renderer_image image;
+  owl_renderer_image_descriptor image;
   owl_m4 model;
 
-  owl_u32 indices_count;
+  owl_u32 indice_count;
   owl_u32 const *indices;
 
-  owl_u32 vertices_count;
+  owl_u32 vertex_count;
   struct owl_draw_command_vertex const *vertices;
 };
 
@@ -37,7 +37,7 @@ owl_draw_command_basic_submit(struct owl_draw_command_basic const *cmd,
                               struct owl_camera const *cam);
 
 struct owl_draw_command_quad {
-  struct owl_renderer_image image;
+  owl_renderer_image_descriptor image;
   owl_m4 model;
   /*
    * 0 - 1
@@ -57,7 +57,6 @@ struct owl_draw_command_text {
   owl_v3 color;
   owl_v3 position;
   char const *text;
-  struct owl_font const *font;
 };
 
 enum owl_code

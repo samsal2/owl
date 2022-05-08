@@ -7,7 +7,7 @@
 #define PARTICLE_COUNT (CLOTH_W * CLOTH_H)
 #define IDXS_H (CLOTH_H - 1)
 #define IDXS_W (CLOTH_W - 1)
-#define IDXS_COUNT (IDXS_H * IDXS_W * 6)
+#define IDX_COUNT (IDXS_H * IDXS_W * 6)
 #define DAMPING 0.002F
 #define STEPS 4
 #define FRICTION 0.5F
@@ -30,7 +30,7 @@ struct cloth {
 
   /* priv draw desc */
   struct owl_draw_command_basic command_;
-  owl_u32 indices_[IDXS_COUNT];
+  owl_u32 indices_[IDX_COUNT];
   struct owl_draw_command_vertex vertices_[PARTICLE_COUNT];
 };
 
@@ -65,8 +65,7 @@ static void base_init_cloth(struct cloth *cloth) {
       if (j) {
         owl_u32 link = CLOTH_COORD(i, j - 1);
         p->links[0] = &cloth->particles[link];
-        p->rest_distances[0] =
-            owl_v3_distance(p->position, p->links[0]->position);
+        p->rest_distances[0] = owl_v3_distance(p->position, p->links[0]->position);
       } else {
         p->links[0] = NULL;
         p->rest_distances[0] = 0.0F;
@@ -75,8 +74,7 @@ static void base_init_cloth(struct cloth *cloth) {
       if (i) {
         owl_u32 link = CLOTH_COORD(i - 1, j);
         p->links[1] = &cloth->particles[link];
-        p->rest_distances[1] =
-            owl_v3_distance(p->position, p->links[1]->position);
+        p->rest_distances[1] = owl_v3_distance(p->position, p->links[1]->position);
       } else {
         p->links[1] = NULL;
         p->rest_distances[1] = 0.0F;
@@ -85,8 +83,7 @@ static void base_init_cloth(struct cloth *cloth) {
       if (j < CLOTH_H - 1) {
         owl_u32 link = CLOTH_COORD(i, j + 1);
         p->links[2] = &cloth->particles[link];
-        p->rest_distances[2] =
-            owl_v3_distance(p->position, p->links[2]->position);
+        p->rest_distances[2] = owl_v3_distance(p->position, p->links[2]->position);
       } else {
         p->links[2] = NULL;
         p->rest_distances[2] = 0.0F;
@@ -95,8 +92,7 @@ static void base_init_cloth(struct cloth *cloth) {
       if (i < CLOTH_W - 1) {
         owl_u32 link = CLOTH_COORD(i + 1, j);
         p->links[3] = &cloth->particles[link];
-        p->rest_distances[3] =
-            owl_v3_distance(p->position, p->links[3]->position);
+        p->rest_distances[3] = owl_v3_distance(p->position, p->links[3]->position);
       } else {
         p->links[3] = NULL;
         p->rest_distances[3] = 0.0F;
@@ -201,15 +197,15 @@ static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
 }
 #endif
 
-void init_cloth(struct cloth *cloth, struct owl_renderer_image *image) {
+void init_cloth(struct cloth *cloth, owl_renderer_image_descriptor image) {
   owl_v3 position;
 
   base_init_cloth(cloth);
 
-  cloth->command_.image.slot = image->slot;
-  cloth->command_.indices_count = IDXS_COUNT;
+  cloth->command_.image = image;
+  cloth->command_.indice_count = IDX_COUNT;
   cloth->command_.indices = cloth->indices_;
-  cloth->command_.vertices_count = PARTICLE_COUNT;
+  cloth->command_.vertex_count = PARTICLE_COUNT;
   cloth->command_.vertices = cloth->vertices_;
 
   OWL_V3_SET(0.0F, 0.0F, -2.0F, position);
@@ -223,23 +219,22 @@ char const *fps_string(double time) {
   return buffer;
 }
 
-#define TEST(fn)                                                               \
-  do {                                                                         \
-    enum owl_code code = (fn);                                                 \
-    if (OWL_SUCCESS != (code)) {                                               \
-      printf("something went wrong in call: %s, code %i\n", (#fn), code);      \
-      return 0;                                                                \
-    }                                                                          \
+#define TEST(fn)                                                                                                                                                                                                                               \
+  do {                                                                                                                                                                                                                                         \
+    enum owl_code code = (fn);                                                                                                                                                                                                                 \
+    if (OWL_SUCCESS != (code)) {                                                                                                                                                                                                               \
+      printf("something went wrong in call: %s, code %i\n", (#fn), code);                                                                                                                                                                      \
+      return 0;                                                                                                                                                                                                                                \
+    }                                                                                                                                                                                                                                          \
   } while (0)
 
-static struct owl_window_init_desc window_desc;
+static struct owl_window_init_info window_info;
 static struct owl_window *window;
-static struct owl_renderer_init_desc renderer_desc;
+static struct owl_renderer_init_info renderer_info;
 static struct owl_renderer *renderer;
-static struct owl_renderer_image_init_desc image_desc;
-static struct owl_renderer_image image;
+static struct owl_renderer_image_init_info image_info;
+static owl_renderer_image_descriptor image;
 static struct cloth cloth;
-static struct owl_font font;
 static struct owl_draw_command_text text_command;
 static struct owl_camera camera;
 
@@ -248,29 +243,26 @@ static struct owl_camera camera;
 #define FONTPATH "../../assets/Inconsolata-Regular.ttf"
 
 int main(void) {
-  window_desc.height = 600;
-  window_desc.width = 600;
-  window_desc.title = "cloth-sim";
+  window_info.height = 600;
+  window_info.width = 600;
+  window_info.title = "cloth-sim";
   window = OWL_MALLOC(sizeof(*window));
-  TEST(owl_window_init(&window_desc, window));
+  TEST(owl_window_init(&window_info, window));
 
-  TEST(owl_window_fill_renderer_init_desc(window, &renderer_desc));
+  TEST(owl_window_fill_renderer_init_info(window, &renderer_info));
   renderer = OWL_MALLOC(sizeof(*renderer));
-  TEST(owl_renderer_init(&renderer_desc, renderer));
+  TEST(owl_renderer_init(&renderer_info, renderer));
 
-  image_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
-  image_desc.src_path = TPATH;
-  image_desc.sampler_use_default = 1;
-  TEST(owl_renderer_image_init(renderer, &image_desc, &image));
-
-  TEST(owl_font_init(renderer, 40, FONTPATH, &font));
+  image_info.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
+  image_info.src_path = TPATH;
+  image_info.sampler_use_default = 1;
+  TEST(owl_renderer_image_init(renderer, &image_info, &image));
 
   TEST(owl_camera_init(&camera));
 
-  init_cloth(&cloth, &image);
+  init_cloth(&cloth, image);
 
   text_command.scale = 2.0F;
-  text_command.font = &font;
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
   OWL_V3_SET(0.0F, 0.0F, 0.0F, text_command.position);
 
@@ -295,8 +287,8 @@ int main(void) {
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_begin(renderer)) {
       owl_window_handle_resize(window);
-      owl_window_fill_renderer_init_desc(window, &renderer_desc);
-      owl_renderer_swapchain_resize(&renderer_desc, renderer);
+      owl_window_fill_renderer_init_info(window, &renderer_info);
+      owl_renderer_swapchain_resize(&renderer_info, renderer);
       continue;
     }
 
@@ -315,16 +307,15 @@ int main(void) {
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end(renderer)) {
       owl_window_handle_resize(window);
-      owl_window_fill_renderer_init_desc(window, &renderer_desc);
-      owl_renderer_swapchain_resize(&renderer_desc, renderer);
+      owl_window_fill_renderer_init_info(window, &renderer_info);
+      owl_renderer_swapchain_resize(&renderer_info, renderer);
       continue;
     }
 
     owl_window_poll_events(window);
   }
 
-  owl_font_deinit(renderer, &font);
-  owl_renderer_image_deinit(renderer, &image);
+  owl_renderer_image_deinit(renderer, image);
   owl_renderer_deinit(renderer);
   owl_window_deinit(window);
 }

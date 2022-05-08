@@ -15,12 +15,12 @@ layout(set = 0, binding = 0) uniform UBO {
 }
 ubo;
 
-#define OWL_MODEL_SKIN_MAX_JOINTS_COUNT 128
+#define OWL_MODEL_SKIN_MAX_JOINT_COUNT 128
 
 layout(std430, set = 4, binding = 0) readonly buffer SSBO {
   mat4 matrix;
-  mat4 joint_matrices[OWL_MODEL_SKIN_MAX_JOINTS_COUNT];
-  int joint_matrices_count;
+  mat4 joint_matrices[OWL_MODEL_SKIN_MAX_JOINT_COUNT];
+  int joint_matrice_count;
 }
 node;
 
@@ -39,7 +39,7 @@ void main() {
   // Calculate skinned matrix from weights and joint indices of the current
   // vertex
   vec4 local_position;
-  if (0 != node.joint_matrices_count) {
+  if (0 != node.joint_matrice_count) {
     mat4 skin_matrix = in_weights0.x * node.joint_matrices[int(in_joints0.x)] +
                        in_weights0.y * node.joint_matrices[int(in_joints0.y)] +
                        in_weights0.z * node.joint_matrices[int(in_joints0.z)] +
