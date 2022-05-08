@@ -1,14 +1,17 @@
 #include "owl_renderer.h"
 
-#include "owl_client.h"
 #include "owl_draw_command.h"
 #include "owl_internal.h"
 #include "owl_model.h"
 #include "owl_types.h"
+#include "owl_window.h"
 #include "stb_image.h"
 
+/* clang-format off */
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
-#include "cimgui.h"
+#include <cimgui.h>
+#include <cimgui_impl.h>
+/* clang-format on */
 
 #include <math.h>
 
@@ -2691,6 +2694,84 @@ OWL_INTERNAL void owl_renderer_image_pool_deinit(struct owl_renderer *r) {
   }
 }
 
+enum owl_code owl_renderer_imgui_init(struct owl_renderer_init_desc const *desc,
+                                      struct owl_renderer *r) {
+  ImFont *font;
+  ImGui_ImplVulkan_InitInfo info;
+
+  enum owl_code code = OWL_SUCCESS;
+
+  OWL_UNUSED(desc);
+
+  info.Instance = r->instance;
+  info.PhysicalDevice = r->physical_device;
+  info.Device = r->device;
+  info.QueueFamily = r->graphics_queue_family;
+  info.PipelineCache = VK_NULL_HANDLE;
+  info.DescriptorPool = r->common_set_pool;
+  info.Subpass = 0;
+  info.MinImageCount = OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT;
+  info.ImageCount = r->swapchain_images_count;
+  info.MSAASamples = r->msaa_sample_count;
+  info.Allocator = NULL;
+  info.CheckVkResultFn = NULL;
+
+  if (!ImGui_ImplVulkan_Init(&info, r->main_render_pass)) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out;
+  }
+
+  font = ImFontAtlas_AddFontFromFileTTF(igGetIO()->Fonts,
+                                        "../../assets/Inconsolata-Regular.ttf",
+                                        16.0F, NULL, NULL);
+
+  if (!(font)) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out_err_imgui_vulkan_deinit;
+  }
+
+  if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_init(r))) {
+    goto out_err_imgui_vulkan_deinit;
+  }
+
+  if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_begin(r))) {
+    goto out_err_immidiate_command_buffer_deinit;
+  }
+
+  ImGui_ImplVulkan_CreateFontsTexture(r->immidiate_command_buffer);
+
+  if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_end(r))) {
+    goto out_err_font_upload_objs_deinit;
+  }
+
+  if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_submit(r))) {
+    goto out_err_font_upload_objs_deinit;
+  }
+
+  owl_renderer_immidiate_command_buffer_deinit(r);
+  ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+  goto out;
+
+out_err_font_upload_objs_deinit:
+  ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+out_err_immidiate_command_buffer_deinit:
+  owl_renderer_immidiate_command_buffer_deinit(r);
+
+out_err_imgui_vulkan_deinit:
+  ImGui_ImplVulkan_Shutdown();
+
+out:
+  return code;
+}
+
+void owl_renderer_imgui_deinit(struct owl_renderer *r) {
+  OWL_UNUSED(r);
+
+  ImGui_ImplVulkan_Shutdown();
+}
+
 enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *desc,
                                 struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
@@ -2784,7 +2865,14 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *desc,
     goto out_err_frame_heap_deinit;
   }
 
+  if (OWL_SUCCESS != (code = owl_renderer_imgui_init(desc, r))) {
+    goto out_err_image_pool_deinit;
+  }
+
   goto out;
+
+out_err_image_pool_deinit:
+  owl_renderer_image_pool_deinit(r);
 
 out_err_frame_heap_deinit:
   owl_renderer_frame_heap_deinit(r);
@@ -2849,6 +2937,7 @@ out:
 void owl_renderer_deinit(struct owl_renderer *r) {
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
 
+  owl_renderer_imgui_deinit(r);
   owl_renderer_image_pool_deinit(r);
   owl_renderer_frame_heap_deinit(r);
   owl_renderer_garbage_deinit(r);

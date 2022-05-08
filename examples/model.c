@@ -3,11 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static struct owl_client_init_desc client_desc;
-static struct owl_client *client;
+static struct owl_window_init_desc window_desc;
+static struct owl_window *window;
 static struct owl_renderer_init_desc renderer_desc;
 static struct owl_renderer *renderer;
+static struct owl_ui_renderer_state renderer_ui;
 static struct owl_model *model;
+static struct owl_ui_model_state model_ui;
 static struct owl_draw_command_model model_command;
 static struct owl_camera camera;
 
@@ -29,13 +31,13 @@ char const *fmtfps(double d) {
   } while (0)
 
 int main(void) {
-  client_desc.height = 600;
-  client_desc.width = 600;
-  client_desc.title = "model";
-  client = OWL_MALLOC(sizeof(*client));
-  CHECK(owl_client_init(&client_desc, client));
+  window_desc.height = 600;
+  window_desc.width = 600;
+  window_desc.title = "model";
+  window = OWL_MALLOC(sizeof(*window));
+  CHECK(owl_window_init(&window_desc, window));
 
-  CHECK(owl_client_fill_renderer_init_desc(client, &renderer_desc));
+  CHECK(owl_window_fill_renderer_init_desc(window, &renderer_desc));
   renderer = OWL_MALLOC(sizeof(*renderer));
   CHECK(owl_renderer_init(&renderer_desc, renderer));
 
@@ -43,6 +45,9 @@ int main(void) {
 
   model = OWL_MALLOC(sizeof(*model));
   CHECK(owl_model_init(renderer, MODEL_PATH, model));
+
+  CHECK(owl_ui_renderer_state_init(renderer, &renderer_ui));
+  CHECK(owl_ui_model_state_init(renderer, model, &model_ui));
 
   OWL_V3_SET(0.0F, 0.0F, 1.9F, model_command.light);
   OWL_M4_IDENTITY(model_command.model);
@@ -52,45 +57,46 @@ int main(void) {
   }
   model_command.skin = model;
 
-  while (!owl_client_is_done(client)) {
-    OWL_V2_COPY(client->cursor_position, model_command.light);
+  OWL_V3_SET(0.0F, 1.0F, 0.0F, model_command.light);
 
+  while (!owl_window_is_done(window)) {
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_begin(renderer)) {
-      owl_client_fill_renderer_init_desc(client, &renderer_desc);
+      owl_window_handle_resize(window);
+      owl_window_fill_renderer_init_desc(window, &renderer_desc);
       owl_renderer_swapchain_resize(&renderer_desc, renderer);
       owl_camera_ratio_set(&camera, renderer->framebuffer_ratio);
       continue;
     }
 
-    if (OWL_BUTTON_STATE_PRESS ==
-        client->mouse_buttons[OWL_MOUSE_BUTTON_LEFT]) {
-      owl_v3 side = {1.0F, 0.0F, 0.0F};
-      owl_v3 up = {0.0F, 1.0F, 0.0F};
-      owl_m4_rotate(model_command.model,
-                    -client->delta_cursor_position[1] * 2.0F, side,
-                    model_command.model);
-      owl_m4_rotate(model_command.model,
-                    client->delta_cursor_position[0] * 2.0F, up,
-                    model_command.model);
-    }
 
 #if 1
     owl_model_update_animation(model, 0, renderer->active_frame,
-                               client->delta_time_stamp);
+                               owl_io_delta_time());
 #endif
 
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_MODEL);
     owl_draw_command_model_submit(&model_command, renderer, &camera);
 
+    owl_ui_begin(renderer);
+    {
+      owl_ui_renderer_stats_draw(&renderer_ui, renderer);
+      owl_ui_model_stats_draw(&model_ui, model);
+    }
+    owl_ui_end(renderer);
+
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end(renderer)) {
-      owl_client_fill_renderer_init_desc(client, &renderer_desc);
+      owl_window_handle_resize(window);
+      owl_window_fill_renderer_init_desc(window, &renderer_desc);
       owl_renderer_swapchain_resize(&renderer_desc, renderer);
       owl_camera_ratio_set(&camera, renderer->framebuffer_ratio);
       continue;
     }
 
-    owl_client_poll_events(client);
+    owl_window_poll_events(window);
   }
+
+  owl_ui_model_state_deinit(renderer, model, &model_ui);
+  owl_ui_renderer_state_deinit(renderer, &renderer_ui);
 
   owl_camera_deinit(&camera);
 
@@ -100,6 +106,6 @@ int main(void) {
   owl_renderer_deinit(renderer);
   OWL_FREE(renderer);
 
-  owl_client_deinit(client);
-  OWL_FREE(client);
+  owl_window_deinit(window);
+  OWL_FREE(window);
 }

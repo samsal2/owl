@@ -2,8 +2,8 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl.h
   owl_camera.c
   owl_camera.h
-  owl_client.c
-  owl_client.h
+  owl_window.c
+  owl_window.h
   owl_draw_command.c
   owl_draw_command.h
   owl_font.c
@@ -15,8 +15,10 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_renderer.c
   owl_renderer.h
   owl_types.h
-  owl_ui_stats.c
-  owl_ui_stats.h
+  owl_io.c
+  owl_io.h
+  owl_ui.c
+  owl_ui.h
   owl_vector_math.c
   owl_vector_math.h)
 

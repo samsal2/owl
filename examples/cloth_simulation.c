@@ -1,4 +1,3 @@
-#include "owl/owl_renderer.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -174,6 +173,7 @@ static void update_cloth(float dt, struct cloth *cloth) {
     OWL_V3_COPY(cloth->particles[i].position, cloth->vertices_[i].position);
 }
 
+#if 0
 static void change_particle_position(owl_u32 id, owl_v2 const position,
                                      struct cloth *cloth) {
   struct particle *p = &cloth->particles[id];
@@ -199,6 +199,7 @@ static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
 
   return current;
 }
+#endif
 
 void init_cloth(struct cloth *cloth, struct owl_renderer_image *image) {
   owl_v3 position;
@@ -231,8 +232,8 @@ char const *fps_string(double time) {
     }                                                                          \
   } while (0)
 
-static struct owl_client_init_desc client_desc;
-static struct owl_client *client;
+static struct owl_window_init_desc window_desc;
+static struct owl_window *window;
 static struct owl_renderer_init_desc renderer_desc;
 static struct owl_renderer *renderer;
 static struct owl_renderer_image_init_desc image_desc;
@@ -243,19 +244,17 @@ static struct owl_draw_command_text text_command;
 static struct owl_camera camera;
 
 #define UNSELECTED (owl_u32) - 1
-#define TPATH "../assets/cloth.jpeg"
-#define FONTPATH "../assets/Inconsolata-Regular.ttf"
+#define TPATH "../../assets/cloth.jpeg"
+#define FONTPATH "../../assets/Inconsolata-Regular.ttf"
 
 int main(void) {
-  owl_u32 selected = UNSELECTED;
+  window_desc.height = 600;
+  window_desc.width = 600;
+  window_desc.title = "cloth-sim";
+  window = OWL_MALLOC(sizeof(*window));
+  TEST(owl_window_init(&window_desc, window));
 
-  client_desc.height = 600;
-  client_desc.width = 600;
-  client_desc.title = "cloth-sim";
-  client = OWL_MALLOC(sizeof(*client));
-  TEST(owl_client_init(&client_desc, client));
-
-  TEST(owl_client_fill_renderer_init_desc(client, &renderer_desc));
+  TEST(owl_window_fill_renderer_init_desc(window, &renderer_desc));
   renderer = OWL_MALLOC(sizeof(*renderer));
   TEST(owl_renderer_init(&renderer_desc, renderer));
 
@@ -274,8 +273,8 @@ int main(void) {
   OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
   OWL_V3_SET(-0.5F, -0.5F, -1.0F, text_command.position);
 
-  while (!owl_client_is_done(client)) {
-#if 1
+  while (!owl_window_is_done(window)) {
+#if 0
 
     if (UNSELECTED == selected &&
         OWL_BUTTON_STATE_PRESS == client->mouse_buttons[OWL_MOUSE_BUTTON_LEFT])
@@ -294,7 +293,8 @@ int main(void) {
     update_cloth(1.0F / 60.0F, &cloth);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_begin(renderer)) {
-      owl_client_fill_renderer_init_desc(client, &renderer_desc);
+      owl_window_handle_resize(window);
+      owl_window_fill_renderer_init_desc(window, &renderer_desc);
       owl_renderer_swapchain_resize(&renderer_desc, renderer);
       continue;
     }
@@ -307,20 +307,21 @@ int main(void) {
     owl_draw_command_basic_submit(&cloth.command_, renderer, &camera);
 
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_FONT);
-    text_command.text = fps_string(client->delta_time_stamp);
+    text_command.text = fps_string(1 / owl_io_framerate());
     owl_draw_command_text_submit(&text_command, renderer, &camera);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end(renderer)) {
-      owl_client_fill_renderer_init_desc(client, &renderer_desc);
+      owl_window_handle_resize(window);
+      owl_window_fill_renderer_init_desc(window, &renderer_desc);
       owl_renderer_swapchain_resize(&renderer_desc, renderer);
       continue;
     }
 
-    owl_client_poll_events(client);
+    owl_window_poll_events(window);
   }
 
   owl_font_deinit(renderer, &font);
   owl_renderer_image_deinit(renderer, &image);
   owl_renderer_deinit(renderer);
-  owl_client_deinit(client);
+  owl_window_deinit(window);
 }

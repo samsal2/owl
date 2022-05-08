@@ -1,3 +1,6 @@
 [submodule "deps/glfw/glfw"]
 	path = deps/glfw/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "deps/cimgui/cimgui/imgui"]
+	path = deps/cimgui/cimgui/imgui
+	url = https://github.com/ocornut/imgui.git

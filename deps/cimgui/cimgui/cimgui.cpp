@@ -3402,15 +3402,27 @@ CIMGUI_API ImGuiID ImGuiWindow_GetID_Int(ImGuiWindow* self,int n)
 }
 CIMGUI_API ImGuiID ImGuiWindow_GetIDNoKeepAlive_Str(ImGuiWindow* self,const char* str,const char* str_end)
 {
+#if 0
     return self->GetIDNoKeepAlive(str,str_end);
+#else
+    return -1;
+#endif
 }
 CIMGUI_API ImGuiID ImGuiWindow_GetIDNoKeepAlive_Ptr(ImGuiWindow* self,const void* ptr)
 {
+#if 0
     return self->GetIDNoKeepAlive(ptr);
+#else
+    return -1;
+#endif
 }
 CIMGUI_API ImGuiID ImGuiWindow_GetIDNoKeepAlive_Int(ImGuiWindow* self,int n)
 {
+#if 0
     return self->GetIDNoKeepAlive(n);
+#else
+    return -1;
+#endif
 }
 CIMGUI_API ImGuiID ImGuiWindow_GetIDFromRectangle(ImGuiWindow* self,const ImRect r_abs)
 {
@@ -3626,11 +3638,13 @@ CIMGUI_API ImDrawList* igGetForegroundDrawList_ViewportPtr(ImGuiViewport* viewpo
 }
 CIMGUI_API void igInitialize(ImGuiContext* context)
 {
-    return ImGui::Initialize(context);
+    ImGui::SetCurrentContext(context);
+    return ImGui::Initialize();
 }
 CIMGUI_API void igShutdown(ImGuiContext* context)
 {
-    return ImGui::Shutdown(context);
+    ImGui::SetCurrentContext(context);
+    return ImGui::Shutdown();
 }
 CIMGUI_API void igUpdateInputEvents(bool trickle_fast_inputs)
 {
@@ -3972,11 +3986,11 @@ CIMGUI_API const char* igGetNavInputName(ImGuiNavInput n)
 {
     return ImGui::GetNavInputName(n);
 }
-CIMGUI_API float igGetNavInputAmount(ImGuiNavInput n,ImGuiInputReadMode mode)
+CIMGUI_API float igGetNavInputAmount(ImGuiNavInput n,ImGuiNavReadMode mode)
 {
     return ImGui::GetNavInputAmount(n,mode);
 }
-CIMGUI_API void igGetNavInputAmount2d(ImVec2 *pOut,ImGuiNavDirSourceFlags dir_sources,ImGuiInputReadMode mode,float slow_factor,float fast_factor)
+CIMGUI_API void igGetNavInputAmount2d(ImVec2 *pOut,ImGuiNavDirSourceFlags dir_sources,ImGuiNavReadMode mode,float slow_factor,float fast_factor)
 {
     *pOut = ImGui::GetNavInputAmount2d(dir_sources,mode,slow_factor,fast_factor);
 }
@@ -4056,13 +4070,13 @@ CIMGUI_API bool igIsNavInputDown(ImGuiNavInput n)
 {
     return ImGui::IsNavInputDown(n);
 }
-CIMGUI_API bool igIsNavInputTest(ImGuiNavInput n,ImGuiInputReadMode rm)
+CIMGUI_API bool igIsNavInputTest(ImGuiNavInput n,ImGuiNavReadMode rm)
 {
     return ImGui::IsNavInputTest(n,rm);
 }
-CIMGUI_API ImGuiKeyModFlags igGetMergedKeyModFlags()
+CIMGUI_API ImGuiModFlags igGetMergedModFlags()
 {
-    return ImGui::GetMergedKeyModFlags();
+    return ImGui::GetMergedModFlags();
 }
 CIMGUI_API bool igIsKeyPressedMap(ImGuiKey key,bool repeat)
 {
@@ -4290,7 +4304,11 @@ CIMGUI_API ImGuiTableSettings* igTableGetBoundSettings(ImGuiTable* table)
 }
 CIMGUI_API void igTableSettingsInstallHandler(ImGuiContext* context)
 {
-    return ImGui::TableSettingsInstallHandler(context);
+    IM_ASSERT(0);
+#if 0
+    ImGui::SetCurrentContext(context);
+    return ImGui::TableSettingsInstallHandler();
+#endif
 }
 CIMGUI_API ImGuiTableSettings* igTableSettingsCreate(ImGuiID id,int columns_count)
 {
@@ -4396,9 +4414,9 @@ CIMGUI_API void igRenderCheckMark(ImDrawList* draw_list,ImVec2 pos,ImU32 col,flo
 {
     return ImGui::RenderCheckMark(draw_list,pos,col,sz);
 }
-CIMGUI_API void igRenderMouseCursor(ImDrawList* draw_list,ImVec2 pos,float scale,ImGuiMouseCursor mouse_cursor,ImU32 col_fill,ImU32 col_border,ImU32 col_shadow)
+CIMGUI_API void igRenderMouseCursor(ImVec2 pos,float scale,ImGuiMouseCursor mouse_cursor,ImU32 col_fill,ImU32 col_border,ImU32 col_shadow)
 {
-    return ImGui::RenderMouseCursor(draw_list,pos,scale,mouse_cursor,col_fill,col_border,col_shadow);
+    return ImGui::RenderMouseCursor(pos,scale,mouse_cursor,col_fill,col_border,col_shadow);
 }
 CIMGUI_API void igRenderArrowPointingAt(ImDrawList* draw_list,ImVec2 pos,ImVec2 half_sz,ImGuiDir direction,ImU32 col)
 {
