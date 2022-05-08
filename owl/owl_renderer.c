@@ -2,10 +2,10 @@
 
 #include "owl_draw_command.h"
 #include "owl_internal.h"
+#include "owl_io.h"
 #include "owl_model.h"
 #include "owl_types.h"
 #include "owl_window.h"
-#include "owl_io.h"
 #include "stb_image.h"
 
 #include <math.h>
@@ -2238,7 +2238,8 @@ OWL_INTERNAL enum owl_code owl_renderer_garbage_init(struct owl_renderer *r) {
   return code;
 }
 
-OWL_INTERNAL void owl_renderer_frame_heap_garbage_deinit(struct owl_renderer *r) {
+OWL_INTERNAL void
+owl_renderer_frame_heap_garbage_deinit(struct owl_renderer *r) {
   owl_i32 i;
 
   for (i = 0; i < r->garbage_model1_sets_count; ++i) {
@@ -2692,7 +2693,6 @@ OWL_INTERNAL void owl_renderer_image_pool_deinit(struct owl_renderer *r) {
   }
 }
 
-
 enum owl_code owl_renderer_init(struct owl_renderer_init_desc const *desc,
                                 struct owl_renderer *r) {
   enum owl_code code = OWL_SUCCESS;
@@ -3024,7 +3024,7 @@ owl_renderer_frame_heap_alloc(struct owl_renderer *r, owl_u64 sz,
   ref->model_ubo_params_set = r->active_frame_heap_model2_set;
 
   data = &r->active_frame_heap_data[offset];
-  
+
   offset = OWL_ALIGNU2(offset + sz, r->frame_heap_buffer_alignment);
   r->frame_heap_offsets[r->active_frame] = offset;
 
@@ -3374,9 +3374,9 @@ OWL_INTERNAL void owl_renderer_actives_update(struct owl_renderer *r) {
 }
 
 OWL_INTERNAL void owl_renderer_time_stamps_update(struct owl_renderer *r) {
-  r->time_stamp_previous = r->time_stamp_current;  
+  r->time_stamp_previous = r->time_stamp_current;
   r->time_stamp_current = owl_io_time_stamp_get();
-  r->time_stamp_delta = r->time_stamp_current - r->time_stamp_previous; 
+  r->time_stamp_delta = r->time_stamp_current - r->time_stamp_previous;
 }
 
 enum owl_code owl_renderer_frame_end(struct owl_renderer *r) {

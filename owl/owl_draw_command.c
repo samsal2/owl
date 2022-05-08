@@ -149,7 +149,7 @@ owl_draw_command_text_submit(struct owl_draw_command_text const *cmd,
   scale[0] = cmd->scale / (float)r->window_height;
   scale[1] = cmd->scale / (float)r->window_height;
   scale[2] = cmd->scale / (float)r->window_height;
-    
+
   for (l = cmd->text; '\0' != *l; ++l) {
     owl_v3 p0;
     owl_v3 p1;

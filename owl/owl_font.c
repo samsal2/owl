@@ -146,4 +146,3 @@ enum owl_code owl_font_fill_glyph(struct owl_font const *f, char c,
 
   return code;
 }
-

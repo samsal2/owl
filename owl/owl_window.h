@@ -40,5 +40,4 @@ void owl_window_handle_resize(struct owl_window *w);
 
 void owl_window_bind_io(struct owl_window *w, struct owl_io *io);
 
-
 #endif

@@ -31,8 +31,7 @@ void owl_ui_model_state_deinit(struct owl_renderer const *r,
                                struct owl_ui_model_state *rs);
 
 void owl_ui_renderer_stats_draw(struct owl_ui_renderer_state *rs,
-                                struct owl_renderer *r,
-                                struct owl_camera *cam);
+                                struct owl_renderer *r, struct owl_camera *cam);
 
 void owl_ui_model_stats_draw(struct owl_ui_model_state *ms,
                              struct owl_model *m);
