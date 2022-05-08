@@ -4254,8 +4254,6 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
     owl_renderer_active_font_set(r, font);
   }
 
-  OWL_DEBUG_LOG("%i\n", OWL_RENDERER_FONT_CHAR_COUNT);
-
   goto out;
 
 out_err_font_pool_deinit:
