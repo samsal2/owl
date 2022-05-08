@@ -26,7 +26,8 @@ OWL_GLOBAL char const *const device_extensions[] = {
 #if defined(OWL_ENABLE_VALIDATION)
 
 OWL_GLOBAL char const *const debug_validation_layers[] = {
-    "VK_LAYER_KHRONOS_validation"};
+    "VK_LAYER_KHRONOS_validation"
+};
 
 #endif /* OWL_ENABLE_VALIDATION */
 
@@ -82,8 +83,8 @@ owl_renderer_instance_init(struct owl_renderer_init_info const *info,
   instance_info.enabledLayerCount = OWL_ARRAY_SIZE(debug_validation_layers);
   instance_info.ppEnabledLayerNames = debug_validation_layers;
 #else  /* OWL_ENABLE_VALIDATION */
-  info.enabledLayerCount = 0;
-  info.ppEnabledLayerNames = NULL;
+  instance_info.enabledLayerCount = 0;
+  instance_info.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
   instance_info.enabledExtensionCount = (owl_u32)info->instance_extension_count;
   instance_info.ppEnabledExtensionNames = info->instance_extensions;
@@ -299,7 +300,10 @@ owl_validate_device_extensions(owl_u32 extension_count,
   owl_i32 found = 1;
   owl_b32 extensions_found[OWL_ARRAY_SIZE(device_extensions)];
 
-  OWL_MEMSET(extensions_found, 0, sizeof(extensions_found));
+
+  for (i = 0; i < (owl_i32)OWL_ARRAY_SIZE(device_extensions); ++i) {
+    extensions_found[i] = 0;
+  }
 
   for (i = 0; i < (owl_i32)extension_count; ++i) {
     owl_u32 j;
@@ -3143,29 +3147,28 @@ OWL_INTERNAL void owl_renderer_submit_graphics(struct owl_renderer *r) {
 
 OWL_INTERNAL enum owl_code
 owl_renderer_present_swapchain(struct owl_renderer *r) {
+  VkPresentInfoKHR info;
+
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  {
-    VkPresentInfoKHR info;
-    info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    info.pNext = NULL;
-    info.waitSemaphoreCount = 1;
-    info.pWaitSemaphores = &r->active_render_done_semaphore;
-    info.swapchainCount = 1;
-    info.pSwapchains = &r->swapchain;
-    info.pImageIndices = &r->active_swapchain_image_index;
-    info.pResults = NULL;
+  info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+  info.pNext = NULL;
+  info.waitSemaphoreCount = 1;
+  info.pWaitSemaphores = &r->active_render_done_semaphore;
+  info.swapchainCount = 1;
+  info.pSwapchains = &r->swapchain;
+  info.pImageIndices = &r->active_swapchain_image_index;
+  info.pResults = NULL;
 
-    vkres = vkQueuePresentKHR(r->present_queue, &info);
+  vkres = vkQueuePresentKHR(r->present_queue, &info);
 
-    if (VK_ERROR_OUT_OF_DATE_KHR == vkres) {
-      code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-    } else if (VK_SUBOPTIMAL_KHR == vkres) {
-      code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-    } else if (VK_ERROR_SURFACE_LOST_KHR == vkres) {
-      code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-    }
+  if (VK_ERROR_OUT_OF_DATE_KHR == vkres) {
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+  } else if (VK_SUBOPTIMAL_KHR == vkres) {
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
+  } else if (VK_ERROR_SURFACE_LOST_KHR == vkres) {
+    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
   }
 
   return code;

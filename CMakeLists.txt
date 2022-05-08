@@ -57,38 +57,22 @@ target_compile_options(${PROJECT_NAME} PUBLIC
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
 		-O0
 		-g
-		-fsanitize=address
-		-fsanitize=undefined
-		-fsanitize=bounds
+    -fsanitize=address
+    -fsanitize=undefined
+    -fsanitize=bounds
+#   -fsanitize=leak
   ">"
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Release>>:"
-		-Ofast
-  ">"
-	"$<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:"
-    -std=c++11
-  ">"
-	"$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<CONFIG:Debug>>:"
-		-O0
-		-g
-		-fsanitize=address
-		-fsanitize=undefined
-		-fsanitize=bounds
-  ">"
-	"$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<CONFIG:Release>>:"
 		-Ofast
   ">")
 
 # link options
 target_link_options(${PROJECT_NAME} PUBLIC
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
-		-fsanitize=address
-		-fsanitize=undefined
-		-fsanitize=bounds
-  ">"
-	"$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<CONFIG:Debug>>:"
-		-fsanitize=address
-		-fsanitize=undefined
-		-fsanitize=bounds
+    -fsanitize=address
+    -fsanitize=undefined
+    -fsanitize=bounds
+#		-fsanitize=leak
   ">")
 
 # compile definitions

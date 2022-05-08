@@ -100,6 +100,6 @@ int main(void) {
   owl_renderer_deinit(renderer);
   OWL_FREE(renderer);
 
-  owl_window_deinit(window);
+  owl_window_deinit(window); 
   OWL_FREE(window);
 }

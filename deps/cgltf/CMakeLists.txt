@@ -24,9 +24,10 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
 		-O0
 		-g
-		-fsanitize=address
-		-fsanitize=undefined
+    -fsanitize=address
+    -fsanitize=undefined
 		-fsanitize=bounds
+#   -fsanitize=leak
   ">"
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Release>>:"
 		-Ofast
@@ -34,8 +35,9 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 
 target_link_options(${PROJECT_NAME} PRIVATE
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
-		-fsanitize=address
-		-fsanitize=undefined
-		-fsanitize=bounds
+    -fsanitize=address
+    -fsanitize=undefined
+    -fsanitize=bounds
+#   -fsanitize=leak
   ">")
 
