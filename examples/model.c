@@ -12,6 +12,7 @@ static struct owl_model *model;
 static struct owl_ui_model_state model_ui;
 static struct owl_draw_command_model model_command;
 static struct owl_camera camera;
+static struct owl_font *font;
 
 #define MODEL_PATH "../../assets/CesiumMan.gltf"
 
@@ -46,7 +47,10 @@ int main(void) {
   model = OWL_MALLOC(sizeof(*model));
   CHECK(owl_model_init(renderer, MODEL_PATH, model));
 
-  CHECK(owl_ui_renderer_state_init(renderer, &renderer_ui));
+  font = OWL_MALLOC(sizeof(*font));
+  CHECK(owl_font_init(renderer, 64, "../../assets/Inconsolata-Regular.ttf", font));
+
+  CHECK(owl_ui_renderer_state_init(renderer, font, &renderer_ui));
   CHECK(owl_ui_model_state_init(renderer, model, &model_ui));
 
   OWL_V3_SET(0.0F, 0.0F, 1.9F, model_command.light);
@@ -77,12 +81,8 @@ int main(void) {
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_MODEL);
     owl_draw_command_model_submit(&model_command, renderer, &camera);
 
-    owl_ui_begin(renderer);
-    {
-      owl_ui_renderer_stats_draw(&renderer_ui, renderer);
-      owl_ui_model_stats_draw(&model_ui, model);
-    }
-    owl_ui_end(renderer);
+    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_FONT);
+    owl_ui_renderer_stats_draw(&renderer_ui, renderer, &camera);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end(renderer)) {
       owl_window_handle_resize(window);
@@ -95,8 +95,12 @@ int main(void) {
     owl_window_poll_events(window);
   }
 
+  owl_font_deinit(renderer, font);
+
   owl_ui_model_state_deinit(renderer, model, &model_ui);
   owl_ui_renderer_state_deinit(renderer, &renderer_ui);
+
+
 
   owl_camera_deinit(&camera);
 

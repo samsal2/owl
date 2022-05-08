@@ -2282,8 +2282,11 @@ OWL_INTERNAL enum owl_code owl_renderer_frame_heap_init(struct owl_renderer *r,
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  r->frame_heap_offset = 0;
   r->frame_heap_buffer_size = sz;
+
+  for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT; ++i) {
+    r->frame_heap_offsets[i] = 0;
+  }
 
   {
     VkBufferCreateInfo info;
@@ -2880,7 +2883,7 @@ OWL_INTERNAL enum owl_code
 owl_renderer_frame_heap_reserve(struct owl_renderer *r, owl_u64 sz) {
   enum owl_code code = OWL_SUCCESS;
 
-  owl_u64 required = r->frame_heap_offset + sz;
+  owl_u64 required = r->frame_heap_offsets[r->active_frame] + sz;
 
   /* if the current buffer size is enough do nothing */
   if (required < r->frame_heap_buffer_size) {
@@ -2986,7 +2989,7 @@ out:
 }
 
 owl_b32 owl_renderer_frame_heap_offset_is_clear(struct owl_renderer const *r) {
-  return 0 == r->frame_heap_offset;
+  return 0 == r->frame_heap_offsets[r->active_frame];
 }
 
 OWL_INTERNAL void
@@ -2995,19 +2998,14 @@ owl_renderer_frame_heap_garbage_clear(struct owl_renderer *r) {
 }
 
 void owl_renderer_frame_heap_offset_clear(struct owl_renderer *r) {
-  r->frame_heap_offset = 0;
-}
-
-OWL_INTERNAL void owl_renderer_frame_heap_offset_update(struct owl_renderer *r,
-                                                        owl_u64 sz) {
-  owl_u64 const next = r->frame_heap_offset + sz;
-
-  r->frame_heap_offset = OWL_ALIGNU2(next, r->frame_heap_buffer_alignment);
+  r->frame_heap_offsets[r->active_frame] = 0;
 }
 
 void *
 owl_renderer_frame_heap_alloc(struct owl_renderer *r, owl_u64 sz,
                               struct owl_renderer_frame_heap_reference *ref) {
+  owl_u64 offset;
+
   owl_byte *data = NULL;
   enum owl_code code = OWL_SUCCESS;
 
@@ -3016,16 +3014,19 @@ owl_renderer_frame_heap_alloc(struct owl_renderer *r, owl_u64 sz,
     goto out;
   }
 
-  ref->offset32 = (owl_u32)r->frame_heap_offset;
-  ref->offset = r->frame_heap_offset;
+  offset = r->frame_heap_offsets[r->active_frame];
+
+  ref->offset32 = (owl_u32)offset;
+  ref->offset = offset;
   ref->buffer = r->active_frame_heap_buffer;
   ref->common_ubo_set = r->active_frame_heap_common_set;
   ref->model_ubo_set = r->active_frame_heap_model1_set;
   ref->model_ubo_params_set = r->active_frame_heap_model2_set;
 
-  data = &r->active_frame_heap_data[r->frame_heap_offset];
-
-  owl_renderer_frame_heap_offset_update(r, sz);
+  data = &r->active_frame_heap_data[offset];
+  
+  offset = OWL_ALIGNU2(offset + sz, r->frame_heap_buffer_alignment);
+  r->frame_heap_offsets[r->active_frame] = offset;
 
 out:
   return data;

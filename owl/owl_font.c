@@ -94,7 +94,7 @@ enum owl_code owl_font_init(struct owl_renderer *r, owl_i32 size,
   image_desc.src_data_height = OWL_FONT_ATLAS_HEIGHT;
   image_desc.src_data_pixel_format = OWL_RENDERER_PIXEL_FORMAT_R8_UNORM;
   image_desc.sampler_use_default = 0;
-  image_desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_LINEAR;
+  image_desc.sampler_mip_mode = OWL_RENDERER_SAMPLER_MIP_MODE_NEAREST;
   image_desc.sampler_min_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
   image_desc.sampler_mag_filter = OWL_RENDERER_SAMPLER_FILTER_NEAREST;
   image_desc.sampler_wrap_u = OWL_RENDERER_SAMPLER_ADDR_MODE_CLAMP_TO_EDGE;

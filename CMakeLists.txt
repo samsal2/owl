@@ -12,7 +12,7 @@ add_library(${PROJECT_NAME})
 # features
 set_target_properties(${PROJECT_NAME}
     PROPERTIES 
-        C_STANDARD          11 # the cimgui.h header requires C11...
+        C_STANDARD          90 
         C_STANDARD_REQUIRED ON
         C_EXTENSIONS        OFF)
 
@@ -20,7 +20,6 @@ set_target_properties(${PROJECT_NAME}
 find_package(Vulkan REQUIRED)
 
 add_subdirectory(deps/glfw)
-# add_subdirectory(deps/cimgui)
 add_subdirectory(deps/stb)
 add_subdirectory(deps/cgltf)
 
@@ -51,6 +50,9 @@ target_compile_options(${PROJECT_NAME} PUBLIC
 		-Walloca 
 		-Wvla 
     -fdiagnostics-color=always
+    -Wno-long-long
+    -Wno-variadic-macros
+    -Wno-comment
   ">"
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
 		-O0

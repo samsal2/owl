@@ -6,7 +6,7 @@ add_library(${PROJECT_NAME})
 
 set_target_properties(${PROJECT_NAME}
     PROPERTIES 
-        C_STANDARD          99 
+        C_STANDARD          90 
         C_STANDARD_REQUIRED ON
         C_EXTENSIONS        OFF)
 

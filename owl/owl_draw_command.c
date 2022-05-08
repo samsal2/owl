@@ -130,35 +130,39 @@ owl_draw_command_text_submit(struct owl_draw_command_text const *cmd,
                              struct owl_camera const *cam) {
   char const *l;
   owl_v3 offset;
+  owl_v3 scale;
   enum owl_code code = OWL_SUCCESS;
 
+#if 0
   /* FIXME(samuel): make sure scaling is right */
-  offset[0] = cmd->position[0]; 
-  offset[1] = cmd->position[1];
+  offset[0] = cmd->position[0] * r->window_height;
+  offset[1] = cmd->position[1] * r->window_height;
 
   /* HACK(samuel): using framebuffer height to scale the z axis */
   offset[2] = cmd->position[2];
+#endif
 
-  OWL_V3_ZERO(offset);
+  offset[0] = cmd->position[0] * (float)r->framebuffer_width;
+  offset[1] = cmd->position[1] * (float)r->framebuffer_height;
+  offset[2] = 0.0F;
 
+  scale[0] = cmd->scale / (float)r->window_height;
+  scale[1] = cmd->scale / (float)r->window_height;
+  scale[2] = cmd->scale / (float)r->window_height;
+    
   for (l = cmd->text; '\0' != *l; ++l) {
     owl_v3 p0;
     owl_v3 p1;
     owl_v3 p2;
     owl_v3 p3;
-    owl_v3 scale;
     struct owl_font_glyph glyph;
     struct owl_draw_command_quad quad;
 
-    scale[0] = cmd->scale / (float)r->window_width;
-    scale[1] = cmd->scale / (float)r->window_height;
-    scale[2] = 0.0F;
-    
     owl_font_fill_glyph(cmd->font, *l, offset, &glyph);
 
     quad.image.slot = cmd->font->atlas.slot;
-    OWL_M4_IDENTITY(quad.model);
 
+    OWL_M4_IDENTITY(quad.model);
     owl_m4_scale(quad.model, scale, quad.model);
 
     OWL_V3_COPY(glyph.positions[0], p0);

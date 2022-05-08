@@ -19,7 +19,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 target_compile_options(${PROJECT_NAME} PRIVATE
 	"$<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:"
-    -std=c99
+    -Wno-gcc-compat
   ">"
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
 		-O0

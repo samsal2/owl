@@ -315,7 +315,6 @@ struct owl_renderer {
   /* ====================================================================== */
   VkDeviceMemory frame_heap_memory;
 
-  owl_u64 frame_heap_offset;
   owl_u64 frame_heap_buffer_size;
   owl_u64 frame_heap_buffer_alignment;
   owl_u64 frame_heap_buffer_aligned_size;
@@ -327,6 +326,7 @@ struct owl_renderer {
   VkDescriptorSet active_frame_heap_model2_set;
 
   owl_byte *frame_heap_data[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
+  owl_u64 frame_heap_offsets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkBuffer frame_heap_buffers[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkDescriptorSet frame_heap_common_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
   VkDescriptorSet frame_heap_model1_sets[OWL_RENDERER_IN_FLIGHT_FRAMES_COUNT];
