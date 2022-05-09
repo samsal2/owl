@@ -13,7 +13,7 @@
 
 OWL_BEGIN_DECLS
 
-#define owl_public
+#define owl_public        extern
 #define owl_global        static
 #define owl_private       static
 #define owl_local_persist static

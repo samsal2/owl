@@ -248,9 +248,8 @@ owl_public void
 owl_model_deinit (struct owl_model *model, struct owl_renderer *r);
 
 owl_public enum owl_code
-owl_model_anim_update (struct owl_model *model,
-                       owl_model_anim_descriptor animd, owl_i32 frame,
-                       float dt);
+owl_model_anim_update (struct owl_model *model, owl_i32 frame, float dt,
+                       owl_model_anim_descriptor animd);
 
 OWL_END_DECLS
 

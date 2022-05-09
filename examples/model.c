@@ -28,6 +28,8 @@ fmtfps (double d) {
 
 int
 main (void) {
+  owl_v3 offset = {0.0F, 0.0F, -1.0F};
+
   window = malloc (sizeof (*window));
   CHECK (owl_window_init (window, 600, 600, "model"));
 
@@ -38,20 +40,16 @@ main (void) {
   CHECK (owl_model_init (model, renderer, MODEL_PATH));
 
   owl_m4_identity (matrix);
-  {
-    owl_v3 offset = {0.0F, 0.0F, -1.0F};
-    owl_m4_translate (offset, matrix);
-  }
+  owl_m4_translate (offset, matrix);
 
   while (!owl_window_is_done (window)) {
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_begin (renderer)) {
-      owl_window_handle_resize (window);
       owl_renderer_swapchain_resize (renderer, window);
       continue;
     }
 
-    owl_model_anim_update (model, 0, renderer->active_frame,
-                           renderer->time_stamp_delta);
+    owl_model_anim_update (model, renderer->active_frame,
+                           renderer->time_stamp_delta, 0);
 
     owl_renderer_bind_pipeline (renderer, OWL_RENDERER_PIPELINE_MODEL);
     owl_renderer_model_draw (renderer, model, matrix);
@@ -60,7 +58,6 @@ main (void) {
     owl_ui_renderer_stats_draw (renderer);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end (renderer)) {
-      owl_window_handle_resize (window);
       owl_renderer_swapchain_resize (renderer, window);
       continue;
     }

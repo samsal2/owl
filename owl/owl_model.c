@@ -1199,9 +1199,8 @@ out:
 #define OWL_MODEL_ANIM_PATH_TYPE_SCALE    cgltf_animation_path_type_scale
 
 owl_public enum owl_code
-owl_model_anim_update (struct owl_model *model,
-                       owl_model_anim_descriptor animd, owl_i32 frame,
-                       float dt) {
+owl_model_anim_update (struct owl_model *model, owl_i32 frame, float dt,
+                       owl_model_anim_descriptor animd) {
   owl_i32 i;
   struct owl_model_anim *anim;
 

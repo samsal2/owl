@@ -2780,11 +2780,11 @@ owl_renderer_swapchain_resize (struct owl_renderer *r,
   enum owl_code code = OWL_SUCCESS;
 
   /* set the current window and framebuffer dims */
-  r->window_width = w->window_width;
-  r->window_height = w->window_height;
-  r->framebuffer_width = w->framebuffer_width;
-  r->framebuffer_height = w->framebuffer_height;
-  r->framebuffer_ratio = w->framebuffer_ratio;
+  owl_window_get_window_size (w, &r->window_width, &r->window_height);
+  owl_window_get_framebuffer_size (w, &r->framebuffer_width,
+                                   &r->framebuffer_height);
+
+  r->framebuffer_ratio = (float)r->window_width / (float)r->window_height;
 
   owl_renderer_projection_update (r);
   owl_renderer_view_update (r);
@@ -4208,11 +4208,13 @@ owl_renderer_init (struct owl_renderer *r, struct owl_window const *w) {
   r->time_stamp_current = 0.0;
   r->time_stamp_previous = 0.0;
   r->time_stamp_delta = 0.0;
-  r->window_width = w->window_width;
-  r->window_height = w->window_height;
-  r->framebuffer_width = w->framebuffer_width;
-  r->framebuffer_height = w->framebuffer_height;
-  r->framebuffer_ratio = w->framebuffer_ratio;
+
+  owl_window_get_window_size (w, &r->window_width, &r->window_height);
+  owl_window_get_framebuffer_size (w, &r->framebuffer_width,
+                                   &r->framebuffer_height);
+
+  r->framebuffer_ratio = (float)r->window_width / (float)r->window_height;
+
   r->immidiate_command_buffer = VK_NULL_HANDLE;
 
   owl_renderer_projection_update (r);

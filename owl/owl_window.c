@@ -113,17 +113,12 @@ owl_window_init (struct owl_window *w, owl_i32 width, owl_i32 height,
 
   glfwWindowHint (GLFW_CLIENT_API, GLFW_NO_API);
 
-  w->data = glfwCreateWindow (width, height, name, NULL, NULL);
+  w->opaque = glfwCreateWindow (width, height, name, NULL, NULL);
 
-  if (!(w->data)) {
+  if (!(w->opaque)) {
     code = OWL_ERROR_UNKNOWN;
     goto out_err_glfw_deinit;
   }
-
-  glfwSetWindowUserPointer (w->data, w);
-  glfwGetWindowSize (w->data, &w->window_width, &w->window_height);
-  glfwGetFramebufferSize (w->data, &w->framebuffer_width,
-                          &w->framebuffer_height);
 #if 0
   glfwSetWindowSizeCallback(w->data, owl_window_window_size_callback);
   glfwSetFramebufferSizeCallback(w->data, owl_window_framebuffer_size_callback);
@@ -131,9 +126,6 @@ owl_window_init (struct owl_window *w, owl_i32 width, owl_i32 height,
   glfwSetMouseButtonCallback(w->data, owl_window_mouse_keys_callback);
   glfwSetKeyCallback(w->data, owl_window_keyboard_keys_callback);
 #endif
-
-  w->framebuffer_ratio =
-      (float)w->framebuffer_width / (float)w->framebuffer_height;
 
   w->title = name;
 
@@ -148,7 +140,7 @@ out:
 
 owl_public void
 owl_window_deinit (struct owl_window *w) {
-  glfwDestroyWindow (w->data);
+  glfwDestroyWindow (w->opaque);
   glfwTerminate ();
 }
 
@@ -176,7 +168,7 @@ owl_window_get_debug_instance_extensions (owl_u32 *count) {
 
 owl_public owl_i32
 owl_window_is_done (struct owl_window *w) {
-  return glfwWindowShouldClose (w->data);
+  return glfwWindowShouldClose (w->opaque);
 }
 
 owl_public void
@@ -184,17 +176,6 @@ owl_window_poll_events (struct owl_window *w) {
   owl_unused (w);
 
   glfwPollEvents ();
-}
-
-owl_public void
-owl_window_handle_resize (struct owl_window *w) {
-  glfwGetWindowSize (w->data, &w->window_width, &w->window_height);
-
-  glfwGetFramebufferSize (w->data, &w->framebuffer_width,
-                          &w->framebuffer_height);
-
-  w->framebuffer_ratio =
-      (float)w->framebuffer_width / (float)w->framebuffer_height;
 }
 
 owl_public char const *const *
@@ -211,7 +192,31 @@ owl_window_create_vk_surface (struct owl_window const *w, VkInstance instance,
                               VkSurfaceKHR *surface) {
   VkResult vkres;
 
-  vkres = glfwCreateWindowSurface (instance, w->data, NULL, surface);
+  vkres = glfwCreateWindowSurface (instance, w->opaque, NULL, surface);
 
   return VK_SUCCESS == vkres ? OWL_SUCCESS : OWL_ERROR_UNKNOWN;
+}
+
+owl_public void
+owl_window_get_framebuffer_size (struct owl_window const *w, owl_i32 *width,
+                                 owl_i32 *height) {
+  int iw;
+  int ih;
+
+  glfwGetFramebufferSize (w->opaque, &iw, &ih);
+
+  *width = (owl_i32)iw;
+  *height = (owl_i32)ih;
+}
+
+owl_public void
+owl_window_get_window_size (struct owl_window const *w, owl_i32 *width,
+                            owl_i32 *height) {
+  int iw;
+  int ih;
+
+  glfwGetWindowSize (w->opaque, &iw, &ih);
+
+  *width = (owl_i32)iw;
+  *height = (owl_i32)ih;
 }

@@ -291,7 +291,6 @@ main (void) {
     update_cloth (1.0F / 60.0F, &cloth);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_begin (renderer)) {
-      owl_window_handle_resize (window);
       owl_renderer_swapchain_resize (renderer, window);
       continue;
     }
@@ -300,7 +299,6 @@ main (void) {
     owl_renderer_vertex_list_draw (renderer, &list, cloth.matrix);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end (renderer)) {
-      owl_window_handle_resize (window);
       owl_renderer_swapchain_resize (renderer, window);
       continue;
     }
