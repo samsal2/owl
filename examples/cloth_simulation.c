@@ -239,7 +239,6 @@ static struct owl_renderer *renderer;
 static struct owl_renderer_image_init_info image_info;
 static owl_renderer_image_descriptor image;
 static struct cloth cloth;
-static struct owl_camera camera;
 static struct owl_renderer_vertex_and_index_list list;
 
 #define UNSELECTED (owl_u32) - 1
@@ -261,8 +260,6 @@ int main(void) {
   image_info.src_path = TPATH;
   image_info.sampler_use_default = 1;
   TEST(owl_renderer_image_init(renderer, &image_info, &image));
-
-  TEST(owl_camera_init(&camera));
 
   init_cloth(&cloth, image);
 

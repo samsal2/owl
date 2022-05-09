@@ -1,4 +1,3 @@
-#include "owl/owl_renderer.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -10,7 +9,6 @@ static struct owl_renderer_init_info renderer_info;
 static struct owl_renderer *renderer;
 static struct owl_model *model;
 static owl_m4 matrix;
-static struct owl_camera camera;
 
 #define MODEL_PATH "../../assets/CesiumMan.gltf"
 
@@ -40,8 +38,6 @@ int main(void) {
   renderer = OWL_MALLOC(sizeof(*renderer));
   CHECK(owl_renderer_init(renderer, &renderer_info));
 
-  CHECK(owl_camera_init(&camera));
-
   model = OWL_MALLOC(sizeof(*model));
   CHECK(owl_model_init(model, renderer, MODEL_PATH));
 
@@ -56,7 +52,6 @@ int main(void) {
       owl_window_handle_resize(window);
       owl_window_fill_renderer_init_info(window, &renderer_info);
       owl_renderer_swapchain_resize(renderer, &renderer_info);
-      owl_camera_ratio_set(&camera, renderer->framebuffer_ratio);
       continue;
     }
 
@@ -73,14 +68,11 @@ int main(void) {
       owl_window_handle_resize(window);
       owl_window_fill_renderer_init_info(window, &renderer_info);
       owl_renderer_swapchain_resize(renderer, &renderer_info);
-      owl_camera_ratio_set(&camera, renderer->framebuffer_ratio);
       continue;
     }
 
     owl_window_poll_events(window);
   }
-
-  owl_camera_deinit(&camera);
 
   owl_model_deinit(model, renderer);
   OWL_FREE(model);

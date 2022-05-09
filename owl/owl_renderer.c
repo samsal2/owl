@@ -62,7 +62,7 @@ OWL_INTERNAL void owl_renderer_projection_update(struct owl_renderer *r) {
   float near = 0.01;
   float far = 10.0F;
 
-  owl_m4_perspective(fov, ratio, near, far, r->projection);
+  owl_m4_perspective(fov, ratio, near, far, r->camera_projection);
 }
 
 OWL_INTERNAL void owl_renderer_view_update(struct owl_renderer *r) {
@@ -70,7 +70,7 @@ OWL_INTERNAL void owl_renderer_view_update(struct owl_renderer *r) {
   owl_v3 direction = {0.0F, 0.0F, 1.0F};
   owl_v3 up = {0.0F, 1.0F, 0.0F};
 
-  owl_m4_look(eye, direction, up, r->view);
+  owl_m4_look(eye, direction, up, r->camera_view);
 }
 
 OWL_INTERNAL enum owl_code
@@ -4432,8 +4432,8 @@ enum owl_code owl_renderer_quad_draw(struct owl_renderer *r,
     goto out;
   }
 
-  OWL_M4_COPY(r->projection, ubo.projection);
-  OWL_M4_COPY(r->view, ubo.view);
+  OWL_M4_COPY(r->camera_projection, ubo.projection);
+  OWL_M4_COPY(r->camera_view, ubo.view);
   OWL_M4_COPY(matrix, ubo.model);
 
   code = owl_renderer_frame_heap_submit(r, sizeof(ubo), &ubo, &uref);
@@ -4508,8 +4508,8 @@ owl_renderer_model_node_draw(struct owl_renderer *r,
     }
   }
 
-  OWL_M4_COPY(r->projection, ubo1.projection);
-  OWL_M4_COPY(r->view, ubo1.view);
+  OWL_M4_COPY(r->camera_projection, ubo1.projection);
+  OWL_M4_COPY(r->camera_view, ubo1.view);
   OWL_M4_COPY(matrix, ubo1.model);
   OWL_V4_ZERO(ubo1.light);
   OWL_V4_ZERO(ubo2.light_direction);
@@ -4748,8 +4748,8 @@ enum owl_code owl_renderer_vertex_and_index_list_draw(
     goto out;
   }
 
-  OWL_M4_COPY(r->projection, ubo.projection);
-  OWL_M4_COPY(r->view, ubo.view);
+  OWL_M4_COPY(r->camera_projection, ubo.projection);
+  OWL_M4_COPY(r->camera_view, ubo.view);
   OWL_M4_COPY(matrix, ubo.model);
 
   code = owl_renderer_frame_heap_submit(r, sizeof(ubo), &ubo, &uref);

@@ -1,7 +1,5 @@
 target_sources(${PROJECT_NAME} PRIVATE
   owl.h
-  owl_camera.c
-  owl_camera.h
   owl_window.c
   owl_window.h
   owl_internal.c
