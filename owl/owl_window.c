@@ -101,25 +101,9 @@ owl_private void owl_window_keyboard_keys_callback(GLFWwindow *data,
 }
 #endif
 
-owl_private enum owl_code
-owl_vk_create_surface_callback (struct owl_renderer const *r,
-                                void const *user_data, VkSurfaceKHR *surface) {
-  owl_i32 err;
-  enum owl_code code = OWL_SUCCESS;
-  struct owl_window const *w = user_data;
-
-  err = glfwCreateWindowSurface (r->instance, w->data, NULL, surface);
-
-  if (VK_SUCCESS != err) {
-    code = OWL_ERROR_BAD_INIT;
-  }
-
-  return code;
-}
-
 enum owl_code
-owl_window_init (struct owl_window *w,
-                 struct owl_window_init_info const *info) {
+owl_window_init (struct owl_window *w, owl_i32 width, owl_i32 height,
+                 char const *name) {
   enum owl_code code = OWL_SUCCESS;
 
   if (!glfwInit ()) {
@@ -129,8 +113,7 @@ owl_window_init (struct owl_window *w,
 
   glfwWindowHint (GLFW_CLIENT_API, GLFW_NO_API);
 
-  w->data =
-      glfwCreateWindow (info->width, info->height, info->title, NULL, NULL);
+  w->data = glfwCreateWindow (width, height, name, NULL, NULL);
 
   if (!(w->data)) {
     code = OWL_ERROR_UNKNOWN;
@@ -152,7 +135,7 @@ owl_window_init (struct owl_window *w,
   w->framebuffer_ratio =
       (float)w->framebuffer_width / (float)w->framebuffer_height;
 
-  w->title = info->title;
+  w->title = name;
 
   goto out;
 
@@ -174,7 +157,7 @@ owl_window_deinit (struct owl_window *w) {
 #define OWL_MAX_EXTENSIONS 64
 
 owl_private char const *const *
-owl_get_debug_instance_extensions (owl_u32 *count) {
+owl_window_get_debug_instance_extensions (owl_u32 *count) {
   char const *const *extensions;
   owl_local_persist char const *names[OWL_MAX_EXTENSIONS];
 
@@ -190,32 +173,6 @@ owl_get_debug_instance_extensions (owl_u32 *count) {
 }
 
 #endif /* OWL_ENABLE_VALIDATION */
-
-owl_public enum owl_code
-owl_window_fill_renderer_init_info (struct owl_window const *w,
-                                    struct owl_renderer_init_info *info) {
-  owl_u32 count;
-  enum owl_code code = OWL_SUCCESS;
-
-  info->window_width = w->window_width;
-  info->window_height = w->window_height;
-  info->framebuffer_ratio = w->framebuffer_ratio;
-  info->framebuffer_width = w->framebuffer_width;
-  info->framebuffer_height = w->framebuffer_height;
-  info->surface_user_data = w;
-  info->create_surface = owl_vk_create_surface_callback;
-
-#if defined(OWL_ENABLE_VALIDATION)
-  info->instance_extensions = owl_get_debug_instance_extensions (&count);
-#else  /* OWL_ENABLE_VALIDATION */
-  info->instance_extensions = glfwGetRequiredInstanceExtensions (&count);
-#endif /* OWL_ENABLE_VALIDATION */
-
-  info->instance_extension_count = (int)count;
-  info->name = w->title;
-
-  return code;
-}
 
 owl_public owl_i32
 owl_window_is_done (struct owl_window *w) {
@@ -238,4 +195,23 @@ owl_window_handle_resize (struct owl_window *w) {
 
   w->framebuffer_ratio =
       (float)w->framebuffer_width / (float)w->framebuffer_height;
+}
+
+owl_public char const *const *
+owl_window_get_instance_extensions (owl_u32 *count) {
+#if defined(OWL_ENABLE_VALIDATION)
+  return owl_window_get_debug_instance_extensions (count);
+#else
+  return glfwGetRequiredInstanceExtensions (count);
+#endif
+}
+
+owl_public enum owl_code
+owl_window_create_vk_surface (struct owl_window const *w, VkInstance instance,
+                              VkSurfaceKHR *surface) {
+  VkResult vkres;
+
+  vkres = glfwCreateWindowSurface (instance, w->data, NULL, surface);
+
+  return VK_SUCCESS == vkres ? OWL_SUCCESS : OWL_ERROR_UNKNOWN;
 }

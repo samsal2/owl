@@ -76,8 +76,7 @@ owl_renderer_view_update (struct owl_renderer *r) {
 }
 
 owl_private enum owl_code
-owl_renderer_instance_init (struct owl_renderer *r,
-                            struct owl_renderer_init_info const *info) {
+owl_renderer_instance_init (struct owl_renderer *r, char const *name) {
   VkApplicationInfo app;
   VkInstanceCreateInfo instance_info;
 
@@ -86,7 +85,7 @@ owl_renderer_instance_init (struct owl_renderer *r,
 
   app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app.pNext = NULL;
-  app.pApplicationName = info->name;
+  app.pApplicationName = name;
   app.applicationVersion = VK_MAKE_VERSION (1, 0, 0);
   app.pEngineName = "No Engine";
   app.engineVersion = VK_MAKE_VERSION (1, 0, 0);
@@ -103,9 +102,8 @@ owl_renderer_instance_init (struct owl_renderer *r,
   instance_info.enabledLayerCount = 0;
   instance_info.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
-  instance_info.enabledExtensionCount =
-      (owl_u32)info->instance_extension_count;
-  instance_info.ppEnabledExtensionNames = info->instance_extensions;
+  instance_info.ppEnabledExtensionNames = owl_window_get_instance_extensions (
+      &instance_info.enabledExtensionCount);
 
   vkres = vkCreateInstance (&instance_info, NULL, &r->instance);
 
@@ -210,8 +208,8 @@ owl_renderer_debug_messenger_deinit (struct owl_renderer *r) {
 
 owl_private enum owl_code
 owl_renderer_surface_init (struct owl_renderer *r,
-                           struct owl_renderer_init_info const *info) {
-  return info->create_surface (r, info->surface_user_data, &r->surface);
+                           struct owl_window const *w) {
+  return owl_window_create_vk_surface (w, r->instance, &r->surface);
 }
 
 owl_private void
@@ -658,8 +656,7 @@ out:
 }
 
 owl_private enum owl_code
-owl_renderer_swapchain_init (struct owl_renderer *r,
-                             struct owl_renderer_init_info const *info) {
+owl_renderer_swapchain_init (struct owl_renderer *r) {
   owl_u32 families[2];
   VkSurfaceCapabilitiesKHR capabilities;
   VkSwapchainCreateInfoKHR swapchain_info;
@@ -670,8 +667,8 @@ owl_renderer_swapchain_init (struct owl_renderer *r,
   families[0] = r->graphics_queue_family;
   families[1] = r->present_queue_family;
 
-  r->swapchain_extent.width = (owl_u32)info->framebuffer_width;
-  r->swapchain_extent.height = (owl_u32)info->framebuffer_height;
+  r->swapchain_extent.width = (owl_u32)r->framebuffer_width;
+  r->swapchain_extent.height = (owl_u32)r->framebuffer_height;
   owl_renderer_swapchain_extent_clamp (r);
 
 #if 1
@@ -1074,7 +1071,7 @@ owl_renderer_attachments_init (struct owl_renderer *r) {
     info.pNext = NULL;
     info.allocationSize = requirements.size;
     info.memoryTypeIndex = owl_renderer_find_memory_type (
-        r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
+        r, requirements.memoryTypeBits, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
     vkres = vkAllocateMemory (r->device, &info, NULL, &r->color_memory);
 
@@ -1154,7 +1151,7 @@ owl_renderer_attachments_init (struct owl_renderer *r) {
     info.pNext = NULL;
     info.allocationSize = requirements.size;
     info.memoryTypeIndex = owl_renderer_find_memory_type (
-        r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
+        r, requirements.memoryTypeBits, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
     vkres =
         vkAllocateMemory (r->device, &info, NULL, &r->depth_stencil_memory);
@@ -2376,7 +2373,8 @@ owl_renderer_frame_heap_init (struct owl_renderer *r, owl_u64 sz) {
     info.allocationSize =
         r->frame_heap_buffer_aligned_size * OWL_RENDERER_IN_FLIGHT_FRAME_COUNT;
     info.memoryTypeIndex = owl_renderer_find_memory_type (
-        r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT);
+        r, requirements.memoryTypeBits,
+        OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT);
 
     vkres = vkAllocateMemory (r->device, &info, NULL, &r->frame_heap_memory);
 
@@ -2778,15 +2776,15 @@ out:
 
 owl_public enum owl_code
 owl_renderer_swapchain_resize (struct owl_renderer *r,
-                               struct owl_renderer_init_info const *info) {
+                               struct owl_window const *w) {
   enum owl_code code = OWL_SUCCESS;
 
   /* set the current window and framebuffer dims */
-  r->window_width = info->window_width;
-  r->window_height = info->window_height;
-  r->framebuffer_width = info->framebuffer_width;
-  r->framebuffer_height = info->framebuffer_height;
-  r->framebuffer_ratio = info->framebuffer_ratio;
+  r->window_width = w->window_width;
+  r->window_height = w->window_height;
+  r->framebuffer_width = w->framebuffer_width;
+  r->framebuffer_height = w->framebuffer_height;
+  r->framebuffer_ratio = w->framebuffer_ratio;
 
   owl_renderer_projection_update (r);
   owl_renderer_view_update (r);
@@ -2804,7 +2802,7 @@ owl_renderer_swapchain_resize (struct owl_renderer *r,
   owl_renderer_swapchain_image_views_deinit (r);
   owl_renderer_swapchain_deinit (r);
 
-  if (OWL_SUCCESS != (code = owl_renderer_swapchain_init (r, info))) {
+  if (OWL_SUCCESS != (code = owl_renderer_swapchain_init (r))) {
     goto out;
   }
 
@@ -2923,14 +2921,11 @@ out:
 }
 
 owl_public owl_u32
-owl_renderer_find_memory_type (struct owl_renderer const *r,
-                               VkMemoryRequirements const *req,
+owl_renderer_find_memory_type (struct owl_renderer const *r, owl_u32 filter,
                                enum owl_renderer_memory_visibility vis) {
   owl_i32 i;
   VkMemoryPropertyFlags visibility;
   VkPhysicalDeviceMemoryProperties properties;
-
-  owl_u32 const filter = req->memoryTypeBits;
 
   switch (vis) {
   case OWL_RENDERER_MEMORY_VISIBILITY_CPU:
@@ -3554,7 +3549,7 @@ struct owl_renderer_image_load_state {
 
 owl_private enum owl_code
 owl_renderer_image_load_state_init (
-    struct owl_renderer *r, struct owl_renderer_image_init_info const *info,
+    struct owl_renderer *r, struct owl_renderer_image_info const *info,
     struct owl_renderer_image_load_state *state) {
   enum owl_code code = OWL_SUCCESS;
 
@@ -3619,7 +3614,7 @@ owl_renderer_image_load_state_deinit (
 
 owl_public enum owl_code
 owl_renderer_image_init (struct owl_renderer *r,
-                         struct owl_renderer_image_init_info const *info,
+                         struct owl_renderer_image_info const *info,
                          owl_renderer_image_descriptor *imgd) {
   VkResult vkres = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
@@ -3681,7 +3676,7 @@ owl_renderer_image_init (struct owl_renderer *r,
     memory_info.pNext = NULL;
     memory_info.allocationSize = requirements.size;
     memory_info.memoryTypeIndex = owl_renderer_find_memory_type (
-        r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
+        r, requirements.memoryTypeBits, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
     vkres = vkAllocateMemory (r->device, &memory_info, NULL,
                               &r->image_pool_memories[*imgd]);
@@ -3749,8 +3744,9 @@ owl_renderer_image_init (struct owl_renderer *r,
     goto out_err_set_deinit;
   }
 
-  if (OWL_SUCCESS !=
-      (code = owl_renderer_immidiate_command_buffer_begin (r))) {
+  code = owl_renderer_immidiate_command_buffer_begin (r);
+
+  if (OWL_SUCCESS != code) {
     goto out_err_immidiate_command_buffer_deinit;
   }
 
@@ -4029,13 +4025,12 @@ owl_static_assert (
     "owl_font_char and stbtt_packedchar must represent the same struct");
 
 owl_public enum owl_code
-owl_renderer_font_init (struct owl_renderer *r,
-                        struct owl_renderer_font_init_info const *info,
+owl_renderer_font_init (struct owl_renderer *r, char const *path, owl_i32 sz,
                         owl_renderer_font_descriptor *fd) {
   owl_byte *file;
   owl_byte *bitmap;
   stbtt_pack_context pack_context;
-  struct owl_renderer_image_init_info image_info;
+  struct owl_renderer_image_info image_info;
 
   enum owl_code code = OWL_SUCCESS;
 
@@ -4043,8 +4038,7 @@ owl_renderer_font_init (struct owl_renderer *r,
     goto out;
   }
 
-  if (OWL_SUCCESS !=
-      (code = owl_renderer_font_load_file (info->path, &file))) {
+  if (OWL_SUCCESS != (code = owl_renderer_font_load_file (path, &file))) {
     goto out_err_font_slot_unselect;
   }
 
@@ -4067,7 +4061,7 @@ owl_renderer_font_init (struct owl_renderer *r,
   /* HACK(samuel): idk if it's legal to alias a different type with the exact
    * same layout, but it _works_ so ill leave it at that*/
   if (!stbtt_PackFontRange (
-          &pack_context, file, 0, info->size, OWL_RENDERER_FONT_FIRST_CHAR,
+          &pack_context, file, 0, sz, OWL_RENDERER_FONT_FIRST_CHAR,
           OWL_RENDERER_FONT_CHAR_COUNT,
           (stbtt_packedchar *)(&r->font_pool_chars[*fd][0]))) {
     code = OWL_ERROR_UNKNOWN;
@@ -4208,24 +4202,23 @@ owl_renderer_font_pool_deinit (struct owl_renderer *r) {
 }
 
 owl_public enum owl_code
-owl_renderer_init (struct owl_renderer *r,
-                   struct owl_renderer_init_info const *info) {
+owl_renderer_init (struct owl_renderer *r, struct owl_window const *w) {
   enum owl_code code = OWL_SUCCESS;
 
   r->time_stamp_current = 0.0;
   r->time_stamp_previous = 0.0;
   r->time_stamp_delta = 0.0;
-  r->window_width = info->window_width;
-  r->window_height = info->window_height;
-  r->framebuffer_width = info->framebuffer_width;
-  r->framebuffer_height = info->framebuffer_height;
-  r->framebuffer_ratio = info->framebuffer_ratio;
+  r->window_width = w->window_width;
+  r->window_height = w->window_height;
+  r->framebuffer_width = w->framebuffer_width;
+  r->framebuffer_height = w->framebuffer_height;
+  r->framebuffer_ratio = w->framebuffer_ratio;
   r->immidiate_command_buffer = VK_NULL_HANDLE;
 
   owl_renderer_projection_update (r);
   owl_renderer_view_update (r);
 
-  if (OWL_SUCCESS != (code = owl_renderer_instance_init (r, info))) {
+  if (OWL_SUCCESS != (code = owl_renderer_instance_init (r, w->title))) {
     goto out;
   }
 
@@ -4234,7 +4227,7 @@ owl_renderer_init (struct owl_renderer *r,
     goto out_err_instance_deinit;
   }
 
-  if (OWL_SUCCESS != (code = owl_renderer_surface_init (r, info))) {
+  if (OWL_SUCCESS != (code = owl_renderer_surface_init (r, w))) {
     goto out_err_debug_messenger_deinit;
   }
 #else  /* OWL_ENABLE_VALIDATION */
@@ -4247,7 +4240,7 @@ owl_renderer_init (struct owl_renderer *r,
     goto out_err_surface_deinit;
   }
 
-  if (OWL_SUCCESS != (code = owl_renderer_swapchain_init (r, info))) {
+  if (OWL_SUCCESS != (code = owl_renderer_swapchain_init (r))) {
     goto out_err_device_deinit;
   }
 
@@ -4313,13 +4306,11 @@ owl_renderer_init (struct owl_renderer *r,
 
   {
     owl_renderer_font_descriptor font;
-    struct owl_renderer_font_init_info font_info;
 
-    font_info.path = "../../assets/Inconsolata-Regular.ttf";
-    font_info.size = 64.0F;
+    code = owl_renderer_font_init (r, "../../assets/Inconsolata-Regular.ttf",
+                                   64, &font);
 
-    if (OWL_SUCCESS !=
-        (code = owl_renderer_font_init (r, &font_info, &font))) {
+    if (OWL_SUCCESS != code) {
       goto out_err_font_pool_deinit;
     }
 

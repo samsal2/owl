@@ -52,7 +52,7 @@ owl_model_images_load (struct owl_renderer *r, struct cgltf_data const *gltf,
 
   for (i = 0; i < (owl_i32)gltf->images_count; ++i) {
     struct owl_model_uri uri;
-    struct owl_renderer_image_init_info info;
+    struct owl_renderer_image_info info;
     struct owl_model_image *image = &model->images[i];
 
     if (OWL_SUCCESS !=
@@ -534,7 +534,7 @@ owl_model_buffers_load (struct owl_renderer *r,
     info.pNext = NULL;
     info.allocationSize = requirements.size;
     info.memoryTypeIndex = owl_renderer_find_memory_type (
-        r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
+        r, requirements.memoryTypeBits, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK (
         vkAllocateMemory (r->device, &info, NULL, &model->vertices_memory));
@@ -570,7 +570,7 @@ owl_model_buffers_load (struct owl_renderer *r,
     info.pNext = NULL;
     info.allocationSize = requirements.size;
     info.memoryTypeIndex = owl_renderer_find_memory_type (
-        r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
+        r, requirements.memoryTypeBits, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
     OWL_VK_CHECK (
         vkAllocateMemory (r->device, &info, NULL, &model->indices_memory));
@@ -778,7 +778,8 @@ owl_model_skins_load (struct owl_renderer *r, struct cgltf_data const *gltf,
       info.allocationSize =
           skin->ssbo_buffer_aligned_size * OWL_RENDERER_IN_FLIGHT_FRAME_COUNT;
       info.memoryTypeIndex = owl_renderer_find_memory_type (
-          r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT);
+          r, requirements.memoryTypeBits,
+          OWL_RENDERER_MEMORY_VISIBILITY_CPU_COHERENT);
 
       OWL_VK_CHECK (
           vkAllocateMemory (r->device, &info, NULL, &skin->ssbo_memory));

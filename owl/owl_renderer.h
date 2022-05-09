@@ -57,22 +57,6 @@ enum owl_renderer_image_src_type {
   OWL_RENDERER_IMAGE_SRC_TYPE_DATA
 };
 
-struct owl_renderer_init_info {
-  char const *name;
-
-  float framebuffer_ratio;
-  owl_i32 framebuffer_width;
-  owl_i32 framebuffer_height;
-  owl_i32 window_width;
-  owl_i32 window_height;
-
-  owl_i32 instance_extension_count;
-  char const *const *instance_extensions;
-
-  void const *surface_user_data;
-  owl_vk_create_surface_fn create_surface;
-};
-
 struct owl_renderer_frame_heap_reference {
   owl_u32 offset32;
   owl_u64 offset;
@@ -82,7 +66,7 @@ struct owl_renderer_frame_heap_reference {
   VkDescriptorSet model2_ubo_set;
 };
 
-struct owl_renderer_image_init_info {
+struct owl_renderer_image_info {
   enum owl_renderer_image_src_type src_type;
 
   char const *src_path;
@@ -101,7 +85,7 @@ struct owl_renderer_image_init_info {
   enum owl_renderer_sampler_addr_mode sampler_wrap_w;
 };
 
-struct owl_renderer_font_init_info {
+struct owl_renderer_font_info {
   char const *path;
   owl_i32 size;
 };
@@ -403,19 +387,17 @@ struct owl_renderer {
 };
 
 owl_public enum owl_code
-owl_renderer_init (struct owl_renderer *r,
-                   struct owl_renderer_init_info const *info);
+owl_renderer_init (struct owl_renderer *r, struct owl_window const *w);
 
 owl_public enum owl_code
 owl_renderer_swapchain_resize (struct owl_renderer *r,
-                               struct owl_renderer_init_info const *info);
+                               struct owl_window const *w);
 
 owl_public void
 owl_renderer_deinit (struct owl_renderer *r);
 
 owl_public owl_u32
-owl_renderer_find_memory_type (struct owl_renderer const *r,
-                               VkMemoryRequirements const *req,
+owl_renderer_find_memory_type (struct owl_renderer const *r, owl_u32 filter,
                                enum owl_renderer_memory_visibility vis);
 
 owl_public owl_b32
@@ -426,7 +408,7 @@ owl_renderer_frame_heap_offset_clear (struct owl_renderer *r);
 
 owl_public enum owl_code
 owl_renderer_image_init (struct owl_renderer *r,
-                         struct owl_renderer_image_init_info const *info,
+                         struct owl_renderer_image_info const *info,
                          owl_renderer_image_descriptor *imgd);
 
 owl_public void
@@ -469,8 +451,7 @@ owl_public enum owl_code
 owl_renderer_frame_end (struct owl_renderer *r);
 
 owl_public enum owl_code
-owl_renderer_font_init (struct owl_renderer *r,
-                        struct owl_renderer_font_init_info const *info,
+owl_renderer_font_init (struct owl_renderer *r, char const *path, owl_i32 sz,
                         owl_renderer_font_descriptor *fd);
 
 owl_public void

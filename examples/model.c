@@ -3,44 +3,36 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static struct owl_window_init_info   window_info;
-static struct owl_window            *window;
-static struct owl_renderer_init_info renderer_info;
-static struct owl_renderer          *renderer;
-static struct owl_model             *model;
-static owl_m4                        matrix;
+static struct owl_window *window;
+static struct owl_renderer *renderer;
+static struct owl_model *model;
+static owl_m4 matrix;
 
 #define MODEL_PATH "../../assets/CesiumMan.gltf"
 
 char const *
-fmtfps (double d)
-{
+fmtfps (double d) {
   static char buffer[128];
   snprintf (buffer, sizeof (buffer), "%.2f fps", d);
   return buffer;
 }
 
-#define CHECK(fn)                                                              \
-  do {                                                                         \
-    enum owl_code code = (fn);                                                 \
-    if (OWL_SUCCESS != (code)) {                                               \
-      printf ("something went wrong in call: %s, code %i\n", (#fn), code);     \
-      return 0;                                                                \
-    }                                                                          \
+#define CHECK(fn)                                                             \
+  do {                                                                        \
+    enum owl_code code = (fn);                                                \
+    if (OWL_SUCCESS != (code)) {                                              \
+      printf ("something went wrong in call: %s, code %i\n", (#fn), code);    \
+      return 0;                                                               \
+    }                                                                         \
   } while (0)
 
 int
-main (void)
-{
-  window_info.height = 600;
-  window_info.width  = 600;
-  window_info.title  = "model";
-  window             = malloc (sizeof (*window));
-  CHECK (owl_window_init (window, &window_info));
+main (void) {
+  window = malloc (sizeof (*window));
+  CHECK (owl_window_init (window, 600, 600, "model"));
 
-  CHECK (owl_window_fill_renderer_init_info (window, &renderer_info));
   renderer = malloc (sizeof (*renderer));
-  CHECK (owl_renderer_init (renderer, &renderer_info));
+  CHECK (owl_renderer_init (renderer, window));
 
   model = malloc (sizeof (*model));
   CHECK (owl_model_init (model, renderer, MODEL_PATH));
@@ -54,8 +46,7 @@ main (void)
   while (!owl_window_is_done (window)) {
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_begin (renderer)) {
       owl_window_handle_resize (window);
-      owl_window_fill_renderer_init_info (window, &renderer_info);
-      owl_renderer_swapchain_resize (renderer, &renderer_info);
+      owl_renderer_swapchain_resize (renderer, window);
       continue;
     }
 
@@ -70,8 +61,7 @@ main (void)
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end (renderer)) {
       owl_window_handle_resize (window);
-      owl_window_fill_renderer_init_info (window, &renderer_info);
-      owl_renderer_swapchain_resize (renderer, &renderer_info);
+      owl_renderer_swapchain_resize (renderer, window);
       continue;
     }
 
