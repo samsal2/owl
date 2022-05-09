@@ -1,8 +1,8 @@
 #include "owl/owl_renderer.h"
 #include <owl/owl.h>
 
-#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define CLOTH_H        32
 #define CLOTH_W        32
@@ -259,11 +259,11 @@ main (void)
   window_info.height = 600;
   window_info.width  = 600;
   window_info.title  = "cloth-sim";
-  window             = owl_malloc (sizeof (*window));
+  window             = malloc (sizeof (*window));
   TEST (owl_window_init (window, &window_info));
 
   TEST (owl_window_fill_renderer_init_info (window, &renderer_info));
-  renderer = owl_malloc (sizeof (*renderer));
+  renderer = malloc (sizeof (*renderer));
   TEST (owl_renderer_init (renderer, &renderer_info));
 
   image_info.src_type            = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
@@ -321,6 +321,10 @@ main (void)
   }
 
   owl_renderer_image_deinit (renderer, image);
+
   owl_renderer_deinit (renderer);
+  free (renderer);
+
   owl_window_deinit (window);
+  free (window);
 }

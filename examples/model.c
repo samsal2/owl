@@ -35,14 +35,14 @@ main (void)
   window_info.height = 600;
   window_info.width  = 600;
   window_info.title  = "model";
-  window             = owl_malloc (sizeof (*window));
+  window             = malloc (sizeof (*window));
   CHECK (owl_window_init (window, &window_info));
 
   CHECK (owl_window_fill_renderer_init_info (window, &renderer_info));
-  renderer = owl_malloc (sizeof (*renderer));
+  renderer = malloc (sizeof (*renderer));
   CHECK (owl_renderer_init (renderer, &renderer_info));
 
-  model = owl_malloc (sizeof (*model));
+  model = malloc (sizeof (*model));
   CHECK (owl_model_init (model, renderer, MODEL_PATH));
 
   owl_m4_identity (matrix);
@@ -79,11 +79,11 @@ main (void)
   }
 
   owl_model_deinit (model, renderer);
-  owl_free (model);
+  free (model);
 
   owl_renderer_deinit (renderer);
-  owl_free (renderer);
+  free (renderer);
 
   owl_window_deinit (window);
-  owl_free (window);
+  free (window);
 }

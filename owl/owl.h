@@ -3,7 +3,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include "owl_internal.h"
 #include "owl_io.h"
 #include "owl_model.h"
 #include "owl_renderer.h"
