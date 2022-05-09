@@ -1,8 +1,8 @@
-#include "owl_window.h"
+#include "owl.h"
 
 #include "owl_internal.h"
-#include "owl_renderer.h"
-#include "owl_vector_math.h"
+
+/* using GLFW until I get around building a plataform layer */
 
 /* clang-format off */
 #define GLFW_INCLUDE_NONE
@@ -115,7 +115,7 @@ owl_window_init (struct owl_window *w, owl_i32 width, owl_i32 height,
 
   w->opaque = glfwCreateWindow (width, height, name, NULL, NULL);
 
-  if (!(w->opaque)) {
+  if (!w->opaque) {
     code = OWL_ERROR_UNKNOWN;
     goto out_err_glfw_deinit;
   }

@@ -2,6 +2,7 @@
 #define OWL_RENDERER_H_
 
 #include "owl_definitions.h"
+#include "owl_glyph.h"
 
 #include <vulkan/vulkan.h>
 
@@ -10,9 +11,6 @@ OWL_BEGIN_DECLS
 struct owl_window;
 struct owl_renderer;
 struct owl_model;
-
-typedef enum owl_code (*owl_vk_create_surface_fn) (
-    struct owl_renderer const *r, void const *data, VkSurfaceKHR *surface);
 
 enum owl_renderer_memory_visibility {
   OWL_RENDERER_MEMORY_VISIBILITY_CPU,
@@ -66,7 +64,7 @@ struct owl_renderer_frame_heap_reference {
   VkDescriptorSet model2_ubo_set;
 };
 
-struct owl_renderer_image_info {
+struct owl_renderer_image_desc {
   enum owl_renderer_image_src_type src_type;
 
   char const *src_path;
@@ -85,7 +83,7 @@ struct owl_renderer_image_info {
   enum owl_renderer_sampler_addr_mode sampler_wrap_w;
 };
 
-struct owl_renderer_font_info {
+struct owl_renderer_font_desc {
   char const *path;
   owl_i32 size;
 };
@@ -125,11 +123,11 @@ struct owl_renderer_quad {
   owl_v3 color;
   owl_v2 uv0;
   owl_v2 uv1;
-  owl_renderer_image_descriptor texture;
+  owl_renderer_image_id texture;
 };
 
 struct owl_renderer_vertex_list {
-  owl_renderer_image_descriptor texture;
+  owl_renderer_image_id texture;
 
   owl_i32 index_count;
   owl_u32 const *indices;
@@ -376,13 +374,12 @@ struct owl_renderer {
   /* ====================================================================== */
   /* font pool resources */
   /* ====================================================================== */
-  owl_renderer_font_descriptor active_font;
+  owl_renderer_image_id active_font;
 
   owl_i32 font_pool_slots[OWL_RENDERER_FONT_POOL_SLOT_COUNT];
-  owl_renderer_image_descriptor
-      font_pool_atlases[OWL_RENDERER_FONT_POOL_SLOT_COUNT];
-  struct owl_renderer_font_packed_char
-      font_pool_chars[94][OWL_RENDERER_FONT_POOL_SLOT_COUNT];
+  owl_renderer_image_id font_pool_atlases[OWL_RENDERER_FONT_POOL_SLOT_COUNT];
+  struct owl_packed_glyph
+      font_pool_packed_glyphs[94][OWL_RENDERER_FONT_POOL_SLOT_COUNT];
   /* ====================================================================== */
 };
 
@@ -408,12 +405,11 @@ owl_renderer_frame_heap_offset_clear (struct owl_renderer *r);
 
 owl_public enum owl_code
 owl_renderer_image_init (struct owl_renderer *r,
-                         struct owl_renderer_image_info const *info,
-                         owl_renderer_image_descriptor *imgd);
+                         struct owl_renderer_image_desc const *desc,
+                         owl_renderer_image_id *img);
 
 owl_public void
-owl_renderer_image_deinit (struct owl_renderer *r,
-                           owl_renderer_image_descriptor imgd);
+owl_renderer_image_deinit (struct owl_renderer *r, owl_renderer_image_id img);
 
 owl_public void *
 owl_renderer_frame_heap_allocate (
@@ -426,7 +422,7 @@ owl_renderer_frame_heap_submit (struct owl_renderer *r, owl_u64 sz,
                                 struct owl_renderer_frame_heap_reference *ref);
 
 owl_public enum owl_code
-owl_renderer_bind_pipeline (struct owl_renderer *r,
+owl_renderer_pipeline_bind (struct owl_renderer *r,
                             enum owl_renderer_pipeline pipeline);
 
 owl_public enum owl_code
@@ -452,43 +448,39 @@ owl_renderer_frame_end (struct owl_renderer *r);
 
 owl_public enum owl_code
 owl_renderer_font_init (struct owl_renderer *r, char const *path, owl_i32 sz,
-                        owl_renderer_font_descriptor *fd);
+                        owl_renderer_font_id *font);
 
 owl_public void
-owl_renderer_font_deinit (struct owl_renderer *r,
-                          owl_renderer_font_descriptor fd);
+owl_renderer_font_deinit (struct owl_renderer *r, owl_renderer_font_id font);
 
 owl_public void
 owl_renderer_active_font_set (struct owl_renderer *r,
-                              owl_renderer_font_descriptor fd);
+                              owl_renderer_font_id font);
 
 owl_public enum owl_code
-owl_renderer_font_fill_glyph (struct owl_renderer const *r,
-                              owl_renderer_font_descriptor fd, char c,
-                              owl_v2 offset,
-                              struct owl_renderer_font_glyph *glyph);
+owl_renderer_font_fill_glyph (struct owl_renderer const *r, char c,
+                              owl_v2 offset, owl_renderer_image_id font,
+                              struct owl_glyph *glyph);
 
 owl_public enum owl_code
 owl_renderer_active_font_fill_glyph (struct owl_renderer const *r, char c,
-                                     owl_v2 offset,
-                                     struct owl_renderer_font_glyph *glyph);
+                                     owl_v2 offset, struct owl_glyph *glyph);
 
 owl_public enum owl_code
-owl_renderer_quad_draw (struct owl_renderer *r,
-                        struct owl_renderer_quad const *quad, owl_m4 matrix);
+owl_renderer_quad_draw (struct owl_renderer *r, owl_m4 const matrix,
+                        struct owl_renderer_quad const *quad);
 
 owl_public enum owl_code
-owl_renderer_model_draw (struct owl_renderer *r, struct owl_model const *model,
-                         owl_m4 matrix);
+owl_renderer_model_draw (struct owl_renderer *r, owl_m4 const matrix,
+                         struct owl_model const *model);
 
 owl_public enum owl_code
 owl_renderer_text_draw (struct owl_renderer *r, owl_v2 const pos,
                         owl_v3 const color, char const *text);
 
 owl_public enum owl_code
-owl_renderer_vertex_list_draw (struct owl_renderer *r,
-                               struct owl_renderer_vertex_list *list,
-                               owl_m4 matrix);
+owl_renderer_vertex_list_draw (struct owl_renderer *r, owl_m4 const matrix,
+                               struct owl_renderer_vertex_list *list);
 
 OWL_END_DECLS
 

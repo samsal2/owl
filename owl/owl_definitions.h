@@ -61,8 +61,8 @@ enum owl_code {
   OWL_ERROR_UNKNOWN
 };
 
-typedef owl_i32 owl_renderer_image_descriptor;
-typedef owl_i32 owl_renderer_font_descriptor;
+typedef owl_i32 owl_renderer_image_id;
+typedef owl_i32 owl_renderer_font_id;
 
 #define OWL_RENDERER_MEMORY_TYPE_NONE          (owl_u32) - 1
 #define OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT 8

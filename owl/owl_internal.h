@@ -1,10 +1,6 @@
 #ifndef OWL_INTERNAL_H_
 #define OWL_INTERNAL_H_
 
-#include "owl_definitions.h"
-
-OWL_BEGIN_DECLS
-
 #include <assert.h>
 #define owl_assert(e) assert (e)
 
@@ -57,7 +53,5 @@ owl_debug_log (char const *f, int l, char const *fmt, ...);
 #define owl_array_size(a)         (sizeof (a) / sizeof ((a)[0]))
 #define owl_alignu2(v, a)         ((v) + (a)-1) & ~((a)-1)
 #define owl_static_assert(e, msg) typedef char owl_static_assert_[!!(e)]
-
-OWL_END_DECLS
 
 #endif

@@ -1,9 +1,6 @@
-#include "owl_ui.h"
+#include "owl.h"
 
 #include "owl_internal.h"
-#include "owl_model.h"
-#include "owl_renderer.h"
-#include "owl_vector_math.h"
 
 #include <stdio.h>
 

@@ -8,15 +8,6 @@ static struct owl_renderer *renderer;
 static struct owl_model *model;
 static owl_m4 matrix;
 
-#define MODEL_PATH "../../assets/CesiumMan.gltf"
-
-char const *
-fmtfps (double d) {
-  static char buffer[128];
-  snprintf (buffer, sizeof (buffer), "%.2f fps", d);
-  return buffer;
-}
-
 #define CHECK(fn)                                                             \
   do {                                                                        \
     enum owl_code code = (fn);                                                \
@@ -37,7 +28,7 @@ main (void) {
   CHECK (owl_renderer_init (renderer, window));
 
   model = malloc (sizeof (*model));
-  CHECK (owl_model_init (model, renderer, MODEL_PATH));
+  CHECK (owl_model_init (model, renderer, "../../assets/CesiumMan.gltf"));
 
   owl_m4_identity (matrix);
   owl_m4_translate (offset, matrix);
@@ -51,10 +42,10 @@ main (void) {
     owl_model_anim_update (model, renderer->active_frame,
                            renderer->time_stamp_delta, 0);
 
-    owl_renderer_bind_pipeline (renderer, OWL_RENDERER_PIPELINE_MODEL);
-    owl_renderer_model_draw (renderer, model, matrix);
+    owl_renderer_pipeline_bind (renderer, OWL_RENDERER_PIPELINE_MODEL);
+    owl_renderer_model_draw (renderer, matrix, model);
 
-    owl_renderer_bind_pipeline (renderer, OWL_RENDERER_PIPELINE_FONT);
+    owl_renderer_pipeline_bind (renderer, OWL_RENDERER_PIPELINE_FONT);
     owl_ui_renderer_stats_draw (renderer);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end (renderer)) {

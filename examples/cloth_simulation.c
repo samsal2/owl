@@ -1,4 +1,3 @@
-#include "owl/owl_renderer.h"
 #include <owl/owl.h>
 
 #include <stdio.h>
@@ -29,7 +28,7 @@ struct particle {
 
 struct cloth {
   struct particle particles[PARTICLE_COUNT];
-  owl_renderer_image_descriptor image;
+  owl_renderer_image_id image;
 
   owl_m4 matrix;
 
@@ -209,7 +208,7 @@ static owl_u32 select_particle_at(owl_v2 const pos, struct cloth *cloth) {
 #endif
 
 void
-init_cloth (struct cloth *cloth, owl_renderer_image_descriptor image) {
+init_cloth (struct cloth *cloth, owl_renderer_image_id image) {
   owl_v3 position;
 
   base_init_cloth (cloth);
@@ -239,8 +238,8 @@ fps_string (double time) {
 
 static struct owl_window *window;
 static struct owl_renderer *renderer;
-static struct owl_renderer_image_info image_info;
-static owl_renderer_image_descriptor image;
+static struct owl_renderer_image_desc image_desc;
+static owl_renderer_image_id image;
 static struct cloth cloth;
 static struct owl_renderer_vertex_list list;
 
@@ -256,10 +255,10 @@ main (void) {
   renderer = malloc (sizeof (*renderer));
   TEST (owl_renderer_init (renderer, window));
 
-  image_info.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
-  image_info.src_path = TPATH;
-  image_info.sampler_use_default = 1;
-  TEST (owl_renderer_image_init (renderer, &image_info, &image));
+  image_desc.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
+  image_desc.src_path = TPATH;
+  image_desc.sampler_use_default = 1;
+  TEST (owl_renderer_image_init (renderer, &image_desc, &image));
 
   init_cloth (&cloth, image);
 
@@ -295,8 +294,8 @@ main (void) {
       continue;
     }
 
-    owl_renderer_bind_pipeline (renderer, OWL_RENDERER_PIPELINE_MAIN);
-    owl_renderer_vertex_list_draw (renderer, &list, cloth.matrix);
+    owl_renderer_pipeline_bind (renderer, OWL_RENDERER_PIPELINE_MAIN);
+    owl_renderer_vertex_list_draw (renderer, cloth.matrix, &list);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end (renderer)) {
       owl_renderer_swapchain_resize (renderer, window);

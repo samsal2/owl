@@ -1,4 +1,4 @@
-#include "owl_vector_math.h"
+#include "owl.h"
 
 #include "owl_internal.h"
 
