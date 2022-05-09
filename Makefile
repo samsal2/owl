@@ -26,6 +26,10 @@ $(BUILDDIR):
 modules:
 	git submodule update --init --recursive
 
+.PHONY: format
+format:
+	clang-format -i owl/owl_*
+
 .PHONY: clean
 clean:
 	$(NINJA) -C$(BUILDDIR) clean
