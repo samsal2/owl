@@ -13,6 +13,7 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_io.h
   owl_ui.c
   owl_ui.h
+  owl_glyph.h
   owl_vector_math.c
   owl_vector_math.h)
 

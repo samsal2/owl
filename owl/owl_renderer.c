@@ -4093,7 +4093,7 @@ out:
   (OWL_RENDERER_FONT_ATLAS_WIDTH * OWL_RENDERER_FONT_ATLAS_HEIGHT)
 
 owl_static_assert (
-    sizeof (struct owl_renderer_font_packed_char) == sizeof (stbtt_packedchar),
+    sizeof (struct owl_packed_glyph) == sizeof (stbtt_packedchar),
     "owl_font_char and stbtt_packedchar must represent the same struct");
 
 owl_public enum owl_code
