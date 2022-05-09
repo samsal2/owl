@@ -23,8 +23,8 @@ struct owl_window {
   owl_i32 window_height;
 };
 
-enum owl_code owl_window_init(struct owl_window_init_info const *info,
-                              struct owl_window *w);
+enum owl_code owl_window_init(struct owl_window *w,
+                              struct owl_window_init_info const *info);
 
 void owl_window_deinit(struct owl_window *w);
 

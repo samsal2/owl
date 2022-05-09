@@ -1,5 +1,7 @@
+#include "owl/owl_renderer.h"
 #include <owl/owl.h>
 
+#include <signal.h>
 #include <stdio.h>
 
 #define CLOTH_H 32
@@ -27,11 +29,13 @@ struct particle {
 
 struct cloth {
   struct particle particles[PARTICLE_COUNT];
+  owl_renderer_image_descriptor image;
+
+  owl_m4 matrix;
 
   /* priv draw desc */
-  struct owl_draw_command_basic command_;
   owl_u32 indices_[IDX_COUNT];
-  struct owl_draw_command_vertex vertices_[PARTICLE_COUNT];
+  struct owl_renderer_vertex vertices_[PARTICLE_COUNT];
 };
 
 static void base_init_cloth(struct cloth *cloth) {
@@ -65,7 +69,8 @@ static void base_init_cloth(struct cloth *cloth) {
       if (j) {
         owl_u32 link = CLOTH_COORD(i, j - 1);
         p->links[0] = &cloth->particles[link];
-        p->rest_distances[0] = owl_v3_distance(p->position, p->links[0]->position);
+        p->rest_distances[0] =
+            owl_v3_distance(p->position, p->links[0]->position);
       } else {
         p->links[0] = NULL;
         p->rest_distances[0] = 0.0F;
@@ -74,7 +79,8 @@ static void base_init_cloth(struct cloth *cloth) {
       if (i) {
         owl_u32 link = CLOTH_COORD(i - 1, j);
         p->links[1] = &cloth->particles[link];
-        p->rest_distances[1] = owl_v3_distance(p->position, p->links[1]->position);
+        p->rest_distances[1] =
+            owl_v3_distance(p->position, p->links[1]->position);
       } else {
         p->links[1] = NULL;
         p->rest_distances[1] = 0.0F;
@@ -83,7 +89,8 @@ static void base_init_cloth(struct cloth *cloth) {
       if (j < CLOTH_H - 1) {
         owl_u32 link = CLOTH_COORD(i, j + 1);
         p->links[2] = &cloth->particles[link];
-        p->rest_distances[2] = owl_v3_distance(p->position, p->links[2]->position);
+        p->rest_distances[2] =
+            owl_v3_distance(p->position, p->links[2]->position);
       } else {
         p->links[2] = NULL;
         p->rest_distances[2] = 0.0F;
@@ -92,7 +99,8 @@ static void base_init_cloth(struct cloth *cloth) {
       if (i < CLOTH_W - 1) {
         owl_u32 link = CLOTH_COORD(i + 1, j);
         p->links[3] = &cloth->particles[link];
-        p->rest_distances[3] = owl_v3_distance(p->position, p->links[3]->position);
+        p->rest_distances[3] =
+            owl_v3_distance(p->position, p->links[3]->position);
       } else {
         p->links[3] = NULL;
         p->rest_distances[3] = 0.0F;
@@ -202,15 +210,11 @@ void init_cloth(struct cloth *cloth, owl_renderer_image_descriptor image) {
 
   base_init_cloth(cloth);
 
-  cloth->command_.image = image;
-  cloth->command_.indice_count = IDX_COUNT;
-  cloth->command_.indices = cloth->indices_;
-  cloth->command_.vertex_count = PARTICLE_COUNT;
-  cloth->command_.vertices = cloth->vertices_;
+  cloth->image = image;
 
   OWL_V3_SET(0.0F, 0.0F, -2.0F, position);
-  OWL_M4_IDENTITY(cloth->command_.model);
-  owl_m4_translate(position, cloth->command_.model);
+  OWL_M4_IDENTITY(cloth->matrix);
+  owl_m4_translate(position, cloth->matrix);
 }
 
 char const *fps_string(double time) {
@@ -219,13 +223,13 @@ char const *fps_string(double time) {
   return buffer;
 }
 
-#define TEST(fn)                                                                                                                                                                                                                               \
-  do {                                                                                                                                                                                                                                         \
-    enum owl_code code = (fn);                                                                                                                                                                                                                 \
-    if (OWL_SUCCESS != (code)) {                                                                                                                                                                                                               \
-      printf("something went wrong in call: %s, code %i\n", (#fn), code);                                                                                                                                                                      \
-      return 0;                                                                                                                                                                                                                                \
-    }                                                                                                                                                                                                                                          \
+#define TEST(fn)                                                               \
+  do {                                                                         \
+    enum owl_code code = (fn);                                                 \
+    if (OWL_SUCCESS != (code)) {                                               \
+      printf("something went wrong in call: %s, code %i\n", (#fn), code);      \
+      return 0;                                                                \
+    }                                                                          \
   } while (0)
 
 static struct owl_window_init_info window_info;
@@ -235,8 +239,8 @@ static struct owl_renderer *renderer;
 static struct owl_renderer_image_init_info image_info;
 static owl_renderer_image_descriptor image;
 static struct cloth cloth;
-static struct owl_draw_command_text text_command;
 static struct owl_camera camera;
+static struct owl_renderer_vertex_and_index_list list;
 
 #define UNSELECTED (owl_u32) - 1
 #define TPATH "../../assets/cloth.jpeg"
@@ -247,11 +251,11 @@ int main(void) {
   window_info.width = 600;
   window_info.title = "cloth-sim";
   window = OWL_MALLOC(sizeof(*window));
-  TEST(owl_window_init(&window_info, window));
+  TEST(owl_window_init(window, &window_info));
 
   TEST(owl_window_fill_renderer_init_info(window, &renderer_info));
   renderer = OWL_MALLOC(sizeof(*renderer));
-  TEST(owl_renderer_init(&renderer_info, renderer));
+  TEST(owl_renderer_init(renderer, &renderer_info));
 
   image_info.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
   image_info.src_path = TPATH;
@@ -262,9 +266,13 @@ int main(void) {
 
   init_cloth(&cloth, image);
 
-  text_command.scale = 2.0F;
-  OWL_V3_SET(1.0F, 1.0F, 1.0F, text_command.color);
-  OWL_V3_SET(0.0F, 0.0F, 0.0F, text_command.position);
+  list.indices = cloth.indices_;
+  list.index_count = IDX_COUNT;
+
+  list.vertices = cloth.vertices_;
+  list.vertex_count = PARTICLE_COUNT;
+
+  list.texture = cloth.image;
 
   while (!owl_window_is_done(window)) {
 #if 0
@@ -288,27 +296,17 @@ int main(void) {
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_begin(renderer)) {
       owl_window_handle_resize(window);
       owl_window_fill_renderer_init_info(window, &renderer_info);
-      owl_renderer_swapchain_resize(&renderer_info, renderer);
+      owl_renderer_swapchain_resize(renderer, &renderer_info);
       continue;
     }
 
-#if 0
-#if 1
     owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_MAIN);
-#else
-    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_TYPE_WIRES);
-#endif
-    owl_draw_command_basic_submit(&cloth.command_, renderer, &camera);
-#endif
-
-    owl_renderer_bind_pipeline(renderer, OWL_RENDERER_PIPELINE_FONT);
-    text_command.text = "wtf???";
-    owl_draw_command_text_submit(&text_command, renderer, &camera);
+    owl_renderer_vertex_and_index_list_draw(renderer, &list, cloth.matrix);
 
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == owl_renderer_frame_end(renderer)) {
       owl_window_handle_resize(window);
       owl_window_fill_renderer_init_info(window, &renderer_info);
-      owl_renderer_swapchain_resize(&renderer_info, renderer);
+      owl_renderer_swapchain_resize(renderer, &renderer_info);
       continue;
     }
 

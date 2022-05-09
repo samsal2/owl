@@ -118,8 +118,8 @@ owl_vk_create_surface_callback(struct owl_renderer const *r,
   return code;
 }
 
-enum owl_code owl_window_init(struct owl_window_init_info const *info,
-                              struct owl_window *w) {
+enum owl_code owl_window_init(struct owl_window *w,
+                              struct owl_window_init_info const *info) {
   enum owl_code code = OWL_SUCCESS;
 
   if (!glfwInit()) {

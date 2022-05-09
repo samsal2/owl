@@ -1006,8 +1006,8 @@ out:
   return code;
 }
 
-enum owl_code owl_model_init(struct owl_renderer *r, char const *path,
-                             struct owl_model *model) {
+enum owl_code owl_model_init(struct owl_model *model, struct owl_renderer *r,
+                             char const *path) {
   struct cgltf_options options;
   struct cgltf_data *data = NULL;
 
@@ -1074,7 +1074,7 @@ out:
   return code;
 }
 
-void owl_model_deinit(struct owl_renderer *r, struct owl_model *model) {
+void owl_model_deinit(struct owl_model *model, struct owl_renderer *r) {
   owl_i32 i;
 
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
@@ -1187,19 +1187,19 @@ out:
 #define OWL_MODEL_ANIM_PATH_TYPE_SCALE cgltf_animation_path_type_scale
 
 enum owl_code owl_model_anim_update(struct owl_model *model,
-                                    owl_model_anim_descriptor ad, owl_i32 frame,
-                                    float dt) {
+                                    owl_model_anim_descriptor animd,
+                                    owl_i32 frame, float dt) {
   owl_i32 i;
   struct owl_model_anim *anim;
 
   enum owl_code code = OWL_SUCCESS;
 
-  if (OWL_MODEL_ANIM_NONE == ad) {
+  if (OWL_MODEL_ANIM_NONE == animd) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
     goto out;
   }
 
-  anim = &model->anims[ad];
+  anim = &model->anims[animd];
 
   if (anim->end < (anim->current_time += dt)) {
     anim->current_time -= anim->end;

@@ -1,6 +1,5 @@
 #include "owl_renderer.h"
 
-#include "owl_draw_command.h"
 #include "owl_internal.h"
 #include "owl_io.h"
 #include "owl_model.h"
@@ -26,8 +25,7 @@ OWL_GLOBAL char const *const device_extensions[] = {
 #if defined(OWL_ENABLE_VALIDATION)
 
 OWL_GLOBAL char const *const debug_validation_layers[] = {
-    "VK_LAYER_KHRONOS_validation"
-};
+    "VK_LAYER_KHRONOS_validation"};
 
 #endif /* OWL_ENABLE_VALIDATION */
 
@@ -56,6 +54,23 @@ OWL_INTERNAL enum owl_code owl_vk_result_as_owl_code(VkResult vkres) {
   default:
     return OWL_ERROR_UNKNOWN;
   }
+}
+
+OWL_INTERNAL void owl_renderer_projection_update(struct owl_renderer *r) {
+  float fov = OWL_DEG_AS_RAD(45.0F);
+  float ratio = r->framebuffer_ratio;
+  float near = 0.01;
+  float far = 10.0F;
+
+  owl_m4_perspective(fov, ratio, near, far, r->projection);
+}
+
+OWL_INTERNAL void owl_renderer_view_update(struct owl_renderer *r) {
+  owl_v3 eye = {0.0F, 0.0F, 5.0F};
+  owl_v3 direction = {0.0F, 0.0F, 1.0F};
+  owl_v3 up = {0.0F, 1.0F, 0.0F};
+
+  owl_m4_look(eye, direction, up, r->view);
 }
 
 OWL_INTERNAL enum owl_code
@@ -299,7 +314,6 @@ owl_validate_device_extensions(owl_u32 extension_count,
   owl_i32 i;
   owl_i32 found = 1;
   owl_b32 extensions_found[OWL_ARRAY_SIZE(device_extensions)];
-
 
   for (i = 0; i < (owl_i32)OWL_ARRAY_SIZE(device_extensions); ++i) {
     extensions_found[i] = 0;
@@ -1649,24 +1663,23 @@ OWL_INTERNAL enum owl_code owl_renderer_pipelines_init(struct owl_renderer *r) {
     case OWL_RENDERER_PIPELINE_WIRES:
     case OWL_RENDERER_PIPELINE_FONT:
       vertex_bindings[0].binding = 0;
-      vertex_bindings[0].stride = sizeof(struct owl_draw_command_vertex);
+      vertex_bindings[0].stride = sizeof(struct owl_renderer_vertex);
       vertex_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
       vertex_attrs[0].binding = 0;
       vertex_attrs[0].location = 0;
       vertex_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_attrs[0].offset =
-          offsetof(struct owl_draw_command_vertex, position);
+      vertex_attrs[0].offset = offsetof(struct owl_renderer_vertex, position);
 
       vertex_attrs[1].binding = 0;
       vertex_attrs[1].location = 1;
       vertex_attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-      vertex_attrs[1].offset = offsetof(struct owl_draw_command_vertex, color);
+      vertex_attrs[1].offset = offsetof(struct owl_renderer_vertex, color);
 
       vertex_attrs[2].binding = 0;
       vertex_attrs[2].location = 2;
       vertex_attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-      vertex_attrs[2].offset = offsetof(struct owl_draw_command_vertex, uv);
+      vertex_attrs[2].offset = offsetof(struct owl_renderer_vertex, uv);
       break;
 
     case OWL_RENDERER_PIPELINE_MODEL:
@@ -2443,7 +2456,7 @@ OWL_INTERNAL enum owl_code owl_renderer_frame_heap_init(struct owl_renderer *r,
 
       buffer.buffer = r->frame_heap_buffers[i];
       buffer.offset = 0;
-      buffer.range = sizeof(struct owl_draw_command_uniform);
+      buffer.range = sizeof(struct owl_renderer_common_ubo);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
@@ -2467,7 +2480,7 @@ OWL_INTERNAL enum owl_code owl_renderer_frame_heap_init(struct owl_renderer *r,
 
       buffer.buffer = r->frame_heap_buffers[i];
       buffer.offset = 0;
-      buffer.range = sizeof(struct owl_model_uniform);
+      buffer.range = sizeof(struct owl_model1_ubo);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
@@ -2491,7 +2504,7 @@ OWL_INTERNAL enum owl_code owl_renderer_frame_heap_init(struct owl_renderer *r,
 
       buffer.buffer = r->frame_heap_buffers[i];
       buffer.offset = 0;
-      buffer.range = sizeof(struct owl_model_uniform_params);
+      buffer.range = sizeof(struct owl_model2_ubo);
 
       write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext = NULL;
@@ -2732,8 +2745,8 @@ out:
 }
 
 enum owl_code
-owl_renderer_swapchain_resize(struct owl_renderer_init_info const *info,
-                              struct owl_renderer *r) {
+owl_renderer_swapchain_resize(struct owl_renderer *r,
+                              struct owl_renderer_init_info const *info) {
   enum owl_code code = OWL_SUCCESS;
 
   /* set the current window and framebuffer dims */
@@ -2742,6 +2755,9 @@ owl_renderer_swapchain_resize(struct owl_renderer_init_info const *info,
   r->framebuffer_width = info->framebuffer_width;
   r->framebuffer_height = info->framebuffer_height;
   r->framebuffer_ratio = info->framebuffer_ratio;
+
+  owl_renderer_projection_update(r);
+  owl_renderer_view_update(r);
 
   /* make sure no resources are in use */
   OWL_VK_CHECK(vkDeviceWaitIdle(r->device));
@@ -2840,8 +2856,8 @@ owl_renderer_frame_heap_alloc(struct owl_renderer *r, owl_u64 sz,
   ref->offset = offset;
   ref->buffer = r->active_frame_heap_buffer;
   ref->common_ubo_set = r->active_frame_heap_common_set;
-  ref->model_ubo_set = r->active_frame_heap_model1_set;
-  ref->model_ubo_params_set = r->active_frame_heap_model2_set;
+  ref->model1_ubo_set = r->active_frame_heap_model1_set;
+  ref->model2_ubo_set = r->active_frame_heap_model2_set;
 
   data = &r->active_frame_heap_data[offset];
 
@@ -3100,7 +3116,7 @@ OWL_INTERNAL void owl_renderer_begin_recording(struct owl_renderer *r) {
     info.renderArea.offset.x = 0;
     info.renderArea.offset.y = 0;
     info.renderArea.extent = r->swapchain_extent;
-    info.clearValueCount = OWL_RENDERER_CLEAR_VALUE_COUNT;
+    info.clearValueCount = OWL_ARRAY_SIZE(r->swapchain_clear_values);
     info.pClearValues = r->swapchain_clear_values;
 
     vkCmdBeginRenderPass(r->active_frame_command_buffer, &info,
@@ -4141,8 +4157,8 @@ OWL_INTERNAL void owl_renderer_font_pool_deinit(struct owl_renderer *r) {
   }
 }
 
-enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
-                                struct owl_renderer *r) {
+enum owl_code owl_renderer_init(struct owl_renderer *r,
+                                struct owl_renderer_init_info const *info) {
   enum owl_code code = OWL_SUCCESS;
 
   r->time_stamp_current = 0.0;
@@ -4154,6 +4170,9 @@ enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
   r->framebuffer_height = info->framebuffer_height;
   r->framebuffer_ratio = info->framebuffer_ratio;
   r->immidiate_command_buffer = VK_NULL_HANDLE;
+
+  owl_renderer_projection_update(r);
+  owl_renderer_view_update(r);
 
   if (OWL_SUCCESS != (code = owl_renderer_instance_init(info, r))) {
     goto out;
@@ -4350,4 +4369,412 @@ void owl_renderer_deinit(struct owl_renderer *r) {
 #endif /* OWL_ENABLE_VALIDATION */
 
   owl_renderer_instance_deinit(r);
+}
+
+enum owl_code owl_renderer_quad_draw(struct owl_renderer *r,
+                                     struct owl_renderer_quad const *quad,
+                                     owl_m4 matrix) {
+  VkDescriptorSet sets[2];
+  struct owl_renderer_common_ubo ubo;
+  struct owl_renderer_vertex vertices[4];
+  struct owl_renderer_frame_heap_reference vref;
+  struct owl_renderer_frame_heap_reference iref;
+  struct owl_renderer_frame_heap_reference uref;
+
+  enum owl_code code = OWL_SUCCESS;
+  owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
+
+  vertices[0].position[0] = quad->position0[0];
+  vertices[0].position[1] = quad->position0[1];
+  vertices[0].position[2] = 0.0F;
+  vertices[0].color[0] = quad->color[0];
+  vertices[0].color[1] = quad->color[1];
+  vertices[0].color[2] = quad->color[2];
+  vertices[0].uv[0] = quad->uv0[0];
+  vertices[0].uv[1] = quad->uv0[1];
+
+  vertices[1].position[0] = quad->position1[0];
+  vertices[1].position[1] = quad->position0[1];
+  vertices[1].position[2] = 0.0F;
+  vertices[1].color[0] = quad->color[0];
+  vertices[1].color[1] = quad->color[1];
+  vertices[1].color[2] = quad->color[2];
+  vertices[1].uv[0] = quad->uv1[0];
+  vertices[1].uv[1] = quad->uv0[1];
+
+  vertices[2].position[0] = quad->position0[0];
+  vertices[2].position[1] = quad->position1[1];
+  vertices[2].position[2] = 0.0F;
+  vertices[2].color[0] = quad->color[0];
+  vertices[2].color[1] = quad->color[1];
+  vertices[2].color[2] = quad->color[2];
+  vertices[2].uv[0] = quad->uv0[0];
+  vertices[2].uv[1] = quad->uv1[1];
+
+  vertices[3].position[0] = quad->position1[0];
+  vertices[3].position[1] = quad->position1[1];
+  vertices[3].position[2] = 0.0F;
+  vertices[3].color[0] = quad->color[0];
+  vertices[3].color[1] = quad->color[1];
+  vertices[3].color[2] = quad->color[2];
+  vertices[3].uv[0] = quad->uv1[0];
+  vertices[3].uv[1] = quad->uv1[1];
+
+  code = owl_renderer_frame_heap_submit(r, sizeof(vertices), vertices, &vref);
+
+  if (OWL_SUCCESS != code) {
+    goto out;
+  }
+
+  code = owl_renderer_frame_heap_submit(r, sizeof(indices), indices, &iref);
+
+  if (OWL_SUCCESS != code) {
+    goto out;
+  }
+
+  OWL_M4_COPY(r->projection, ubo.projection);
+  OWL_M4_COPY(r->view, ubo.view);
+  OWL_M4_COPY(matrix, ubo.model);
+
+  code = owl_renderer_frame_heap_submit(r, sizeof(ubo), &ubo, &uref);
+
+  if (OWL_SUCCESS != code) {
+    goto out;
+  }
+
+  sets[0] = uref.common_ubo_set;
+  sets[1] = r->image_pool_sets[quad->texture];
+
+  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &vref.buffer,
+                         &vref.offset);
+
+  vkCmdBindIndexBuffer(r->active_frame_command_buffer, iref.buffer, iref.offset,
+                       VK_INDEX_TYPE_UINT32);
+
+  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
+                          sets, 1, &uref.offset32);
+
+  vkCmdDrawIndexed(r->active_frame_command_buffer, OWL_ARRAY_SIZE(indices), 1,
+                   0, 0, 0);
+
+out:
+  return code;
+}
+
+OWL_INTERNAL enum owl_code
+owl_renderer_model_node_draw(struct owl_renderer *r,
+                             struct owl_model const *model, owl_m4 matrix,
+                             owl_model_node_descriptor nd) {
+  owl_i32 i;
+  struct owl_model_node const *node;
+  struct owl_model_mesh const *mesh;
+  struct owl_model_skin const *skin;
+  struct owl_model_skin_ssbo *ssbo;
+  struct owl_model1_ubo ubo1;
+  struct owl_model2_ubo ubo2;
+  struct owl_renderer_frame_heap_reference u1ref;
+  struct owl_renderer_frame_heap_reference u2ref;
+
+  enum owl_code code = OWL_SUCCESS;
+
+  node = &model->nodes[nd];
+
+  for (i = 0; i < node->child_count; ++i) {
+    code = owl_renderer_model_node_draw(r, model, matrix, node->children[i]);
+
+    if (OWL_SUCCESS != code) {
+      goto out;
+    }
+  }
+
+  if (OWL_MODEL_MESH_NONE == node->mesh) {
+    goto out;
+  }
+
+  mesh = &model->meshes[node->mesh];
+  skin = &model->skins[node->skin];
+  ssbo = skin->ssbo_datas[r->active_frame];
+
+  {
+    owl_model_node_descriptor pd;
+
+    OWL_M4_COPY(node->matrix, ssbo->matrix);
+
+    for (pd = node->parent; OWL_MODEL_NODE_PARENT_NONE != pd;
+         pd = model->nodes[pd].parent) {
+      owl_m4_multiply(model->nodes[pd].matrix, ssbo->matrix, ssbo->matrix);
+    }
+  }
+
+  OWL_M4_COPY(r->projection, ubo1.projection);
+  OWL_M4_COPY(r->view, ubo1.view);
+  OWL_M4_COPY(matrix, ubo1.model);
+  OWL_V4_ZERO(ubo1.light);
+  OWL_V4_ZERO(ubo2.light_direction);
+
+  code = owl_renderer_frame_heap_submit(r, sizeof(ubo1), &ubo1, &u1ref);
+
+  if (OWL_SUCCESS != code) {
+    goto out;
+  }
+
+  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          r->active_pipeline_layout, 0, 1,
+                          &u1ref.model1_ubo_set, 1, &u1ref.offset32);
+
+  code = owl_renderer_frame_heap_submit(r, sizeof(ubo1), &ubo1, &u2ref);
+
+  if (OWL_SUCCESS != code) {
+    goto out;
+  }
+
+  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          r->active_pipeline_layout, 5, 1,
+                          &u2ref.model2_ubo_set, 1, &u2ref.offset32);
+
+  for (i = 0; i < mesh->primitive_count; ++i) {
+    VkDescriptorSet sets[4];
+    struct owl_model_primitive const *primitive;
+    struct owl_model_material const *material;
+    struct owl_model_texture const *base_color_texture;
+    struct owl_model_texture const *normal_texture;
+    struct owl_model_texture const *physical_desc_texture;
+    struct owl_model_image const *base_color_image;
+    struct owl_model_image const *normal_image;
+    struct owl_model_image const *physical_desc_image;
+    struct owl_model_material_push_constant push_constant;
+
+    primitive = &model->primitives[mesh->primitives[i]];
+
+    if (!primitive->count) {
+      continue;
+    }
+
+    material = &model->materials[primitive->material];
+
+    base_color_texture = &model->textures[material->base_color_texture];
+    normal_texture = &model->textures[material->normal_texture];
+    physical_desc_texture = &model->textures[material->physical_desc_texture];
+
+    base_color_image = &model->images[base_color_texture->model_image];
+    normal_image = &model->images[normal_texture->model_image];
+    physical_desc_image = &model->images[physical_desc_texture->model_image];
+
+    sets[0] = r->image_pool_sets[base_color_image->renderer_image];
+    sets[1] = r->image_pool_sets[normal_image->renderer_image];
+    sets[2] = r->image_pool_sets[physical_desc_image->renderer_image];
+    sets[3] = skin->ssbo_sets[r->active_frame];
+
+    vkCmdBindDescriptorSets(
+        r->active_frame_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        r->active_pipeline_layout, 1, OWL_ARRAY_SIZE(sets), sets, 0, NULL);
+
+    push_constant.base_color_factor[0] = material->base_color_factor[0];
+    push_constant.base_color_factor[1] = material->base_color_factor[1];
+    push_constant.base_color_factor[2] = material->base_color_factor[2];
+    push_constant.base_color_factor[3] = material->base_color_factor[3];
+
+    push_constant.emissive_factor[0] = 0.0F;
+    push_constant.emissive_factor[1] = 0.0F;
+    push_constant.emissive_factor[2] = 0.0F;
+    push_constant.emissive_factor[3] = 0.0F;
+
+    push_constant.diffuse_factor[0] = 0.0F;
+    push_constant.diffuse_factor[1] = 0.0F;
+    push_constant.diffuse_factor[2] = 0.0F;
+    push_constant.diffuse_factor[3] = 0.0F;
+
+    push_constant.specular_factor[0] = 0.0F;
+    push_constant.specular_factor[1] = 0.0F;
+    push_constant.specular_factor[2] = 0.0F;
+    push_constant.specular_factor[3] = 0.0F;
+
+    push_constant.workflow = 0;
+
+    /* FIXME(samuel): add uv sets in material */
+    if (OWL_MODEL_TEXTURE_NONE == material->base_color_texture) {
+      push_constant.base_color_uv_set = -1;
+    } else {
+      push_constant.base_color_uv_set = 0;
+    }
+
+    if (OWL_MODEL_TEXTURE_NONE == material->physical_desc_texture) {
+      push_constant.physical_desc_uv_set = -1;
+    } else {
+      push_constant.physical_desc_uv_set = 0;
+    }
+
+    if (OWL_MODEL_TEXTURE_NONE == material->normal_texture) {
+      push_constant.normal_uv_set = -1;
+    } else {
+      push_constant.normal_uv_set = 0;
+    }
+
+    if (OWL_MODEL_TEXTURE_NONE == material->occlusion_texture) {
+      push_constant.occlusion_uv_set = -1;
+    } else {
+      push_constant.occlusion_uv_set = 0;
+    }
+
+    if (OWL_MODEL_TEXTURE_NONE == material->emissive_texture) {
+      push_constant.emissive_uv_set = -1;
+    } else {
+      push_constant.emissive_uv_set = 0;
+    }
+
+    push_constant.metallic_factor = 0.0F;
+    push_constant.roughness_factor = 0.0F;
+    push_constant.roughness_factor = 0.0F;
+    push_constant.alpha_mask = 0.0F;
+    push_constant.alpha_mask_cutoff = material->alpha_cutoff;
+
+    vkCmdPushConstants(r->active_frame_command_buffer,
+                       r->active_pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT,
+                       0, sizeof(push_constant), &push_constant);
+
+    vkCmdDrawIndexed(r->active_frame_command_buffer, primitive->count, 1,
+                     primitive->first, 0, 0);
+  }
+
+out:
+  return code;
+}
+
+enum owl_code owl_renderer_model_draw(struct owl_renderer *r,
+                                      struct owl_model const *model,
+                                      owl_m4 matrix) {
+  owl_i32 i;
+  owl_u64 offset = 0;
+  enum owl_code code = OWL_SUCCESS;
+
+  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1,
+                         &model->vertices_buffer, &offset);
+
+  vkCmdBindIndexBuffer(r->active_frame_command_buffer, model->indices_buffer, 0,
+                       VK_INDEX_TYPE_UINT32);
+
+  for (i = 0; i < model->root_count; ++i) {
+    code = owl_renderer_model_node_draw(r, model, matrix, model->roots[i]);
+
+    if (OWL_SUCCESS != code) {
+      goto out;
+    }
+  }
+
+out:
+  return code;
+}
+
+enum owl_code owl_renderer_text_draw(struct owl_renderer *r, owl_v2 const pos,
+                                     owl_v3 const color, char const *text) {
+  char const *l;
+  owl_v3 offset;
+  owl_v3 scale;
+  enum owl_code code = OWL_SUCCESS;
+
+  offset[0] = pos[0] * (float)r->framebuffer_width;
+  offset[1] = pos[1] * (float)r->framebuffer_height;
+  offset[2] = 0.0F;
+
+  scale[0] = 1.0F / (float)r->window_height;
+  scale[1] = 1.0F / (float)r->window_height;
+  scale[2] = 1.0F / (float)r->window_height;
+
+  for (l = text; '\0' != *l; ++l) {
+    owl_m4 matrix;
+    struct owl_renderer_quad quad;
+    struct owl_renderer_font_glyph glyph;
+
+    owl_renderer_active_font_fill_glyph(r, *l, offset, &glyph);
+
+    OWL_M4_IDENTITY(matrix);
+    owl_m4_scale(matrix, scale, matrix);
+
+    quad.texture = r->font_pool_atlases[r->active_font];
+
+    quad.position0[0] = glyph.positions[0][0];
+    quad.position0[1] = glyph.positions[0][1];
+
+    quad.position1[0] = glyph.positions[3][0];
+    quad.position1[1] = glyph.positions[3][1];
+
+    quad.color[0] = color[0];
+    quad.color[1] = color[1];
+    quad.color[2] = color[2];
+
+    quad.uv0[0] = glyph.uvs[0][0];
+    quad.uv0[1] = glyph.uvs[0][1];
+
+    quad.uv1[0] = glyph.uvs[3][0];
+    quad.uv1[1] = glyph.uvs[3][1];
+
+    code = owl_renderer_quad_draw(r, &quad, matrix);
+
+    if (OWL_SUCCESS != code) {
+      goto out;
+    }
+  }
+
+out:
+  return code;
+}
+
+enum owl_code owl_renderer_vertex_and_index_list_draw(
+    struct owl_renderer *r, struct owl_renderer_vertex_and_index_list *list,
+    owl_m4 matrix) {
+  owl_u64 sz;
+  VkDescriptorSet sets[2];
+  struct owl_renderer_common_ubo ubo;
+  struct owl_renderer_frame_heap_reference vref;
+  struct owl_renderer_frame_heap_reference iref;
+  struct owl_renderer_frame_heap_reference uref;
+  enum owl_code code = OWL_SUCCESS;
+
+  sz = (owl_u64)list->vertex_count * sizeof(*list->vertices);
+  code = owl_renderer_frame_heap_submit(r, sz, list->vertices, &vref);
+
+  if (OWL_SUCCESS != code) {
+    goto out;
+  }
+
+  sz = (owl_u64)list->index_count * sizeof(*list->indices);
+  code = owl_renderer_frame_heap_submit(r, sz, list->indices, &iref);
+
+  if (OWL_SUCCESS != code) {
+    goto out;
+  }
+
+  OWL_M4_COPY(r->projection, ubo.projection);
+  OWL_M4_COPY(r->view, ubo.view);
+  OWL_M4_COPY(matrix, ubo.model);
+
+  code = owl_renderer_frame_heap_submit(r, sizeof(ubo), &ubo, &uref);
+
+  if (OWL_SUCCESS != code) {
+    goto out;
+  }
+
+  sets[0] = uref.common_ubo_set;
+  sets[1] = r->image_pool_sets[list->texture];
+
+  vkCmdBindVertexBuffers(r->active_frame_command_buffer, 0, 1, &vref.buffer,
+                         &vref.offset);
+
+  vkCmdBindIndexBuffer(r->active_frame_command_buffer, iref.buffer, iref.offset,
+                       VK_INDEX_TYPE_UINT32);
+
+  vkCmdBindDescriptorSets(r->active_frame_command_buffer,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          r->active_pipeline_layout, 0, OWL_ARRAY_SIZE(sets),
+                          sets, 1, &uref.offset32);
+
+  vkCmdDrawIndexed(r->active_frame_command_buffer, (owl_u32)list->index_count,
+                   1, 0, 0, 0);
+
+out:
+  return code;
 }

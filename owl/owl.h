@@ -2,7 +2,6 @@
 #define OWL_H_
 
 #include "owl_camera.h"
-#include "owl_draw_command.h"
 #include "owl_internal.h"
 #include "owl_io.h"
 #include "owl_model.h"

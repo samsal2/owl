@@ -12,20 +12,20 @@ extern "C" {
 
 struct owl_window;
 struct owl_renderer;
+struct owl_model;
 
 typedef owl_i32 owl_renderer_image_descriptor;
 typedef owl_i32 owl_renderer_font_descriptor;
 
-typedef enum owl_code (*owl_vk_create_surface_fn)(
-    struct owl_renderer const *renderer, void const *user_data,
-    VkSurfaceKHR *surface);
+typedef enum owl_code (*owl_vk_create_surface_fn)(struct owl_renderer const *r,
+                                                  void const *data,
+                                                  VkSurfaceKHR *surface);
 
 #define OWL_RENDERER_MEMORY_TYPE_NONE (owl_u32) - 1
 #define OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT 8
 #define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT 2
 #define OWL_RENDERER_MAX_GARBAGE_ITEM_COUNT 8
 #define OWL_RENDERER_MAX_DEVICE_OPTION_COUNT 8
-#define OWL_RENDERER_CLEAR_VALUE_COUNT 2
 #define OWL_RENDERER_IMAGE_POOL_SLOT_COUNT 32
 #define OWL_RENDERER_FONT_POOL_SLOT_COUNT 8
 #define OWL_RENDERER_FONT_NONE -1
@@ -95,8 +95,8 @@ struct owl_renderer_frame_heap_reference {
   owl_u64 offset;
   VkBuffer buffer;
   VkDescriptorSet common_ubo_set;
-  VkDescriptorSet model_ubo_set;
-  VkDescriptorSet model_ubo_params_set;
+  VkDescriptorSet model1_ubo_set;
+  VkDescriptorSet model2_ubo_set;
 };
 
 struct owl_renderer_image_init_info {
@@ -140,6 +140,37 @@ struct owl_renderer_font_glyph {
   owl_v2 uvs[4];
 };
 
+struct owl_renderer_vertex {
+  owl_v3 position;
+  owl_v3 color;
+  owl_v2 uv;
+};
+
+struct owl_renderer_common_ubo {
+  owl_m4 projection;
+  owl_m4 view;
+  owl_m4 model;
+};
+
+struct owl_renderer_quad {
+  owl_v2 position0;
+  owl_v2 position1;
+  owl_v3 color;
+  owl_v2 uv0;
+  owl_v2 uv1;
+  owl_renderer_image_descriptor texture;
+};
+
+struct owl_renderer_vertex_and_index_list {
+  owl_renderer_image_descriptor texture;
+
+  owl_i32 index_count;
+  owl_u32 const *indices;
+
+  owl_i32 vertex_count;
+  struct owl_renderer_vertex const *vertices;
+};
+
 struct owl_renderer {
   /* ====================================================================== */
   /* time_stamps */
@@ -147,6 +178,13 @@ struct owl_renderer {
   double time_stamp_current;
   double time_stamp_previous;
   double time_stamp_delta;
+  /* ====================================================================== */
+
+  /* ====================================================================== */
+  /* world */
+  /* ====================================================================== */
+  owl_m4 projection;
+  owl_m4 view;
   /* ====================================================================== */
 
   /* ====================================================================== */
@@ -202,7 +240,7 @@ struct owl_renderer {
 
   VkExtent2D swapchain_extent;
   VkPresentModeKHR swapchain_present_mode;
-  VkClearValue swapchain_clear_values[OWL_RENDERER_CLEAR_VALUE_COUNT];
+  VkClearValue swapchain_clear_values[2];
 
   owl_u32 active_swapchain_image_index;
   VkImage active_swapchain_image;
@@ -381,12 +419,12 @@ struct owl_renderer {
   /* ====================================================================== */
 };
 
-enum owl_code owl_renderer_init(struct owl_renderer_init_info const *info,
-                                struct owl_renderer *r);
+enum owl_code owl_renderer_init(struct owl_renderer *r,
+                                struct owl_renderer_init_info const *info);
 
 enum owl_code
-owl_renderer_swapchain_resize(struct owl_renderer_init_info const *info,
-                              struct owl_renderer *r);
+owl_renderer_swapchain_resize(struct owl_renderer *r,
+                              struct owl_renderer_init_info const *info);
 
 void owl_renderer_deinit(struct owl_renderer *r);
 
@@ -454,6 +492,21 @@ enum owl_code
 owl_renderer_active_font_fill_glyph(struct owl_renderer const *r, char c,
                                     owl_v2 offset,
                                     struct owl_renderer_font_glyph *glyph);
+
+enum owl_code owl_renderer_quad_draw(struct owl_renderer *r,
+                                     struct owl_renderer_quad const *quad,
+                                     owl_m4 matrix);
+
+enum owl_code owl_renderer_model_draw(struct owl_renderer *r,
+                                      struct owl_model const *model,
+                                      owl_m4 matrix);
+
+enum owl_code owl_renderer_text_draw(struct owl_renderer *r, owl_v2 const pos,
+                                     owl_v3 const color, char const *text);
+
+enum owl_code owl_renderer_vertex_and_index_list_draw(
+    struct owl_renderer *r, struct owl_renderer_vertex_and_index_list *list,
+    owl_m4 matrix);
 
 #if defined(__cplusplus)
 } /* extern "C" */

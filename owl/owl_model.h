@@ -61,14 +61,14 @@ struct owl_model_material_push_constant {
   float alpha_mask_cutoff;
 };
 
-struct owl_model_uniform {
+struct owl_model1_ubo {
   owl_m4 projection;
   owl_m4 view;
   owl_m4 model;
   owl_v4 light;
 };
 
-struct owl_model_uniform_params {
+struct owl_model2_ubo {
   owl_v4 light_direction;
 };
 
@@ -236,10 +236,10 @@ struct owl_model {
   struct owl_model_anim anims[OWL_MODEL_MAX_ANIM_COUNT];
 };
 
-enum owl_code owl_model_init(struct owl_renderer *r, char const *path,
-                             struct owl_model *model);
+enum owl_code owl_model_init(struct owl_model *model, struct owl_renderer *r,
+                             char const *path);
 
-void owl_model_deinit(struct owl_renderer *r, struct owl_model *model);
+void owl_model_deinit(struct owl_model *model, struct owl_renderer *r);
 
 enum owl_code owl_model_anim_update(struct owl_model *model,
                                     owl_model_anim_descriptor animd,
