@@ -103,12 +103,10 @@ owl_private void owl_window_keyboard_keys_callback(GLFWwindow *data,
 
 owl_private enum owl_code
 owl_vk_create_surface_callback (struct owl_renderer const *r,
-                                void const                *user_data,
-                                VkSurfaceKHR              *surface)
-{
-  owl_i32                  err;
-  enum owl_code            code = OWL_SUCCESS;
-  struct owl_window const *w    = user_data;
+                                void const *user_data, VkSurfaceKHR *surface) {
+  owl_i32 err;
+  enum owl_code code = OWL_SUCCESS;
+  struct owl_window const *w = user_data;
 
   err = glfwCreateWindowSurface (r->instance, w->data, NULL, surface);
 
@@ -120,8 +118,8 @@ owl_vk_create_surface_callback (struct owl_renderer const *r,
 }
 
 enum owl_code
-owl_window_init (struct owl_window *w, struct owl_window_init_info const *info)
-{
+owl_window_init (struct owl_window *w,
+                 struct owl_window_init_info const *info) {
   enum owl_code code = OWL_SUCCESS;
 
   if (!glfwInit ()) {
@@ -166,8 +164,7 @@ out:
 }
 
 owl_public void
-owl_window_deinit (struct owl_window *w)
-{
+owl_window_deinit (struct owl_window *w) {
   glfwDestroyWindow (w->data);
   glfwTerminate ();
 }
@@ -177,9 +174,8 @@ owl_window_deinit (struct owl_window *w)
 #define OWL_MAX_EXTENSIONS 64
 
 owl_private char const *const *
-owl_get_debug_instance_extensions (owl_u32 *count)
-{
-  char const *const            *extensions;
+owl_get_debug_instance_extensions (owl_u32 *count) {
+  char const *const *extensions;
   owl_local_persist char const *names[OWL_MAX_EXTENSIONS];
 
   extensions = glfwGetRequiredInstanceExtensions (count);
@@ -196,19 +192,18 @@ owl_get_debug_instance_extensions (owl_u32 *count)
 #endif /* OWL_ENABLE_VALIDATION */
 
 owl_public enum owl_code
-owl_window_fill_renderer_init_info (struct owl_window const       *w,
-                                    struct owl_renderer_init_info *info)
-{
-  owl_u32       count;
+owl_window_fill_renderer_init_info (struct owl_window const *w,
+                                    struct owl_renderer_init_info *info) {
+  owl_u32 count;
   enum owl_code code = OWL_SUCCESS;
 
-  info->window_width       = w->window_width;
-  info->window_height      = w->window_height;
-  info->framebuffer_ratio  = w->framebuffer_ratio;
-  info->framebuffer_width  = w->framebuffer_width;
+  info->window_width = w->window_width;
+  info->window_height = w->window_height;
+  info->framebuffer_ratio = w->framebuffer_ratio;
+  info->framebuffer_width = w->framebuffer_width;
   info->framebuffer_height = w->framebuffer_height;
-  info->surface_user_data  = w;
-  info->create_surface     = owl_vk_create_surface_callback;
+  info->surface_user_data = w;
+  info->create_surface = owl_vk_create_surface_callback;
 
 #if defined(OWL_ENABLE_VALIDATION)
   info->instance_extensions = owl_get_debug_instance_extensions (&count);
@@ -217,28 +212,25 @@ owl_window_fill_renderer_init_info (struct owl_window const       *w,
 #endif /* OWL_ENABLE_VALIDATION */
 
   info->instance_extension_count = (int)count;
-  info->name                     = w->title;
+  info->name = w->title;
 
   return code;
 }
 
 owl_public owl_i32
-owl_window_is_done (struct owl_window *w)
-{
+owl_window_is_done (struct owl_window *w) {
   return glfwWindowShouldClose (w->data);
 }
 
 owl_public void
-owl_window_poll_events (struct owl_window *w)
-{
+owl_window_poll_events (struct owl_window *w) {
   owl_unused (w);
 
   glfwPollEvents ();
 }
 
 owl_public void
-owl_window_handle_resize (struct owl_window *w)
-{
+owl_window_handle_resize (struct owl_window *w) {
   glfwGetWindowSize (w->data, &w->window_width, &w->window_height);
 
   glfwGetFramebufferSize (w->data, &w->framebuffer_width,

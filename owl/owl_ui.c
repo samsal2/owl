@@ -8,9 +8,8 @@
 #include <stdio.h>
 
 owl_public void
-owl_ui_renderer_stats_draw (struct owl_renderer *r)
-{
-  char   buffer[256];
+owl_ui_renderer_stats_draw (struct owl_renderer *r) {
+  char buffer[256];
   owl_v2 position;
   owl_v3 color;
 
@@ -47,8 +46,7 @@ owl_ui_renderer_stats_draw (struct owl_renderer *r)
 }
 
 owl_public void
-owl_ui_model_stats_draw (struct owl_renderer *r, struct owl_model *m)
-{
+owl_ui_model_stats_draw (struct owl_renderer *r, struct owl_model *m) {
   owl_unused (r);
   owl_unused (m);
 }

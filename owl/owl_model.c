@@ -29,16 +29,14 @@ struct owl_model_uri {
 };
 
 owl_private void const *
-owl_resolve_gltf_accessor (struct cgltf_accessor const *accessor)
-{
+owl_resolve_gltf_accessor (struct cgltf_accessor const *accessor) {
   struct cgltf_buffer_view const *view = accessor->buffer_view;
-  owl_byte const                 *data = view->buffer->data;
+  owl_byte const *data = view->buffer->data;
   return &data[accessor->offset + view->offset];
 }
 
 owl_private enum owl_code
-owl_model_uri_init (char const *src, struct owl_model_uri *uri)
-{
+owl_model_uri_init (char const *src, struct owl_model_uri *uri) {
   enum owl_code code = OWL_SUCCESS;
 
   snprintf (uri->path, OWL_MODEL_MAX_NAME_LENGTH, "../../assets/%s", src);
@@ -47,17 +45,15 @@ owl_model_uri_init (char const *src, struct owl_model_uri *uri)
 }
 
 owl_private enum owl_code
-owl_model_images_load (struct owl_renderer     *r,
-                       struct cgltf_data const *gltf,
-                       struct owl_model        *model)
-{
-  owl_i32       i;
+owl_model_images_load (struct owl_renderer *r, struct cgltf_data const *gltf,
+                       struct owl_model *model) {
+  owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < (owl_i32)gltf->images_count; ++i) {
-    struct owl_model_uri                uri;
+    struct owl_model_uri uri;
     struct owl_renderer_image_init_info info;
-    struct owl_model_image             *image = &model->images[i];
+    struct owl_model_image *image = &model->images[i];
 
     if (OWL_SUCCESS !=
         (code = owl_model_uri_init (gltf->images[i].uri, &uri))) {
@@ -84,11 +80,9 @@ out:
 }
 
 owl_private enum owl_code
-owl_model_textures_load (struct owl_renderer     *r,
-                         struct cgltf_data const *gltf,
-                         struct owl_model        *model)
-{
-  owl_i32       i;
+owl_model_textures_load (struct owl_renderer *r, struct cgltf_data const *gltf,
+                         struct owl_model *model) {
+  owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
   owl_unused (r);
@@ -104,11 +98,10 @@ owl_model_textures_load (struct owl_renderer     *r,
 }
 
 owl_private enum owl_code
-owl_model_materials_load (struct owl_renderer     *r,
+owl_model_materials_load (struct owl_renderer *r,
                           struct cgltf_data const *gltf,
-                          struct owl_model        *model)
-{
-  owl_i32       i;
+                          struct owl_model *model) {
+  owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
   owl_unused (r);
@@ -121,8 +114,8 @@ owl_model_materials_load (struct owl_renderer     *r,
   model->material_count = (owl_i32)gltf->materials_count;
 
   for (i = 0; i < (owl_i32)gltf->materials_count; ++i) {
-    struct cgltf_material const *gm       = &gltf->materials[i];
-    struct owl_model_material   *material = &model->materials[i];
+    struct cgltf_material const *gm = &gltf->materials[i];
+    struct owl_model_material *material = &model->materials[i];
 
     owl_assert (gm->has_pbr_metallic_roughness);
 
@@ -140,14 +133,14 @@ owl_model_materials_load (struct owl_renderer     *r,
     material_data->normal_texture.slot =
         (owl_i32)(src_material->normal_texture.texture - gltf->textures);
 #else
-    material->normal_texture        = material->base_color_texture;
+    material->normal_texture = material->base_color_texture;
     material->physical_desc_texture = material->base_color_texture;
-    material->occlusion_texture     = OWL_MODEL_TEXTURE_NONE;
-    material->emissive_texture      = OWL_MODEL_TEXTURE_NONE;
+    material->occlusion_texture = OWL_MODEL_TEXTURE_NONE;
+    material->emissive_texture = OWL_MODEL_TEXTURE_NONE;
 #endif
 
     /* FIXME(samuel): make sure this is right */
-    material->alpha_mode   = (enum owl_alpha_mode)gm->alpha_mode;
+    material->alpha_mode = (enum owl_alpha_mode)gm->alpha_mode;
     material->alpha_cutoff = gm->alpha_cutoff;
     material->double_sided = gm->double_sided;
   }
@@ -157,19 +150,18 @@ out:
 }
 
 struct owl_model_load_state {
-  owl_i32                  vertex_capacity;
-  owl_i32                  vertex_count;
+  owl_i32 vertex_capacity;
+  owl_i32 vertex_count;
   struct owl_model_vertex *vertices;
 
-  owl_i32  index_capacity;
-  owl_i32  index_count;
+  owl_i32 index_capacity;
+  owl_i32 index_count;
   owl_u32 *indices;
 };
 
 owl_private struct cgltf_attribute const *
-owl_find_gltf_attribute (struct cgltf_primitive const *p, char const *name)
-{
-  owl_i32                       i;
+owl_find_gltf_attribute (struct cgltf_primitive const *p, char const *name) {
+  owl_i32 i;
   struct cgltf_attribute const *attr = NULL;
 
   for (i = 0; i < (owl_i32)p->attributes_count; ++i) {
@@ -186,12 +178,11 @@ out:
 }
 
 owl_private void
-owl_model_load_state_find_capacities (struct cgltf_data const     *gltf,
-                                      struct owl_model_load_state *state)
-{
+owl_model_load_state_find_capacities (struct cgltf_data const *gltf,
+                                      struct owl_model_load_state *state) {
   owl_i32 i;
   for (i = 0; i < (owl_i32)gltf->nodes_count; ++i) {
-    owl_i32                  j;
+    owl_i32 j;
     struct cgltf_node const *gn = &gltf->nodes[i];
 
     if (!gn->mesh) {
@@ -210,19 +201,18 @@ owl_model_load_state_find_capacities (struct cgltf_data const     *gltf,
 }
 
 owl_private enum owl_code
-owl_model_load_state_init (struct owl_renderer         *r,
-                           struct cgltf_data const     *gltf,
-                           struct owl_model_load_state *state)
-{
-  owl_u64       sz;
+owl_model_load_state_init (struct owl_renderer *r,
+                           struct cgltf_data const *gltf,
+                           struct owl_model_load_state *state) {
+  owl_u64 sz;
   enum owl_code code = OWL_SUCCESS;
 
   owl_unused (r);
 
   state->vertex_capacity = 0;
-  state->index_capacity  = 0;
-  state->vertex_count    = 0;
-  state->index_count     = 0;
+  state->index_capacity = 0;
+  state->vertex_count = 0;
+  state->index_count = 0;
 
   owl_model_load_state_find_capacities (gltf, state);
 
@@ -248,9 +238,8 @@ out:
 }
 
 owl_private void
-owl_model_load_state_deinit (struct owl_renderer         *r,
-                             struct owl_model_load_state *state)
-{
+owl_model_load_state_deinit (struct owl_renderer *r,
+                             struct owl_model_load_state *state) {
   owl_unused (r);
 
   owl_free (state->indices);
@@ -258,15 +247,13 @@ owl_model_load_state_deinit (struct owl_renderer         *r,
 }
 
 owl_private enum owl_code
-owl_model_node_load (struct owl_renderer         *r,
-                     struct cgltf_data const     *gltf,
-                     struct cgltf_node const     *gn,
+owl_model_node_load (struct owl_renderer *r, struct cgltf_data const *gltf,
+                     struct cgltf_node const *gn,
                      struct owl_model_load_state *state,
-                     struct owl_model            *model)
-{
-  owl_i32                   i;
+                     struct owl_model *model) {
+  owl_i32 i;
   owl_model_node_descriptor nd;
-  struct owl_model_node    *node;
+  struct owl_model_node *node;
 
   enum owl_code code = OWL_SUCCESS;
 
@@ -337,7 +324,7 @@ owl_model_node_load (struct owl_renderer         *r,
 
   if (gn->mesh) {
     struct cgltf_mesh const *gm;
-    struct owl_model_mesh   *md;
+    struct owl_model_mesh *md;
 
     node->mesh = model->mesh_count++;
 
@@ -352,18 +339,18 @@ owl_model_node_load (struct owl_renderer         *r,
     md->primitive_count = (owl_i32)gm->primitives_count;
 
     for (i = 0; i < (owl_i32)gm->primitives_count; ++i) {
-      owl_i32                       j;
-      owl_i32                       vertex_count = 0;
-      owl_i32                       index_count  = 0;
-      float const                  *position     = NULL;
-      float const                  *normal       = NULL;
-      float const                  *uv0          = NULL;
-      float const                  *uv1          = NULL;
-      owl_u16 const                *joints0      = NULL;
-      float const                  *weights0     = NULL;
-      struct cgltf_attribute const *attr         = NULL;
-      struct owl_model_primitive   *pd           = NULL;
-      struct cgltf_primitive const *gp           = &gm->primitives[i];
+      owl_i32 j;
+      owl_i32 vertex_count = 0;
+      owl_i32 index_count = 0;
+      float const *position = NULL;
+      float const *normal = NULL;
+      float const *uv0 = NULL;
+      float const *uv1 = NULL;
+      owl_u16 const *joints0 = NULL;
+      float const *weights0 = NULL;
+      struct cgltf_attribute const *attr = NULL;
+      struct owl_model_primitive *pd = NULL;
+      struct cgltf_primitive const *gp = &gm->primitives[i];
 
       md->primitives[i] = model->primitive_count++;
 
@@ -375,7 +362,7 @@ owl_model_node_load (struct owl_renderer         *r,
       pd = &model->primitives[md->primitives[i]];
 
       if ((attr = owl_find_gltf_attribute (gp, "POSITION"))) {
-        position     = owl_resolve_gltf_accessor (attr->data);
+        position = owl_resolve_gltf_accessor (attr->data);
         vertex_count = (owl_i32)attr->data->count;
       }
 
@@ -400,7 +387,7 @@ owl_model_node_load (struct owl_renderer         *r,
       }
 
       for (j = 0; j < vertex_count; ++j) {
-        owl_i32                  offset = state->vertex_count;
+        owl_i32 offset = state->vertex_count;
         struct owl_model_vertex *vertex = &state->vertices[offset + j];
 
         owl_v3_copy (&position[j * 3], vertex->position);
@@ -441,7 +428,7 @@ owl_model_node_load (struct owl_renderer         *r,
       switch (gp->indices->component_type) {
       case cgltf_component_type_r_32u: {
         owl_u32 const *indices;
-        owl_i32 const  offset = state->index_count;
+        owl_i32 const offset = state->index_count;
 
         indices = owl_resolve_gltf_accessor (gp->indices);
 
@@ -453,7 +440,7 @@ owl_model_node_load (struct owl_renderer         *r,
 
       case cgltf_component_type_r_16u: {
         owl_u16 const *indices;
-        owl_i32 const  offset = state->index_count;
+        owl_i32 const offset = state->index_count;
 
         indices = owl_resolve_gltf_accessor (gp->indices);
 
@@ -497,13 +484,12 @@ out:
 }
 
 owl_private void
-owl_model_buffers_load (struct owl_renderer               *r,
+owl_model_buffers_load (struct owl_renderer *r,
                         struct owl_model_load_state const *state,
-                        struct owl_model                  *model)
-{
+                        struct owl_model *model) {
   struct owl_renderer_frame_heap_reference vref;
   struct owl_renderer_frame_heap_reference iref;
-  enum owl_code                            code = OWL_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
 
   owl_assert (owl_renderer_frame_heap_offset_is_clear (r));
   owl_assert (state->vertex_count == state->vertex_capacity);
@@ -529,9 +515,9 @@ owl_model_buffers_load (struct owl_renderer               *r,
         (owl_u64)state->vertex_count * sizeof (struct owl_model_vertex);
     info.usage =
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     info.queueFamilyIndexCount = 0;
-    info.pQueueFamilyIndices   = 0;
+    info.pQueueFamilyIndices = 0;
 
     OWL_VK_CHECK (
         vkCreateBuffer (r->device, &info, NULL, &model->vertices_buffer));
@@ -544,9 +530,9 @@ owl_model_buffers_load (struct owl_renderer               *r,
     vkGetBufferMemoryRequirements (r->device, model->vertices_buffer,
                                    &requirements);
 
-    info.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    info.pNext           = NULL;
-    info.allocationSize  = requirements.size;
+    info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    info.pNext = NULL;
+    info.allocationSize = requirements.size;
     info.memoryTypeIndex = owl_renderer_find_memory_type (
         r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
@@ -562,12 +548,12 @@ owl_model_buffers_load (struct owl_renderer               *r,
     info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     info.pNext = NULL;
     info.flags = 0;
-    info.size  = (owl_u64)state->index_count * sizeof (owl_u32);
+    info.size = (owl_u64)state->index_count * sizeof (owl_u32);
     info.usage =
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     info.queueFamilyIndexCount = 0;
-    info.pQueueFamilyIndices   = 0;
+    info.pQueueFamilyIndices = 0;
 
     OWL_VK_CHECK (
         vkCreateBuffer (r->device, &info, NULL, &model->indices_buffer));
@@ -580,9 +566,9 @@ owl_model_buffers_load (struct owl_renderer               *r,
     vkGetBufferMemoryRequirements (r->device, model->indices_buffer,
                                    &requirements);
 
-    info.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    info.pNext           = NULL;
-    info.allocationSize  = requirements.size;
+    info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    info.pNext = NULL;
+    info.allocationSize = requirements.size;
     info.memoryTypeIndex = owl_renderer_find_memory_type (
         r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
@@ -619,7 +605,7 @@ owl_model_buffers_load (struct owl_renderer               *r,
 
     copy.srcOffset = iref.offset;
     copy.dstOffset = 0;
-    copy.size      = (owl_u64)state->index_count * sizeof (owl_u32);
+    copy.size = (owl_u64)state->index_count * sizeof (owl_u32);
 
     vkCmdCopyBuffer (r->immidiate_command_buffer, iref.buffer,
                      model->indices_buffer, 1, &copy);
@@ -643,14 +629,12 @@ out:
 }
 
 owl_private enum owl_code
-owl_model_nodes_load (struct owl_renderer     *r,
-                      struct cgltf_data const *gltf,
-                      struct owl_model        *model)
-{
-  owl_i32                     i;
+owl_model_nodes_load (struct owl_renderer *r, struct cgltf_data const *gltf,
+                      struct owl_model *model) {
+  owl_i32 i;
   struct owl_model_load_state state;
-  struct cgltf_scene const   *gs;
-  enum owl_code               code = OWL_SUCCESS;
+  struct cgltf_scene const *gs;
+  enum owl_code code = OWL_SUCCESS;
 
   gs = gltf->scene;
 
@@ -661,10 +645,10 @@ owl_model_nodes_load (struct owl_renderer     *r,
   }
 
   for (i = 0; i < OWL_MODEL_MAX_NODE_COUNT; ++i) {
-    model->nodes[i].mesh   = -1;
+    model->nodes[i].mesh = -1;
     model->nodes[i].parent = -1;
-    model->nodes[i].mesh   = -1;
-    model->nodes[i].skin   = -1;
+    model->nodes[i].mesh = -1;
+    model->nodes[i].skin = -1;
   }
 
   if (OWL_MODEL_MAX_NODE_COUNT <= (owl_i32)gltf->nodes_count) {
@@ -703,11 +687,9 @@ out:
 }
 
 owl_private enum owl_code
-owl_model_skins_load (struct owl_renderer     *r,
-                      struct cgltf_data const *gltf,
-                      struct owl_model        *model)
-{
-  owl_i32       i;
+owl_model_skins_load (struct owl_renderer *r, struct cgltf_data const *gltf,
+                      struct owl_model *model) {
+  owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
   owl_unused (r);
@@ -721,10 +703,10 @@ owl_model_skins_load (struct owl_renderer     *r,
   model->skin_count = (owl_i32)gltf->skins_count;
 
   for (i = 0; i < (owl_i32)gltf->skins_count; ++i) {
-    owl_i32                  j;
-    owl_m4 const            *inverse_bind_matrices;
-    struct cgltf_skin const *gs   = &gltf->skins[i];
-    struct owl_model_skin   *skin = &model->skins[i];
+    owl_i32 j;
+    owl_m4 const *inverse_bind_matrices;
+    struct cgltf_skin const *gs = &gltf->skins[i];
+    struct owl_model_skin *skin = &model->skins[i];
 
     if (gs->name) {
       owl_strncpy (skin->name, gs->name, OWL_MODEL_MAX_NAME_LENGTH);
@@ -764,14 +746,14 @@ owl_model_skins_load (struct owl_renderer     *r,
 
       skin->ssbo_buffer_size = sizeof (struct owl_model_skin_ssbo);
 
-      info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-      info.pNext                 = NULL;
-      info.flags                 = 0;
-      info.size                  = skin->ssbo_buffer_size;
-      info.usage                 = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-      info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+      info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      info.size = skin->ssbo_buffer_size;
+      info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+      info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
       info.queueFamilyIndexCount = 0;
-      info.pQueueFamilyIndices   = NULL;
+      info.pQueueFamilyIndices = NULL;
 
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
         OWL_VK_CHECK (
@@ -808,18 +790,18 @@ owl_model_skins_load (struct owl_renderer     *r,
     }
 
     {
-      VkDescriptorSetLayout       layouts[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+      VkDescriptorSetLayout layouts[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
       VkDescriptorSetAllocateInfo info;
 
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
         layouts[j] = r->vertex_ssbo_set_layout;
       }
 
-      info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-      info.pNext              = NULL;
-      info.descriptorPool     = r->common_set_pool;
+      info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+      info.pNext = NULL;
+      info.descriptorPool = r->common_set_pool;
       info.descriptorSetCount = OWL_RENDERER_IN_FLIGHT_FRAME_COUNT;
-      info.pSetLayouts        = layouts;
+      info.pSetLayouts = layouts;
 
       OWL_VK_CHECK (
           vkAllocateDescriptorSets (r->device, &info, skin->ssbo_sets));
@@ -828,21 +810,21 @@ owl_model_skins_load (struct owl_renderer     *r,
     {
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
         VkDescriptorBufferInfo buffer_info;
-        VkWriteDescriptorSet   write;
+        VkWriteDescriptorSet write;
 
         buffer_info.buffer = skin->ssbo_buffers[j];
         buffer_info.offset = 0;
-        buffer_info.range  = skin->ssbo_buffer_size;
+        buffer_info.range = skin->ssbo_buffer_size;
 
-        write.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.pNext            = NULL;
-        write.dstSet           = skin->ssbo_sets[j];
-        write.dstBinding       = 0;
-        write.dstArrayElement  = 0;
-        write.descriptorCount  = 1;
-        write.descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        write.pImageInfo       = NULL;
-        write.pBufferInfo      = &buffer_info;
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.pNext = NULL;
+        write.dstSet = skin->ssbo_sets[j];
+        write.dstBinding = 0;
+        write.dstArrayElement = 0;
+        write.descriptorCount = 1;
+        write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        write.pImageInfo = NULL;
+        write.pBufferInfo = &buffer_info;
         write.pTexelBufferView = NULL;
 
         vkUpdateDescriptorSets (r->device, 1, &write, 0, NULL);
@@ -851,13 +833,13 @@ owl_model_skins_load (struct owl_renderer     *r,
 
     {
       owl_i32 k;
-      void   *data;
+      void *data;
 
       vkMapMemory (r->device, skin->ssbo_memory, 0, VK_WHOLE_SIZE, 0, &data);
 
       for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
-        owl_u64   offset    = (owl_u64)j * skin->ssbo_buffer_aligned_size;
-        owl_byte *ssbo      = &((owl_byte *)data)[offset];
+        owl_u64 offset = (owl_u64)j * skin->ssbo_buffer_aligned_size;
+        owl_byte *ssbo = &((owl_byte *)data)[offset];
         skin->ssbo_datas[j] = (struct owl_model_skin_ssbo *)ssbo;
       }
 
@@ -879,11 +861,9 @@ out:
 }
 
 owl_private enum owl_code
-owl_model_anims_load (struct owl_renderer     *r,
-                      struct cgltf_data const *gltf,
-                      struct owl_model        *model)
-{
-  owl_i32       i;
+owl_model_anims_load (struct owl_renderer *r, struct cgltf_data const *gltf,
+                      struct owl_model *model) {
+  owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
   owl_unused (r);
@@ -896,11 +876,11 @@ owl_model_anims_load (struct owl_renderer     *r,
   model->anim_count = (owl_i32)gltf->animations_count;
 
   for (i = 0; i < (owl_i32)gltf->animations_count; ++i) {
-    owl_i32                       j;
+    owl_i32 j;
     struct cgltf_animation const *ga;
-    struct owl_model_anim        *anim;
+    struct owl_model_anim *anim;
 
-    ga   = &gltf->animations[i];
+    ga = &gltf->animations[i];
     anim = &model->anims[i];
 
     anim->current_time = 0.0F;
@@ -913,14 +893,14 @@ owl_model_anims_load (struct owl_renderer     *r,
     anim->sampler_count = (owl_i32)ga->samplers_count;
 
     anim->begin = FLT_MAX;
-    anim->end   = FLT_MIN;
+    anim->end = FLT_MIN;
 
     for (j = 0; j < (owl_i32)ga->samplers_count; ++j) {
-      owl_i32                               k;
-      float const                          *inputs;
+      owl_i32 k;
+      float const *inputs;
       struct cgltf_animation_sampler const *gs;
-      owl_model_anim_sampler_descriptor     sampler;
-      struct owl_model_anim_sampler        *sd;
+      owl_model_anim_sampler_descriptor sampler;
+      struct owl_model_anim_sampler *sd;
 
       gs = &ga->samplers[j];
 
@@ -1009,8 +989,8 @@ owl_model_anims_load (struct owl_renderer     *r,
 
     for (j = 0; j < (owl_i32)ga->channels_count; ++j) {
       struct cgltf_animation_channel const *gc;
-      owl_model_anim_chan_descriptor        chan;
-      struct owl_model_anim_chan           *cd;
+      owl_model_anim_chan_descriptor chan;
+      struct owl_model_anim_chan *cd;
 
       gc = &ga->channels[j];
 
@@ -1037,12 +1017,10 @@ out:
 }
 
 enum owl_code
-owl_model_init (struct owl_model    *model,
-                struct owl_renderer *r,
-                char const          *path)
-{
+owl_model_init (struct owl_model *model, struct owl_renderer *r,
+                char const *path) {
   struct cgltf_options options;
-  struct cgltf_data   *data = NULL;
+  struct cgltf_data *data = NULL;
 
   enum owl_code code = OWL_SUCCESS;
 
@@ -1051,18 +1029,18 @@ owl_model_init (struct owl_model    *model,
   owl_memset (&options, 0, sizeof (options));
   owl_memset (model, 0, sizeof (*model));
 
-  model->root_count         = 0;
-  model->node_count         = 0;
-  model->image_count        = 0;
-  model->texture_count      = 0;
-  model->material_count     = 0;
-  model->mesh_count         = 0;
-  model->primitive_count    = 0;
-  model->skin_count         = 0;
+  model->root_count = 0;
+  model->node_count = 0;
+  model->image_count = 0;
+  model->texture_count = 0;
+  model->material_count = 0;
+  model->mesh_count = 0;
+  model->primitive_count = 0;
+  model->skin_count = 0;
   model->anim_sampler_count = 0;
-  model->anim_chan_count    = 0;
-  model->anim_count         = 0;
-  model->active_anim        = 0;
+  model->anim_chan_count = 0;
+  model->anim_count = 0;
+  model->active_anim = 0;
 
   if (cgltf_result_success != cgltf_parse_file (&options, path, &data)) {
     code = OWL_ERROR_UNKNOWN;
@@ -1108,8 +1086,7 @@ out:
 }
 
 void
-owl_model_deinit (struct owl_model *model, struct owl_renderer *r)
-{
+owl_model_deinit (struct owl_model *model, struct owl_renderer *r) {
   owl_i32 i;
 
   OWL_VK_CHECK (vkDeviceWaitIdle (r->device));
@@ -1139,11 +1116,10 @@ owl_model_deinit (struct owl_model *model, struct owl_renderer *r)
 }
 
 owl_private void
-owl_model_resolve_local_node_matrix (struct owl_model const   *model,
+owl_model_resolve_local_node_matrix (struct owl_model const *model,
                                      owl_model_node_descriptor nd,
-                                     owl_m4                    matrix)
-{
-  owl_m4                       tmp;
+                                     owl_m4 matrix) {
+  owl_m4 tmp;
   struct owl_model_node const *node;
 
   node = &model->nodes[nd];
@@ -1163,10 +1139,8 @@ owl_model_resolve_local_node_matrix (struct owl_model const   *model,
 }
 
 owl_private void
-owl_model_resolve_node_matrix (struct owl_model const   *model,
-                               owl_model_node_descriptor nd,
-                               owl_m4                    matrix)
-{
+owl_model_resolve_node_matrix (struct owl_model const *model,
+                               owl_model_node_descriptor nd, owl_m4 matrix) {
   owl_model_node_descriptor parent;
 
   owl_model_resolve_local_node_matrix (model, nd, matrix);
@@ -1180,13 +1154,11 @@ owl_model_resolve_node_matrix (struct owl_model const   *model,
 }
 
 owl_private void
-owl_model_node_joints_update (struct owl_model         *model,
-                              owl_i32                   frame,
-                              owl_model_node_descriptor nd)
-{
-  owl_i32                      i;
-  owl_m4                       tmp;
-  owl_m4                       inverse;
+owl_model_node_joints_update (struct owl_model *model, owl_i32 frame,
+                              owl_model_node_descriptor nd) {
+  owl_i32 i;
+  owl_m4 tmp;
+  owl_m4 inverse;
   struct owl_model_skin const *skin;
   struct owl_model_node const *node;
 
@@ -1228,12 +1200,10 @@ out:
 #define OWL_MODEL_ANIM_PATH_TYPE_SCALE cgltf_animation_path_type_scale
 
 enum owl_code
-owl_model_anim_update (struct owl_model         *model,
-                       owl_model_anim_descriptor animd,
-                       owl_i32                   frame,
-                       float                     dt)
-{
-  owl_i32                i;
+owl_model_anim_update (struct owl_model *model,
+                       owl_model_anim_descriptor animd, owl_i32 frame,
+                       float dt) {
+  owl_i32 i;
   struct owl_model_anim *anim;
 
   enum owl_code code = OWL_SUCCESS;
@@ -1250,17 +1220,17 @@ owl_model_anim_update (struct owl_model         *model,
   }
 
   for (i = 0; i < anim->chan_count; ++i) {
-    owl_i32                              j;
-    owl_model_anim_chan_descriptor       cd;
-    owl_model_anim_sampler_descriptor    sd;
-    struct owl_model_node               *node;
-    struct owl_model_anim_chan const    *chan;
+    owl_i32 j;
+    owl_model_anim_chan_descriptor cd;
+    owl_model_anim_sampler_descriptor sd;
+    struct owl_model_node *node;
+    struct owl_model_anim_chan const *chan;
     struct owl_model_anim_sampler const *sampler;
 
-    cd   = anim->chans[i];
+    cd = anim->chans[i];
     chan = &model->anim_chans[cd];
 
-    sd      = chan->anim_sampler;
+    sd = chan->anim_sampler;
     sampler = &model->anim_samplers[sd];
 
     node = &model->nodes[chan->node];
@@ -1274,7 +1244,7 @@ owl_model_anim_update (struct owl_model         *model,
       float const i0 = sampler->inputs[j];
       float const i1 = sampler->inputs[j + 1];
       float const ct = anim->current_time;
-      float const a  = (ct - i0) / (i1 - i0);
+      float const a = (ct - i0) / (i1 - i0);
 
       if (!((ct >= i0) && (ct <= i1))) {
         continue;
