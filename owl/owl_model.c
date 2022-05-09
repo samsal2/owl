@@ -10,12 +10,12 @@
 
 #if !defined(NDEBUG)
 
-#define OWL_VK_CHECK(e)                                                        \
-  do {                                                                         \
-    VkResult const result_ = e;                                                \
-    if (VK_SUCCESS != result_)                                                 \
-      OWL_DEBUG_LOG ("OWL_VK_CHECK(%s) result = %i\n", #e, result_);           \
-    owl_assert (VK_SUCCESS == result_);                                        \
+#define OWL_VK_CHECK(e)                                                       \
+  do {                                                                        \
+    VkResult const result_ = e;                                               \
+    if (VK_SUCCESS != result_)                                                \
+      OWL_DEBUG_LOG ("OWL_VK_CHECK(%s) result = %i\n", #e, result_);          \
+    owl_assert (VK_SUCCESS == result_);                                       \
   } while (0)
 
 #else /* NDEBUG */
@@ -66,8 +66,8 @@ owl_model_images_load (struct owl_renderer     *r,
 
     info.src_type = OWL_RENDERER_IMAGE_SRC_TYPE_FILE;
     info.src_path = uri.path;
-    /* FIXME(samuel): if im not mistaken, gltf defines some sampler requirements
-     * . Completely ignoring it for now */
+    /* FIXME(samuel): if im not mistaken, gltf defines some sampler
+     * requirements . Completely ignoring it for now */
     info.sampler_use_default = 1;
 
     code = owl_renderer_image_init (r, &info, &image->renderer_image);
@@ -470,7 +470,8 @@ owl_model_node_load (struct owl_renderer         *r,
         indices = owl_resolve_gltf_accessor (gp->indices);
 
         for (j = 0; j < (owl_i32)gp->indices->count; ++j) {
-          state->indices[offset + j] = indices[j] + (owl_u8)state->vertex_count;
+          state->indices[offset + j] =
+              indices[j] + (owl_u8)state->vertex_count;
         }
       } break;
 
@@ -524,7 +525,8 @@ owl_model_buffers_load (struct owl_renderer               *r,
     info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     info.pNext = NULL;
     info.flags = 0;
-    info.size = (owl_u64)state->vertex_count * sizeof (struct owl_model_vertex);
+    info.size =
+        (owl_u64)state->vertex_count * sizeof (struct owl_model_vertex);
     info.usage =
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
@@ -595,7 +597,8 @@ owl_model_buffers_load (struct owl_renderer               *r,
     goto out;
   }
 
-  if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_begin (r))) {
+  if (OWL_SUCCESS !=
+      (code = owl_renderer_immidiate_command_buffer_begin (r))) {
     goto out;
   }
 
@@ -604,7 +607,8 @@ owl_model_buffers_load (struct owl_renderer               *r,
 
     copy.srcOffset = vref.offset;
     copy.dstOffset = 0;
-    copy.size = (owl_u64)state->vertex_count * sizeof (struct owl_model_vertex);
+    copy.size =
+        (owl_u64)state->vertex_count * sizeof (struct owl_model_vertex);
 
     vkCmdCopyBuffer (r->immidiate_command_buffer, vref.buffer,
                      model->vertices_buffer, 1, &copy);
@@ -929,7 +933,8 @@ owl_model_anims_load (struct owl_renderer     *r,
 
       sd = &model->anim_samplers[sampler];
 
-      if (OWL_MODEL_ANIM_SAMPLER_MAX_INPUT_COUNT <= (owl_i32)gs->input->count) {
+      if (OWL_MODEL_ANIM_SAMPLER_MAX_INPUT_COUNT <=
+          (owl_i32)gs->input->count) {
         code = OWL_ERROR_OUT_OF_BOUNDS;
         goto out;
       }
@@ -1212,9 +1217,10 @@ out:
   return;
 }
 
-#define OWL_MODEL_ANIM_INTERPOLATION_TYPE_LINEAR cgltf_interpolation_type_linear
+#define OWL_MODEL_ANIM_INTERPOLATION_TYPE_LINEAR                              \
+  cgltf_interpolation_type_linear
 
-#define OWL_MODEL_ANIM_PATH_TYPE_TRANSLATION                                   \
+#define OWL_MODEL_ANIM_PATH_TYPE_TRANSLATION                                  \
   cgltf_animation_path_type_translation
 
 #define OWL_MODEL_ANIM_PATH_TYPE_ROTATION cgltf_animation_path_type_rotation

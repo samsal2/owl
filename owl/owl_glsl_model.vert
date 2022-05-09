@@ -44,10 +44,11 @@ main ()
   // vertex
   vec4 local_position;
   if (0 != node.joint_matrice_count) {
-    mat4 skin_matrix = in_weights0.x * node.joint_matrices[int (in_joints0.x)] +
-                       in_weights0.y * node.joint_matrices[int (in_joints0.y)] +
-                       in_weights0.z * node.joint_matrices[int (in_joints0.z)] +
-                       in_weights0.w * node.joint_matrices[int (in_joints0.w)];
+    mat4 skin_matrix =
+        in_weights0.x * node.joint_matrices[int (in_joints0.x)] +
+        in_weights0.y * node.joint_matrices[int (in_joints0.y)] +
+        in_weights0.z * node.joint_matrices[int (in_joints0.z)] +
+        in_weights0.w * node.joint_matrices[int (in_joints0.w)];
 
     local_position =
         ubo.model * node.matrix * skin_matrix * vec4 (in_position, 1.0);

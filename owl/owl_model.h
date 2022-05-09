@@ -45,8 +45,8 @@ typedef owl_i32 owl_model_anim_sampler_descriptor;
 typedef owl_i32 owl_model_anim_chan_descriptor;
 typedef owl_i32 owl_model_anim_descriptor;
 
-/* NOTE(samuel): thought I knew how the alignment worked for the push constants,
- * turns out I don't. Change it at your own risk*/
+/* NOTE(samuel): thought I knew how the alignment worked for the push
+ * constants, turns out I don't. Change it at your own risk*/
 struct owl_model_material_push_constant {
   owl_v4  base_color_factor;
   owl_v4  emissive_factor;
@@ -91,8 +91,9 @@ struct owl_model_primitive {
 };
 
 struct owl_model_mesh {
-  owl_i32                        primitive_count;
-  owl_model_primitive_descriptor primitives[OWL_MODEL_MESH_MAX_PRIMITIVE_COUNT];
+  owl_i32 primitive_count;
+  owl_model_primitive_descriptor
+      primitives[OWL_MODEL_MESH_MAX_PRIMITIVE_COUNT];
 };
 
 struct owl_model_node {

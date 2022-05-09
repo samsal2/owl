@@ -65,12 +65,12 @@ struct pbr_info {
   float perceptual_roughness; // roughness value, as authored by the model
                               // creator (input to shader)
   float metalness;            // metallic value at the surface
-  vec3  reflectance0;         // full reflectance color (normal incidence angle)
-  vec3  reflectance90;        // reflectance color at grazing angle
-  float alpha_roughness;      // roughness mapped to a more linear change in the
-                              // roughness (proposed by [2])
-  vec3 diffuse_color;         // color contribution from diffuse lighting
-  vec3 specular_color;        // color contribution from specular lighting
+  vec3  reflectance0;    // full reflectance color (normal incidence angle)
+  vec3  reflectance90;   // reflectance color at grazing angle
+  float alpha_roughness; // roughness mapped to a more linear change in the
+                         // roughness (proposed by [2])
+  vec3 diffuse_color;    // color contribution from diffuse lighting
+  vec3 specular_color;   // color contribution from specular lighting
 };
 
 const float PI                              = 3.141592653589793;
@@ -102,10 +102,10 @@ SRGBtoLINEAR (vec4 srgbIn)
 #ifdef SRGB_FAST_APPROXIMATION
   vec3 linOut = pow (srgbIn.xyz, vec3 (2.2));
 #else  // SRGB_FAST_APPROXIMATION
-  vec3 bLess = step (vec3 (0.04045), srgbIn.xyz);
-  vec3 linOut =
-      mix (srgbIn.xyz / vec3 (12.92),
-           pow ((srgbIn.xyz + vec3 (0.055)) / vec3 (1.055), vec3 (2.4)), bLess);
+  vec3 bLess  = step (vec3 (0.04045), srgbIn.xyz);
+  vec3 linOut = mix (
+      srgbIn.xyz / vec3 (12.92),
+      pow ((srgbIn.xyz + vec3 (0.055)) / vec3 (1.055), vec3 (2.4)), bLess);
 #endif // SRGB_FAST_APPROXIMATION
   return vec4 (linOut, srgbIn.w);
   ;
@@ -245,8 +245,9 @@ convertMetallic (vec3 diffuse, vec3 specular, float maxSpecular)
     return 0.0;
   }
   float a = MINIMUM_ROUGHNESS;
-  float b = perceivedDiffuse * (1.0 - maxSpecular) / (1.0 - MINIMUM_ROUGHNESS) +
-            perceivedSpecular - 2.0 * MINIMUM_ROUGHNESS;
+  float b =
+      perceivedDiffuse * (1.0 - maxSpecular) / (1.0 - MINIMUM_ROUGHNESS) +
+      perceivedSpecular - 2.0 * MINIMUM_ROUGHNESS;
   float c = MINIMUM_ROUGHNESS - perceivedSpecular;
   float D = max (b * b - 4.0 * a * c, 0.0);
   return clamp ((-b + sqrt (D)) / (2.0 * a), 0.0, 1.0);
@@ -284,13 +285,15 @@ main ()
     if (0 == material.physical_descriptor_uv_set) {
       vec4 sample_metallic_roughness =
           texture (sampler2D (physical_descriptor_map, sampler2), in_uv0);
-      perceptual_roughness = sample_metallic_roughness.g * perceptual_roughness;
-      metallic             = sample_metallic_roughness.b * metallic;
+      perceptual_roughness =
+          sample_metallic_roughness.g * perceptual_roughness;
+      metallic = sample_metallic_roughness.b * metallic;
     } else if (1 == material.physical_descriptor_uv_set) {
       vec4 sample_metallic_roughness =
           texture (sampler2D (physical_descriptor_map, sampler2), in_uv1);
-      perceptual_roughness = sample_metallic_roughness.g * perceptual_roughness;
-      metallic             = sample_metallic_roughness.b * metallic;
+      perceptual_roughness =
+          sample_metallic_roughness.g * perceptual_roughness;
+      metallic = sample_metallic_roughness.b * metallic;
     } else {
       perceptual_roughness =
           clamp (perceptual_roughness, MINIMUM_ROUGHNESS, 1.0);
@@ -358,10 +361,11 @@ main ()
   vec3  specular_environment_r0  = specular_color.rgb;
   vec3  specular_environment_r90 = vec3 (1.0, 1.0, 1.0) * reflectance90;
 
-  vec3 n = (material.normal_uv_set > -1) ? getNormal () : normalize (in_normal);
-  vec3 v = normalize (ubo.camera_position - in_world_position);
-  vec3 l = normalize (ubo_params.light_direction.xyz);
-  vec3 h = normalize (l + v);
+  vec3 n =
+      (material.normal_uv_set > -1) ? getNormal () : normalize (in_normal);
+  vec3 v          = normalize (ubo.camera_position - in_world_position);
+  vec3 l          = normalize (ubo_params.light_direction.xyz);
+  vec3 h          = normalize (l + v);
   vec3 reflection = -normalize (reflect (v, n));
   reflection.y *= -1.0;
 
@@ -371,10 +375,11 @@ main ()
   float light_dot_half   = clamp (dot (l, h), 0.0, 1.0);
   float view_dot_half    = clamp (dot (v, h), 0.0, 1.0);
 
-  pbr_info inputs = pbr_info (
-      normal_dot_light, normal_dot_view, normal_dot_half, light_dot_half,
-      view_dot_half, perceptual_roughness, metallic, specular_environment_r0,
-      specular_environment_r90, alpha_roughness, diffuse_color, specular_color);
+  pbr_info inputs =
+      pbr_info (normal_dot_light, normal_dot_view, normal_dot_half,
+                light_dot_half, view_dot_half, perceptual_roughness, metallic,
+                specular_environment_r0, specular_environment_r90,
+                alpha_roughness, diffuse_color, specular_color);
 
   vec4 color = texture (sampler2D (color_map, sampler0), in_uv0);
 

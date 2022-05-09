@@ -11,9 +11,8 @@ struct owl_window;
 struct owl_renderer;
 struct owl_model;
 
-typedef enum owl_code (*owl_vk_create_surface_fn) (struct owl_renderer const *r,
-                                                   void const   *data,
-                                                   VkSurfaceKHR *surface);
+typedef enum owl_code (*owl_vk_create_surface_fn) (
+    struct owl_renderer const *r, void const *data, VkSurfaceKHR *surface);
 
 enum owl_renderer_memory_visibility {
   OWL_RENDERER_MEMORY_VISIBILITY_CPU,
@@ -435,9 +434,10 @@ owl_renderer_image_deinit (struct owl_renderer          *r,
                            owl_renderer_image_descriptor imgd);
 
 owl_public void *
-owl_renderer_frame_heap_alloc (struct owl_renderer                      *r,
-                               owl_u64                                   sz,
-                               struct owl_renderer_frame_heap_reference *ref);
+owl_renderer_frame_heap_allocate (
+    struct owl_renderer                      *r,
+    owl_u64                                   sz,
+    struct owl_renderer_frame_heap_reference *ref);
 
 owl_public enum owl_code
 owl_renderer_frame_heap_submit (struct owl_renderer                      *r,

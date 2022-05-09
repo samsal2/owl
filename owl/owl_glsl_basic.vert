@@ -18,7 +18,8 @@ layout (location = 1) out vec2 out_uv;
 void
 main ()
 {
-  out_color   = in_color;
-  out_uv      = in_uv;
-  gl_Position = ubo.projection * ubo.view * ubo.model * vec4 (in_position, 1.0);
+  out_color = in_color;
+  out_uv    = in_uv;
+  gl_Position =
+      ubo.projection * ubo.view * ubo.model * vec4 (in_position, 1.0);
 }

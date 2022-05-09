@@ -124,10 +124,10 @@ SRGBtoLINEAR (vec4 srgbIn)
 #ifdef SRGB_FAST_APPROXIMATION
   vec3 linOut = pow (srgbIn.xyz, vec3 (2.2));
 #else  // SRGB_FAST_APPROXIMATION
-  vec3 bLess = step (vec3 (0.04045), srgbIn.xyz);
-  vec3 linOut =
-      mix (srgbIn.xyz / vec3 (12.92),
-           pow ((srgbIn.xyz + vec3 (0.055)) / vec3 (1.055), vec3 (2.4)), bLess);
+  vec3 bLess  = step (vec3 (0.04045), srgbIn.xyz);
+  vec3 linOut = mix (
+      srgbIn.xyz / vec3 (12.92),
+      pow ((srgbIn.xyz + vec3 (0.055)) / vec3 (1.055), vec3 (2.4)), bLess);
 #endif // SRGB_FAST_APPROXIMATION
   return vec4 (linOut, srgbIn.w);
   ;
@@ -178,7 +178,8 @@ getIBLContribution (PBRInfo pbrInputs, vec3 n, vec3 reflection)
       SRGBtoLINEAR (tonemap (texture (samplerIrradiance, n))).rgb;
 
   vec3 specularLight =
-      SRGBtoLINEAR (tonemap (textureLod (prefilteredMap, reflection, lod))).rgb;
+      SRGBtoLINEAR (tonemap (textureLod (prefilteredMap, reflection, lod)))
+          .rgb;
 
   vec3 diffuse  = diffuseLight * pbrInputs.diffuseColor;
   vec3 specular = specularLight * (pbrInputs.specularColor * brdf.x + brdf.y);
@@ -229,17 +230,18 @@ geometricOcclusion (PBRInfo pbrInputs)
   return attenuationL * attenuationV;
 }
 
-// The following equation(s) model the distribution of microfacet normals across
-// the area being drawn (aka D()) Implementation from "Average Irregularity
-// Representation of a Roughened Surface for Ray Reflection" by T. S.
-// Trowbridge, and K. P. Reitz Follows the distribution function recommended in
-// the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
+// The following equation(s) model the distribution of microfacet normals
+// across the area being drawn (aka D()) Implementation from "Average
+// Irregularity Representation of a Roughened Surface for Ray Reflection" by T.
+// S. Trowbridge, and K. P. Reitz Follows the distribution function recommended
+// in the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
 float
 microfacetDistribution (PBRInfo pbrInputs)
 {
   float roughnessSq = pbrInputs.alphaRoughness * pbrInputs.alphaRoughness;
   float f =
-      (pbrInputs.NdotH * roughnessSq - pbrInputs.NdotH) * pbrInputs.NdotH + 1.0;
+      (pbrInputs.NdotH * roughnessSq - pbrInputs.NdotH) * pbrInputs.NdotH +
+      1.0;
   return roughnessSq / (M_PI * f * f);
 }
 
@@ -368,10 +370,10 @@ main ()
   float reflectance =
       max (max (specularColor.r, specularColor.g), specularColor.b);
 
-  // For typical incident reflectance range (between 4% to 100%) set the grazing
-  // reflectance to 100% for typical fresnel effect. For very low reflectance
-  // range on highly diffuse objects (below 4%), incrementally reduce grazing
-  // reflecance to 0%.
+  // For typical incident reflectance range (between 4% to 100%) set the
+  // grazing reflectance to 100% for typical fresnel effect. For very low
+  // reflectance range on highly diffuse objects (below 4%), incrementally
+  // reduce grazing reflecance to 0%.
   float reflectance90          = clamp (reflectance * 25.0, 0.0, 1.0);
   vec3  specularEnvironmentR0  = specularColor.rgb;
   vec3  specularEnvironmentR90 = vec3 (1.0, 1.0, 1.0) * reflectance90;
@@ -393,9 +395,9 @@ main ()
   float VdotH = clamp (dot (v, h), 0.0, 1.0);
 
   PBRInfo pbrInputs =
-      PBRInfo (NdotL, NdotV, NdotH, LdotH, VdotH, perceptualRoughness, metallic,
-               specularEnvironmentR0, specularEnvironmentR90, alphaRoughness,
-               diffuseColor, specularColor);
+      PBRInfo (NdotL, NdotV, NdotH, LdotH, VdotH, perceptualRoughness,
+               metallic, specularEnvironmentR0, specularEnvironmentR90,
+               alphaRoughness, diffuseColor, specularColor);
 
   // Calculate the shading terms for the microfacet specular shading model
   vec3  F = specularReflection (pbrInputs);

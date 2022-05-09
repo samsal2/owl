@@ -26,7 +26,8 @@ struct owl_window {
 };
 
 owl_public enum owl_code
-owl_window_init (struct owl_window *w, struct owl_window_init_info const *info);
+owl_window_init (struct owl_window                 *w,
+                 struct owl_window_init_info const *info);
 
 owl_public void
 owl_window_deinit (struct owl_window *w);

@@ -30,13 +30,13 @@ owl_private char const *const debug_validation_layers[] = {
 
 #if !defined(NDEBUG)
 
-#define OWL_VK_CHECK(e)                                                        \
-  do {                                                                         \
-    VkResult const result_ = e;                                                \
-    if (VK_SUCCESS != result_) {                                               \
-      OWL_DEBUG_LOG ("OWL_VK_CHECK(%s) result = %i\n", #e, result_);           \
-      owl_assert (0);                                                          \
-    }                                                                          \
+#define OWL_VK_CHECK(e)                                                       \
+  do {                                                                        \
+    VkResult const result_ = e;                                               \
+    if (VK_SUCCESS != result_) {                                              \
+      OWL_DEBUG_LOG ("OWL_VK_CHECK(%s) result = %i\n", #e, result_);          \
+      owl_assert (0);                                                         \
+    }                                                                         \
   } while (0)
 
 #else /* NDEBUG */
@@ -107,7 +107,8 @@ owl_renderer_instance_init (struct owl_renderer                 *r,
   instance_info.enabledLayerCount   = 0;
   instance_info.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
-  instance_info.enabledExtensionCount = (owl_u32)info->instance_extension_count;
+  instance_info.enabledExtensionCount =
+      (owl_u32)info->instance_extension_count;
   instance_info.ppEnabledExtensionNames = info->instance_extensions;
 
   vkres = vkCreateInstance (&instance_info, NULL, &r->instance);
@@ -269,16 +270,16 @@ owl_renderer_query_families (struct owl_renderer const *r,
   VkResult                 vkres = VK_SUCCESS;
   VkQueueFamilyProperties *properties;
 
-  vkGetPhysicalDeviceQueueFamilyProperties (r->physical_device, &property_count,
-                                            NULL);
+  vkGetPhysicalDeviceQueueFamilyProperties (r->physical_device,
+                                            &property_count, NULL);
 
   if (!(properties = owl_malloc (property_count * sizeof (*properties)))) {
     found = 0;
     goto out;
   }
 
-  vkGetPhysicalDeviceQueueFamilyProperties (r->physical_device, &property_count,
-                                            properties);
+  vkGetPhysicalDeviceQueueFamilyProperties (r->physical_device,
+                                            &property_count, properties);
 
   *graphics = OWL_QUEUE_FAMILY_INDEX_NONE;
   *present  = OWL_QUEUE_FAMILY_INDEX_NONE;
@@ -422,8 +423,8 @@ owl_renderer_physical_device_select (struct owl_renderer *r)
       goto out;
     }
 
-    vkres = vkEnumerateDeviceExtensionProperties (r->physical_device, NULL,
-                                                  &extension_count, extensions);
+    vkres = vkEnumerateDeviceExtensionProperties (
+        r->physical_device, NULL, &extension_count, extensions);
 
     if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code (vkres))) {
       owl_free (extensions);
@@ -596,7 +597,8 @@ owl_renderer_device_init (struct owl_renderer *r)
     goto out;
   }
 
-  vkGetDeviceQueue (r->device, r->graphics_queue_family, 0, &r->graphics_queue);
+  vkGetDeviceQueue (r->device, r->graphics_queue_family, 0,
+                    &r->graphics_queue);
 
   vkGetDeviceQueue (r->device, r->present_queue_family, 0, &r->present_queue);
 
@@ -705,8 +707,8 @@ owl_renderer_swapchain_init (struct owl_renderer                 *r,
     goto out;
   }
 
-  vkres = vkGetPhysicalDeviceSurfaceCapabilitiesKHR (r->physical_device,
-                                                     r->surface, &capabilities);
+  vkres = vkGetPhysicalDeviceSurfaceCapabilitiesKHR (
+      r->physical_device, r->surface, &capabilities);
 
   if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code (vkres))) {
     goto out;
@@ -798,17 +800,17 @@ owl_renderer_swapchain_image_views_init (struct owl_renderer *r)
   for (i = 0; i < (owl_i32)r->swapchain_image_count; ++i) {
     VkImageViewCreateInfo info;
 
-    info.sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    info.pNext                       = NULL;
-    info.flags                       = 0;
-    info.image                       = r->swapchain_images[i];
-    info.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
-    info.format                      = r->surface_format.format;
-    info.components.r                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.components.g                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.components.b                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.components.a                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    info.sType        = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    info.pNext        = NULL;
+    info.flags        = 0;
+    info.image        = r->swapchain_images[i];
+    info.viewType     = VK_IMAGE_VIEW_TYPE_2D;
+    info.format       = r->surface_format.format;
+    info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
     info.subresourceRange.baseMipLevel   = 0;
     info.subresourceRange.levelCount     = 1;
     info.subresourceRange.baseArrayLayer = 0;
@@ -972,7 +974,7 @@ owl_renderer_main_render_pass_init (struct owl_renderer *r)
   color_reference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
   depth_reference.attachment = 1;
-  depth_reference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  depth_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
   resolve_reference.attachment = 2;
   resolve_reference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -997,7 +999,8 @@ owl_renderer_main_render_pass_init (struct owl_renderer *r)
   attachments[1].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
   attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-  attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  attachments[1].finalLayout =
+      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
   /* color resolve */
   attachments[2].flags          = 0;
@@ -1121,17 +1124,17 @@ owl_renderer_attachments_init (struct owl_renderer *r)
   {
     VkImageViewCreateInfo info;
 
-    info.sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    info.pNext                       = NULL;
-    info.flags                       = 0;
-    info.image                       = r->color_image;
-    info.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
-    info.format                      = r->surface_format.format;
-    info.components.r                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.components.g                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.components.b                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.components.a                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    info.sType        = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    info.pNext        = NULL;
+    info.flags        = 0;
+    info.image        = r->color_image;
+    info.viewType     = VK_IMAGE_VIEW_TYPE_2D;
+    info.format       = r->surface_format.format;
+    info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
     info.subresourceRange.baseMipLevel   = 0;
     info.subresourceRange.levelCount     = 1;
     info.subresourceRange.baseArrayLayer = 0;
@@ -1185,7 +1188,8 @@ owl_renderer_attachments_init (struct owl_renderer *r)
     info.memoryTypeIndex = owl_renderer_find_memory_type (
         r, &requirements, OWL_RENDERER_MEMORY_VISIBILITY_GPU);
 
-    vkres = vkAllocateMemory (r->device, &info, NULL, &r->depth_stencil_memory);
+    vkres =
+        vkAllocateMemory (r->device, &info, NULL, &r->depth_stencil_memory);
 
     if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code (vkres))) {
       goto out_err_depth_stencil_image_deinit;
@@ -1202,17 +1206,17 @@ owl_renderer_attachments_init (struct owl_renderer *r)
   {
     VkImageViewCreateInfo info;
 
-    info.sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    info.pNext                       = NULL;
-    info.flags                       = 0;
-    info.image                       = r->depth_stencil_image;
-    info.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
-    info.format                      = r->depth_stencil_format;
-    info.components.r                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.components.g                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.components.b                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.components.a                = VK_COMPONENT_SWIZZLE_IDENTITY;
-    info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    info.sType        = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    info.pNext        = NULL;
+    info.flags        = 0;
+    info.image        = r->depth_stencil_image;
+    info.viewType     = VK_IMAGE_VIEW_TYPE_2D;
+    info.format       = r->depth_stencil_format;
+    info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT;
     info.subresourceRange.baseMipLevel   = 0;
     info.subresourceRange.levelCount     = 1;
     info.subresourceRange.baseArrayLayer = 0;
@@ -1492,11 +1496,11 @@ owl_renderer_pipeline_layouts_init (struct owl_renderer *r)
     sets[0] = r->vertex_ubo_set_layout;
     sets[1] = r->image_set_layout;
 
-    info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    info.pNext                  = NULL;
-    info.flags                  = 0;
-    info.setLayoutCount         = owl_array_size (sets);
-    info.pSetLayouts            = sets;
+    info.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    info.pNext          = NULL;
+    info.flags          = 0;
+    info.setLayoutCount = owl_array_size (sets);
+    info.pSetLayouts    = sets;
     info.pushConstantRangeCount = 0;
     info.pPushConstantRanges    = NULL;
 
@@ -1515,7 +1519,7 @@ owl_renderer_pipeline_layouts_init (struct owl_renderer *r)
 
     push_constant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     push_constant.offset     = 0;
-    push_constant.size       = sizeof (struct owl_model_material_push_constant);
+    push_constant.size = sizeof (struct owl_model_material_push_constant);
 
     sets[0] = r->shared_ubo_set_layout;
     sets[1] = r->image_set_layout;
@@ -1524,11 +1528,11 @@ owl_renderer_pipeline_layouts_init (struct owl_renderer *r)
     sets[4] = r->vertex_ssbo_set_layout;
     sets[5] = r->fragment_ubo_set_layout;
 
-    info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    info.pNext                  = NULL;
-    info.flags                  = 0;
-    info.setLayoutCount         = owl_array_size (sets);
-    info.pSetLayouts            = sets;
+    info.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    info.pNext          = NULL;
+    info.flags          = 0;
+    info.setLayoutCount = owl_array_size (sets);
+    info.pSetLayouts    = sets;
     info.pushConstantRangeCount = 1;
     info.pPushConstantRanges    = &push_constant;
 
@@ -1618,8 +1622,8 @@ owl_renderer_shaders_init (struct owl_renderer *r)
     info.codeSize = sizeof (spv);
     info.pCode    = spv;
 
-    vkres =
-        vkCreateShaderModule (r->device, &info, NULL, &r->font_fragment_shader);
+    vkres = vkCreateShaderModule (r->device, &info, NULL,
+                                  &r->font_fragment_shader);
 
     if (OWL_SUCCESS != (code = owl_vk_result_as_owl_code (vkres))) {
       goto out_err_basic_fragment_shader_deinit;
@@ -2927,9 +2931,10 @@ owl_renderer_frame_heap_offset_clear (struct owl_renderer *r)
 }
 
 owl_public void *
-owl_renderer_frame_heap_allocate (struct owl_renderer                      *r,
-                                  owl_u64                                   sz,
-                                  struct owl_renderer_frame_heap_reference *ref)
+owl_renderer_frame_heap_allocate (
+    struct owl_renderer                      *r,
+    owl_u64                                   sz,
+    struct owl_renderer_frame_heap_reference *ref)
 {
   owl_u64 offset;
 
@@ -3168,10 +3173,10 @@ owl_renderer_swapchain_acquire_next_image (struct owl_renderer *r)
   VkResult      vkres = VK_SUCCESS;
   enum owl_code code  = OWL_SUCCESS;
 
-  vkres =
-      vkAcquireNextImageKHR (r->device, r->swapchain, OWL_ACQUIRE_IMAGE_TIMEOUT,
-                             r->active_image_available_semaphore,
-                             VK_NULL_HANDLE, &r->active_swapchain_image_index);
+  vkres = vkAcquireNextImageKHR (
+      r->device, r->swapchain, OWL_ACQUIRE_IMAGE_TIMEOUT,
+      r->active_image_available_semaphore, VK_NULL_HANDLE,
+      &r->active_swapchain_image_index);
 
   if (VK_ERROR_OUT_OF_DATE_KHR == vkres) {
     code = OWL_ERROR_OUTDATED_SWAPCHAIN;
@@ -3213,7 +3218,8 @@ owl_renderer_begin_recording (struct owl_renderer *r)
     info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     info.pInheritanceInfo = NULL;
 
-    OWL_VK_CHECK (vkBeginCommandBuffer (r->active_frame_command_buffer, &info));
+    OWL_VK_CHECK (
+        vkBeginCommandBuffer (r->active_frame_command_buffer, &info));
   }
 
   {
@@ -3801,9 +3807,9 @@ owl_renderer_image_init (struct owl_renderer                       *r,
     image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
     image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    image_view_info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-    image_view_info.subresourceRange.baseMipLevel   = 0;
-    image_view_info.subresourceRange.levelCount     = state.mips;
+    image_view_info.subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
+    image_view_info.subresourceRange.baseMipLevel = 0;
+    image_view_info.subresourceRange.levelCount   = state.mips;
     image_view_info.subresourceRange.baseArrayLayer = 0;
     image_view_info.subresourceRange.layerCount     = 1;
 
@@ -3839,7 +3845,8 @@ owl_renderer_image_init (struct owl_renderer                       *r,
     goto out_err_set_deinit;
   }
 
-  if (OWL_SUCCESS != (code = owl_renderer_immidiate_command_buffer_begin (r))) {
+  if (OWL_SUCCESS !=
+      (code = owl_renderer_immidiate_command_buffer_begin (r))) {
     goto out_err_immidiate_command_buffer_deinit;
   }
 
@@ -3868,7 +3875,8 @@ owl_renderer_image_init (struct owl_renderer                       *r,
     copy.imageExtent.height              = state.height;
     copy.imageExtent.depth               = 1;
 
-    vkCmdCopyBufferToImage (r->immidiate_command_buffer, state.reference.buffer,
+    vkCmdCopyBufferToImage (r->immidiate_command_buffer,
+                            state.reference.buffer,
                             r->image_pool_images[*imgd],
                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
   }
@@ -3930,14 +3938,14 @@ owl_renderer_image_init (struct owl_renderer                       *r,
           owl_as_vk_sampler_addr_mode (info->sampler_wrap_v);
       sampler_info.addressModeW =
           owl_as_vk_sampler_addr_mode (info->sampler_wrap_w);
-      sampler_info.mipLodBias              = 0.0F;
-      sampler_info.anisotropyEnable        = VK_TRUE;
-      sampler_info.maxAnisotropy           = 16.0F;
-      sampler_info.compareEnable           = VK_FALSE;
-      sampler_info.compareOp               = VK_COMPARE_OP_ALWAYS;
-      sampler_info.minLod                  = 0.0F;
-      sampler_info.maxLod                  = state.mips; /* VK_LOD_CLAMP_NONE */
-      sampler_info.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+      sampler_info.mipLodBias       = 0.0F;
+      sampler_info.anisotropyEnable = VK_TRUE;
+      sampler_info.maxAnisotropy    = 16.0F;
+      sampler_info.compareEnable    = VK_FALSE;
+      sampler_info.compareOp        = VK_COMPARE_OP_ALWAYS;
+      sampler_info.minLod           = 0.0F;
+      sampler_info.maxLod           = state.mips; /* VK_LOD_CLAMP_NONE */
+      sampler_info.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
       sampler_info.unnormalizedCoordinates = VK_FALSE;
     }
 
@@ -4114,7 +4122,7 @@ out:
 #define OWL_RENDERER_FONT_ATLAS_HEIGHT 1024
 #define OWL_RENDERER_FONT_FIRST_CHAR   ((owl_i32)(' '))
 #define OWL_RENDERER_FONT_CHAR_COUNT   ((owl_i32)('~' - ' '))
-#define OWL_RENDERER_FONT_ATLAS_SIZE                                           \
+#define OWL_RENDERER_FONT_ATLAS_SIZE                                          \
   (OWL_RENDERER_FONT_ATLAS_WIDTH * OWL_RENDERER_FONT_ATLAS_HEIGHT)
 
 owl_static_assert (
@@ -4137,7 +4145,8 @@ owl_renderer_font_init (struct owl_renderer                      *r,
     goto out;
   }
 
-  if (OWL_SUCCESS != (code = owl_renderer_font_load_file (info->path, &file))) {
+  if (OWL_SUCCESS !=
+      (code = owl_renderer_font_load_file (info->path, &file))) {
     goto out_err_font_slot_unselect;
   }
 
@@ -4419,7 +4428,8 @@ owl_renderer_init (struct owl_renderer                 *r,
     font_info.path = "../../assets/Inconsolata-Regular.ttf";
     font_info.size = 64.0F;
 
-    if (OWL_SUCCESS != (code = owl_renderer_font_init (r, &font_info, &font))) {
+    if (OWL_SUCCESS !=
+        (code = owl_renderer_font_init (r, &font_info, &font))) {
       goto out_err_font_pool_deinit;
     }
 
@@ -4576,7 +4586,8 @@ owl_renderer_quad_draw (struct owl_renderer            *r,
   vertices[3].uv[0]       = quad->uv1[0];
   vertices[3].uv[1]       = quad->uv1[1];
 
-  code = owl_renderer_frame_heap_submit (r, sizeof (vertices), vertices, &vref);
+  code =
+      owl_renderer_frame_heap_submit (r, sizeof (vertices), vertices, &vref);
 
   if (OWL_SUCCESS != code) {
     goto out;
@@ -4612,8 +4623,8 @@ owl_renderer_quad_draw (struct owl_renderer            *r,
                            r->active_pipeline_layout, 0, owl_array_size (sets),
                            sets, 1, &uref.offset32);
 
-  vkCmdDrawIndexed (r->active_frame_command_buffer, owl_array_size (indices), 1,
-                    0, 0, 0);
+  vkCmdDrawIndexed (r->active_frame_command_buffer, owl_array_size (indices),
+                    1, 0, 0, 0);
 
 out:
   return code;
@@ -4791,8 +4802,9 @@ owl_renderer_model_node_draw (struct owl_renderer      *r,
     push_constant.alpha_mask_cutoff = material->alpha_cutoff;
 
     vkCmdPushConstants (r->active_frame_command_buffer,
-                        r->active_pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT,
-                        0, sizeof (push_constant), &push_constant);
+                        r->active_pipeline_layout,
+                        VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                        sizeof (push_constant), &push_constant);
 
     vkCmdDrawIndexed (r->active_frame_command_buffer, primitive->count, 1,
                       primitive->first, 0, 0);

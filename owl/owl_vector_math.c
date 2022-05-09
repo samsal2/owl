@@ -33,14 +33,14 @@ owl_m4v4_mul (owl_m4 const m, owl_v4 const v, owl_v4 out)
   owl_v4 tmp;
   owl_v4_copy (v, tmp);
 
-  out[0] =
-      m[0][0] * tmp[0] + m[1][0] * tmp[1] + m[2][0] * tmp[2] + m[3][0] * tmp[3];
-  out[1] =
-      m[0][1] * tmp[0] + m[1][1] * tmp[1] + m[2][1] * tmp[2] + m[3][1] * tmp[3];
-  out[2] =
-      m[0][2] * tmp[0] + m[1][2] * tmp[1] + m[2][2] * tmp[2] + m[3][2] * tmp[3];
-  out[3] =
-      m[0][3] * tmp[0] + m[1][3] * tmp[1] + m[2][3] * tmp[2] + m[3][3] * tmp[3];
+  out[0] = m[0][0] * tmp[0] + m[1][0] * tmp[1] + m[2][0] * tmp[2] +
+           m[3][0] * tmp[3];
+  out[1] = m[0][1] * tmp[0] + m[1][1] * tmp[1] + m[2][1] * tmp[2] +
+           m[3][1] * tmp[3];
+  out[2] = m[0][2] * tmp[0] + m[1][2] * tmp[1] + m[2][2] * tmp[2] +
+           m[3][2] * tmp[3];
+  out[3] = m[0][3] * tmp[0] + m[1][3] * tmp[1] + m[2][3] * tmp[2] +
+           m[3][3] * tmp[3];
 }
 
 owl_public float
