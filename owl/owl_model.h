@@ -240,14 +240,14 @@ struct owl_model {
   struct owl_model_anim anims[OWL_MODEL_MAX_ANIM_COUNT];
 };
 
-enum owl_code
+owl_public enum owl_code
 owl_model_init (struct owl_model *model, struct owl_renderer *r,
                 char const *path);
 
-void
+owl_public void
 owl_model_deinit (struct owl_model *model, struct owl_renderer *r);
 
-enum owl_code
+owl_public enum owl_code
 owl_model_anim_update (struct owl_model *model,
                        owl_model_anim_descriptor animd, owl_i32 frame,
                        float dt);

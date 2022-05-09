@@ -615,8 +615,9 @@ owl_model_buffers_load (struct owl_renderer *r,
     goto out;
   }
 
-  if (OWL_SUCCESS !=
-      (code = owl_renderer_immidiate_command_buffer_submit (r))) {
+  code = owl_renderer_immidiate_command_buffer_submit (r);
+
+  if (OWL_SUCCESS != code) {
     goto out;
   }
 
@@ -1016,7 +1017,7 @@ out:
   return code;
 }
 
-enum owl_code
+owl_public enum owl_code
 owl_model_init (struct owl_model *model, struct owl_renderer *r,
                 char const *path) {
   struct cgltf_options options;
@@ -1191,15 +1192,12 @@ out:
 
 #define OWL_MODEL_ANIM_INTERPOLATION_TYPE_LINEAR                              \
   cgltf_interpolation_type_linear
-
 #define OWL_MODEL_ANIM_PATH_TYPE_TRANSLATION                                  \
   cgltf_animation_path_type_translation
-
 #define OWL_MODEL_ANIM_PATH_TYPE_ROTATION cgltf_animation_path_type_rotation
+#define OWL_MODEL_ANIM_PATH_TYPE_SCALE    cgltf_animation_path_type_scale
 
-#define OWL_MODEL_ANIM_PATH_TYPE_SCALE cgltf_animation_path_type_scale
-
-enum owl_code
+owl_public enum owl_code
 owl_model_anim_update (struct owl_model *model,
                        owl_model_anim_descriptor animd, owl_i32 frame,
                        float dt) {
