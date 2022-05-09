@@ -1,8 +1,7 @@
 #ifndef OWL_RENDERER_H_
 #define OWL_RENDERER_H_
 
-#include "owl_internal.h"
-#include "owl_types.h"
+#include "owl_definitions.h"
 
 #include <vulkan/vulkan.h>
 
@@ -12,22 +11,9 @@ struct owl_window;
 struct owl_renderer;
 struct owl_model;
 
-typedef owl_i32 owl_renderer_image_descriptor;
-typedef owl_i32 owl_renderer_font_descriptor;
-
 typedef enum owl_code (*owl_vk_create_surface_fn) (struct owl_renderer const *r,
                                                    void const   *data,
                                                    VkSurfaceKHR *surface);
-
-#define OWL_RENDERER_MEMORY_TYPE_NONE          (owl_u32) - 1
-#define OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT 8
-#define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT     2
-#define OWL_RENDERER_MAX_GARBAGE_ITEM_COUNT    8
-#define OWL_RENDERER_MAX_DEVICE_OPTION_COUNT   8
-#define OWL_RENDERER_IMAGE_POOL_SLOT_COUNT     32
-#define OWL_RENDERER_FONT_POOL_SLOT_COUNT      8
-#define OWL_RENDERER_FONT_NONE                 -1
-#define OWL_RENDERER_FONT_CHAR_COUNT           ((owl_i32)('~' - ' '))
 
 enum owl_renderer_memory_visibility {
   OWL_RENDERER_MEMORY_VISIBILITY_CPU,

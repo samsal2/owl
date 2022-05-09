@@ -1,7 +1,7 @@
 #include "owl_window.h"
 
+#include "owl_internal.h"
 #include "owl_renderer.h"
-#include "owl_types.h"
 #include "owl_vector_math.h"
 
 /* clang-format off */

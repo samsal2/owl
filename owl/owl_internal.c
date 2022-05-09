@@ -1,5 +1,6 @@
 #include "owl_internal.h"
-#include "owl_types.h"
+
+#include "owl_definitions.h"
 
 #include <stdarg.h>
 #include <stdio.h>

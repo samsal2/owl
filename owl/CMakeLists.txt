@@ -1,5 +1,6 @@
 target_sources(${PROJECT_NAME} PRIVATE
   owl.h
+  owl_definitions.h
   owl_window.c
   owl_window.h
   owl_internal.c
@@ -8,7 +9,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_model.h
   owl_renderer.c
   owl_renderer.h
-  owl_types.h
   owl_io.c
   owl_io.h
   owl_ui.c

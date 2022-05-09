@@ -1,20 +1,9 @@
 #ifndef OWL_INTERNAL_H_
 #define OWL_INTERNAL_H_
 
-#if defined(__cplusplus)
-#define OWL_BEGIN_DECLS extern "C"
-#define OWL_END_DECLS   }
-#else
-#define OWL_BEGIN_DECLS
-#define OWL_END_DECLS
-#endif
+#include "owl_definitions.h"
 
 OWL_BEGIN_DECLS
-
-#define owl_public
-#define owl_global        static
-#define owl_private       static
-#define owl_local_persist static
 
 #include <assert.h>
 #define owl_assert(e) assert (e)

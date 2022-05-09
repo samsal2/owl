@@ -1,8 +1,9 @@
 #ifndef OWL_MODEL_H_
 #define OWL_MODEL_H_
 
-#include "owl_renderer.h"
-#include "owl_types.h"
+#include "owl_definitions.h"
+
+#include <vulkan/vulkan.h>
 
 OWL_BEGIN_DECLS
 

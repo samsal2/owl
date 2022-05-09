@@ -1,8 +1,8 @@
 #include "owl_renderer.h"
 
+#include "owl_internal.h"
 #include "owl_io.h"
 #include "owl_model.h"
-#include "owl_types.h"
 #include "owl_vector_math.h"
 #include "owl_window.h"
 #include "stb_image.h"
@@ -418,7 +418,7 @@ owl_renderer_physical_device_select (struct owl_renderer *r)
     }
 
     if (!(extensions = owl_malloc (extension_count * sizeof (*extensions)))) {
-      code = OWL_ERROR_BAD_ALLOC;
+      code = OWL_ERROR_BAD_ALLOCATION;
       goto out;
     }
 
@@ -465,7 +465,7 @@ owl_renderer_surface_format_ensure (struct owl_renderer const *r)
   }
 
   if (!(formats = owl_malloc (format_count * sizeof (*formats)))) {
-    code = OWL_ERROR_BAD_ALLOC;
+    code = OWL_ERROR_BAD_ALLOCATION;
     goto out;
   }
 
@@ -2970,7 +2970,7 @@ owl_renderer_frame_heap_submit (struct owl_renderer                      *r,
   enum owl_code code = OWL_SUCCESS;
 
   if (!(data = owl_renderer_frame_heap_allocate (r, sz, ref))) {
-    code = OWL_ERROR_BAD_ALLOC;
+    code = OWL_ERROR_BAD_ALLOCATION;
     goto out;
   }
 
@@ -4063,7 +4063,7 @@ owl_renderer_font_load_file (char const *path, owl_byte **data)
   fseek (file, 0, SEEK_SET);
 
   if (!(*data = owl_malloc (sz))) {
-    code = OWL_ERROR_BAD_ALLOC;
+    code = OWL_ERROR_BAD_ALLOCATION;
     goto out_file_close;
   }
 
@@ -4144,7 +4144,7 @@ owl_renderer_font_init (struct owl_renderer                      *r,
   bitmap = owl_calloc (OWL_RENDERER_FONT_ATLAS_SIZE, sizeof (owl_byte));
 
   if (!bitmap) {
-    code = OWL_ERROR_BAD_ALLOC;
+    code = OWL_ERROR_BAD_ALLOCATION;
     goto out_err_font_file_unload;
   }
 

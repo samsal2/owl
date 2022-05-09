@@ -1,7 +1,7 @@
 #ifndef OWL_UI_H_
 #define OWL_UI_H_
 
-#include "owl_model.h"
+#include "owl_definitions.h"
 
 OWL_BEGIN_DECLS
 

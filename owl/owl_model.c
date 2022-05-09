@@ -3,7 +3,6 @@
 #include "cgltf.h"
 #include "owl_internal.h"
 #include "owl_renderer.h"
-#include "owl_types.h"
 #include "owl_vector_math.h"
 
 #include <float.h>
@@ -229,13 +228,13 @@ owl_model_load_state_init (struct owl_renderer         *r,
 
   sz = (owl_u64)state->vertex_capacity * sizeof (*state->vertices);
   if (!(state->vertices = owl_malloc (sz))) {
-    code = OWL_ERROR_BAD_ALLOC;
+    code = OWL_ERROR_BAD_ALLOCATION;
     goto out;
   }
 
   sz = (owl_u64)state->index_capacity * sizeof (owl_u32);
   if (!(state->indices = owl_malloc (sz))) {
-    code = OWL_ERROR_BAD_ALLOC;
+    code = OWL_ERROR_BAD_ALLOCATION;
     goto out_err_vertices_free;
   }
 

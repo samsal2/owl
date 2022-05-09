@@ -1,8 +1,7 @@
 #ifndef OWL_WINDOW_H_
 #define OWL_WINDOW_H_
 
-#include "owl_internal.h"
-#include "owl_types.h"
+#include "owl_definitions.h"
 
 OWL_BEGIN_DECLS
 
