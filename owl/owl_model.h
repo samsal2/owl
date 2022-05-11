@@ -1,38 +1,23 @@
-#ifndef OWL_MODEL_H_
-#define OWL_MODEL_H_
+#ifndef OWL_model_MODEL_H_
+#define OWL_model_MODEL_H_
 
 #include "owl_definitions.h"
+#include "owl_vk_image.h"
 
 #include <vulkan/vulkan.h>
 
 OWL_BEGIN_DECLS
 
-#define OWL_MODEL_MESH_NONE                     -1
-#define OWL_MODEL_ANIM_NONE                     -1
-#define OWL_MODEL_SKIN_NONE                     -1
-#define OWL_MODEL_NODE_PARENT_NONE              -1
-#define OWL_MODEL_TEXTURE_NONE                  -1
-#define OWL_MODEL_MAX_PRIMITIVE_COUNT           128
-#define OWL_MODEL_MESH_MAX_PRIMITIVE_COUNT      128
-#define OWL_MODEL_MAX_NAME_LENGTH               128
-#define OWL_MODEL_MAX_IMAGE_COUNT               16
-#define OWL_MODEL_MAX_NODE_ROOT_COUNT           128
-#define OWL_MODEL_MAX_NODE_COUNT                128
-#define OWL_MODEL_MAX_TEXTURE_COUNT             8
-#define OWL_MODEL_MAX_MATERIAL_COUNT            8
-#define OWL_MODEL_NODE_MAX_CHILDREN_COUNT       128
-#define OWL_MODEL_MAX_MESH_COUNT                128
-#define OWL_MODEL_SKIN_MAX_JOINT_COUNT          128
-#define OWL_MODEL_ANIM_SAMPLER_MAX_INPUT_COUNT  128
-#define OWL_MODEL_ANIM_SAMPLER_MAX_OUTPUT_COUNT 128
-#define OWL_MODEL_MAX_SKIN_COUNT                128
-#define OWL_MODEL_MAX_SAMPLER_COUNT             128
-#define OWL_MODEL_MAX_CHAN_COUNT                128
-#define OWL_MODEL_ANIM_MAX_SAMPLER_COUNT        128
-#define OWL_MODEL_ANIM_MAX_CHAN_COUNT           128
-#define OWL_MODEL_MAX_ANIM_COUNT                128
+#define OWL_MODEL_MESH_NONE        -1
+#define OWL_MODEL_ANIM_NONE        -1
+#define OWL_MODEL_SKIN_NONE        -1
+#define OWL_MODEL_NODE_PARENT_NONE -1
+#define OWL_MODEL_TEXTURE_NONE     -1
+#define OWL_MODEL_MAX_ARRAY_COUNT  128
+#define OWL_MODEL_MAX_NAME_LENGTH  128
+#define OWL_MODEL_MAX_JOINT_COUNT  128
 
-struct owl_renderer;
+struct owl_vk_renderer;
 
 typedef owl_i32 owl_model_node_id;
 typedef owl_i32 owl_model_mesh_id;
@@ -45,8 +30,6 @@ typedef owl_i32 owl_model_anim_sampler_id;
 typedef owl_i32 owl_model_anim_chan_id;
 typedef owl_i32 owl_model_anim_id;
 
-/* NOTE(samuel): thought I knew how the alignment worked for the push
- * constants, turns out I don't. Change it at your own risk*/
 struct owl_model_material_push_constant {
   owl_v4 base_color_factor;
   owl_v4 emissive_factor;
@@ -64,35 +47,26 @@ struct owl_model_material_push_constant {
   float alpha_mask_cutoff;
 };
 
-struct owl_model1_ubo {
+struct owl_model_ubo1 {
   owl_m4 projection;
   owl_m4 view;
   owl_m4 model;
   owl_v4 light;
 };
 
-struct owl_model2_ubo {
-  owl_v4 light_direction;
+struct owl_model_mesh {
+  owl_i32 primitive_count;
+  owl_model_primitive_id primitives[OWL_MODEL_MAX_ARRAY_COUNT];
 };
 
-struct owl_model_vertex {
-  owl_v3 position;
-  owl_v3 normal;
-  owl_v2 uv0;
-  owl_v2 uv1;
-  owl_v4 joints0;
-  owl_v4 weights0;
+struct owl_model_ubo2 {
+  owl_v4 light_direction;
 };
 
 struct owl_model_primitive {
   owl_u32 first;
   owl_u32 count;
   owl_model_material_id material;
-};
-
-struct owl_model_mesh {
-  owl_i32 primitive_count;
-  owl_model_primitive_id primitives[OWL_MODEL_MESH_MAX_PRIMITIVE_COUNT];
 };
 
 struct owl_model_node {
@@ -108,25 +82,25 @@ struct owl_model_node {
   owl_model_skin_id skin;
 
   owl_i32 child_count;
-  owl_model_node_id children[OWL_MODEL_NODE_MAX_CHILDREN_COUNT];
+  owl_model_node_id children[OWL_MODEL_MAX_ARRAY_COUNT];
 };
 
 struct owl_model_image {
-  owl_renderer_image_id renderer_image;
+  struct owl_vk_image image;
 };
 
 struct owl_model_texture {
-  owl_model_image_id model_image;
+  owl_model_image_id image;
 };
 
-enum owl_alpha_mode {
-  OWL_ALPHA_MODE_OPAQUE,
-  OWL_ALPHA_MODE_MASK,
-  OWL_ALPHA_MODE_BLEND
+enum owl_model_alpha_mode {
+  OWL_model_ALPHA_MODE_OPAQUE,
+  OWL_model_ALPHA_MODE_MASK,
+  OWL_model_ALPHA_MODE_BLEND
 };
 
 struct owl_model_material {
-  enum owl_alpha_mode alpha_mode;
+  enum owl_model_alpha_mode alpha_mode;
   float alpha_cutoff;
   owl_i32 double_sided;
   owl_model_texture_id base_color_texture;
@@ -139,7 +113,7 @@ struct owl_model_material {
 
 struct owl_model_skin_ssbo {
   owl_m4 matrix;
-  owl_m4 joint_matices[OWL_MODEL_SKIN_MAX_JOINT_COUNT];
+  owl_m4 joint_matices[OWL_MODEL_MAX_JOINT_COUNT];
   owl_i32 joint_matrice_count;
 };
 
@@ -147,13 +121,13 @@ struct owl_model_skin {
   char name[OWL_MODEL_MAX_NAME_LENGTH];
   owl_model_node_id skeleton_root;
 
-  VkBuffer ssbo_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
-  VkDescriptorSet ssbo_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkBuffer ssbo_buffers[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkDescriptorSet ssbo_sets[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT];
 
-  owl_m4 inverse_bind_matrices[OWL_MODEL_SKIN_MAX_JOINT_COUNT];
+  owl_m4 inverse_bind_matrices[OWL_MODEL_MAX_JOINT_COUNT];
 
   owl_i32 joint_count;
-  owl_model_node_id joints[OWL_MODEL_SKIN_MAX_JOINT_COUNT];
+  owl_model_node_id joints[OWL_MODEL_MAX_JOINT_COUNT];
 
   VkDeviceMemory ssbo_memory;
 
@@ -162,17 +136,17 @@ struct owl_model_skin {
   owl_u64 ssbo_buffer_aligned_size;
 
   /* NOTE(samuel): directly mapped skin joint data */
-  struct owl_model_skin_ssbo *ssbo_datas[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  struct owl_model_skin_ssbo *ssbos[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT];
 };
 
 struct owl_model_anim_sampler {
   owl_i32 interpolation;
 
   owl_i32 input_count;
-  float inputs[OWL_MODEL_ANIM_SAMPLER_MAX_INPUT_COUNT];
+  float inputs[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 output_count;
-  owl_v4 outputs[OWL_MODEL_ANIM_SAMPLER_MAX_OUTPUT_COUNT];
+  owl_v4 outputs[OWL_MODEL_MAX_ARRAY_COUNT];
 };
 
 struct owl_model_anim_chan {
@@ -190,65 +164,65 @@ struct owl_model_anim {
   float end;
 
   owl_i32 sampler_count;
-  owl_model_anim_sampler_id samplers[OWL_MODEL_ANIM_MAX_SAMPLER_COUNT];
+  owl_model_anim_sampler_id samplers[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 chan_count;
-  owl_model_anim_chan_id chans[OWL_MODEL_ANIM_MAX_CHAN_COUNT];
+  owl_model_anim_chan_id chans[OWL_MODEL_MAX_ARRAY_COUNT];
 };
 
 struct owl_model {
-  VkBuffer vertices_buffer;
-  VkDeviceMemory vertices_memory;
+  VkBuffer vk_vertex_buffer;
+  VkDeviceMemory vk_vertex_memory;
 
-  VkBuffer indices_buffer;
-  VkDeviceMemory indices_memory;
+  VkBuffer vk_index_buffer;
+  VkDeviceMemory vk_index_memory;
 
   owl_model_anim_id active_anim;
 
   owl_i32 root_count;
-  owl_model_node_id roots[OWL_MODEL_MAX_NODE_ROOT_COUNT];
+  owl_model_node_id roots[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 node_count;
-  struct owl_model_node nodes[OWL_MODEL_MAX_NODE_COUNT];
+  struct owl_model_node nodes[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 image_count;
-  struct owl_model_image images[OWL_MODEL_MAX_IMAGE_COUNT];
+  struct owl_model_image images[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 texture_count;
-  struct owl_model_texture textures[OWL_MODEL_MAX_TEXTURE_COUNT];
+  struct owl_model_texture textures[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 material_count;
-  struct owl_model_material materials[OWL_MODEL_MAX_MATERIAL_COUNT];
+  struct owl_model_material materials[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 mesh_count;
-  struct owl_model_mesh meshes[OWL_MODEL_MAX_MESH_COUNT];
+  struct owl_model_mesh meshes[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 primitive_count;
-  struct owl_model_primitive primitives[OWL_MODEL_MAX_PRIMITIVE_COUNT];
+  struct owl_model_primitive primitives[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 skin_count;
-  struct owl_model_skin skins[OWL_MODEL_MAX_SKIN_COUNT];
+  struct owl_model_skin skins[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 anim_sampler_count;
-  struct owl_model_anim_sampler anim_samplers[OWL_MODEL_MAX_SAMPLER_COUNT];
+  struct owl_model_anim_sampler anim_samplers[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 anim_chan_count;
-  struct owl_model_anim_chan anim_chans[OWL_MODEL_MAX_CHAN_COUNT];
+  struct owl_model_anim_chan anim_chans[OWL_MODEL_MAX_ARRAY_COUNT];
 
   owl_i32 anim_count;
-  struct owl_model_anim anims[OWL_MODEL_MAX_ANIM_COUNT];
+  struct owl_model_anim anims[OWL_MODEL_MAX_ARRAY_COUNT];
 };
 
 owl_public enum owl_code
-owl_model_init (struct owl_model *model, struct owl_renderer *r,
+owl_model_init (struct owl_model *model, struct owl_vk_renderer *vkr,
                 char const *path);
 
 owl_public void
-owl_model_deinit (struct owl_model *model, struct owl_renderer *r);
+owl_model_deinit (struct owl_model *model, struct owl_vk_renderer *vkr);
 
 owl_public enum owl_code
 owl_model_anim_update (struct owl_model *model, owl_i32 frame, float dt,
-                       owl_model_anim_id animd);
+                       owl_model_anim_id id);
 
 OWL_END_DECLS
 

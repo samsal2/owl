@@ -3,7 +3,11 @@
 
 #include "owl_definitions.h"
 
-struct owl_packed_glyph {
+OWL_BEGIN_DECLS
+
+struct owl_vk_renderer;
+
+struct owl_packed_char {
   owl_u16 x0;
   owl_u16 y0;
   owl_u16 x1;
@@ -19,5 +23,7 @@ struct owl_glyph {
   owl_v3 positions[4];
   owl_v2 uvs[4];
 };
+
+OWL_END_DECLS
 
 #endif

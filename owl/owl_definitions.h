@@ -64,15 +64,7 @@ enum owl_code {
 typedef owl_i32 owl_renderer_image_id;
 typedef owl_i32 owl_renderer_font_id;
 
-#define OWL_RENDERER_MEMORY_TYPE_NONE          (owl_u32) - 1
-#define OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT 8
-#define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT     2
-#define OWL_RENDERER_MAX_GARBAGE_ITEM_COUNT    8
-#define OWL_RENDERER_MAX_DEVICE_OPTION_COUNT   8
-#define OWL_RENDERER_IMAGE_POOL_SLOT_COUNT     32
-#define OWL_RENDERER_FONT_POOL_SLOT_COUNT      8
-#define OWL_RENDERER_FONT_NONE                 -1
-#define OWL_RENDERER_FONT_CHAR_COUNT           ((owl_i32)('~' - ' '))
+#define OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT 2
 
 OWL_END_DECLS
 

@@ -117,7 +117,7 @@ owl_window_init (struct owl_window *w, owl_i32 width, owl_i32 height,
 
   if (!w->opaque) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_err_glfw_deinit;
+    goto out_error_glfw_deinit;
   }
 #if 0
   glfwSetWindowSizeCallback(w->data, owl_window_window_size_callback);
@@ -131,7 +131,7 @@ owl_window_init (struct owl_window *w, owl_i32 width, owl_i32 height,
 
   goto out;
 
-out_err_glfw_deinit:
+out_error_glfw_deinit:
   glfwTerminate ();
 
 out:
@@ -190,11 +190,11 @@ owl_window_get_instance_extensions (owl_u32 *count) {
 owl_public enum owl_code
 owl_window_create_vk_surface (struct owl_window const *w, VkInstance instance,
                               VkSurfaceKHR *surface) {
-  VkResult vkres;
+  VkResult vk_result;
 
-  vkres = glfwCreateWindowSurface (instance, w->opaque, NULL, surface);
+  vk_result = glfwCreateWindowSurface (instance, w->opaque, NULL, surface);
 
-  return VK_SUCCESS == vkres ? OWL_SUCCESS : OWL_ERROR_UNKNOWN;
+  return VK_SUCCESS == vk_result ? OWL_SUCCESS : OWL_ERROR_UNKNOWN;
 }
 
 owl_public void
