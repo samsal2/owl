@@ -82,8 +82,8 @@ owl_m4_make_rotate (float angle, owl_v3 const axis, owl_m4 out)
   owl_v3 v;
   owl_v3 vs;
 
-  float const cangle = owl_cosf (angle);
-  float const sangle = owl_sinf (angle);
+  float const cangle  = owl_cosf (angle);
+  float const sangle  = owl_sinf (angle);
   float const icangle = 1.0F - cangle;
 
   owl_v3_normalize (axis, naxis);
@@ -131,12 +131,17 @@ owl_m4_translate (owl_v3 const v, owl_m4 in_out)
 }
 
 owl_public void
-owl_m4_ortho (float left, float right, float bottom, float top, float near,
-              float far, owl_m4 out)
+owl_m4_ortho (float  left,
+              float  right,
+              float  bottom,
+              float  top,
+              float  near,
+              float  far,
+              owl_m4 out)
 {
   float const right_left = 2.0F / (right - left);
-  float const tobottom = 2.0F / (top - bottom);
-  float const far_near = 1.0F / (far - near);
+  float const tobottom   = 2.0F / (top - bottom);
+  float const far_near   = 1.0F / (far - near);
 
   out[0][0] = 2.0F * right_left;
   out[0][1] = 0.0F;
@@ -162,7 +167,7 @@ owl_m4_ortho (float left, float right, float bottom, float top, float near,
 owl_public void
 owl_m4_perspective (float fov, float ratio, float near, float far, owl_m4 out)
 {
-  float const focal_length = 1.0F / tanf (fov * 0.5F);
+  float const focal_length      = 1.0F / tanf (fov * 0.5F);
   float const inv_diff_far_near = 1.0F / (far - near);
 
   out[0][0] = focal_length / ratio;
@@ -187,8 +192,10 @@ owl_m4_perspective (float fov, float ratio, float near, float far, owl_m4 out)
 }
 
 owl_public void
-owl_m4_look (owl_v3 const eye, owl_v3 const direction, owl_v3 const up,
-             owl_m4 out)
+owl_m4_look (owl_v3 const eye,
+             owl_v3 const direction,
+             owl_v3 const up,
+             owl_m4       out)
 {
   owl_v3 f;
   owl_v3 s;
@@ -221,8 +228,10 @@ owl_m4_look (owl_v3 const eye, owl_v3 const direction, owl_v3 const up,
 }
 
 owl_public void
-owl_m4_look_at (owl_v3 const eye, owl_v3 const center, owl_v3 const up,
-                owl_m4 out)
+owl_m4_look_at (owl_v3 const eye,
+                owl_v3 const center,
+                owl_v3 const up,
+                owl_m4       out)
 {
   owl_v3 direction;
   owl_v3_sub (eye, center, direction);
@@ -432,9 +441,9 @@ owl_v4_quat_slerp (owl_v4 const src, owl_v4 const dst, float t, owl_v4 out)
 {
   owl_v4 q1;
   owl_v4 q2;
-  float ctheta;
-  float stheta;
-  float angle;
+  float  ctheta;
+  float  stheta;
+  float  angle;
 
   ctheta = owl_v4_dot (src, dst);
   owl_v4_copy (src, q1);

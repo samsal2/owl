@@ -19,7 +19,7 @@ void
 main ()
 {
   out_color = in_color;
-  out_uv = in_uv;
+  out_uv    = in_uv;
 
   gl_Position =
       ubo.projection * ubo.view * ubo.model * vec4 (in_position, 1.0);

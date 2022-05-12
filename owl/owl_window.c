@@ -102,8 +102,10 @@ owl_private void owl_window_keyboard_keys_callback(GLFWwindow *data,
 #endif
 
 enum owl_code
-owl_window_init (struct owl_window *w, owl_i32 width, owl_i32 height,
-                 char const *name)
+owl_window_init (struct owl_window *w,
+                 owl_i32            width,
+                 owl_i32            height,
+                 char const        *name)
 {
   enum owl_code code = OWL_SUCCESS;
 
@@ -153,7 +155,7 @@ owl_window_deinit (struct owl_window *w)
 owl_private char const *const *
 owl_window_get_debug_instance_extensions (owl_u32 *count)
 {
-  char const *const *extensions;
+  char const *const            *extensions;
   owl_local_persist char const *names[OWL_MAX_EXTENSIONS];
 
   extensions = glfwGetRequiredInstanceExtensions (count);
@@ -194,8 +196,9 @@ owl_window_get_instance_extensions (owl_u32 *count)
 }
 
 owl_public enum owl_code
-owl_window_create_vk_surface (struct owl_window const *w, VkInstance instance,
-                              VkSurfaceKHR *surface)
+owl_window_create_vk_surface (struct owl_window const *w,
+                              VkInstance               instance,
+                              VkSurfaceKHR            *surface)
 {
   VkResult vk_result;
 
@@ -207,27 +210,29 @@ owl_window_create_vk_surface (struct owl_window const *w, VkInstance instance,
 }
 
 owl_public void
-owl_window_get_framebuffer_size (struct owl_window const *w, owl_i32 *width,
-                                 owl_i32 *height)
+owl_window_get_framebuffer_size (struct owl_window const *w,
+                                 owl_i32                 *width,
+                                 owl_i32                 *height)
 {
   int iw;
   int ih;
 
   glfwGetFramebufferSize (w->opaque, &iw, &ih);
 
-  *width = (owl_i32)iw;
+  *width  = (owl_i32)iw;
   *height = (owl_i32)ih;
 }
 
 owl_public void
-owl_window_get_window_size (struct owl_window const *w, owl_i32 *width,
-                            owl_i32 *height)
+owl_window_get_window_size (struct owl_window const *w,
+                            owl_i32                 *width,
+                            owl_i32                 *height)
 {
   int iw;
   int ih;
 
   glfwGetWindowSize (w->opaque, &iw, &ih);
 
-  *width = (owl_i32)iw;
+  *width  = (owl_i32)iw;
   *height = (owl_i32)ih;
 }

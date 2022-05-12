@@ -15,11 +15,11 @@ struct owl_vk_im_command_buffer {
 
 owl_public enum owl_code
 owl_vk_im_command_buffer_begin (struct owl_vk_im_command_buffer *cmd,
-                                struct owl_vk_context const *ctx);
+                                struct owl_vk_context const     *ctx);
 
 owl_public enum owl_code
 owl_vk_im_command_buffer_end (struct owl_vk_im_command_buffer *cmd,
-                              struct owl_vk_context const *ctx);
+                              struct owl_vk_context const     *ctx);
 
 OWL_END_DECLS
 

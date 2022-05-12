@@ -8,7 +8,7 @@
 owl_public void
 owl_ui_renderer_stats_draw (struct owl_vk_renderer *vkr)
 {
-  char buffer[256];
+  char   buffer[256];
   owl_v2 position;
   owl_v3 color;
 

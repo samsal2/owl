@@ -17,7 +17,7 @@ owl_private enum owl_code
 owl_vk_font_file_init (char const *path, owl_byte **data)
 {
   owl_u64 sz;
-  FILE *file;
+  FILE   *file;
 
   enum owl_code code = OWL_SUCCESS;
 
@@ -60,14 +60,17 @@ owl_vk_font_file_deinit (owl_byte *data)
   (OWL_VK_FONT_ATLAS_HEIGHT * OWL_VK_FONT_ATLAS_WIDTH)
 
 owl_public enum owl_code
-owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
-                  struct owl_vk_stage_heap *heap, char const *path, owl_i32 sz)
+owl_vk_font_init (struct owl_vk_font       *font,
+                  struct owl_vk_context    *ctx,
+                  struct owl_vk_stage_heap *heap,
+                  char const               *path,
+                  owl_i32                   sz)
 {
-  owl_b32 stb_result;
+  owl_b32   stb_result;
   owl_byte *file;
   owl_byte *bitmap;
 
-  stbtt_pack_context pack;
+  stbtt_pack_context       pack;
   struct owl_vk_image_desc desc;
 
   enum owl_code code = OWL_SUCCESS;
@@ -101,19 +104,19 @@ owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
 
   stbtt_PackEnd (&pack);
 
-  desc.src_type = OWL_VK_IMAGE_SRC_TYPE_DATA;
-  desc.src_path = NULL;
-  desc.src_data = bitmap;
-  desc.src_data_width = OWL_VK_FONT_ATLAS_WIDTH;
-  desc.src_data_height = OWL_VK_FONT_ATLAS_HEIGHT;
+  desc.src_type              = OWL_VK_IMAGE_SRC_TYPE_DATA;
+  desc.src_path              = NULL;
+  desc.src_data              = bitmap;
+  desc.src_data_width        = OWL_VK_FONT_ATLAS_WIDTH;
+  desc.src_data_height       = OWL_VK_FONT_ATLAS_HEIGHT;
   desc.src_data_pixel_format = OWL_PIXEL_FORMAT_R8_UNORM;
-  desc.use_default_sampler = 0;
-  desc.sampler_mip_mode = OWL_SAMPLER_MIP_MODE_NEAREST;
-  desc.sampler_min_filter = OWL_SAMPLER_FILTER_NEAREST;
-  desc.sampler_mag_filter = OWL_SAMPLER_FILTER_NEAREST;
-  desc.sampler_wrap_u = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  desc.sampler_wrap_v = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  desc.sampler_wrap_w = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  desc.use_default_sampler   = 0;
+  desc.sampler_mip_mode      = OWL_SAMPLER_MIP_MODE_NEAREST;
+  desc.sampler_min_filter    = OWL_SAMPLER_FILTER_NEAREST;
+  desc.sampler_mag_filter    = OWL_SAMPLER_FILTER_NEAREST;
+  desc.sampler_wrap_u        = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  desc.sampler_wrap_v        = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  desc.sampler_wrap_w        = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
   code = owl_vk_image_init (&font->atlas, ctx, heap, &desc);
   if (OWL_SUCCESS != code) {
@@ -146,11 +149,13 @@ owl_vk_font_deinit (struct owl_vk_font *font, struct owl_vk_context const *ctx)
 }
 
 owl_public enum owl_code
-owl_vk_font_fill_glyph (struct owl_vk_font *font, char c, owl_v2 offset,
-                        struct owl_glyph *glyph)
+owl_vk_font_fill_glyph (struct owl_vk_font *font,
+                        char                c,
+                        owl_v2              offset,
+                        struct owl_glyph   *glyph)
 {
   stbtt_aligned_quad quad;
-  enum owl_code code = OWL_SUCCESS;
+  enum owl_code      code = OWL_SUCCESS;
 
   stbtt_GetPackedQuad ((stbtt_packedchar *)(&font->chars[0]),
                        OWL_VK_FONT_ATLAS_WIDTH, OWL_VK_FONT_ATLAS_HEIGHT,

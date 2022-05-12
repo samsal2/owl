@@ -16,9 +16,10 @@ owl_private char const *const device_extensions[] = {
 #include <stdio.h>
 static VKAPI_ATTR VKAPI_CALL VkBool32
 owl_vk_context_debug_messenger_callback (
-    VkDebugUtilsMessageSeverityFlagBitsEXT severity,
-    VkDebugUtilsMessageTypeFlagsEXT type,
-    VkDebugUtilsMessengerCallbackDataEXT const *data, void *user_data)
+    VkDebugUtilsMessageSeverityFlagBitsEXT      severity,
+    VkDebugUtilsMessageTypeFlagsEXT             type,
+    VkDebugUtilsMessengerCallbackDataEXT const *data,
+    void                                       *user_data)
 {
   struct owl_renderer const *renderer = user_data;
 
@@ -52,29 +53,29 @@ owl_private char const *const debug_validation_layers[] = {
 #endif /* OWL_ENABLE_VALIDATION */
 
 owl_private enum owl_code
-owl_vk_context_instance_init (struct owl_vk_context *ctx,
-                              struct owl_window const *w)
+owl_vk_context_instance_init (struct owl_vk_context   *ctx,
+                              struct owl_window const *window)
 {
-  VkApplicationInfo app;
+  VkApplicationInfo    app;
   VkInstanceCreateInfo info;
 
-  app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  app.pNext = NULL;
-  app.pApplicationName = w->title;
+  app.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+  app.pNext              = NULL;
+  app.pApplicationName   = window->title;
   app.applicationVersion = VK_MAKE_VERSION (1, 0, 0);
-  app.pEngineName = "No Engine";
-  app.engineVersion = VK_MAKE_VERSION (1, 0, 0);
-  app.apiVersion = VK_MAKE_VERSION (1, 0, 0);
+  app.pEngineName        = "No Engine";
+  app.engineVersion      = VK_MAKE_VERSION (1, 0, 0);
+  app.apiVersion         = VK_MAKE_VERSION (1, 0, 0);
 
-  info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-  info.pNext = NULL;
-  info.flags = 0;
+  info.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+  info.pNext            = NULL;
+  info.flags            = 0;
   info.pApplicationInfo = &app;
 #if defined(OWL_ENABLE_VALIDATION)
-  info.enabledLayerCount = owl_array_size (debug_validation_layers);
+  info.enabledLayerCount   = owl_array_size (debug_validation_layers);
   info.ppEnabledLayerNames = debug_validation_layers;
 #else  /* OWL_ENABLE_VALIDATION */
-  info.enabledLayerCount = 0;
+  info.enabledLayerCount   = 0;
   info.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
   info.ppEnabledExtensionNames =
@@ -98,7 +99,7 @@ owl_vk_context_instance_deinit (struct owl_vk_context *ctx)
 owl_private enum owl_code
 owl_vk_context_debug_messenger_init (struct owl_vk_context *ctx)
 {
-  VkResult vk_result;
+  VkResult                           vk_result;
   VkDebugUtilsMessengerCreateInfoEXT info;
   PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
 
@@ -118,7 +119,7 @@ owl_vk_context_debug_messenger_init (struct owl_vk_context *ctx)
                      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
   info.pfnUserCallback = owl_vk_context_debug_messenger_callback;
-  info.pUserData = ctx;
+  info.pUserData       = ctx;
 
   vk_result = vkCreateDebugUtilsMessengerEXT (ctx->vk_instance, &info, NULL,
                                               &ctx->vk_debug_messenger);
@@ -145,10 +146,11 @@ owl_vk_context_debug_messenger_deinit (struct owl_vk_context *ctx)
 #endif
 
 owl_private enum owl_code
-owl_vk_context_surface_init (struct owl_vk_context *ctx,
-                             struct owl_window const *w)
+owl_vk_context_surface_init (struct owl_vk_context   *ctx,
+                             struct owl_window const *window)
 {
-  return owl_window_create_vk_surface (w, ctx->vk_instance, &ctx->vk_surface);
+  return owl_window_create_vk_surface (window, ctx->vk_instance,
+                                       &ctx->vk_surface);
 }
 
 owl_private void
@@ -182,9 +184,9 @@ owl_private owl_b32
 owl_vk_context_query_families (struct owl_vk_context *ctx, owl_u32 id)
 {
 
-  owl_i32 found;
-  owl_i32 i;
-  owl_u32 property_count;
+  owl_i32                  found;
+  owl_i32                  i;
+  owl_u32                  property_count;
   VkQueueFamilyProperties *properties;
 
   VkResult vk_result = VK_SUCCESS;
@@ -201,7 +203,7 @@ owl_vk_context_query_families (struct owl_vk_context *ctx, owl_u32 id)
                                             &property_count, properties);
 
   ctx->graphics_queue_family = OWL_QUEUE_FAMILY_INDEX_NONE;
-  ctx->present_queue_family = OWL_QUEUE_FAMILY_INDEX_NONE;
+  ctx->present_queue_family  = OWL_QUEUE_FAMILY_INDEX_NONE;
 
   for (i = 0; i < (owl_i32)property_count; ++i) {
     VkBool32 has_surface;
@@ -243,7 +245,7 @@ out:
 }
 
 owl_private int
-owl_validate_device_extensions (owl_u32 extension_count,
+owl_validate_device_extensions (owl_u32                      extension_count,
                                 VkExtensionProperties const *extensions)
 {
   owl_i32 i;
@@ -275,13 +277,13 @@ owl_vk_context_physical_device_select (struct owl_vk_context *ctx)
   VkResult vk_result = VK_SUCCESS;
 
   for (i = 0; i < (owl_i32)ctx->vk_device_option_count; ++i) {
-    owl_b32 has_families;
-    owl_b32 validated;
-    owl_u32 has_formats;
-    owl_u32 has_modes;
-    owl_u32 extension_count;
+    owl_b32                  has_families;
+    owl_b32                  validated;
+    owl_u32                  has_formats;
+    owl_u32                  has_modes;
+    owl_u32                  extension_count;
     VkPhysicalDeviceFeatures features;
-    VkExtensionProperties *extensions;
+    VkExtensionProperties   *extensions;
 
     ctx->vk_physical_device = ctx->vk_device_options[i];
 
@@ -343,12 +345,12 @@ owl_vk_context_physical_device_select (struct owl_vk_context *ctx)
 owl_private enum owl_code
 owl_vk_context_surface_format_ensure (struct owl_vk_context const *ctx)
 {
-  owl_i32 i;
-  owl_u32 format_count;
+  owl_i32             i;
+  owl_u32             format_count;
   VkSurfaceFormatKHR *formats;
 
-  VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
+  VkResult      vk_result = VK_SUCCESS;
+  enum owl_code code      = OWL_SUCCESS;
 
   vk_result = vkGetPhysicalDeviceSurfaceFormatsKHR (
       ctx->vk_physical_device, ctx->vk_surface, &format_count, NULL);
@@ -415,8 +417,8 @@ owl_vk_context_msaa_ensure (struct owl_vk_context const *ctx)
 owl_private enum owl_code
 owl_vk_context_present_mode_ensure (struct owl_vk_context *ctx)
 {
-  owl_i32 i;
-  owl_u32 mode_count;
+  owl_i32          i;
+  owl_u32          mode_count;
   VkPresentModeKHR modes[OWL_MAX_PRESENT_MODES];
 
   VkResult vk_result = VK_SUCCESS;
@@ -449,24 +451,24 @@ owl_private enum owl_code
 owl_vk_context_device_init (struct owl_vk_context *ctx)
 {
   VkPhysicalDeviceFeatures features;
-  VkDeviceCreateInfo device_info;
-  VkDeviceQueueCreateInfo queue_infos[2];
+  VkDeviceCreateInfo       device_info;
+  VkDeviceQueueCreateInfo  queue_infos[2];
 
-  float const priority = 1.0F;
-  VkResult vk_result = VK_SUCCESS;
+  float const priority  = 1.0F;
+  VkResult    vk_result = VK_SUCCESS;
 
-  queue_infos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queue_infos[0].pNext = NULL;
-  queue_infos[0].flags = 0;
+  queue_infos[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  queue_infos[0].pNext            = NULL;
+  queue_infos[0].flags            = 0;
   queue_infos[0].queueFamilyIndex = ctx->graphics_queue_family;
-  queue_infos[0].queueCount = 1;
+  queue_infos[0].queueCount       = 1;
   queue_infos[0].pQueuePriorities = &priority;
 
-  queue_infos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queue_infos[1].pNext = NULL;
-  queue_infos[1].flags = 0;
+  queue_infos[1].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  queue_infos[1].pNext            = NULL;
+  queue_infos[1].flags            = 0;
   queue_infos[1].queueFamilyIndex = ctx->present_queue_family;
-  queue_infos[1].queueCount = 1;
+  queue_infos[1].queueCount       = 1;
   queue_infos[1].pQueuePriorities = &priority;
 
   vkGetPhysicalDeviceFeatures (ctx->vk_physical_device, &features);
@@ -479,12 +481,12 @@ owl_vk_context_device_init (struct owl_vk_context *ctx)
   } else {
     device_info.queueCreateInfoCount = 2;
   }
-  device_info.pQueueCreateInfos = queue_infos;
-  device_info.enabledLayerCount = 0;      /* deprecated */
-  device_info.ppEnabledLayerNames = NULL; /* deprecated */
-  device_info.enabledExtensionCount = owl_array_size (device_extensions);
+  device_info.pQueueCreateInfos       = queue_infos;
+  device_info.enabledLayerCount       = 0;    /* deprecated */
+  device_info.ppEnabledLayerNames     = NULL; /* deprecated */
+  device_info.enabledExtensionCount   = owl_array_size (device_extensions);
   device_info.ppEnabledExtensionNames = device_extensions;
-  device_info.pEnabledFeatures = &features;
+  device_info.pEnabledFeatures        = &features;
 
   vk_result = vkCreateDevice (ctx->vk_physical_device, &device_info, NULL,
                               &ctx->vk_device);
@@ -535,90 +537,90 @@ owl_vk_context_depth_stencil_format_ensure (struct owl_vk_context *ctx)
 owl_private enum owl_code
 owl_vk_context_main_render_pass_init (struct owl_vk_context *ctx)
 {
-  VkAttachmentReference color_reference;
-  VkAttachmentReference depth_reference;
-  VkAttachmentReference resolve_reference;
+  VkAttachmentReference   color_reference;
+  VkAttachmentReference   depth_reference;
+  VkAttachmentReference   resolve_reference;
   VkAttachmentDescription attachments[3];
-  VkSubpassDescription subpass;
-  VkSubpassDependency dependency;
-  VkRenderPassCreateInfo info;
+  VkSubpassDescription    subpass;
+  VkSubpassDependency     dependency;
+  VkRenderPassCreateInfo  info;
 
   VkResult vk_result = VK_SUCCESS;
 
   color_reference.attachment = 0;
-  color_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  color_reference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
   depth_reference.attachment = 1;
   depth_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
   resolve_reference.attachment = 2;
-  resolve_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  resolve_reference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
   /* color */
-  attachments[0].flags = 0;
-  attachments[0].format = ctx->vk_surface_format.format;
-  attachments[0].samples = ctx->msaa;
-  attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  attachments[0].flags          = 0;
+  attachments[0].format         = ctx->vk_surface_format.format;
+  attachments[0].samples        = ctx->msaa;
+  attachments[0].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  attachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+  attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  attachments[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+  attachments[0].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
   /* depth */
-  attachments[1].flags = 0;
-  attachments[1].format = ctx->vk_depth_stencil_format;
-  attachments[1].samples = ctx->msaa;
-  attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  attachments[1].flags          = 0;
+  attachments[1].format         = ctx->vk_depth_stencil_format;
+  attachments[1].samples        = ctx->msaa;
+  attachments[1].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  attachments[1].storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  attachments[1].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
   attachments[1].finalLayout =
       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
   /* color resolve */
-  attachments[2].flags = 0;
-  attachments[2].format = ctx->vk_surface_format.format;
-  attachments[2].samples = VK_SAMPLE_COUNT_1_BIT;
-  attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  attachments[2].flags          = 0;
+  attachments[2].format         = ctx->vk_surface_format.format;
+  attachments[2].samples        = VK_SAMPLE_COUNT_1_BIT;
+  attachments[2].loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  attachments[2].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+  attachments[2].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  attachments[2].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  attachments[2].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+  attachments[2].finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-  subpass.flags = 0;
-  subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass.inputAttachmentCount = 0;
-  subpass.pInputAttachments = NULL;
-  subpass.colorAttachmentCount = 1;
-  subpass.pColorAttachments = &color_reference;
-  subpass.pResolveAttachments = &resolve_reference;
+  subpass.flags                   = 0;
+  subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  subpass.inputAttachmentCount    = 0;
+  subpass.pInputAttachments       = NULL;
+  subpass.colorAttachmentCount    = 1;
+  subpass.pColorAttachments       = &color_reference;
+  subpass.pResolveAttachments     = &resolve_reference;
   subpass.pDepthStencilAttachment = &depth_reference;
   subpass.preserveAttachmentCount = 0;
-  subpass.pPreserveAttachments = NULL;
+  subpass.pPreserveAttachments    = NULL;
 
-  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-  dependency.dstSubpass = 0;
+  dependency.srcSubpass   = VK_SUBPASS_EXTERNAL;
+  dependency.dstSubpass   = 0;
   dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   dependency.srcAccessMask = 0;
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+  dependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
   dependency.dependencyFlags = 0;
 
-  info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  info.pNext = NULL;
-  info.flags = 0;
+  info.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+  info.pNext           = NULL;
+  info.flags           = 0;
   info.attachmentCount = owl_array_size (attachments);
-  info.pAttachments = attachments;
-  info.subpassCount = 1;
-  info.pSubpasses = &subpass;
+  info.pAttachments    = attachments;
+  info.subpassCount    = 1;
+  info.pSubpasses      = &subpass;
   info.dependencyCount = 1;
-  info.pDependencies = &dependency;
+  info.pDependencies   = &dependency;
 
   vk_result = vkCreateRenderPass (ctx->vk_device, &info, NULL,
                                   &ctx->vk_main_render_pass);
@@ -637,12 +639,12 @@ owl_vk_context_main_render_pass_deinit (struct owl_vk_context *ctx)
 owl_private enum owl_code
 owl_vk_context_pools_init (struct owl_vk_context *ctx)
 {
-  VkCommandPoolCreateInfo command_pool_info;
-  VkDescriptorPoolSize sizes[6];
+  VkCommandPoolCreateInfo    command_pool_info;
+  VkDescriptorPoolSize       sizes[6];
   VkDescriptorPoolCreateInfo set_pool_info;
 
-  VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
+  VkResult      vk_result = VK_SUCCESS;
+  enum owl_code code      = OWL_SUCCESS;
 
   command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   command_pool_info.pNext = NULL;
@@ -657,29 +659,29 @@ owl_vk_context_pools_init (struct owl_vk_context *ctx)
   }
 
   sizes[0].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS;
-  sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+  sizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
   sizes[1].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS;
-  sizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+  sizes[1].type            = VK_DESCRIPTOR_TYPE_SAMPLER;
 
   sizes[2].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS;
-  sizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  sizes[2].type            = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 
   sizes[3].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS;
-  sizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  sizes[3].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
   sizes[4].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS;
-  sizes[4].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  sizes[4].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
   sizes[5].descriptorCount = OWL_JUST_ENOUGH_DESCRIPTORS;
-  sizes[5].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  sizes[5].type            = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
-  set_pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  set_pool_info.pNext = NULL;
-  set_pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+  set_pool_info.sType   = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  set_pool_info.pNext   = NULL;
+  set_pool_info.flags   = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
   set_pool_info.maxSets = OWL_JUST_ENOUGH_DESCRIPTORS * owl_array_size (sizes);
   set_pool_info.poolSizeCount = owl_array_size (sizes);
-  set_pool_info.pPoolSizes = sizes;
+  set_pool_info.pPoolSizes    = sizes;
 
   vk_result = vkCreateDescriptorPool (ctx->vk_device, &set_pool_info, NULL,
                                       &ctx->vk_set_pool);
@@ -707,23 +709,23 @@ owl_vk_context_pools_deinit (struct owl_vk_context *ctx)
 owl_private enum owl_code
 owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
 {
-  VkDescriptorSetLayoutBinding bindings[2];
+  VkDescriptorSetLayoutBinding    bindings[2];
   VkDescriptorSetLayoutCreateInfo info;
 
-  VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
+  VkResult      vk_result = VK_SUCCESS;
+  enum owl_code code      = OWL_SUCCESS;
 
-  bindings[0].binding = 0;
-  bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-  bindings[0].descriptorCount = 1;
-  bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  bindings[0].binding            = 0;
+  bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+  bindings[0].descriptorCount    = 1;
+  bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
   bindings[0].pImmutableSamplers = NULL;
 
-  info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  info.pNext = NULL;
-  info.flags = 0;
+  info.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  info.pNext        = NULL;
+  info.flags        = 0;
   info.bindingCount = 1;
-  info.pBindings = bindings;
+  info.pBindings    = bindings;
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
                                            &ctx->vk_vert_ubo_set_layout);
@@ -753,7 +755,7 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
   }
 
   bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  bindings[0].stageFlags     = VK_SHADER_STAGE_VERTEX_BIT;
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
                                            &ctx->vk_vert_ssbo_set_layout);
@@ -763,12 +765,12 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
   }
 
   bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-  bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+  bindings[0].stageFlags     = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-  bindings[1].binding = 1;
-  bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-  bindings[1].descriptorCount = 1;
-  bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+  bindings[1].binding            = 1;
+  bindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  bindings[1].descriptorCount    = 1;
+  bindings[1].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
   bindings[1].pImmutableSamplers = NULL;
 
   info.bindingCount = 2;
@@ -818,15 +820,17 @@ owl_vk_context_set_layouts_deinit (struct owl_vk_context *ctx)
 }
 
 owl_public enum owl_code
-owl_vk_context_init (struct owl_vk_context *ctx, struct owl_window const *w)
+owl_vk_context_init (struct owl_vk_context   *ctx,
+                     struct owl_window const *window)
 {
   enum owl_code code;
 
-  code = owl_vk_context_instance_init (ctx, w);
+  code = owl_vk_context_instance_init (ctx, window);
   if (OWL_SUCCESS != code)
     goto out;
 
 #if defined(OWL_ENABLE_VALIDATION)
+
   code = owl_vk_context_debug_messenger_init (ctx);
   if (OWL_SUCCESS != code)
     goto out_error_instance_deinit;
@@ -834,10 +838,13 @@ owl_vk_context_init (struct owl_vk_context *ctx, struct owl_window const *w)
   code = owl_vk_context_surface_init (ctx, w);
   if (OWL_SUCCESS != code)
     goto out_error_debug_messenger_deinit;
+
 #else
-  code = owl_vk_context_surface_init (ctx, w);
+
+  code = owl_vk_context_surface_init (ctx, window);
   if (OWL_SUCCESS != code)
     goto out_error_instance_deinit;
+
 #endif
 
   code = owl_vk_context_device_options_fill (ctx);
@@ -848,18 +855,21 @@ owl_vk_context_init (struct owl_vk_context *ctx, struct owl_window const *w)
   if (OWL_SUCCESS != code)
     goto out_error_surface_deinit;
 
-  ctx->vk_surface_format.format = VK_FORMAT_B8G8R8A8_SRGB;
+  ctx->vk_surface_format.format     = VK_FORMAT_B8G8R8A8_SRGB;
   ctx->vk_surface_format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+
   code = owl_vk_context_surface_format_ensure (ctx);
   if (OWL_SUCCESS != code)
     goto out_error_surface_deinit;
 
   ctx->msaa = VK_SAMPLE_COUNT_2_BIT;
+
   code = owl_vk_context_msaa_ensure (ctx);
   if (OWL_SUCCESS != code)
     goto out_error_surface_deinit;
 
   ctx->vk_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+
   code = owl_vk_context_present_mode_ensure (ctx);
   if (OWL_SUCCESS != code)
     goto out_error_surface_deinit;
@@ -923,29 +933,36 @@ owl_vk_context_deinit (struct owl_vk_context *ctx)
   owl_vk_context_instance_deinit (ctx);
 }
 
-owl_public owl_u32
-owl_vk_context_get_memory_type (struct owl_vk_context const *ctx,
-                                owl_u32 filter,
-                                enum owl_memory_properties props)
+owl_private VkMemoryPropertyFlagBits
+owl_as_vk_memory_property_flags (enum owl_memory_properties properties)
 {
-  owl_i32 i;
-  VkMemoryPropertyFlags flags;
-  VkPhysicalDeviceMemoryProperties properties;
-
-  switch (props) {
+  switch (properties) {
   case OWL_MEMORY_PROPERTIES_CPU_ONLY:
-    flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     break;
   case OWL_MEMORY_PROPERTIES_GPU_ONLY:
-    flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     break;
   }
+}
 
-  vkGetPhysicalDeviceMemoryProperties (ctx->vk_physical_device, &properties);
+owl_public owl_u32
+owl_vk_context_get_memory_type (struct owl_vk_context const *ctx,
+                                owl_u32                      filter,
+                                enum owl_memory_properties   properties)
+{
+  owl_i32                          i;
+  VkMemoryPropertyFlags            flags;
+  VkPhysicalDeviceMemoryProperties vk_properties;
 
-  for (i = 0; i < (owl_i32)properties.memoryTypeCount; ++i) {
-    owl_u32 current = properties.memoryTypes[i].propertyFlags;
+  vkGetPhysicalDeviceMemoryProperties (ctx->vk_physical_device,
+                                       &vk_properties);
+
+  flags = owl_as_vk_memory_property_flags (properties);
+
+  for (i = 0; i < (owl_i32)vk_properties.memoryTypeCount; ++i) {
+    owl_u32 current = vk_properties.memoryTypes[i].propertyFlags;
 
     if ((current & flags) && (filter & (1U << i))) {
       return i;

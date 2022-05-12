@@ -14,49 +14,52 @@ struct owl_vk_garbage;
 struct owl_vk_swapchain;
 
 struct owl_vk_frame {
-  VkCommandPool vk_command_pool;
-  VkCommandBuffer vk_command_buffer;
+  VkCommandPool            vk_command_pool;
+  VkCommandBuffer          vk_command_buffer;
   struct owl_vk_frame_heap heap;
   struct owl_vk_frame_sync sync;
 };
 
 owl_public enum owl_code
-owl_vk_frame_init (struct owl_vk_frame *frame,
-                   struct owl_vk_context const *ctx, owl_u64 sz);
+owl_vk_frame_init (struct owl_vk_frame         *frame,
+                   struct owl_vk_context const *ctx,
+                   owl_u64                      sz);
 
 owl_public void
-owl_vk_frame_deinit (struct owl_vk_frame *frame,
+owl_vk_frame_deinit (struct owl_vk_frame         *frame,
                      struct owl_vk_context const *ctx);
 
 owl_public enum owl_code
-owl_vk_frame_wait (struct owl_vk_frame *frame,
+owl_vk_frame_wait (struct owl_vk_frame         *frame,
                    struct owl_vk_context const *ctx);
 
 owl_public enum owl_code
-owl_vk_frame_prepare (struct owl_vk_frame *frame,
+owl_vk_frame_prepare (struct owl_vk_frame         *frame,
                       struct owl_vk_context const *ctx);
 
 owl_public void *
-owl_vk_frame_allocate (struct owl_vk_frame *frame,
-                       struct owl_vk_context const *ctx,
-                       struct owl_vk_garbage *garbage, owl_u64 sz,
+owl_vk_frame_allocate (struct owl_vk_frame            *frame,
+                       struct owl_vk_context const    *ctx,
+                       struct owl_vk_garbage          *garbage,
+                       owl_u64                         sz,
                        struct owl_vk_frame_allocation *allocation);
 
 owl_public void
-owl_vk_frame_free (struct owl_vk_frame *frame,
+owl_vk_frame_free (struct owl_vk_frame         *frame,
                    struct owl_vk_context const *ctx);
 
 owl_public enum owl_code
-owl_vk_frame_begin (struct owl_vk_frame *frame,
+owl_vk_frame_begin (struct owl_vk_frame         *frame,
                     struct owl_vk_context const *ctx,
-                    struct owl_vk_swapchain *swapchain);
+                    struct owl_vk_swapchain     *swapchain);
 
 owl_public enum owl_code
-owl_vk_frame_end (struct owl_vk_frame *frame, struct owl_vk_context const *ctx,
-                  struct owl_vk_swapchain *swapchain);
+owl_vk_frame_end (struct owl_vk_frame         *frame,
+                  struct owl_vk_context const *ctx,
+                  struct owl_vk_swapchain     *swapchain);
 
 owl_public enum owl_code
-owl_vk_frame_resync (struct owl_vk_frame *frame,
+owl_vk_frame_resync (struct owl_vk_frame         *frame,
                      struct owl_vk_context const *ctx);
 
 OWL_END_DECLS

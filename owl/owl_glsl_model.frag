@@ -18,7 +18,7 @@ ubo;
 
 layout (set = 5, binding = 0) uniform UBO_PARAMS
 {
-  vec4 light_direction;
+  vec4  light_direction;
   float exposure;
   float gamma;
   float prefiltered_cube_mips;
@@ -30,16 +30,16 @@ ubo_params;
 
 layout (push_constant) uniform MATERIAL
 {
-  vec4 base_color_factor;
-  vec4 emissive_factor;
-  vec4 diffuse_factor;
-  vec4 specular_factor;
+  vec4  base_color_factor;
+  vec4  emissive_factor;
+  vec4  diffuse_factor;
+  vec4  specular_factor;
   float workflow;
-  int base_color_uv_set;
-  int physical_descriptor_uv_set;
-  int normal_uv_set;
-  int occlusion_uv_set;
-  int emissive_uv_set;
+  int   base_color_uv_set;
+  int   physical_descriptor_uv_set;
+  int   normal_uv_set;
+  int   occlusion_uv_set;
+  int   emissive_uv_set;
   float metallic_factor;
   float roughness_factor;
   float alpha_mask;
@@ -65,18 +65,18 @@ struct pbr_info {
   float perceptual_roughness; // roughness value, as authored by the model
                               // creator (input to shader)
   float metalness;            // metallic value at the surface
-  vec3 reflectance0;     // full reflectance color (normal incidence angle)
-  vec3 reflectance90;    // reflectance color at grazing angle
+  vec3  reflectance0;    // full reflectance color (normal incidence angle)
+  vec3  reflectance90;   // reflectance color at grazing angle
   float alpha_roughness; // roughness mapped to a more linear change in the
                          // roughness (proposed by [2])
   vec3 diffuse_color;    // color contribution from diffuse lighting
   vec3 specular_color;   // color contribution from specular lighting
 };
 
-const float PI = 3.141592653589793;
-const float MINIMUM_ROUGHNESS = 0.04;
-const int PBR_WORKFLOW_METALLIC_ROUGHNESS = 0;
-const int PBR_WORKFLOW_SPECULAR_GLOSINESS = 0;
+const float PI                              = 3.141592653589793;
+const float MINIMUM_ROUGHNESS               = 0.04;
+const int   PBR_WORKFLOW_METALLIC_ROUGHNESS = 0;
+const int   PBR_WORKFLOW_SPECULAR_GLOSINESS = 0;
 
 #define MANUAL_SRGB 1
 
@@ -102,7 +102,7 @@ SRGBtoLINEAR (vec4 srgbIn)
 #ifdef SRGB_FAST_APPROXIMATION
   vec3 linOut = pow (srgbIn.xyz, vec3 (2.2));
 #else  // SRGB_FAST_APPROXIMATION
-  vec3 bLess = step (vec3 (0.04045), srgbIn.xyz);
+  vec3 bLess  = step (vec3 (0.04045), srgbIn.xyz);
   vec3 linOut = mix (
       srgbIn.xyz / vec3 (12.92),
       pow ((srgbIn.xyz + vec3 (0.055)) / vec3 (1.055), vec3 (2.4)), bLess);
@@ -127,14 +127,14 @@ getNormal ()
     tangent_normal =
         texture (sampler2D (normal_map, sampler1), in_uv1).xyz * 2.0 - 1;
 
-  vec3 q1 = dFdx (in_world_position);
-  vec3 q2 = dFdy (in_world_position);
+  vec3 q1  = dFdx (in_world_position);
+  vec3 q2  = dFdy (in_world_position);
   vec2 st1 = dFdx (in_uv0);
   vec2 st2 = dFdy (in_uv0);
 
-  vec3 N = normalize (in_normal);
-  vec3 T = normalize (q1 * st2.t - q2 * st1.t);
-  vec3 B = -normalize (cross (N, T));
+  vec3 N   = normalize (in_normal);
+  vec3 T   = normalize (q1 * st2.t - q2 * st1.t);
+  vec3 B   = -normalize (cross (N, T));
   mat3 TBN = mat3 (T, B, N);
 
   return normalize (TBN * tangent_normal);
@@ -150,13 +150,13 @@ getIBLContribution (pbr_info pbr_inputs, vec3 n, vec3 reflection)
 #if 0
 	vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
 #else
-  vec3 brdf = vec3 (1.0);
+  vec3 brdf           = vec3 (1.0);
 #endif
 
 #if 0
 	vec3 diffuseLight = SRGBtoLINEAR(tonemap(texture(samplerIrradiance, n))).rgb;
 #else
-  vec3 diffuse_light = vec3 (1.0);
+  vec3 diffuse_light  = vec3 (1.0);
 #endif
 
 #if 0
@@ -182,7 +182,7 @@ vec4
 tonemap (vec4 color)
 {
   vec3 outcol = Uncharted2Tonemap (color.rgb * ubo_params.exposure);
-  outcol = outcol * (1.0f / Uncharted2Tonemap (vec3 (11.2f)));
+  outcol      = outcol * (1.0f / Uncharted2Tonemap (vec3 (11.2f)));
   return vec4 (pow (outcol, vec3 (1.0f / ubo_params.gamma)), color.a);
 }
 
@@ -206,8 +206,8 @@ float
 geometricOcclusion (pbr_info pbr_inputs)
 {
   float normal_dot_light = pbr_inputs.normal_dot_light;
-  float normal_dot_view = pbr_inputs.normal_dot_view;
-  float r = pbr_inputs.alpha_roughness;
+  float normal_dot_view  = pbr_inputs.normal_dot_view;
+  float r                = pbr_inputs.alpha_roughness;
 
   float attenuation_light =
       2.0 * normal_dot_light /
@@ -258,8 +258,8 @@ main ()
 {
   float perceptual_roughness;
   float metallic;
-  vec3 diffuse_color;
-  vec4 base_color;
+  vec3  diffuse_color;
+  vec4  base_color;
 
   vec3 f0 = vec3 (0.04);
 
@@ -280,7 +280,7 @@ main ()
 
   if (PBR_WORKFLOW_METALLIC_ROUGHNESS == material.workflow) {
     perceptual_roughness = material.roughness_factor;
-    metallic = material.metallic_factor;
+    metallic             = material.metallic_factor;
 
     if (0 == material.physical_descriptor_uv_set) {
       vec4 sample_metallic_roughness =
@@ -353,27 +353,27 @@ main ()
   diffuse_color *= 1.0 - metallic;
 
   float alpha_roughness = perceptual_roughness * perceptual_roughness;
-  vec3 specular_color = mix (f0, base_color.rgb, metallic);
+  vec3  specular_color  = mix (f0, base_color.rgb, metallic);
 
   float reflectance =
       max (max (specular_color.r, specular_color.g), specular_color.b);
-  float reflectance90 = clamp (reflectance * 25.0, 0.0, 1.0);
-  vec3 specular_environment_r0 = specular_color.rgb;
-  vec3 specular_environment_r90 = vec3 (1.0, 1.0, 1.0) * reflectance90;
+  float reflectance90            = clamp (reflectance * 25.0, 0.0, 1.0);
+  vec3  specular_environment_r0  = specular_color.rgb;
+  vec3  specular_environment_r90 = vec3 (1.0, 1.0, 1.0) * reflectance90;
 
   vec3 n =
       (material.normal_uv_set > -1) ? getNormal () : normalize (in_normal);
-  vec3 v = normalize (ubo.camera_position - in_world_position);
-  vec3 l = normalize (ubo_params.light_direction.xyz);
-  vec3 h = normalize (l + v);
+  vec3 v          = normalize (ubo.camera_position - in_world_position);
+  vec3 l          = normalize (ubo_params.light_direction.xyz);
+  vec3 h          = normalize (l + v);
   vec3 reflection = -normalize (reflect (v, n));
   reflection.y *= -1.0;
 
   float normal_dot_light = clamp (dot (n, l), 0.001, 1.0);
-  float normal_dot_view = clamp (abs (dot (n, v)), 0.001, 1.0);
-  float normal_dot_half = clamp (dot (n, h), 0.0, 1.0);
-  float light_dot_half = clamp (dot (l, h), 0.0, 1.0);
-  float view_dot_half = clamp (dot (v, h), 0.0, 1.0);
+  float normal_dot_view  = clamp (abs (dot (n, v)), 0.001, 1.0);
+  float normal_dot_half  = clamp (dot (n, h), 0.0, 1.0);
+  float light_dot_half   = clamp (dot (l, h), 0.0, 1.0);
+  float view_dot_half    = clamp (dot (v, h), 0.0, 1.0);
 
   pbr_info inputs =
       pbr_info (normal_dot_light, normal_dot_view, normal_dot_half,
@@ -384,8 +384,8 @@ main ()
   vec4 color = texture (sampler2D (color_map, sampler0), in_uv0);
 
   vec3 normalized_normal = normalize (in_normal);
-  vec3 normalized_light = normalize (in_light);
-  vec3 normalized_view = normalize (in_view);
+  vec3 normalized_light  = normalize (in_light);
+  vec3 normalized_view   = normalize (in_view);
   vec3 diffuse = max (dot (normalized_normal, normalized_light), 0.5) *
                  vec3 (1.0F, 1.0F, 1.0F);
   vec3 specular =
