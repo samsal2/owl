@@ -39,6 +39,12 @@ struct owl_vk_context {
   VkDescriptorPool vk_set_pool;
   VkCommandPool vk_command_pool;
 
+  VkDescriptorSetLayout vk_vert_ubo_set_layout;
+  VkDescriptorSetLayout vk_frag_ubo_set_layout;
+  VkDescriptorSetLayout vk_both_ubo_set_layout;
+  VkDescriptorSetLayout vk_vert_ssbo_set_layout;
+  VkDescriptorSetLayout vk_frag_image_set_layout;
+
   owl_u32 vk_device_option_count;
   VkPhysicalDevice vk_device_options[OWL_VK_CONTEXT_MAX_DEVICE_OPTION_COUNT];
 };
@@ -53,6 +59,12 @@ owl_public owl_u32
 owl_vk_context_get_memory_type (struct owl_vk_context const *ctx,
                                 owl_u32 filter,
                                 enum owl_memory_properties props);
+
+owl_public enum owl_code
+owl_vk_context_device_wait (struct owl_vk_context const *ctx);
+
+owl_public enum owl_code
+owl_vk_context_graphics_queue_wait (struct owl_vk_context const *ctx);
 
 OWL_END_DECLS
 

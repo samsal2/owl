@@ -15,7 +15,7 @@ struct owl_vk_image_load {
   owl_u32 mips;
   enum owl_pixel_format format;
   owl_byte *stage_data;
-  struct owl_vk_stage_heap_allocation allocation;
+  struct owl_vk_stage_allocation allocation;
 };
 
 owl_private owl_u64
@@ -137,7 +137,8 @@ owl_vk_image_load_deinit (struct owl_vk_image_load *load,
                           struct owl_vk_context const *ctx,
                           struct owl_vk_stage_heap *heap)
 {
-  owl_vk_stage_heap_free (heap, ctx, load->stage_data);
+  owl_unused (load);
+  owl_vk_stage_heap_free (heap, ctx);
 }
 
 owl_private VkFormat
@@ -347,7 +348,6 @@ owl_vk_image_transition (struct owl_vk_image const *img,
 
 owl_public enum owl_code
 owl_vk_image_init (struct owl_vk_image *img, struct owl_vk_context const *ctx,
-                   struct owl_vk_pipeline_manager const *pm,
                    struct owl_vk_stage_heap *heap,
                    struct owl_vk_image_desc const *desc)
 {
@@ -500,7 +500,7 @@ owl_vk_image_init (struct owl_vk_image *img, struct owl_vk_context const *ctx,
   set_info.pNext = NULL;
   set_info.descriptorPool = ctx->vk_set_pool;
   set_info.descriptorSetCount = 1;
-  set_info.pSetLayouts = &pm->vk_frag_image_set_layout;
+  set_info.pSetLayouts = &ctx->vk_frag_image_set_layout;
 
   vk_result =
       vkAllocateDescriptorSets (ctx->vk_device, &set_info, &img->vk_set);
@@ -604,6 +604,8 @@ owl_public void
 owl_vk_image_deinit (struct owl_vk_image *img,
                      struct owl_vk_context const *ctx)
 {
+  owl_vk_context_device_wait (ctx);
+
   vkDestroySampler (ctx->vk_device, img->vk_sampler, NULL);
   vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1, &img->vk_set);
   vkDestroyImageView (ctx->vk_device, img->vk_image_view, NULL);

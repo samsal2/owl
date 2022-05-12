@@ -17,7 +17,7 @@ struct owl_vk_stage_heap {
   VkDeviceMemory vk_memory;
 };
 
-struct owl_vk_stage_heap_allocation {
+struct owl_vk_stage_allocation {
   VkBuffer vk_buffer;
 };
 
@@ -30,16 +30,17 @@ owl_vk_stage_heap_deinit (struct owl_vk_stage_heap *heap,
                           struct owl_vk_context const *ctx);
 
 owl_public owl_b32
-owl_vk_stage_heap_enough_space (struct owl_vk_stage_heap *heap, owl_u64 sz);
+owl_vk_stage_heap_has_enough_space (struct owl_vk_stage_heap *heap,
+                                    owl_u64 sz);
 
 owl_public void *
 owl_vk_stage_heap_allocate (struct owl_vk_stage_heap *heap,
                             struct owl_vk_context const *ctx, owl_u64 sz,
-                            struct owl_vk_stage_heap_allocation *allocation);
+                            struct owl_vk_stage_allocation *allocation);
 
 owl_public void
 owl_vk_stage_heap_free (struct owl_vk_stage_heap *heap,
-                        struct owl_vk_context const *ctx, void *p);
+                        struct owl_vk_context const *ctx);
 
 OWL_END_DECLS
 

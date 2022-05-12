@@ -2,6 +2,7 @@
 
 #include "owl_glyph.h"
 #include "owl_internal.h"
+#include "owl_io.h"
 #include "owl_model.h"
 #include "owl_quad.h"
 #include "owl_vector_math.h"
@@ -17,7 +18,7 @@ owl_vk_renderer_frames_init (struct owl_vk_renderer *vkr)
   enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i) {
-    code = owl_vk_frame_init (&vkr->frames[i], &vkr->context, &vkr->pipelines);
+    code = owl_vk_frame_init (&vkr->frames[i], &vkr->context, 1 << 8);
     if (OWL_SUCCESS != code)
       goto out_error_frames_deinit;
   }
@@ -40,6 +41,37 @@ owl_vk_renderer_frames_deinit (struct owl_vk_renderer *vkr)
     owl_vk_frame_deinit (&vkr->frames[i], &vkr->context);
 }
 
+owl_private enum owl_code
+owl_vk_renderer_garbages_init (struct owl_vk_renderer *vkr)
+{
+  owl_i32 i;
+
+  enum owl_code code = OWL_SUCCESS;
+
+  for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i) {
+    code = owl_vk_garbage_init (&vkr->garbages[i], &vkr->context);
+    if (OWL_SUCCESS != code)
+      goto out_error_garbages_deinit;
+  }
+
+  goto out;
+
+out_error_garbages_deinit:
+  for (i = i - 1; i >= 0; --i)
+    owl_vk_garbage_deinit (&vkr->garbages[i], &vkr->context);
+
+out:
+  return code;
+}
+
+owl_private void
+owl_vk_renderer_garbages_deinit (struct owl_vk_renderer *vkr)
+{
+  owl_i32 i;
+  for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i)
+    owl_vk_garbage_deinit (&vkr->garbages[i], &vkr->context);
+}
+
 owl_public enum owl_code
 owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *w)
 {
@@ -51,6 +83,8 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *w)
   owl_window_get_framebuffer_size (w, &width, &height);
   ratio = (float)width / (float)height;
 
+  vkr->current_time = 0;
+  vkr->previous_time = 0;
   vkr->width = width;
   vkr->height = height;
 
@@ -83,13 +117,13 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *w)
   if (OWL_SUCCESS != code)
     goto out_error_swapchain_deinit;
 
-  code = owl_vk_garbage_init (&vkr->garbage, &vkr->context);
+  code = owl_vk_renderer_garbages_init (vkr);
   if (OWL_SUCCESS != code)
     goto out_error_pipelines_deinit;
 
-  code = owl_vk_stage_heap_init (&vkr->stage_heap, &vkr->context, 1 << 24);
+  code = owl_vk_stage_heap_init (&vkr->stage_heap, &vkr->context, 1 << 16);
   if (OWL_SUCCESS != code)
-    goto out_error_garbage_deinit;
+    goto out_error_garbages_deinit;
 
   vkr->font = NULL;
   vkr->frame = 0;
@@ -103,8 +137,8 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *w)
 out_error_stage_heap_deinit:
   owl_vk_stage_heap_deinit (&vkr->stage_heap, &vkr->context);
 
-out_error_garbage_deinit:
-  owl_vk_garbage_deinit (&vkr->garbage, &vkr->context);
+out_error_garbages_deinit:
+  owl_vk_renderer_garbages_deinit (vkr);
 
 out_error_pipelines_deinit:
   owl_vk_pipeline_manager_deinit (&vkr->pipelines, &vkr->context);
@@ -133,7 +167,7 @@ owl_vk_renderer_deinit (struct owl_vk_renderer *vkr)
 {
   owl_vk_renderer_frames_deinit (vkr);
   owl_vk_stage_heap_deinit (&vkr->stage_heap, &vkr->context);
-  owl_vk_garbage_deinit (&vkr->garbage, &vkr->context);
+  owl_vk_renderer_garbages_deinit (vkr);
   owl_vk_pipeline_manager_deinit (&vkr->pipelines, &vkr->context);
   owl_vk_swapchain_deinit (&vkr->swapchain, &vkr->context);
   owl_vk_attachment_deinit (&vkr->depth_attachment, &vkr->context);
@@ -147,7 +181,11 @@ owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h)
 {
   enum owl_code code = OWL_SUCCESS;
 
-  code = owl_vk_frame_resync (&vkr->frames[vkr->frame], &vkr->context);
+  code = owl_vk_context_device_wait (&vkr->context);
+  if (OWL_SUCCESS != code)
+    goto out;
+
+  code = owl_vk_frame_resync (owl_vk_renderer_frame_get (vkr), &vkr->context);
   if (OWL_SUCCESS != code)
     goto out;
 
@@ -161,13 +199,13 @@ owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h)
   if (OWL_SUCCESS != code)
     goto out;
 
-  code = owl_vk_attachment_init (&vkr->color_attachment, &vkr->context, h, w,
+  code = owl_vk_attachment_init (&vkr->color_attachment, &vkr->context, w, h,
                                  OWL_VK_ATTACHMENT_TYPE_COLOR);
   if (OWL_SUCCESS != code)
     goto out_error_camera_deinit;
 
-  code = owl_vk_attachment_init (&vkr->color_attachment, &vkr->context, w, h,
-                                 OWL_VK_ATTACHMENT_TYPE_COLOR);
+  code = owl_vk_attachment_init (&vkr->depth_attachment, &vkr->context, w, h,
+                                 OWL_VK_ATTACHMENT_TYPE_DEPTH_STENCIL);
   if (OWL_SUCCESS != code)
     goto out_error_color_attachment_deinit;
 
@@ -201,34 +239,38 @@ out:
   return code;
 }
 
-owl_public void *
-owl_vk_renderer_frame_heap_allocate (
-    struct owl_vk_renderer *vkr, owl_u64 sz,
-    struct owl_vk_frame_heap_allocation *allocation)
+owl_private struct owl_vk_garbage *
+owl_vk_renderer_garbage_get (struct owl_vk_renderer *vkr)
 {
-  struct owl_vk_frame *frame = &vkr->frames[vkr->frame];
-  return owl_vk_frame_allocate (frame, &vkr->context, &vkr->pipelines,
-                                &vkr->garbage, sz, allocation);
+  return &vkr->garbages[vkr->frame];
 }
 
 owl_public void *
-owl_vk_renderer_stage_heap_allocate (
-    struct owl_vk_renderer *vkr, owl_u64 sz,
-    struct owl_vk_stage_heap_allocation *allocation)
+owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 sz,
+                                struct owl_vk_frame_allocation *allocation)
+{
+  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+  struct owl_vk_garbage *garbage = owl_vk_renderer_garbage_get (vkr);
+  return owl_vk_frame_allocate (frame, &vkr->context, garbage, sz, allocation);
+}
+
+owl_public void *
+owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 sz,
+                                struct owl_vk_stage_allocation *allocation)
 {
   return owl_vk_stage_heap_allocate (&vkr->stage_heap, &vkr->context, sz,
                                      allocation);
 }
 
 owl_public void
-owl_vk_renderer_stage_heap_free (struct owl_vk_renderer *vkr, void *p)
+owl_vk_renderer_stage_heap_free (struct owl_vk_renderer *vkr)
 {
-  owl_vk_stage_heap_free (&vkr->stage_heap, &vkr->context, p);
+  owl_vk_stage_heap_free (&vkr->stage_heap, &vkr->context);
 }
 
 owl_public void
 owl_vk_renderer_font_set (struct owl_vk_renderer *vkr,
-                          struct owl_vk_font const *font)
+                          struct owl_vk_font *font)
 {
   vkr->font = font;
 }
@@ -236,14 +278,27 @@ owl_vk_renderer_font_set (struct owl_vk_renderer *vkr,
 owl_public enum owl_code
 owl_vk_renderer_frame_begin (struct owl_vk_renderer *vkr)
 {
-  struct owl_vk_frame *frame = &vkr->frames[vkr->frame];
-  return owl_vk_frame_begin (frame, &vkr->context, &vkr->swapchain);
+  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+  struct owl_vk_garbage *garbage = owl_vk_renderer_garbage_get (vkr);
+
+  enum owl_code code = OWL_SUCCESS;
+
+  code = owl_vk_frame_begin (frame, &vkr->context, &vkr->swapchain);
+  if (OWL_SUCCESS != code)
+    goto out;
+
+  code = owl_vk_garbage_clear (garbage, &vkr->context);
+  if (OWL_SUCCESS != code)
+    goto out;
+
+out:
+  return code;
 }
 
 owl_public enum owl_code
 owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr)
 {
-  struct owl_vk_frame *frame = &vkr->frames[vkr->frame];
+  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
 
   enum owl_code code;
 
@@ -254,9 +309,8 @@ owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr)
   if (OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT == ++vkr->frame)
     vkr->frame = 0;
 
-  code = owl_vk_garbage_clear (&vkr->garbage, &vkr->context);
-  if (OWL_SUCCESS != code)
-    goto out;
+  vkr->previous_time = vkr->current_time;
+  vkr->current_time = owl_io_time_stamp_get ();
 
 out:
   return code;
@@ -284,9 +338,9 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
   struct owl_vk_frame *frame;
   struct owl_pvm_ubo ubo;
   struct owl_pcu_vertex vertices[4];
-  struct owl_vk_frame_heap_allocation valloc;
-  struct owl_vk_frame_heap_allocation ialloc;
-  struct owl_vk_frame_heap_allocation ualloc;
+  struct owl_vk_frame_allocation valloc;
+  struct owl_vk_frame_allocation ialloc;
+  struct owl_vk_frame_allocation ualloc;
 
   enum owl_code code = OWL_SUCCESS;
   owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
@@ -325,26 +379,27 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
   vertices[3].color[1] = q->color[1];
   vertices[3].color[2] = q->color[2];
   vertices[3].uv[0] = q->uv1[0];
+  vertices[3].uv[1] = q->uv1[1];
 
   owl_m4_copy (vkr->camera.projection, ubo.projection);
   owl_m4_copy (vkr->camera.view, ubo.view);
   owl_m4_copy (matrix, ubo.model);
 
-  data = owl_vk_renderer_frame_heap_allocate (vkr, sizeof (vertices), &valloc);
+  data = owl_vk_renderer_frame_allocate (vkr, sizeof (vertices), &valloc);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
   owl_memcpy (data, vertices, sizeof (vertices));
 
-  data = owl_vk_renderer_frame_heap_allocate (vkr, sizeof (indices), &ialloc);
+  data = owl_vk_renderer_frame_allocate (vkr, sizeof (indices), &ialloc);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
   owl_memcpy (data, indices, sizeof (indices));
 
-  data = owl_vk_renderer_frame_heap_allocate (vkr, sizeof (ubo), &ualloc);
+  data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo), &ualloc);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -381,9 +436,9 @@ owl_vk_renderer_draw_glyph (struct owl_vk_renderer *vkr,
   owl_v3 scale;
   struct owl_quad quad;
 
-  scale[0] = 1.0F / (float)vkr->height;
-  scale[1] = 1.0F / (float)vkr->height;
-  scale[2] = 1.0F / (float)vkr->height;
+  scale[0] = 2.0F / (float)vkr->height;
+  scale[1] = 2.0F / (float)vkr->height;
+  scale[2] = 2.0F / (float)vkr->height;
 
   owl_m4_identity (matrix);
   owl_m4_scale_v3 (matrix, scale, matrix);
@@ -413,15 +468,14 @@ owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr, char const *text,
                            owl_v3 const position, owl_v3 const color)
 {
   char const *c;
-  owl_v3 offset;
+  owl_v2 offset;
 
   enum owl_code code = OWL_SUCCESS;
 
   offset[0] = position[0] * (float)vkr->width;
   offset[1] = position[1] * (float)vkr->height;
-  offset[2] = 0.0F;
 
-  for (c = &text[0]; *c != '\n'; ++c) {
+  for (c = &text[0]; '\0' != *c; ++c) {
     struct owl_glyph glyph;
 
     code = owl_vk_font_fill_glyph (vkr->font, *c, offset, &glyph);
@@ -453,8 +507,8 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
   struct owl_model_ubo1 ubo1;
   struct owl_model_ubo2 ubo2;
   struct owl_vk_frame *frame;
-  struct owl_vk_frame_heap_allocation u1alloc;
-  struct owl_vk_frame_heap_allocation u2alloc;
+  struct owl_vk_frame_allocation u1alloc;
+  struct owl_vk_frame_allocation u2alloc;
 
   enum owl_code code = OWL_SUCCESS;
 
@@ -487,7 +541,7 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
   owl_v4_zero (ubo1.light);
   owl_v4_zero (ubo2.light_direction);
 
-  data = owl_vk_renderer_frame_heap_allocate (vkr, sizeof (ubo1), &u1alloc);
+  data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo1), &u1alloc);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -499,7 +553,7 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
       owl_vk_pipeline_manager_layout_get (&vkr->pipelines), 0, 1,
       &u1alloc.vk_model_ubo1_set, 1, &u1alloc.offset32);
 
-  data = owl_vk_renderer_frame_heap_allocate (vkr, sizeof (ubo2), &u2alloc);
+  data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo2), &u2alloc);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;

@@ -31,6 +31,10 @@ owl_public enum owl_code
 owl_vk_frame_sync_reset (struct owl_vk_frame_sync *sync,
                          struct owl_vk_context const *ctx);
 
+owl_public void
+owl_vk_frame_sync_unsafe_copy (struct owl_vk_frame_sync *dst,
+                               struct owl_vk_frame_sync const *src);
+
 OWL_END_DECLS
 
 #endif

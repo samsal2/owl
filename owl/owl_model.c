@@ -70,10 +70,8 @@ owl_model_images_load (struct owl_model *model, struct cgltf_data const *gltf,
      * requirements . Completely ignoring it for now */
     desc.use_default_sampler = 1;
 
-    owl_assert (0 == vkr->stage_heap.in_use);
-    code = owl_vk_image_init (&image->image, &vkr->context, &vkr->pipelines,
-                              &vkr->stage_heap, &desc);
-    owl_assert (0 == vkr->stage_heap.in_use);
+    code = owl_vk_image_init (&image->image, &vkr->context, &vkr->stage_heap,
+                              &desc);
     if (OWL_SUCCESS != code) {
       goto out;
     }
@@ -505,7 +503,7 @@ owl_model_buffers_load (struct owl_model *model,
   owl_byte *data;
   VkBufferCopy copy;
   struct owl_vk_im_command_buffer cmd;
-  struct owl_vk_stage_heap_allocation allocation;
+  struct owl_vk_stage_allocation allocation;
 
   VkResult vk_result = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
@@ -561,8 +559,7 @@ owl_model_buffers_load (struct owl_model *model,
   if (OWL_SUCCESS != code)
     goto out;
 
-  OWL_DEBUG_LOG ("v alloc \n");
-  data = owl_vk_renderer_stage_heap_allocate (vkr, sz, &allocation);
+  data = owl_vk_renderer_stage_allocate (vkr, sz, &allocation);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -580,8 +577,7 @@ owl_model_buffers_load (struct owl_model *model,
   if (OWL_SUCCESS != code)
     goto out;
 
-  OWL_DEBUG_LOG ("v free\n");
-  owl_vk_renderer_stage_heap_free (vkr, data);
+  owl_vk_renderer_stage_heap_free (vkr);
 
   sz = (owl_u64)load->index_capacity * sizeof (owl_u32);
 
@@ -631,14 +627,12 @@ owl_model_buffers_load (struct owl_model *model,
   if (OWL_SUCCESS != code)
     goto out;
 
-  OWL_DEBUG_LOG ("i alloc \n");
-  data = owl_vk_renderer_stage_heap_allocate (vkr, sz, &allocation);
+  data = owl_vk_renderer_stage_allocate (vkr, sz, &allocation);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
   owl_memcpy (data, load->indices, sz);
-  OWL_DEBUG_LOG ("i free \n");
 
   copy.srcOffset = 0;
   copy.dstOffset = 0;
@@ -651,7 +645,7 @@ owl_model_buffers_load (struct owl_model *model,
   if (OWL_SUCCESS != code)
     goto out;
 
-  owl_vk_renderer_stage_heap_free (vkr, data);
+  owl_vk_renderer_stage_heap_free (vkr);
 
 out:
   return code;
@@ -823,9 +817,8 @@ owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
       VkDescriptorSetLayout layouts[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT];
       VkDescriptorSetAllocateInfo info;
 
-      for (j = 0; j < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
-        layouts[j] = vkr->pipelines.vk_vert_ssbo_set_layout;
-      }
+      for (j = 0; j < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j)
+        layouts[j] = vkr->context.vk_vert_ssbo_set_layout;
 
       info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
       info.pNext = NULL;
@@ -1277,7 +1270,6 @@ owl_model_anim_update (struct owl_model *model, owl_i32 frame, float dt,
     node = &model->nodes[chan->node];
 
     if (OWL_MODEL_ANIM_INTERPOLATION_TYPE_LINEAR != sampler->interpolation) {
-      OWL_DEBUG_LOG ("skipping channel %i\n", i);
       continue;
     }
 

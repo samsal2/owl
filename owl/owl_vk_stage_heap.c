@@ -85,9 +85,9 @@ owl_vk_stage_heap_deinit (struct owl_vk_stage_heap *heap,
 }
 
 owl_public owl_b32
-owl_vk_stage_heap_enough_space (struct owl_vk_stage_heap *heap, owl_u64 sz)
+owl_vk_stage_heap_has_enough_space (struct owl_vk_stage_heap *heap, owl_u64 sz)
 {
-  return heap->size < sz;
+  return heap->size > sz;
 }
 
 owl_private enum owl_code
@@ -101,7 +101,7 @@ owl_vk_stage_heap_reserve (struct owl_vk_stage_heap *heap,
     goto out;
   }
 
-  if (owl_vk_stage_heap_enough_space (heap, sz))
+  if (owl_vk_stage_heap_has_enough_space (heap, sz))
     goto out;
 
   owl_vk_stage_heap_deinit (heap, ctx);
@@ -117,7 +117,7 @@ out:
 owl_public void *
 owl_vk_stage_heap_allocate (struct owl_vk_stage_heap *heap,
                             struct owl_vk_context const *ctx, owl_u64 sz,
-                            struct owl_vk_stage_heap_allocation *allocation)
+                            struct owl_vk_stage_allocation *allocation)
 {
   owl_byte *data = NULL;
   enum owl_code code = OWL_SUCCESS;
@@ -145,10 +145,9 @@ out:
 
 owl_public void
 owl_vk_stage_heap_free (struct owl_vk_stage_heap *heap,
-                        struct owl_vk_context const *ctx, void *p)
+                        struct owl_vk_context const *ctx)
 {
   owl_unused (ctx);
-  owl_unused (p);
 
   heap->in_use = 0;
 }

@@ -67,7 +67,6 @@ struct owl_vk_image {
 
 owl_public enum owl_code
 owl_vk_image_init (struct owl_vk_image *img, struct owl_vk_context const *ctx,
-                   struct owl_vk_pipeline_manager const *pm,
                    struct owl_vk_stage_heap *heap,
                    struct owl_vk_image_desc const *desc);
 

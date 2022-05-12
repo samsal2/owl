@@ -61,7 +61,6 @@ owl_vk_font_file_deinit (owl_byte *data)
 
 owl_public enum owl_code
 owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
-                  struct owl_vk_pipeline_manager const *pm,
                   struct owl_vk_stage_heap *heap, char const *path, owl_i32 sz)
 {
   owl_b32 stb_result;
@@ -116,7 +115,7 @@ owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
   desc.sampler_wrap_v = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
   desc.sampler_wrap_w = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
-  code = owl_vk_image_init (&font->atlas, ctx, pm, heap, &desc);
+  code = owl_vk_image_init (&font->atlas, ctx, heap, &desc);
   if (OWL_SUCCESS != code) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_pack_deinit;
@@ -147,13 +146,11 @@ owl_vk_font_deinit (struct owl_vk_font *font, struct owl_vk_context const *ctx)
 }
 
 owl_public enum owl_code
-owl_vk_font_fill_glyph (struct owl_vk_font const *font, char c, owl_v2 offset,
+owl_vk_font_fill_glyph (struct owl_vk_font *font, char c, owl_v2 offset,
                         struct owl_glyph *glyph)
 {
   stbtt_aligned_quad quad;
   enum owl_code code = OWL_SUCCESS;
-
-  /* TODO (samuel): validate c */
 
   stbtt_GetPackedQuad ((stbtt_packedchar *)(&font->chars[0]),
                        OWL_VK_FONT_ATLAS_WIDTH, OWL_VK_FONT_ATLAS_HEIGHT,

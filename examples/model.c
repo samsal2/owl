@@ -32,21 +32,12 @@ main (void)
   renderer = malloc (sizeof (*renderer));
   CHECK (owl_vk_renderer_init (renderer, window));
 
-  assert (0 == renderer->stage_heap.in_use);
-
   model = malloc (sizeof (*model));
   CHECK (owl_model_init (model, renderer, "../../assets/CesiumMan.gltf"));
 
-  assert (0 == renderer->stage_heap.in_use);
-
   font = malloc (sizeof (*font));
-  CHECK (owl_vk_font_init (font, &renderer->context, &renderer->pipelines,
-                           &renderer->stage_heap,
+  CHECK (owl_vk_font_init (font, &renderer->context, &renderer->stage_heap,
                            "../../assets/Inconsolata-Regular.ttf", 64.0F));
-
-  assert (0 == renderer->stage_heap.in_use);
-
-  assert (!renderer->stage_heap.in_use);
 
   owl_vk_renderer_font_set (renderer, font);
 
@@ -62,9 +53,8 @@ main (void)
     time_stamp = owl_io_time_stamp_get ();
 
     code = owl_vk_renderer_frame_begin (renderer);
-    if (OWL_SUCCESS != code) {
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == code) {
       owl_i32 w, h;
-      assert (OWL_ERROR_OUTDATED_SWAPCHAIN == code);
       owl_window_get_framebuffer_size (window, &w, &h);
       owl_vk_renderer_resize (renderer, w, h);
       continue;
@@ -80,9 +70,8 @@ main (void)
     owl_ui_renderer_stats_draw (renderer);
 
     code = owl_vk_renderer_frame_end (renderer);
-    if (OWL_SUCCESS != code) {
+    if (OWL_ERROR_OUTDATED_SWAPCHAIN == code) {
       owl_i32 w, h;
-      assert (OWL_ERROR_OUTDATED_SWAPCHAIN == code);
       owl_window_get_framebuffer_size (window, &w, &h);
       owl_vk_renderer_resize (renderer, w, h);
       continue;
@@ -90,6 +79,9 @@ main (void)
 
     owl_window_poll_events (window);
   }
+
+  owl_vk_font_deinit (font, &renderer->context);
+  free (font);
 
   owl_model_deinit (model, renderer);
   free (model);

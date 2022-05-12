@@ -21,12 +21,6 @@ enum owl_pipeline_id {
 };
 
 struct owl_vk_pipeline_manager {
-  VkDescriptorSetLayout vk_vert_ubo_set_layout;
-  VkDescriptorSetLayout vk_frag_ubo_set_layout;
-  VkDescriptorSetLayout vk_both_ubo_set_layout;
-  VkDescriptorSetLayout vk_vert_ssbo_set_layout;
-  VkDescriptorSetLayout vk_frag_image_set_layout;
-
   VkShaderModule vk_basic_vert_shader;
   VkShaderModule vk_basic_frag_shader;
   VkShaderModule vk_text_frag_shader;

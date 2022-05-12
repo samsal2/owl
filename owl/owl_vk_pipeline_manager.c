@@ -8,123 +8,6 @@
 #include "owl_vk_types.h"
 
 owl_private enum owl_code
-owl_vk_pipeline_manager_set_layouts_init (struct owl_vk_pipeline_manager *pm,
-                                          struct owl_vk_context *ctx)
-{
-  VkDescriptorSetLayoutBinding bindings[2];
-  VkDescriptorSetLayoutCreateInfo info;
-
-  VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
-
-  bindings[0].binding = 0;
-  bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-  bindings[0].descriptorCount = 1;
-  bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-  bindings[0].pImmutableSamplers = NULL;
-
-  info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  info.pNext = NULL;
-  info.flags = 0;
-  info.bindingCount = 1;
-  info.pBindings = bindings;
-
-  vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
-                                           &pm->vk_vert_ubo_set_layout);
-
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
-
-  bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-  vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
-                                           &pm->vk_frag_ubo_set_layout);
-
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out_error_vert_ubo_set_layout_deinit;
-  }
-
-  bindings[0].stageFlags =
-      VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
-
-  vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
-                                           &pm->vk_both_ubo_set_layout);
-
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out_error_frag_ubo_set_layout_deinit;
-  }
-
-  bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-  vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
-                                           &pm->vk_vert_ssbo_set_layout);
-
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out_error_both_ubo_set_layout_deinit;
-  }
-
-  bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-  bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-  bindings[1].binding = 1;
-  bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-  bindings[1].descriptorCount = 1;
-  bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-  bindings[1].pImmutableSamplers = NULL;
-
-  info.bindingCount = 2;
-
-  vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
-                                           &pm->vk_frag_image_set_layout);
-
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out_error_vert_ssbo_set_layout_deinit;
-  }
-
-  goto out;
-
-out_error_vert_ssbo_set_layout_deinit:
-  vkDestroyDescriptorSetLayout (ctx->vk_device, pm->vk_vert_ssbo_set_layout,
-                                NULL);
-
-out_error_both_ubo_set_layout_deinit:
-  vkDestroyDescriptorSetLayout (ctx->vk_device, pm->vk_both_ubo_set_layout,
-                                NULL);
-
-out_error_frag_ubo_set_layout_deinit:
-  vkDestroyDescriptorSetLayout (ctx->vk_device, pm->vk_frag_ubo_set_layout,
-                                NULL);
-
-out_error_vert_ubo_set_layout_deinit:
-  vkDestroyDescriptorSetLayout (ctx->vk_device, pm->vk_vert_ubo_set_layout,
-                                NULL);
-
-out:
-  return code;
-}
-
-owl_private void
-owl_vk_pipeline_manager_set_layouts_deinit (struct owl_vk_pipeline_manager *pm,
-                                            struct owl_vk_context *ctx)
-{
-  vkDestroyDescriptorSetLayout (ctx->vk_device, pm->vk_vert_ssbo_set_layout,
-                                NULL);
-  vkDestroyDescriptorSetLayout (ctx->vk_device, pm->vk_both_ubo_set_layout,
-                                NULL);
-  vkDestroyDescriptorSetLayout (ctx->vk_device, pm->vk_frag_ubo_set_layout,
-                                NULL);
-  vkDestroyDescriptorSetLayout (ctx->vk_device, pm->vk_vert_ubo_set_layout,
-                                NULL);
-}
-
-owl_private enum owl_code
 owl_vk_pipeline_manager_pipeline_layouts_init (
     struct owl_vk_pipeline_manager *pm, struct owl_vk_context *ctx)
 {
@@ -135,8 +18,8 @@ owl_vk_pipeline_manager_pipeline_layouts_init (
   VkResult vk_result = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  sets[0] = pm->vk_vert_ubo_set_layout;
-  sets[1] = pm->vk_frag_image_set_layout;
+  sets[0] = ctx->vk_vert_ubo_set_layout;
+  sets[1] = ctx->vk_frag_image_set_layout;
 
   info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   info.pNext = NULL;
@@ -158,12 +41,12 @@ owl_vk_pipeline_manager_pipeline_layouts_init (
   range.offset = 0;
   range.size = sizeof (struct owl_model_material_push_constant);
 
-  sets[0] = pm->vk_both_ubo_set_layout;
-  sets[1] = pm->vk_frag_image_set_layout;
-  sets[2] = pm->vk_frag_image_set_layout;
-  sets[3] = pm->vk_frag_image_set_layout;
-  sets[4] = pm->vk_vert_ssbo_set_layout;
-  sets[5] = pm->vk_frag_ubo_set_layout;
+  sets[0] = ctx->vk_both_ubo_set_layout;
+  sets[1] = ctx->vk_frag_image_set_layout;
+  sets[2] = ctx->vk_frag_image_set_layout;
+  sets[3] = ctx->vk_frag_image_set_layout;
+  sets[4] = ctx->vk_vert_ssbo_set_layout;
+  sets[5] = ctx->vk_frag_ubo_set_layout;
 
   info.pushConstantRangeCount = 1;
   info.pPushConstantRanges = &range;
@@ -694,7 +577,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       stages[1].pNext = NULL;
       stages[1].flags = 0;
       stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-      stages[1].module = pm->vk_basic_frag_shader;
+      stages[1].module = pm->vk_text_frag_shader;
       stages[1].pName = "main";
       stages[1].pSpecializationInfo = NULL;
       break;
@@ -793,13 +676,9 @@ owl_vk_pipeline_manager_init (struct owl_vk_pipeline_manager *pm,
 {
   enum owl_code code;
 
-  code = owl_vk_pipeline_manager_set_layouts_init (pm, ctx);
-  if (OWL_SUCCESS != code)
-    goto out;
-
   code = owl_vk_pipeline_manager_pipeline_layouts_init (pm, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_set_layouts_deinit;
+    goto out;
 
   code = owl_vk_pipeline_manager_shaders_init (pm, ctx);
   if (OWL_SUCCESS != code)
@@ -817,9 +696,6 @@ out_error_shaders_deinit:
 out_error_pipeline_layouts_deinit:
   owl_vk_pipeline_manager_pipeline_layouts_deinit (pm, ctx);
 
-out_error_set_layouts_deinit:
-  owl_vk_pipeline_manager_set_layouts_deinit (pm, ctx);
-
 out:
   return code;
 }
@@ -831,7 +707,6 @@ owl_vk_pipeline_manager_deinit (struct owl_vk_pipeline_manager *pm,
   owl_vk_pipeline_manager_pipelines_deinit (pm, ctx);
   owl_vk_pipeline_manager_shaders_deinit (pm, ctx);
   owl_vk_pipeline_manager_pipeline_layouts_deinit (pm, ctx);
-  owl_vk_pipeline_manager_set_layouts_deinit (pm, ctx);
 }
 
 owl_public enum owl_code

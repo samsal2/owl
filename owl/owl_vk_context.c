@@ -770,6 +770,123 @@ owl_vk_context_pools_deinit (struct owl_vk_context *ctx)
   vkDestroyCommandPool (ctx->vk_device, ctx->vk_command_pool, NULL);
 }
 
+owl_private enum owl_code
+owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
+{
+  VkDescriptorSetLayoutBinding bindings[2];
+  VkDescriptorSetLayoutCreateInfo info;
+
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
+
+  bindings[0].binding = 0;
+  bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+  bindings[0].descriptorCount = 1;
+  bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  bindings[0].pImmutableSamplers = NULL;
+
+  info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  info.pNext = NULL;
+  info.flags = 0;
+  info.bindingCount = 1;
+  info.pBindings = bindings;
+
+  vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
+                                           &ctx->vk_vert_ubo_set_layout);
+
+  if (VK_SUCCESS != vk_result) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out;
+  }
+
+  bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+  vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
+                                           &ctx->vk_frag_ubo_set_layout);
+
+  if (VK_SUCCESS != vk_result) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out_error_vert_ubo_set_layout_deinit;
+  }
+
+  bindings[0].stageFlags =
+      VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
+
+  vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
+                                           &ctx->vk_both_ubo_set_layout);
+
+  if (VK_SUCCESS != vk_result) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out_error_frag_ubo_set_layout_deinit;
+  }
+
+  bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+  vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
+                                           &ctx->vk_vert_ssbo_set_layout);
+
+  if (VK_SUCCESS != vk_result) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out_error_both_ubo_set_layout_deinit;
+  }
+
+  bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+  bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+  bindings[1].binding = 1;
+  bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  bindings[1].descriptorCount = 1;
+  bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+  bindings[1].pImmutableSamplers = NULL;
+
+  info.bindingCount = 2;
+
+  vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
+                                           &ctx->vk_frag_image_set_layout);
+
+  if (VK_SUCCESS != vk_result) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out_error_vert_ssbo_set_layout_deinit;
+  }
+
+  goto out;
+
+out_error_vert_ssbo_set_layout_deinit:
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_vert_ssbo_set_layout,
+                                NULL);
+
+out_error_both_ubo_set_layout_deinit:
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_both_ubo_set_layout,
+                                NULL);
+
+out_error_frag_ubo_set_layout_deinit:
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_frag_ubo_set_layout,
+                                NULL);
+
+out_error_vert_ubo_set_layout_deinit:
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_vert_ubo_set_layout,
+                                NULL);
+
+out:
+  return code;
+}
+
+owl_private void
+owl_vk_context_set_layouts_deinit (struct owl_vk_context *ctx)
+{
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_frag_image_set_layout,
+                                NULL);
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_vert_ssbo_set_layout,
+                                NULL);
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_both_ubo_set_layout,
+                                NULL);
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_frag_ubo_set_layout,
+                                NULL);
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_vert_ubo_set_layout,
+                                NULL);
+}
+
 owl_public enum owl_code
 owl_vk_context_init (struct owl_vk_context *ctx, struct owl_window const *w)
 {
@@ -827,7 +944,13 @@ owl_vk_context_init (struct owl_vk_context *ctx, struct owl_window const *w)
   if (OWL_SUCCESS != code)
     goto out_error_main_render_pass_deinit;
 
+  code = owl_vk_context_set_layouts_init (ctx);
+  if (OWL_SUCCESS != code)
+    goto out_error_pools_deinit;
+
   goto out;
+out_error_pools_deinit:
+  owl_vk_context_pools_deinit (ctx);
 
 out_error_main_render_pass_deinit:
   owl_vk_context_main_render_pass_init (ctx);
@@ -851,6 +974,7 @@ out:
 owl_public void
 owl_vk_context_deinit (struct owl_vk_context *ctx)
 {
+  owl_vk_context_set_layouts_deinit (ctx);
   owl_vk_context_pools_deinit (ctx);
   owl_vk_context_main_render_pass_deinit (ctx);
   owl_vk_context_device_deinit (ctx);
@@ -889,4 +1013,18 @@ owl_vk_context_get_memory_type (struct owl_vk_context const *ctx,
   }
 
   return (owl_u32)-1;
+}
+
+owl_public enum owl_code
+owl_vk_context_device_wait (struct owl_vk_context const *ctx)
+{
+  VkResult vk_result = vkDeviceWaitIdle (ctx->vk_device);
+  return VK_SUCCESS != vk_result ? OWL_ERROR_UNKNOWN : OWL_SUCCESS;
+}
+
+owl_public enum owl_code
+owl_vk_context_graphics_queue_wait (struct owl_vk_context const *ctx)
+{
+  VkResult vk_result = vkQueueWaitIdle (ctx->vk_graphics_queue);
+  return VK_SUCCESS != vk_result ? OWL_ERROR_UNKNOWN : OWL_SUCCESS;
 }

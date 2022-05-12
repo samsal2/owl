@@ -62,8 +62,7 @@ owl_vk_frame_commands_deinit (struct owl_vk_frame *frame,
 
 owl_public enum owl_code
 owl_vk_frame_init (struct owl_vk_frame *frame,
-                   struct owl_vk_context const *ctx,
-                   struct owl_vk_pipeline_manager const *pm)
+                   struct owl_vk_context const *ctx, owl_u64 sz)
 {
   enum owl_code code;
 
@@ -71,7 +70,7 @@ owl_vk_frame_init (struct owl_vk_frame *frame,
   if (OWL_SUCCESS != code)
     goto out;
 
-  code = owl_vk_frame_heap_init (&frame->heap, ctx, pm, 1 << 16);
+  code = owl_vk_frame_heap_init (&frame->heap, ctx, sz);
   if (OWL_SUCCESS != code)
     goto out_error_commads_deinit;
 
@@ -141,13 +140,12 @@ out:
 owl_public enum owl_code
 owl_vk_frame_reserve (struct owl_vk_frame *frame,
                       struct owl_vk_context const *ctx,
-                      struct owl_vk_pipeline_manager const *pm,
                       struct owl_vk_garbage *garbage, owl_u64 sz)
 {
   owl_u64 new_sz;
   enum owl_code code = OWL_SUCCESS;
 
-  if (owl_vk_frame_heap_enough_space (&frame->heap, sz))
+  if (owl_vk_frame_heap_has_enough_space (&frame->heap, sz))
     goto out;
 
   code = owl_vk_garbage_add_frame (garbage, frame);
@@ -155,11 +153,10 @@ owl_vk_frame_reserve (struct owl_vk_frame *frame,
     goto out;
 
   new_sz = owl_vk_frame_heap_offset (&frame->heap) + sz;
-  new_sz = owl_alignu2 (new_sz, frame->heap.alignment) * 2;
+  new_sz = owl_alignu2 (new_sz, frame->heap.alignment);
+  new_sz *= 2;
 
-  owl_assert (new_sz);
-
-  code = owl_vk_frame_heap_init (&frame->heap, ctx, pm, new_sz);
+  code = owl_vk_frame_heap_init (&frame->heap, ctx, new_sz);
   if (OWL_SUCCESS != code)
     goto out_error_garbage_pop_frame;
 
@@ -176,13 +173,12 @@ out:
 owl_public void *
 owl_vk_frame_allocate (struct owl_vk_frame *frame,
                        struct owl_vk_context const *ctx,
-                       struct owl_vk_pipeline_manager const *pm,
                        struct owl_vk_garbage *garbage, owl_u64 sz,
-                       struct owl_vk_frame_heap_allocation *allocation)
+                       struct owl_vk_frame_allocation *allocation)
 {
   enum owl_code code = OWL_SUCCESS;
 
-  code = owl_vk_frame_reserve (frame, ctx, pm, garbage, sz);
+  code = owl_vk_frame_reserve (frame, ctx, garbage, sz);
   if (OWL_SUCCESS != code)
     return NULL;
 
@@ -191,9 +187,9 @@ owl_vk_frame_allocate (struct owl_vk_frame *frame,
 
 owl_public void
 owl_vk_frame_free (struct owl_vk_frame *frame,
-                   struct owl_vk_context const *ctx, void *p)
+                   struct owl_vk_context const *ctx)
 {
-  owl_vk_frame_heap_free (&frame->heap, ctx, p);
+  owl_vk_frame_heap_free (&frame->heap, ctx);
 }
 
 owl_private enum owl_code
@@ -241,26 +237,17 @@ owl_vk_frame_end_recording (struct owl_vk_frame *frame,
                             struct owl_vk_context const *ctx)
 {
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
-
   owl_unused (ctx);
 
   vkCmdEndRenderPass (frame->vk_command_buffer);
 
   vk_result = vkEndCommandBuffer (frame->vk_command_buffer);
-  if (OWL_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
-
-out:
-  return code;
+  return VK_SUCCESS != vk_result ? OWL_ERROR_UNKNOWN : OWL_SUCCESS;
 }
 
 owl_private enum owl_code
 owl_vk_frame_submit (struct owl_vk_frame *frame,
-                     struct owl_vk_context const *ctx,
-                     struct owl_vk_frame_sync const *sync)
+                     struct owl_vk_context const *ctx)
 {
   VkSubmitInfo info;
 
@@ -272,15 +259,15 @@ owl_vk_frame_submit (struct owl_vk_frame *frame,
   info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   info.pNext = NULL;
   info.waitSemaphoreCount = 1;
-  info.pWaitSemaphores = &sync->vk_image_available_semaphore;
+  info.pWaitSemaphores = &frame->sync.vk_image_available_semaphore;
   info.signalSemaphoreCount = 1;
-  info.pSignalSemaphores = &sync->vk_render_done_semaphore;
+  info.pSignalSemaphores = &frame->sync.vk_render_done_semaphore;
   info.pWaitDstStageMask = &stage;
   info.commandBufferCount = 1;
   info.pCommandBuffers = &frame->vk_command_buffer;
 
   vk_result = vkQueueSubmit (ctx->vk_graphics_queue, 1, &info,
-                             sync->vk_in_flight_fence);
+                             frame->sync.vk_in_flight_fence);
 
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
@@ -298,7 +285,8 @@ owl_vk_frame_begin (struct owl_vk_frame *frame,
 {
   enum owl_code code;
 
-  owl_vk_frame_heap_reset (&frame->heap);
+  /* free the previous allocations */
+  owl_vk_frame_free (frame, ctx);
 
   code = owl_vk_swapchain_acquire_next_image (swapchain, ctx, &frame->sync);
   if (OWL_SUCCESS != code) {
@@ -327,7 +315,7 @@ owl_vk_frame_end (struct owl_vk_frame *frame, struct owl_vk_context const *ctx,
   if (OWL_SUCCESS != code)
     goto out;
 
-  code = owl_vk_frame_submit (frame, ctx, &frame->sync);
+  code = owl_vk_frame_submit (frame, ctx);
   if (OWL_SUCCESS != code)
     goto out;
 

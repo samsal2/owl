@@ -58,6 +58,7 @@ owl_vk_attachment_init (struct owl_vk_attachment *attachment,
 
   image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   image_info.pNext = NULL;
+  image_info.flags = 0;
   image_info.imageType = VK_IMAGE_TYPE_2D;
   image_info.format = owl_vk_attachment_type_get_format (type, ctx);
   image_info.extent.width = w;

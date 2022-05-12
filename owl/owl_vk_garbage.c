@@ -5,24 +5,17 @@
 #include "owl_vk_frame.h"
 
 owl_public void
-owl_vk_frame_garbage_init (struct owl_vk_frame_garbage *garbage,
+owl_vk_frame_garbage_init (struct owl_vk_frame_garbage *frame_garbage,
                            struct owl_vk_frame const *frame)
 {
-  garbage->heap.data = frame->heap.data;
-  garbage->heap.alignment = frame->heap.alignment;
-  garbage->heap.offset = frame->heap.offset;
-  garbage->heap.size = frame->heap.size;
-  garbage->heap.vk_buffer = frame->heap.vk_buffer;
-  garbage->heap.vk_memory = frame->heap.vk_memory;
-  garbage->heap.vk_pvm_ubo_set = frame->heap.vk_pvm_ubo_set;
-  garbage->heap.vk_model_ubo1_set = frame->heap.vk_model_ubo1_set;
+  owl_vk_frame_heap_unsafe_copy (&frame_garbage->heap, &frame->heap);
 }
 
 owl_public void
-owl_vk_frame_garbage_deinit (struct owl_vk_frame_garbage *garbage,
+owl_vk_frame_garbage_deinit (struct owl_vk_frame_garbage *frame_garbage,
                              struct owl_vk_context const *ctx)
 {
-  owl_vk_frame_heap_deinit (&garbage->heap, ctx);
+  owl_vk_frame_heap_deinit (&frame_garbage->heap, ctx);
 }
 
 owl_public enum owl_code
@@ -68,23 +61,14 @@ owl_vk_garbage_pop_frame (struct owl_vk_garbage *garbage,
 
   enum owl_code code = OWL_SUCCESS;
 
-  if (!garbage->frame_count) {
+  if (0 >= garbage->frame_count) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
 
-  --garbage->frame_count;
+  frame_garbage = &garbage->frames[--garbage->frame_count];
 
-  frame_garbage = &garbage->frames[garbage->frame_count + 1];
-
-  frame->heap.data = frame_garbage->heap.data;
-  frame->heap.alignment = frame_garbage->heap.alignment;
-  frame->heap.offset = frame_garbage->heap.offset;
-  frame->heap.size = frame_garbage->heap.size;
-  frame->heap.vk_buffer = frame_garbage->heap.vk_buffer;
-  frame->heap.vk_memory = frame_garbage->heap.vk_memory;
-  frame->heap.vk_pvm_ubo_set = frame_garbage->heap.vk_pvm_ubo_set;
-  frame->heap.vk_model_ubo1_set = frame_garbage->heap.vk_model_ubo1_set;
+  owl_vk_frame_heap_unsafe_copy (&frame->heap, &frame_garbage->heap);
 
 out:
   return code;

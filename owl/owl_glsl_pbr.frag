@@ -11,7 +11,8 @@ layout (location = 3) in vec2 inUV1;
 
 // Scene bindings
 
-layout (set = 0, binding = 0) uniform UBO {
+layout (set = 0, binding = 0) uniform UBO
+{
   mat4 projection;
   mat4 model;
   mat4 view;
@@ -19,7 +20,8 @@ layout (set = 0, binding = 0) uniform UBO {
 }
 ubo;
 
-layout (set = 0, binding = 1) uniform UBOParams {
+layout (set = 0, binding = 1) uniform UBOParams
+{
   vec4 lightDir;
   float exposure;
   float gamma;
@@ -42,7 +44,8 @@ layout (set = 1, binding = 2) uniform sampler2D normalMap;
 layout (set = 1, binding = 3) uniform sampler2D aoMap;
 layout (set = 1, binding = 4) uniform sampler2D emissiveMap;
 
-layout (push_constant) uniform Material {
+layout (push_constant) uniform Material
+{
   vec4 baseColorFactor;
   vec4 emissiveFactor;
   vec4 diffuseFactor;
@@ -92,7 +95,8 @@ const float PBR_WORKFLOW_SPECULAR_GLOSINESS = 1.0f;
 #define MANUAL_SRGB 1
 
 vec3
-Uncharted2Tonemap (vec3 color) {
+Uncharted2Tonemap (vec3 color)
+{
   float A = 0.15;
   float B = 0.50;
   float C = 0.10;
@@ -106,14 +110,16 @@ Uncharted2Tonemap (vec3 color) {
 }
 
 vec4
-tonemap (vec4 color) {
+tonemap (vec4 color)
+{
   vec3 outcol = Uncharted2Tonemap (color.rgb * uboParams.exposure);
   outcol = outcol * (1.0f / Uncharted2Tonemap (vec3 (11.2f)));
   return vec4 (pow (outcol, vec3 (1.0f / uboParams.gamma)), color.a);
 }
 
 vec4
-SRGBtoLINEAR (vec4 srgbIn) {
+SRGBtoLINEAR (vec4 srgbIn)
+{
 #ifdef MANUAL_SRGB
 #ifdef SRGB_FAST_APPROXIMATION
   vec3 linOut = pow (srgbIn.xyz, vec3 (2.2));
@@ -133,7 +139,8 @@ SRGBtoLINEAR (vec4 srgbIn) {
 // Find the normal for this fragment, pulling either from a predefined normal
 // map or from the interpolated mesh normal and tangent attributes.
 vec3
-getNormal () {
+getNormal ()
+{
   // Perturb normal, see http://www.thetenthplanet.de/archives/1180
   vec3 tangentNormal =
       texture (normalMap, material.normalTextureSet == 0 ? inUV0 : inUV1).xyz *
@@ -158,7 +165,8 @@ getNormal () {
 // computed as outlined in [1]. See our README.md on Environment Maps [3] for
 // additional discussion.
 vec3
-getIBLContribution (PBRInfo pbrInputs, vec3 n, vec3 reflection) {
+getIBLContribution (PBRInfo pbrInputs, vec3 n, vec3 reflection)
+{
   float lod =
       (pbrInputs.perceptualRoughness * uboParams.prefilteredCubeMipLevels);
   // retrieve a scale and bias to F0. See [1], Figure 3
@@ -189,14 +197,16 @@ getIBLContribution (PBRInfo pbrInputs, vec3 n, vec3 reflection) {
 // https://archive.org/details/lambertsphotome00lambgoog See also [1], Equation
 // 1
 vec3
-diffuse (PBRInfo pbrInputs) {
+diffuse (PBRInfo pbrInputs)
+{
   return pbrInputs.diffuseColor / M_PI;
 }
 
 // The following equation models the Fresnel reflectance term of the spec
 // equation (aka F()) Implementation of fresnel from [4], Equation 15
 vec3
-specularReflection (PBRInfo pbrInputs) {
+specularReflection (PBRInfo pbrInputs)
+{
   return pbrInputs.reflectance0 +
          (pbrInputs.reflectance90 - pbrInputs.reflectance0) *
              pow (clamp (1.0 - pbrInputs.VdotH, 0.0, 1.0), 5.0);
@@ -207,7 +217,8 @@ specularReflection (PBRInfo pbrInputs) {
 // This implementation is based on [1] Equation 4, and we adopt their
 // modifications to alphaRoughness as input as originally proposed in [2].
 float
-geometricOcclusion (PBRInfo pbrInputs) {
+geometricOcclusion (PBRInfo pbrInputs)
+{
   float NdotL = pbrInputs.NdotL;
   float NdotV = pbrInputs.NdotV;
   float r = pbrInputs.alphaRoughness;
@@ -225,7 +236,8 @@ geometricOcclusion (PBRInfo pbrInputs) {
 // S. Trowbridge, and K. P. Reitz Follows the distribution function recommended
 // in the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
 float
-microfacetDistribution (PBRInfo pbrInputs) {
+microfacetDistribution (PBRInfo pbrInputs)
+{
   float roughnessSq = pbrInputs.alphaRoughness * pbrInputs.alphaRoughness;
   float f =
       (pbrInputs.NdotH * roughnessSq - pbrInputs.NdotH) * pbrInputs.NdotH +
@@ -235,7 +247,8 @@ microfacetDistribution (PBRInfo pbrInputs) {
 
 // Gets metallic factor from specular glossiness workflow inputs
 float
-convertMetallic (vec3 diffuse, vec3 specular, float maxSpecular) {
+convertMetallic (vec3 diffuse, vec3 specular, float maxSpecular)
+{
   float perceivedDiffuse =
       sqrt (0.299 * diffuse.r * diffuse.r + 0.587 * diffuse.g * diffuse.g +
             0.114 * diffuse.b * diffuse.b);
@@ -254,7 +267,8 @@ convertMetallic (vec3 diffuse, vec3 specular, float maxSpecular) {
 }
 
 void
-main () {
+main ()
+{
   float perceptualRoughness;
   float metallic;
   vec3 diffuseColor;

@@ -50,9 +50,9 @@ owl_vk_swapchain_size_ensure (struct owl_vk_swapchain *swapchain,
 }
 
 owl_private enum owl_code
-owl_vk_swapchain_vk_swapchain_init (struct owl_vk_swapchain *swapchain,
-                                    struct owl_vk_context const *ctx,
-                                    owl_u32 w, owl_u32 h)
+owl_vk_swapchain_swapchain_init (struct owl_vk_swapchain *swapchain,
+                                 struct owl_vk_context const *ctx, owl_u32 w,
+                                 owl_u32 h)
 {
   owl_u32 families[2];
   VkSwapchainCreateInfoKHR info;
@@ -207,7 +207,7 @@ owl_vk_swapchain_image_views_deinit (struct owl_vk_swapchain *swapchain,
                                      struct owl_vk_context const *ctx)
 {
   owl_i32 i;
-  for (i = 0; (owl_i32)swapchain->vk_image_count; ++i)
+  for (i = 0; i < (owl_i32)swapchain->vk_image_count; ++i)
     vkDestroyImageView (ctx->vk_device, swapchain->vk_image_views[i], NULL);
 }
 
@@ -253,7 +253,7 @@ owl_vk_swapchain_framebuffers_init (
 
 out_error_framebuffers_deinit:
   for (i = i - 1; i >= 0; --i)
-    vkDestroyImageView (ctx->vk_device, swapchain->vk_image_views[i], NULL);
+    vkDestroyFramebuffer (ctx->vk_device, swapchain->vk_framebuffers[i], NULL);
 
 out:
   return code;
@@ -264,7 +264,7 @@ owl_vk_swapchain_framebuffer_deinit (struct owl_vk_swapchain *swapchain,
                                      struct owl_vk_context const *ctx)
 {
   owl_i32 i;
-  for (i = 0; (owl_i32)swapchain->vk_image_count; ++i)
+  for (i = 0; i < (owl_i32)swapchain->vk_image_count; ++i)
     vkDestroyFramebuffer (ctx->vk_device, swapchain->vk_framebuffers[i], NULL);
 }
 
@@ -281,9 +281,10 @@ owl_vk_swapchain_init (
   owl_assert (color_attachment->width == depth_stencil_attachment->width);
   owl_assert (color_attachment->height == depth_stencil_attachment->height);
 
+  swapchain->image = 0;
   w = color_attachment->width;
   h = color_attachment->height;
-  code = owl_vk_swapchain_vk_swapchain_init (swapchain, ctx, w, h);
+  code = owl_vk_swapchain_swapchain_init (swapchain, ctx, w, h);
   if (OWL_SUCCESS != code)
     goto out;
 
@@ -300,9 +301,9 @@ owl_vk_swapchain_init (
   if (OWL_SUCCESS != code)
     goto out_error_image_views_deinit;
 
-  swapchain->clear_values[0].color.float32[0] = 0.01F;
-  swapchain->clear_values[0].color.float32[1] = 0.01F;
-  swapchain->clear_values[0].color.float32[2] = 0.01F;
+  swapchain->clear_values[0].color.float32[0] = 0.0F;
+  swapchain->clear_values[0].color.float32[1] = 0.0F;
+  swapchain->clear_values[0].color.float32[2] = 0.0F;
   swapchain->clear_values[0].color.float32[3] = 1.0F;
   swapchain->clear_values[1].depthStencil.depth = 1.0F;
   swapchain->clear_values[1].depthStencil.stencil = 0.0F;

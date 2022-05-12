@@ -84,3 +84,12 @@ owl_vk_frame_sync_reset (struct owl_vk_frame_sync *sync,
   vk_result = vkResetFences (ctx->vk_device, 1, &sync->vk_in_flight_fence);
   return VK_SUCCESS == vk_result ? OWL_SUCCESS : OWL_ERROR_UNKNOWN;
 }
+
+owl_public void
+owl_vk_frame_sync_unsafe_copy (struct owl_vk_frame_sync *dst,
+                               struct owl_vk_frame_sync const *src)
+{
+  dst->vk_in_flight_fence = src->vk_in_flight_fence;
+  dst->vk_render_done_semaphore = src->vk_render_done_semaphore;
+  dst->vk_image_available_semaphore = src->vk_image_available_semaphore;
+}

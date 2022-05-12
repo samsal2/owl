@@ -8,8 +8,7 @@
 
 owl_public enum owl_code
 owl_vk_frame_heap_init (struct owl_vk_frame_heap *heap,
-                        struct owl_vk_context const *ctx,
-                        struct owl_vk_pipeline_manager const *pm, owl_u64 sz)
+                        struct owl_vk_context const *ctx, owl_u64 sz)
 {
   VkBufferCreateInfo buffer_info;
   VkMemoryRequirements req;
@@ -83,7 +82,7 @@ owl_vk_frame_heap_init (struct owl_vk_frame_heap *heap,
   set_info.pNext = NULL;
   set_info.descriptorPool = ctx->vk_set_pool;
   set_info.descriptorSetCount = 1;
-  set_info.pSetLayouts = &pm->vk_vert_ubo_set_layout;
+  set_info.pSetLayouts = &ctx->vk_vert_ubo_set_layout;
 
   vk_result = vkAllocateDescriptorSets (ctx->vk_device, &set_info,
                                         &heap->vk_pvm_ubo_set);
@@ -92,7 +91,7 @@ owl_vk_frame_heap_init (struct owl_vk_frame_heap *heap,
     goto out_error_memory_deinit;
   }
 
-  set_info.pSetLayouts = &pm->vk_both_ubo_set_layout;
+  set_info.pSetLayouts = &ctx->vk_both_ubo_set_layout;
 
   vk_result = vkAllocateDescriptorSets (ctx->vk_device, &set_info,
                                         &heap->vk_model_ubo1_set);
@@ -102,7 +101,7 @@ owl_vk_frame_heap_init (struct owl_vk_frame_heap *heap,
     goto out_error_pvm_ubo_set_deinit;
   }
 
-  set_info.pSetLayouts = &pm->vk_frag_ubo_set_layout;
+  set_info.pSetLayouts = &ctx->vk_frag_ubo_set_layout;
 
   vk_result = vkAllocateDescriptorSets (ctx->vk_device, &set_info,
                                         &heap->vk_model_ubo2_set);
@@ -181,7 +180,7 @@ owl_vk_frame_heap_unmap (struct owl_vk_frame_heap *heap,
 }
 
 owl_public owl_b32
-owl_vk_frame_heap_enough_space (struct owl_vk_frame_heap *heap, owl_u64 sz)
+owl_vk_frame_heap_has_enough_space (struct owl_vk_frame_heap *heap, owl_u64 sz)
 {
   return (sz + heap->offset) <= heap->size;
 }
@@ -189,15 +188,14 @@ owl_vk_frame_heap_enough_space (struct owl_vk_frame_heap *heap, owl_u64 sz)
 owl_public void *
 owl_vk_frame_heap_allocate (struct owl_vk_frame_heap *heap,
                             struct owl_vk_context const *ctx, owl_u64 sz,
-                            struct owl_vk_frame_heap_allocation *allocation)
+                            struct owl_vk_frame_allocation *allocation)
 {
   owl_byte *data = NULL;
-  owl_u64 const required = heap->offset + sz;
 
   owl_unused (ctx);
 
   /* Not enough space */
-  if (required < sz) {
+  if (!owl_vk_frame_heap_has_enough_space (heap, sz)) {
     allocation->offset32 = (owl_u32)heap->offset;
     allocation->offset = heap->offset;
     allocation->vk_buffer = VK_NULL_HANDLE;
@@ -208,12 +206,13 @@ owl_vk_frame_heap_allocate (struct owl_vk_frame_heap *heap,
     data = &((owl_byte *)(heap->data))[heap->offset];
 
     allocation->offset32 = (owl_u32)heap->offset;
+    allocation->offset = heap->offset;
     allocation->vk_buffer = heap->vk_buffer;
     allocation->vk_pvm_ubo_set = heap->vk_pvm_ubo_set;
     allocation->vk_model_ubo1_set = heap->vk_model_ubo1_set;
     allocation->vk_model_ubo2_set = heap->vk_model_ubo2_set;
 
-    heap->offset = owl_alignu2 (required, heap->alignment);
+    heap->offset = owl_alignu2 (heap->offset + sz, heap->alignment);
   }
 
   return data;
@@ -227,10 +226,9 @@ owl_vk_frame_heap_offset (struct owl_vk_frame_heap const *heap)
 
 owl_public void
 owl_vk_frame_heap_free (struct owl_vk_frame_heap *heap,
-                        struct owl_vk_context const *ctx, void *p)
+                        struct owl_vk_context const *ctx)
 {
   owl_unused (ctx);
-  owl_unused (p);
 
   heap->offset = 0;
 }
@@ -239,4 +237,19 @@ owl_public void
 owl_vk_frame_heap_reset (struct owl_vk_frame_heap *heap)
 {
   heap->offset = 0;
+}
+
+owl_public void
+owl_vk_frame_heap_unsafe_copy (struct owl_vk_frame_heap *dst,
+                               struct owl_vk_frame_heap const *src)
+{
+  dst->data = src->data;
+  dst->offset = src->offset;
+  dst->size = src->size;
+  dst->alignment = src->alignment;
+  dst->vk_memory = src->vk_memory;
+  dst->vk_buffer = src->vk_buffer;
+  dst->vk_pvm_ubo_set = src->vk_pvm_ubo_set;
+  dst->vk_model_ubo1_set = src->vk_model_ubo1_set;
+  dst->vk_model_ubo2_set = src->vk_model_ubo2_set;
 }

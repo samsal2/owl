@@ -21,19 +21,21 @@ struct owl_window;
 struct owl_vk_renderer {
   owl_i32 width;
   owl_i32 height;
+  double current_time;
+  double previous_time;
   struct owl_camera camera;
   struct owl_vk_context context;
   struct owl_vk_attachment color_attachment;
   struct owl_vk_attachment depth_attachment;
   struct owl_vk_swapchain swapchain;
   struct owl_vk_pipeline_manager pipelines;
-  struct owl_vk_garbage garbage;
   struct owl_vk_stage_heap stage_heap;
 
-  struct owl_vk_font const *font;
+  struct owl_vk_font *font;
 
   owl_i32 frame;
   struct owl_vk_frame frames[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  struct owl_vk_garbage garbages[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT];
 };
 
 owl_public enum owl_code
@@ -46,21 +48,19 @@ owl_public enum owl_code
 owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h);
 
 owl_public void *
-owl_vk_renderer_frame_heap_allocate (
-    struct owl_vk_renderer *vkr, owl_u64 sz,
-    struct owl_vk_frame_heap_allocation *allocation);
+owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 sz,
+                                struct owl_vk_frame_allocation *allocation);
 
 owl_public void *
-owl_vk_renderer_stage_heap_allocate (
-    struct owl_vk_renderer *vkr, owl_u64 sz,
-    struct owl_vk_stage_heap_allocation *allocation);
+owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 sz,
+                                struct owl_vk_stage_allocation *allocation);
 
 owl_public void
-owl_vk_renderer_stage_heap_free (struct owl_vk_renderer *vkr, void *p);
+owl_vk_renderer_stage_heap_free (struct owl_vk_renderer *vkr);
 
 owl_public void
 owl_vk_renderer_font_set (struct owl_vk_renderer *vkr,
-                          struct owl_vk_font const *font);
+                          struct owl_vk_font *font);
 
 owl_public enum owl_code
 owl_vk_renderer_frame_begin (struct owl_vk_renderer *vkr);
