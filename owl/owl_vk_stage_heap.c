@@ -96,22 +96,19 @@ owl_vk_stage_heap_reserve (struct owl_vk_stage_heap *heap,
 {
   enum owl_code code = OWL_SUCCESS;
 
-  if (heap->in_use) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (heap->in_use)
+    return OWL_ERROR_UNKNOWN;
 
   if (owl_vk_stage_heap_has_enough_space (heap, sz))
-    goto out;
+    return OWL_SUCCESS;
 
   owl_vk_stage_heap_deinit (heap, ctx);
 
   code = owl_vk_stage_heap_init (heap, ctx, 2 * sz);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_public void *
@@ -122,24 +119,18 @@ owl_vk_stage_heap_allocate (struct owl_vk_stage_heap *heap,
   owl_byte *data = NULL;
   enum owl_code code = OWL_SUCCESS;
 
-  if (heap->in_use) {
-    owl_assert (0);
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (heap->in_use)
+    return NULL;
 
   code = owl_vk_stage_heap_reserve (heap, ctx, sz);
-  if (OWL_SUCCESS != code) {
-    owl_assert (0);
-    goto out;
-  }
+  if (OWL_SUCCESS != code)
+    return NULL;
 
   data = heap->data;
-  allocation->vk_buffer = heap->vk_buffer;
 
+  allocation->vk_buffer = heap->vk_buffer;
   heap->in_use = 1;
 
-out:
   return data;
 }
 

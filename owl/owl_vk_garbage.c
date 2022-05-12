@@ -44,17 +44,12 @@ owl_public enum owl_code
 owl_vk_garbage_add_frame (struct owl_vk_garbage *garbage,
                           struct owl_vk_frame *frame)
 {
-  enum owl_code code = OWL_SUCCESS;
-
-  if (OWL_VK_GARBAGE_MAX_FRAME_COUNT <= garbage->frame_count) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (OWL_VK_GARBAGE_MAX_FRAME_COUNT <= garbage->frame_count)
+    return OWL_ERROR_UNKNOWN;
 
   owl_vk_frame_garbage_init (&garbage->frames[garbage->frame_count++], frame);
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_public enum owl_code
@@ -64,19 +59,14 @@ owl_vk_garbage_pop_frame (struct owl_vk_garbage *garbage,
 
   struct owl_vk_frame_garbage *frame_garbage;
 
-  enum owl_code code = OWL_SUCCESS;
-
-  if (0 >= garbage->frame_count) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (0 >= garbage->frame_count)
+    return OWL_ERROR_UNKNOWN;
 
   frame_garbage = &garbage->frames[--garbage->frame_count];
 
   owl_vk_frame_heap_unsafe_copy (&frame->heap, &frame_garbage->heap);
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_public enum owl_code

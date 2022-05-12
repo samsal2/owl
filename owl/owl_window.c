@@ -200,8 +200,10 @@ owl_window_create_vk_surface (struct owl_window const *w, VkInstance instance,
   VkResult vk_result;
 
   vk_result = glfwCreateWindowSurface (instance, w->opaque, NULL, surface);
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-  return VK_SUCCESS == vk_result ? OWL_SUCCESS : OWL_ERROR_UNKNOWN;
+  return OWL_SUCCESS;
 }
 
 owl_public void

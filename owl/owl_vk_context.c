@@ -197,7 +197,6 @@ owl_vk_context_query_families (struct owl_vk_context *ctx, owl_u32 id)
     found = 0;
     goto out;
   }
-
   vkGetPhysicalDeviceQueueFamilyProperties (ctx->vk_device_options[id],
                                             &property_count, properties);
 
@@ -248,32 +247,24 @@ owl_validate_device_extensions (owl_u32 extension_count,
                                 VkExtensionProperties const *extensions)
 {
   owl_i32 i;
-  owl_i32 found = 1;
+  owl_u32 j;
   owl_b32 extensions_found[owl_array_size (device_extensions)];
 
   for (i = 0; i < (owl_i32)owl_array_size (device_extensions); ++i) {
     extensions_found[i] = 0;
   }
 
-  for (i = 0; i < (owl_i32)extension_count; ++i) {
-    owl_u32 j;
-    for (j = 0; j < owl_array_size (device_extensions); ++j) {
+  for (i = 0; i < (owl_i32)extension_count; ++i)
+    for (j = 0; j < owl_array_size (device_extensions); ++j)
       if (!owl_strncmp (device_extensions[j], extensions[i].extensionName,
-                        VK_MAX_EXTENSION_NAME_SIZE)) {
+                        VK_MAX_EXTENSION_NAME_SIZE))
         extensions_found[j] = 1;
-      }
-    }
-  }
 
-  for (i = 0; i < (owl_i32)owl_array_size (device_extensions); ++i) {
-    if (!extensions_found[i]) {
-      found = 0;
-      goto out;
-    }
-  }
+  for (i = 0; i < (owl_i32)owl_array_size (device_extensions); ++i)
+    if (!extensions_found[i])
+      return 1;
 
-out:
-  return found;
+  return 1;
 }
 
 owl_private enum owl_code
@@ -282,7 +273,6 @@ owl_vk_context_physical_device_select (struct owl_vk_context *ctx)
   owl_i32 i;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < (owl_i32)ctx->vk_device_option_count; ++i) {
     owl_b32 has_families;
@@ -297,22 +287,16 @@ owl_vk_context_physical_device_select (struct owl_vk_context *ctx)
 
     vk_result = vkGetPhysicalDeviceSurfaceFormatsKHR (
         ctx->vk_physical_device, ctx->vk_surface, &has_formats, NULL);
-
-    if (VK_SUCCESS != vk_result) {
-      code = OWL_ERROR_UNKNOWN;
-      goto out;
-    }
+    if (VK_SUCCESS != vk_result)
+      return OWL_ERROR_UNKNOWN;
 
     if (!has_formats)
       continue;
 
     vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR (
         ctx->vk_physical_device, ctx->vk_surface, &has_modes, NULL);
-
-    if (VK_SUCCESS != vk_result) {
-      code = OWL_ERROR_UNKNOWN;
-      goto out;
-    }
+    if (VK_SUCCESS != vk_result)
+      return OWL_ERROR_UNKNOWN;
 
     if (!has_modes)
       continue;
@@ -322,31 +306,24 @@ owl_vk_context_physical_device_select (struct owl_vk_context *ctx)
       continue;
 
     vkGetPhysicalDeviceFeatures (ctx->vk_physical_device, &features);
-
     if (!features.samplerAnisotropy)
       continue;
 
     vk_result = vkEnumerateDeviceExtensionProperties (
         ctx->vk_physical_device, NULL, &extension_count, NULL);
-
-    if (VK_SUCCESS != vk_result) {
-      code = OWL_ERROR_UNKNOWN;
-      goto out;
-    }
+    if (VK_SUCCESS != vk_result)
+      return OWL_ERROR_UNKNOWN;
 
     extensions = owl_malloc (extension_count * sizeof (*extensions));
-    if (!extensions) {
-      code = OWL_ERROR_BAD_ALLOCATION;
-      goto out;
-    }
+    if (!extensions)
+      return OWL_ERROR_BAD_ALLOCATION;
 
     vk_result = vkEnumerateDeviceExtensionProperties (
         ctx->vk_physical_device, NULL, &extension_count, extensions);
 
     if (VK_SUCCESS != vk_result) {
-      code = OWL_ERROR_UNKNOWN;
       owl_free (extensions);
-      goto out;
+      return OWL_ERROR_UNKNOWN;
     }
 
     validated = owl_validate_device_extensions (extension_count, extensions);
@@ -357,14 +334,10 @@ owl_vk_context_physical_device_select (struct owl_vk_context *ctx)
 
     owl_free (extensions);
 
-    code = OWL_SUCCESS;
-    goto out;
+    return OWL_SUCCESS;
   }
 
-  code = OWL_ERROR_NO_SUITABLE_DEVICE;
-
-out:
-  return code;
+  return OWL_ERROR_UNKNOWN;
 }
 
 owl_private enum owl_code
@@ -379,7 +352,6 @@ owl_vk_context_surface_format_ensure (struct owl_vk_context const *ctx)
 
   vk_result = vkGetPhysicalDeviceSurfaceFormatsKHR (
       ctx->vk_physical_device, ctx->vk_surface, &format_count, NULL);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -393,7 +365,6 @@ owl_vk_context_surface_format_ensure (struct owl_vk_context const *ctx)
 
   vk_result = vkGetPhysicalDeviceSurfaceFormatsKHR (
       ctx->vk_physical_device, ctx->vk_surface, &format_count, formats);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_formats_free;
@@ -425,7 +396,6 @@ owl_vk_context_msaa_ensure (struct owl_vk_context const *ctx)
 {
   VkPhysicalDeviceProperties properties;
 
-  enum owl_code code = OWL_SUCCESS;
   VkSampleCountFlags limit = OWL_ALL_SAMPLE_FLAG_BITS;
 
   vkGetPhysicalDeviceProperties (ctx->vk_physical_device, &properties);
@@ -433,20 +403,13 @@ owl_vk_context_msaa_ensure (struct owl_vk_context const *ctx)
   limit &= properties.limits.framebufferColorSampleCounts;
   limit &= properties.limits.framebufferDepthSampleCounts;
 
-  if (VK_SAMPLE_COUNT_1_BIT & ctx->msaa) {
-    owl_assert (0 && "disabling multisampling is not supported");
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (VK_SAMPLE_COUNT_1_BIT & ctx->msaa)
+    return OWL_ERROR_UNKNOWN;
 
-  if (!(limit & ctx->msaa)) {
-    owl_assert (0 && "msaa_sample_count is not supported");
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (!(limit & ctx->msaa))
+    return OWL_ERROR_UNKNOWN;
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private enum owl_code
@@ -457,40 +420,29 @@ owl_vk_context_present_mode_ensure (struct owl_vk_context *ctx)
   VkPresentModeKHR modes[OWL_MAX_PRESENT_MODES];
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   VkPresentModeKHR const preferred = ctx->vk_present_mode;
 
   vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR (
       ctx->vk_physical_device, ctx->vk_surface, &mode_count, NULL);
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
-
-  if (OWL_MAX_PRESENT_MODES <= mode_count) {
-    code = OWL_ERROR_OUT_OF_SPACE;
-    goto out;
-  }
+  if (OWL_MAX_PRESENT_MODES <= mode_count)
+    return OWL_ERROR_OUT_OF_SPACE;
 
   vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR (
       ctx->vk_physical_device, ctx->vk_surface, &mode_count, modes);
-
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
   for (i = 0; i < (owl_i32)mode_count; ++i) {
     ctx->vk_present_mode = modes[mode_count - i - 1];
-
     if (preferred == ctx->vk_present_mode)
-      goto out;
+      return OWL_SUCCESS;
   }
 
-out:
-  return code;
+  return OWL_ERROR_UNKNOWN;
 }
 
 owl_private enum owl_code
@@ -502,7 +454,6 @@ owl_vk_context_device_init (struct owl_vk_context *ctx)
 
   float const priority = 1.0F;
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   queue_infos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_infos[0].pNext = NULL;
@@ -538,10 +489,8 @@ owl_vk_context_device_init (struct owl_vk_context *ctx)
   vk_result = vkCreateDevice (ctx->vk_physical_device, &device_info, NULL,
                               &ctx->vk_device);
 
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
   vkGetDeviceQueue (ctx->vk_device, ctx->graphics_queue_family, 0,
                     &ctx->vk_graphics_queue);
@@ -549,8 +498,7 @@ owl_vk_context_device_init (struct owl_vk_context *ctx)
   vkGetDeviceQueue (ctx->vk_device, ctx->present_queue_family, 0,
                     &ctx->vk_present_queue);
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private void
@@ -559,8 +507,8 @@ owl_vk_context_device_deinit (struct owl_vk_context *ctx)
   vkDestroyDevice (ctx->vk_device, NULL);
 }
 
-owl_private VkFormat
-owl_vk_context_depth_stencil_format_get (struct owl_vk_context const *ctx)
+owl_private enum owl_code
+owl_vk_context_depth_stencil_format_ensure (struct owl_vk_context *ctx)
 {
   VkFormatProperties properties;
 
@@ -568,27 +516,21 @@ owl_vk_context_depth_stencil_format_get (struct owl_vk_context const *ctx)
       ctx->vk_physical_device, VK_FORMAT_D24_UNORM_S8_UINT, &properties);
 
   if (properties.optimalTilingFeatures &
-      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
-    return VK_FORMAT_D24_UNORM_S8_UINT;
+      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+    ctx->vk_depth_stencil_format = VK_FORMAT_D24_UNORM_S8_UINT;
+    return OWL_SUCCESS;
+  }
 
   vkGetPhysicalDeviceFormatProperties (
       ctx->vk_physical_device, VK_FORMAT_D32_SFLOAT_S8_UINT, &properties);
 
   if (properties.optimalTilingFeatures &
-      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
-    return VK_FORMAT_D32_SFLOAT_S8_UINT;
+      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+    ctx->vk_depth_stencil_format = VK_FORMAT_D32_SFLOAT_S8_UINT;
+    return OWL_SUCCESS;
+  }
 
-  return VK_FORMAT_D32_SFLOAT;
-}
-
-owl_private enum owl_code
-owl_vk_context_depth_stencil_format_ensure (struct owl_vk_context *ctx)
-{
-  enum owl_code code = OWL_SUCCESS;
-
-  ctx->vk_depth_stencil_format = owl_vk_context_depth_stencil_format_get (ctx);
-
-  return code;
+  return OWL_ERROR_UNKNOWN;
 }
 
 owl_private enum owl_code
@@ -603,7 +545,6 @@ owl_vk_context_main_render_pass_init (struct owl_vk_context *ctx)
   VkRenderPassCreateInfo info;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   color_reference.attachment = 0;
   color_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -682,14 +623,10 @@ owl_vk_context_main_render_pass_init (struct owl_vk_context *ctx)
 
   vk_result = vkCreateRenderPass (ctx->vk_device, &info, NULL,
                                   &ctx->vk_main_render_pass);
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
-
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private void
@@ -715,7 +652,6 @@ owl_vk_context_pools_init (struct owl_vk_context *ctx)
 
   vk_result = vkCreateCommandPool (ctx->vk_device, &command_pool_info, NULL,
                                    &ctx->vk_command_pool);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -748,7 +684,6 @@ owl_vk_context_pools_init (struct owl_vk_context *ctx)
 
   vk_result = vkCreateDescriptorPool (ctx->vk_device, &set_pool_info, NULL,
                                       &ctx->vk_set_pool);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_command_pool_deinit;
@@ -1018,13 +953,23 @@ owl_vk_context_get_memory_type (struct owl_vk_context const *ctx,
 owl_public enum owl_code
 owl_vk_context_device_wait (struct owl_vk_context const *ctx)
 {
-  VkResult vk_result = vkDeviceWaitIdle (ctx->vk_device);
-  return VK_SUCCESS != vk_result ? OWL_ERROR_UNKNOWN : OWL_SUCCESS;
+  VkResult vk_result;
+
+  vk_result = vkDeviceWaitIdle (ctx->vk_device);
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
+
+  return OWL_SUCCESS;
 }
 
 owl_public enum owl_code
 owl_vk_context_graphics_queue_wait (struct owl_vk_context const *ctx)
 {
-  VkResult vk_result = vkQueueWaitIdle (ctx->vk_graphics_queue);
-  return VK_SUCCESS != vk_result ? OWL_ERROR_UNKNOWN : OWL_SUCCESS;
+  VkResult vk_result;
+
+  vk_result = vkQueueWaitIdle (ctx->vk_graphics_queue);
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
+
+  return OWL_SUCCESS;
 }

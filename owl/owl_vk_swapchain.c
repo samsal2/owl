@@ -61,14 +61,12 @@ owl_vk_swapchain_swapchain_init (struct owl_vk_swapchain *swapchain,
   swapchain->size.height = h;
   code = owl_vk_swapchain_size_ensure (swapchain, ctx);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
   vk_result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR (
       ctx->vk_physical_device, ctx->vk_surface, &capabilities);
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
   info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
   info.pNext = NULL;
@@ -99,14 +97,10 @@ owl_vk_swapchain_swapchain_init (struct owl_vk_swapchain *swapchain,
 
   vk_result = vkCreateSwapchainKHR (ctx->vk_device, &info, NULL,
                                     &swapchain->vk_swapchain);
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
-
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private void
@@ -121,30 +115,22 @@ owl_vk_swapchain_images_init (struct owl_vk_swapchain *swapchain,
                               struct owl_vk_context const *ctx)
 {
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   vk_result = vkGetSwapchainImagesKHR (ctx->vk_device, swapchain->vk_swapchain,
                                        &swapchain->vk_image_count, NULL);
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-  if (OWL_VK_SWAPCHAIN_MAX_IMAGE_COUNT <= swapchain->vk_image_count) {
-    code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto out;
-  }
+  if (OWL_VK_SWAPCHAIN_MAX_IMAGE_COUNT <= swapchain->vk_image_count)
+    return OWL_ERROR_OUT_OF_BOUNDS;
 
   vk_result = vkGetSwapchainImagesKHR (ctx->vk_device, swapchain->vk_swapchain,
                                        &swapchain->vk_image_count,
                                        swapchain->vk_images);
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private enum owl_code

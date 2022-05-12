@@ -288,13 +288,12 @@ owl_vk_renderer_frame_begin (struct owl_vk_renderer *vkr)
 
   code = owl_vk_frame_begin (frame, &vkr->context, &vkr->swapchain);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
   code = owl_vk_garbage_clear (garbage, &vkr->context);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
-out:
   return code;
 }
 
@@ -307,7 +306,7 @@ owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr)
 
   code = owl_vk_frame_end (frame, &vkr->context, &vkr->swapchain);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
   if (OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT == ++vkr->frame)
     vkr->frame = 0;
@@ -315,7 +314,6 @@ owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr)
   vkr->previous_time = vkr->current_time;
   vkr->current_time = owl_io_time_stamp_get ();
 
-out:
   return code;
 }
 owl_public struct owl_vk_frame *
@@ -345,7 +343,6 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
   struct owl_vk_frame_allocation ialloc;
   struct owl_vk_frame_allocation ualloc;
 
-  enum owl_code code = OWL_SUCCESS;
   owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
 
   vertices[0].position[0] = q->position0[0];
@@ -389,24 +386,18 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
   owl_m4_copy (matrix, ubo.model);
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (vertices), &valloc);
-  if (!data) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (!data)
+    return OWL_ERROR_UNKNOWN;
   owl_memcpy (data, vertices, sizeof (vertices));
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (indices), &ialloc);
-  if (!data) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (!data)
+    return OWL_ERROR_UNKNOWN;
   owl_memcpy (data, indices, sizeof (indices));
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo), &ualloc);
-  if (!data) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (!data)
+    return OWL_ERROR_UNKNOWN;
   owl_memcpy (data, &ubo, sizeof (ubo));
 
   sets[0] = ualloc.vk_pvm_ubo_set;
@@ -427,8 +418,7 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
   vkCmdDrawIndexed (frame->vk_command_buffer, owl_array_size (indices), 1, 0,
                     0, 0);
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_public enum owl_code
@@ -483,14 +473,13 @@ owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr, char const *text,
 
     code = owl_vk_font_fill_glyph (vkr->font, *c, offset, &glyph);
     if (OWL_SUCCESS != code)
-      goto out;
+      return code;
 
     code = owl_vk_renderer_draw_glyph (vkr, &glyph, color);
     if (OWL_SUCCESS != code)
-      goto out;
+      return code;
   }
 
-out:
   return code;
 }
 
@@ -522,11 +511,11 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
     code = owl_vk_renderer_draw_model_node (vkr, node->children[i], model,
                                             matrix);
     if (OWL_SUCCESS != code)
-      goto out;
+      return code;
   }
 
   if (OWL_MODEL_MESH_NONE == node->mesh)
-    goto out;
+    return OWL_SUCCESS;
 
   mesh = &model->meshes[node->mesh];
   skin = &model->skins[node->skin];
@@ -545,10 +534,8 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
   owl_v4_zero (ubo2.light_direction);
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo1), &u1alloc);
-  if (!data) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (!data)
+    return OWL_ERROR_UNKNOWN;
   owl_memcpy (data, &ubo1, sizeof (ubo1));
 
   vkCmdBindDescriptorSets (
@@ -557,10 +544,8 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
       &u1alloc.vk_model_ubo1_set, 1, &u1alloc.offset32);
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo2), &u2alloc);
-  if (!data) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (!data)
+    return OWL_ERROR_UNKNOWN;
   owl_memcpy (data, &ubo2, sizeof (ubo2));
 
   vkCmdBindDescriptorSets (
@@ -673,8 +658,8 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
     vkCmdDrawIndexed (frame->vk_command_buffer, primitive->count, 1,
                       primitive->first, 0, 0);
   }
-out:
-  return code;
+
+  return OWL_SUCCESS;
 }
 
 owl_public enum owl_code
@@ -698,11 +683,9 @@ owl_vk_renderer_draw_model (struct owl_vk_renderer *vkr,
   for (i = 0; i < model->root_count; ++i) {
     code =
         owl_vk_renderer_draw_model_node (vkr, model->roots[i], model, matrix);
-    if (OWL_SUCCESS != code) {
-      goto out;
-    }
+    if (OWL_SUCCESS != code)
+      return code;
   }
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }

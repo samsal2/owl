@@ -48,7 +48,6 @@ owl_vk_attachment_image_init (struct owl_vk_attachment *attachment,
   VkImageCreateInfo info;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   info.pNext = NULL;
@@ -71,13 +70,10 @@ owl_vk_attachment_image_init (struct owl_vk_attachment *attachment,
   vk_result =
       vkCreateImage (ctx->vk_device, &info, NULL, &attachment->vk_image);
 
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private void
@@ -107,7 +103,6 @@ owl_vk_attachment_memory_init (struct owl_vk_attachment *attachment,
 
   vk_result =
       vkAllocateMemory (ctx->vk_device, &info, NULL, &attachment->vk_memory);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -144,7 +139,6 @@ owl_vk_attachment_image_view_init (struct owl_vk_attachment *attachment,
   VkImageViewCreateInfo info;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   info.pNext = NULL;
@@ -164,13 +158,10 @@ owl_vk_attachment_image_view_init (struct owl_vk_attachment *attachment,
 
   vk_result = vkCreateImageView (ctx->vk_device, &info, NULL,
                                  &attachment->vk_image_view);
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private void

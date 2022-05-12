@@ -20,7 +20,6 @@ owl_vk_im_command_buffer_begin (struct owl_vk_im_command_buffer *cmd,
 
   vk_result = vkAllocateCommandBuffers (ctx->vk_device, &command_buffer_info,
                                         &cmd->vk_command_buffer);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -32,7 +31,6 @@ owl_vk_im_command_buffer_begin (struct owl_vk_im_command_buffer *cmd,
   begin_info.pInheritanceInfo = NULL;
 
   vk_result = vkBeginCommandBuffer (cmd->vk_command_buffer, &begin_info);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_command_buffer_deinit;
