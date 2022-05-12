@@ -220,7 +220,6 @@ owl_vk_swapchain_framebuffers_init (
 
     vk_result = vkCreateFramebuffer (ctx->vk_device, &info, NULL,
                                      &swapchain->vk_framebuffers[i]);
-
     if (VK_SUCCESS != vk_result) {
       code = OWL_ERROR_UNKNOWN;
       goto out_error_framebuffers_deinit;

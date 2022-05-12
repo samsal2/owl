@@ -345,7 +345,6 @@ owl_vk_image_image_init (struct owl_vk_image *image,
   VkImageCreateInfo info;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   info.pNext = NULL;
@@ -367,14 +366,10 @@ owl_vk_image_image_init (struct owl_vk_image *image,
   info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
   vk_result = vkCreateImage (ctx->vk_device, &info, NULL, &image->vk_image);
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
-
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private void
@@ -557,7 +552,7 @@ owl_vk_image_upload (struct owl_vk_image *image,
 
   code = owl_vk_im_command_buffer_begin (&cmd, ctx);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
   owl_vk_image_transition (image, &cmd, load->mips, 1,
                            VK_IMAGE_LAYOUT_UNDEFINED,
@@ -586,10 +581,9 @@ owl_vk_image_upload (struct owl_vk_image *image,
 
   code = owl_vk_im_command_buffer_end (&cmd, ctx);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private enum owl_code
@@ -599,7 +593,6 @@ owl_vk_image_set_init (struct owl_vk_image *image,
   VkDescriptorSetAllocateInfo info;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   info.pNext = NULL;
@@ -608,13 +601,10 @@ owl_vk_image_set_init (struct owl_vk_image *image,
   info.pSetLayouts = &ctx->vk_frag_image_set_layout;
 
   vk_result = vkAllocateDescriptorSets (ctx->vk_device, &info, &image->vk_set);
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private void
@@ -735,9 +725,7 @@ owl_public void
 owl_vk_image_deinit (struct owl_vk_image *image,
                      struct owl_vk_context const *ctx)
 {
-  enum owl_code code;
-  code = owl_vk_context_device_wait (ctx);
-  owl_assert (OWL_SUCCESS == code);
+  owl_vk_context_device_wait (ctx);
 
   owl_vk_image_set_deinit (image, ctx);
   owl_vk_image_sampler_deinit (image, ctx);

@@ -176,13 +176,13 @@ owl_vk_frame_allocate (struct owl_vk_frame *frame,
                        struct owl_vk_garbage *garbage, owl_u64 sz,
                        struct owl_vk_frame_allocation *allocation)
 {
-  enum owl_code code = OWL_SUCCESS;
+  enum owl_code code;
 
   code = owl_vk_frame_reserve (frame, ctx, garbage, sz);
   if (OWL_SUCCESS != code)
     return NULL;
 
-  return owl_vk_frame_heap_allocate (&frame->heap, ctx, sz, allocation);
+  return owl_vk_frame_heap_unsafe_allocate (&frame->heap, ctx, sz, allocation);
 }
 
 owl_public void

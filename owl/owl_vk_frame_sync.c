@@ -18,7 +18,6 @@ owl_vk_frame_sync_init (struct owl_vk_frame_sync *sync,
 
   vk_result = vkCreateFence (ctx->vk_device, &fence_info, NULL,
                              &sync->vk_in_flight_fence);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -30,7 +29,6 @@ owl_vk_frame_sync_init (struct owl_vk_frame_sync *sync,
 
   vk_result = vkCreateSemaphore (ctx->vk_device, &semaphore_info, NULL,
                                  &sync->vk_render_done_semaphore);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_in_flight_fence_deinit;
@@ -38,7 +36,6 @@ owl_vk_frame_sync_init (struct owl_vk_frame_sync *sync,
 
   vk_result = vkCreateSemaphore (ctx->vk_device, &semaphore_info, NULL,
                                  &sync->vk_image_available_semaphore);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_render_done_semaphore_deinit;

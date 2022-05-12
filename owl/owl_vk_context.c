@@ -93,6 +93,8 @@ owl_vk_context_instance_deinit (struct owl_vk_context *ctx)
   ctx->vk_instance = VK_NULL_HANDLE;
 }
 
+#if defined(OWL_ENABLE_VALIDATION)
+
 owl_private enum owl_code
 owl_vk_context_debug_messenger_init (struct owl_vk_context *ctx)
 {
@@ -139,8 +141,8 @@ owl_vk_context_debug_messenger_deinit (struct owl_vk_context *ctx)
 
   vkDestroyDebugUtilsMessengerEXT (ctx->vk_instance, ctx->vk_debug_messenger,
                                    NULL);
-  ctx->vk_debug_messenger = VK_NULL_HANDLE;
 }
+#endif
 
 owl_private enum owl_code
 owl_vk_context_surface_init (struct owl_vk_context *ctx,
@@ -153,7 +155,6 @@ owl_private void
 owl_vk_context_surface_deinit (struct owl_vk_context *ctx)
 {
   vkDestroySurfaceKHR (ctx->vk_instance, ctx->vk_surface, NULL);
-  ctx->vk_surface = VK_NULL_HANDLE;
 }
 
 owl_private enum owl_code
@@ -171,7 +172,6 @@ owl_vk_context_device_options_fill (struct owl_vk_context *ctx)
 
   vk_result = vkEnumeratePhysicalDevices (
       ctx->vk_instance, &ctx->vk_device_option_count, ctx->vk_device_options);
-
   if (VK_SUCCESS != vk_result)
     return OWL_ERROR_UNKNOWN;
 
@@ -217,7 +217,7 @@ owl_vk_context_query_families (struct owl_vk_context *ctx, owl_u32 id)
 
     if (VK_SUCCESS != vk_result) {
       found = 0;
-      goto out_properties_free;
+      goto out;
     }
 
     if (has_surface)
@@ -488,7 +488,6 @@ owl_vk_context_device_init (struct owl_vk_context *ctx)
 
   vk_result = vkCreateDevice (ctx->vk_physical_device, &device_info, NULL,
                               &ctx->vk_device);
-
   if (VK_SUCCESS != vk_result)
     return OWL_ERROR_UNKNOWN;
 
@@ -728,7 +727,6 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
                                            &ctx->vk_vert_ubo_set_layout);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -738,7 +736,6 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
                                            &ctx->vk_frag_ubo_set_layout);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_vert_ubo_set_layout_deinit;
@@ -760,7 +757,6 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
                                            &ctx->vk_vert_ssbo_set_layout);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_both_ubo_set_layout_deinit;
@@ -779,7 +775,6 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
                                            &ctx->vk_frag_image_set_layout);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_vert_ssbo_set_layout_deinit;
@@ -831,6 +826,7 @@ owl_vk_context_init (struct owl_vk_context *ctx, struct owl_window const *w)
   if (OWL_SUCCESS != code)
     goto out;
 
+#if defined(OWL_ENABLE_VALIDATION)
   code = owl_vk_context_debug_messenger_init (ctx);
   if (OWL_SUCCESS != code)
     goto out_error_instance_deinit;
@@ -838,6 +834,11 @@ owl_vk_context_init (struct owl_vk_context *ctx, struct owl_window const *w)
   code = owl_vk_context_surface_init (ctx, w);
   if (OWL_SUCCESS != code)
     goto out_error_debug_messenger_deinit;
+#else
+  code = owl_vk_context_surface_init (ctx, w);
+  if (OWL_SUCCESS != code)
+    goto out_error_instance_deinit;
+#endif
 
   code = owl_vk_context_device_options_fill (ctx);
   if (OWL_SUCCESS != code)
@@ -896,8 +897,10 @@ out_error_device_deinit:
 out_error_surface_deinit:
   owl_vk_context_surface_deinit (ctx);
 
+#if defined(OWL_ENABLE_VALIDATION)
 out_error_debug_messenger_deinit:
   owl_vk_context_debug_messenger_deinit (ctx);
+#endif
 
 out_error_instance_deinit:
   owl_vk_context_instance_deinit (ctx);
@@ -914,7 +917,9 @@ owl_vk_context_deinit (struct owl_vk_context *ctx)
   owl_vk_context_main_render_pass_deinit (ctx);
   owl_vk_context_device_deinit (ctx);
   owl_vk_context_surface_deinit (ctx);
+#if defined(OWL_ENABLE_VALIDATION)
   owl_vk_context_debug_messenger_deinit (ctx);
+#endif
   owl_vk_context_instance_deinit (ctx);
 }
 
