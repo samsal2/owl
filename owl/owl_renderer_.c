@@ -1,5 +1,4 @@
 
-#include "owl/owl_definitions.h"
 #include "owl_internal.h"
 #include "owl_io.h"
 #include "owl_model.h"

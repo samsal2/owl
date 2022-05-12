@@ -26,7 +26,7 @@ struct owl_vk_renderer {
   struct owl_camera camera;
   struct owl_vk_context context;
   struct owl_vk_attachment color_attachment;
-  struct owl_vk_attachment depth_attachment;
+  struct owl_vk_attachment depth_stencil_attachment;
   struct owl_vk_swapchain swapchain;
   struct owl_vk_pipeline_manager pipelines;
   struct owl_vk_stage_heap stage_heap;

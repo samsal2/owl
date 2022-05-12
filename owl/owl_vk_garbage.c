@@ -44,12 +44,17 @@ owl_public enum owl_code
 owl_vk_garbage_add_frame (struct owl_vk_garbage *garbage,
                           struct owl_vk_frame *frame)
 {
-  if (OWL_VK_GARBAGE_MAX_FRAME_COUNT <= garbage->frame_count)
-    return OWL_ERROR_UNKNOWN;
+  enum owl_code code = OWL_SUCCESS;
+
+  if (OWL_VK_GARBAGE_MAX_FRAME_COUNT <= garbage->frame_count) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out;
+  }
 
   owl_vk_frame_garbage_init (&garbage->frames[garbage->frame_count++], frame);
 
-  return OWL_SUCCESS;
+out:
+  return code;
 }
 
 owl_public enum owl_code
