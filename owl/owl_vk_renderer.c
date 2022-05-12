@@ -328,7 +328,7 @@ owl_public enum owl_code
 owl_vk_renderer_pipeline_bind (struct owl_vk_renderer *vkr,
                                enum owl_pipeline_id id)
 {
-  struct owl_vk_frame *frame = &vkr->frames[vkr->frame];
+  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
   return owl_vk_pipeline_manager_bind (&vkr->pipelines, id, frame);
 }
 

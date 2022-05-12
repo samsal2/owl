@@ -7,31 +7,21 @@
 
 #define OWL_UNRESTRICTED_DIMENSION (owl_u32) - 1
 
-#if !defined(NDEBUG)
-
-#define OWL_VK_CHECK(e)                                                       \
-  do {                                                                        \
-    VkResult const result_ = e;                                               \
-    if (VK_SUCCESS != result_) {                                              \
-      OWL_DEBUG_LOG ("OWL_VK_CHECK(%s) result = %i\n", #e, result_);          \
-      owl_assert (0);                                                         \
-    }                                                                         \
-  } while (0)
-
-#else /* NDEBUG */
-
-#define OWL_VK_CHECK(e) e
-
-#endif /* NDEBUG */
-
-owl_private void
+owl_private enum owl_code
 owl_vk_swapchain_size_ensure (struct owl_vk_swapchain *swapchain,
                               struct owl_vk_context const *ctx)
 {
   VkSurfaceCapabilitiesKHR capabilities;
 
-  OWL_VK_CHECK (vkGetPhysicalDeviceSurfaceCapabilitiesKHR (
-      ctx->vk_physical_device, ctx->vk_surface, &capabilities));
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
+
+  vk_result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR (
+      ctx->vk_physical_device, ctx->vk_surface, &capabilities);
+  if (VK_SUCCESS != vk_result) {
+    code = OWL_SUCCESS;
+    goto out;
+  }
 
   if (OWL_UNRESTRICTED_DIMENSION == capabilities.currentExtent.width) {
     swapchain->size = capabilities.currentExtent;
@@ -47,6 +37,9 @@ owl_vk_swapchain_size_ensure (struct owl_vk_swapchain *swapchain,
     swapchain->size.height =
         owl_clamp (swapchain->size.height, min_height, max_height);
   }
+
+out:
+  return code;
 }
 
 owl_private enum owl_code
@@ -66,11 +59,12 @@ owl_vk_swapchain_swapchain_init (struct owl_vk_swapchain *swapchain,
 
   swapchain->size.width = w;
   swapchain->size.height = h;
-  owl_vk_swapchain_size_ensure (swapchain, ctx);
+  code = owl_vk_swapchain_size_ensure (swapchain, ctx);
+  if (OWL_SUCCESS != code)
+    goto out;
 
   vk_result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR (
       ctx->vk_physical_device, ctx->vk_surface, &capabilities);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -131,7 +125,6 @@ owl_vk_swapchain_images_init (struct owl_vk_swapchain *swapchain,
 
   vk_result = vkGetSwapchainImagesKHR (ctx->vk_device, swapchain->vk_swapchain,
                                        &swapchain->vk_image_count, NULL);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -145,7 +138,6 @@ owl_vk_swapchain_images_init (struct owl_vk_swapchain *swapchain,
   vk_result = vkGetSwapchainImagesKHR (ctx->vk_device, swapchain->vk_swapchain,
                                        &swapchain->vk_image_count,
                                        swapchain->vk_images);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -214,8 +206,8 @@ owl_vk_swapchain_image_views_deinit (struct owl_vk_swapchain *swapchain,
 owl_private enum owl_code
 owl_vk_swapchain_framebuffers_init (
     struct owl_vk_swapchain *swapchain, struct owl_vk_context const *ctx,
-    struct owl_vk_attachment const *color_attachment,
-    struct owl_vk_attachment const *depth_stencil_attachment)
+    struct owl_vk_attachment const *color,
+    struct owl_vk_attachment const *depth_stencil)
 {
   owl_i32 i;
 
@@ -226,8 +218,8 @@ owl_vk_swapchain_framebuffers_init (
     VkImageView attachments[3];
     VkFramebufferCreateInfo info;
 
-    attachments[0] = color_attachment->vk_image_view;
-    attachments[1] = depth_stencil_attachment->vk_image_view;
+    attachments[0] = color->vk_image_view;
+    attachments[1] = depth_stencil->vk_image_view;
     attachments[2] = swapchain->vk_image_views[i];
 
     info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -269,21 +261,21 @@ owl_vk_swapchain_framebuffer_deinit (struct owl_vk_swapchain *swapchain,
 }
 
 owl_public enum owl_code
-owl_vk_swapchain_init (
-    struct owl_vk_swapchain *swapchain, struct owl_vk_context const *ctx,
-    struct owl_vk_attachment const *color_attachment,
-    struct owl_vk_attachment const *depth_stencil_attachment)
+owl_vk_swapchain_init (struct owl_vk_swapchain *swapchain,
+                       struct owl_vk_context const *ctx,
+                       struct owl_vk_attachment const *color,
+                       struct owl_vk_attachment const *depth_stencil)
 {
   owl_i32 w;
   owl_i32 h;
   enum owl_code code = OWL_SUCCESS;
 
-  owl_assert (color_attachment->width == depth_stencil_attachment->width);
-  owl_assert (color_attachment->height == depth_stencil_attachment->height);
+  owl_assert (color->width == depth_stencil->width);
+  owl_assert (color->height == depth_stencil->height);
 
   swapchain->image = 0;
-  w = color_attachment->width;
-  h = color_attachment->height;
+  w = color->width;
+  h = color->height;
   code = owl_vk_swapchain_swapchain_init (swapchain, ctx, w, h);
   if (OWL_SUCCESS != code)
     goto out;
@@ -296,8 +288,8 @@ owl_vk_swapchain_init (
   if (OWL_SUCCESS != code)
     goto out_error_vk_swapchain_deinit;
 
-  code = owl_vk_swapchain_framebuffers_init (swapchain, ctx, color_attachment,
-                                             depth_stencil_attachment);
+  code = owl_vk_swapchain_framebuffers_init (swapchain, ctx, color,
+                                             depth_stencil);
   if (OWL_SUCCESS != code)
     goto out_error_image_views_deinit;
 

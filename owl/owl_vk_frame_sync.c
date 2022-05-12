@@ -70,19 +70,35 @@ owl_public enum owl_code
 owl_vk_frame_sync_wait (struct owl_vk_frame_sync *sync,
                         struct owl_vk_context const *ctx)
 {
-  VkResult vk_result;
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
+
   vk_result = vkWaitForFences (ctx->vk_device, 1, &sync->vk_in_flight_fence,
                                VK_TRUE, (owl_u64)-1);
-  return VK_SUCCESS == vk_result ? OWL_SUCCESS : OWL_ERROR_UNKNOWN;
+  if (VK_SUCCESS != vk_result) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out;
+  }
+
+out:
+  return code;
 }
 
 owl_public enum owl_code
 owl_vk_frame_sync_reset (struct owl_vk_frame_sync *sync,
                          struct owl_vk_context const *ctx)
 {
-  VkResult vk_result;
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
+
   vk_result = vkResetFences (ctx->vk_device, 1, &sync->vk_in_flight_fence);
-  return VK_SUCCESS == vk_result ? OWL_SUCCESS : OWL_ERROR_UNKNOWN;
+  if (VK_SUCCESS != vk_result) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out;
+  }
+
+out:
+  return code;
 }
 
 owl_public void

@@ -26,10 +26,10 @@ struct owl_vk_swapchain {
 };
 
 owl_public enum owl_code
-owl_vk_swapchain_init (
-    struct owl_vk_swapchain *swapchain, struct owl_vk_context const *ctx,
-    struct owl_vk_attachment const *color_attachment,
-    struct owl_vk_attachment const *depth_stencil_attachment);
+owl_vk_swapchain_init (struct owl_vk_swapchain *swapchain,
+                       struct owl_vk_context const *ctx,
+                       struct owl_vk_attachment const *color,
+                       struct owl_vk_attachment const *depth_stencil);
 
 owl_public void
 owl_vk_swapchain_deinit (struct owl_vk_swapchain *swapchain,

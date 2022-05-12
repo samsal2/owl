@@ -14,12 +14,11 @@ struct owl_vk_image_load {
   owl_u32 height;
   owl_u32 mips;
   enum owl_pixel_format format;
-  owl_byte *stage_data;
   struct owl_vk_stage_allocation allocation;
 };
 
 owl_private owl_u64
-owl_vk_image_pixel_format_size (enum owl_pixel_format format)
+owl_pixel_format_size (enum owl_pixel_format format)
 {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
@@ -31,7 +30,7 @@ owl_vk_image_pixel_format_size (enum owl_pixel_format format)
 }
 
 owl_private owl_u32
-owl_vk_image_calc_mips (owl_u32 w, owl_u32 h)
+owl_vk_image_calculate_mips (owl_u32 w, owl_u32 h)
 {
   return (owl_u32)(floor (log2 (owl_max (w, h))) + 1);
 }
@@ -54,7 +53,6 @@ owl_vk_image_load_init_from_file (struct owl_vk_image_load *load,
 
   data = stbi_load (desc->src_path, &width, &height, &chans, STBI_rgb_alpha);
   if (!data) {
-    owl_assert (0);
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
@@ -62,20 +60,16 @@ owl_vk_image_load_init_from_file (struct owl_vk_image_load *load,
   load->format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
   load->width = (owl_u32)width;
   load->height = (owl_u32)height;
-  load->mips = owl_vk_image_calc_mips (load->width, load->height);
+  load->mips = owl_vk_image_calculate_mips (load->width, load->height);
 
-  sz = load->width * load->height *
-       owl_vk_image_pixel_format_size (load->format);
+  sz = load->width * load->height * owl_pixel_format_size (load->format);
 
   stage_data = owl_vk_stage_heap_allocate (heap, ctx, sz, &load->allocation);
   if (!stage_data) {
-    owl_assert (0);
     code = OWL_ERROR_UNKNOWN;
     goto out_data_deinit;
   }
   owl_memcpy (stage_data, data, sz);
-
-  load->stage_data = stage_data;
 
 out_data_deinit:
   stbi_image_free (data);
@@ -99,10 +93,9 @@ owl_vk_image_load_init_from_data (struct owl_vk_image_load *load,
   load->format = desc->src_data_pixel_format;
   load->width = (owl_u32)desc->src_data_width;
   load->height = (owl_u32)desc->src_data_height;
-  load->mips = owl_vk_image_calc_mips (load->width, load->height);
+  load->mips = owl_vk_image_calculate_mips (load->width, load->height);
 
-  sz = load->width * load->height *
-       owl_vk_image_pixel_format_size (load->format);
+  sz = load->width * load->height * owl_pixel_format_size (load->format);
 
   stage_data = owl_vk_stage_heap_allocate (heap, ctx, sz, &load->allocation);
   if (!stage_data) {
@@ -110,8 +103,6 @@ owl_vk_image_load_init_from_data (struct owl_vk_image_load *load,
     goto out;
   }
   owl_memcpy (stage_data, desc->src_data, sz);
-
-  load->stage_data = stage_data;
 
 out:
   return code;
@@ -178,7 +169,7 @@ owl_as_vk_sampler_mipmap_mode (enum owl_sampler_mip_mode mode)
 }
 
 owl_private VkSamplerAddressMode
-owl_as_vk_sampler_addr_mode (enum owl_sampler_address_mode mode)
+owl_as_vk_sampler_address_mode (enum owl_sampler_address_mode mode)
 {
   switch (mode) {
   case OWL_SAMPLER_ADDRESS_MODE_REPEAT:
@@ -196,9 +187,9 @@ owl_as_vk_sampler_addr_mode (enum owl_sampler_address_mode mode)
 }
 
 owl_private void
-owl_vk_image_gen_mips (struct owl_vk_image const *img,
-                       struct owl_vk_im_command_buffer const *cmd,
-                       owl_i32 width, owl_i32 height, owl_i32 mips)
+owl_vk_image_generate_mips (struct owl_vk_image const *image,
+                            struct owl_vk_im_command_buffer const *cmd,
+                            owl_i32 width, owl_i32 height, owl_i32 mips)
 {
   owl_i32 i;
 
@@ -215,7 +206,7 @@ owl_vk_image_gen_mips (struct owl_vk_image const *img,
   /* image_memory_barrier.newLayout =  later */
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = img->vk_image;
+  barrier.image = image->vk_image;
   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount = 1;
@@ -255,8 +246,8 @@ owl_vk_image_gen_mips (struct owl_vk_image const *img,
     blit.dstSubresource.baseArrayLayer = 0;
     blit.dstSubresource.layerCount = 1;
 
-    vkCmdBlitImage (cmd->vk_command_buffer, img->vk_image,
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img->vk_image,
+    vkCmdBlitImage (cmd->vk_command_buffer, image->vk_image,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image->vk_image,
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
                     VK_FILTER_LINEAR);
 
@@ -283,7 +274,7 @@ owl_vk_image_gen_mips (struct owl_vk_image const *img,
 }
 
 owl_private void
-owl_vk_image_transition (struct owl_vk_image const *img,
+owl_vk_image_transition (struct owl_vk_image const *image,
                          struct owl_vk_im_command_buffer const *cmd,
                          owl_u32 mips, owl_u32 layers,
                          VkImageLayout src_layout, VkImageLayout dst_layout)
@@ -300,7 +291,7 @@ owl_vk_image_transition (struct owl_vk_image const *img,
   barrier.newLayout = dst_layout;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = img->vk_image;
+  barrier.image = image->vk_image;
   barrier.subresourceRange.baseMipLevel = 0;
   barrier.subresourceRange.levelCount = mips;
   barrier.subresourceRange.baseArrayLayer = 0;
@@ -346,174 +337,230 @@ owl_vk_image_transition (struct owl_vk_image const *img,
                         1, &barrier);
 }
 
-owl_public enum owl_code
-owl_vk_image_init (struct owl_vk_image *img, struct owl_vk_context const *ctx,
-                   struct owl_vk_stage_heap *heap,
-                   struct owl_vk_image_desc const *desc)
+owl_private enum owl_code
+owl_vk_image_image_init (struct owl_vk_image *image,
+                         struct owl_vk_context const *ctx,
+                         struct owl_vk_image_load const *load)
 {
-  VkImageCreateInfo image_info;
-  VkMemoryRequirements req;
-  VkMemoryAllocateInfo memory_info;
-  VkImageViewCreateInfo image_view_info;
-  VkSamplerCreateInfo sampler_info;
-  VkDescriptorSetAllocateInfo set_info;
-  VkBufferImageCopy copy;
-  VkDescriptorImageInfo descriptors[2];
-  VkWriteDescriptorSet writes[2];
-  struct owl_vk_image_load load;
-  struct owl_vk_im_command_buffer cmd;
+  VkImageCreateInfo info;
 
   VkResult vk_result = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  owl_assert (0 == heap->in_use);
+  info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  info.pNext = NULL;
+  info.flags = 0;
+  info.imageType = VK_IMAGE_TYPE_2D;
+  info.format = owl_as_vk_format (load->format);
+  info.extent.width = load->width;
+  info.extent.height = load->height;
+  info.extent.depth = 1;
+  info.mipLevels = load->mips;
+  info.arrayLayers = 1;
+  info.samples = VK_SAMPLE_COUNT_1_BIT;
+  info.tiling = VK_IMAGE_TILING_OPTIMAL;
+  info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+               VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  info.queueFamilyIndexCount = 0;
+  info.pQueueFamilyIndices = NULL;
+  info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-  code = owl_vk_image_load_init (&load, ctx, heap, desc);
-  if (OWL_SUCCESS != code)
-    goto out;
+  vk_result = vkCreateImage (ctx->vk_device, &info, NULL, &image->vk_image);
 
-  image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  image_info.pNext = NULL;
-  image_info.flags = 0;
-  image_info.imageType = VK_IMAGE_TYPE_2D;
-  image_info.format = owl_as_vk_format (load.format);
-  image_info.extent.width = load.width;
-  image_info.extent.height = load.height;
-  image_info.extent.depth = 1;
-  image_info.mipLevels = load.mips;
-  image_info.arrayLayers = 1;
-  image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-  image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-  image_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                     VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                     VK_IMAGE_USAGE_SAMPLED_BIT;
-  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  image_info.queueFamilyIndexCount = 0;
-  image_info.pQueueFamilyIndices = NULL;
-  image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-  vk_result =
-      vkCreateImage (ctx->vk_device, &image_info, NULL, &img->vk_image);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_image_load_deinit;
+    goto out;
   }
 
-  vkGetImageMemoryRequirements (ctx->vk_device, img->vk_image, &req);
+out:
+  return code;
+}
 
-  memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  memory_info.pNext = NULL;
-  memory_info.allocationSize = req.size;
-  memory_info.memoryTypeIndex = owl_vk_context_get_memory_type (
+owl_private void
+owl_vk_image_image_deinit (struct owl_vk_image *image,
+                           struct owl_vk_context const *ctx)
+{
+  vkDestroyImage (ctx->vk_device, image->vk_image, NULL);
+}
+
+owl_private enum owl_code
+owl_vk_image_memory_init (struct owl_vk_image *image,
+                          struct owl_vk_context const *ctx)
+{
+  VkMemoryRequirements req;
+  VkMemoryAllocateInfo info;
+
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
+
+  vkGetImageMemoryRequirements (ctx->vk_device, image->vk_image, &req);
+
+  info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  info.pNext = NULL;
+  info.allocationSize = req.size;
+  info.memoryTypeIndex = owl_vk_context_get_memory_type (
       ctx, req.memoryTypeBits, OWL_MEMORY_PROPERTIES_GPU_ONLY);
 
   vk_result =
-      vkAllocateMemory (ctx->vk_device, &memory_info, NULL, &img->vk_memory);
+      vkAllocateMemory (ctx->vk_device, &info, NULL, &image->vk_memory);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_image_deinit;
+    goto out;
   }
 
   vk_result =
-      vkBindImageMemory (ctx->vk_device, img->vk_image, img->vk_memory, 0);
-
+      vkBindImageMemory (ctx->vk_device, image->vk_image, image->vk_memory, 0);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_memory_deinit;
   }
 
-  image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  image_view_info.pNext = NULL;
-  image_view_info.flags = 0;
-  image_view_info.image = img->vk_image;
-  image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  image_view_info.format = owl_as_vk_format (load.format);
-  image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  image_view_info.subresourceRange.baseMipLevel = 0;
-  image_view_info.subresourceRange.levelCount = load.mips;
-  image_view_info.subresourceRange.baseArrayLayer = 0;
-  image_view_info.subresourceRange.layerCount = 1;
+  goto out;
 
-  vk_result = vkCreateImageView (ctx->vk_device, &image_view_info, NULL,
-                                 &img->vk_image_view);
+out_error_memory_deinit:
+  vkFreeMemory (ctx->vk_device, image->vk_memory, NULL);
+
+out:
+  return code;
+}
+
+owl_private void
+owl_vk_image_memory_deinit (struct owl_vk_image *image,
+                            struct owl_vk_context const *ctx)
+{
+  vkFreeMemory (ctx->vk_device, image->vk_memory, NULL);
+}
+
+owl_private enum owl_code
+owl_vk_image_image_view_init (struct owl_vk_image *image,
+                              struct owl_vk_context const *ctx,
+                              struct owl_vk_image_load const *load)
+{
+  VkImageViewCreateInfo info;
+
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
+
+  info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  info.pNext = NULL;
+  info.flags = 0;
+  info.image = image->vk_image;
+  info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  info.format = owl_as_vk_format (load->format);
+  info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+  info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+  info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+  info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+  info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  info.subresourceRange.baseMipLevel = 0;
+  info.subresourceRange.levelCount = load->mips;
+  info.subresourceRange.baseArrayLayer = 0;
+  info.subresourceRange.layerCount = 1;
+
+  vk_result =
+      vkCreateImageView (ctx->vk_device, &info, NULL, &image->vk_image_view);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_memory_deinit;
+    goto out;
   }
+
+out:
+  return code;
+}
+
+owl_private void
+owl_vk_image_image_view_deinit (struct owl_vk_image *image,
+                                struct owl_vk_context const *ctx)
+{
+  vkDestroyImageView (ctx->vk_device, image->vk_image_view, NULL);
+}
+
+owl_private enum owl_code
+owl_vk_image_sampler_init (struct owl_vk_image *image,
+                           struct owl_vk_context const *ctx,
+                           struct owl_vk_image_desc const *desc,
+                           struct owl_vk_image_load const *load)
+{
+  VkSamplerCreateInfo info;
+
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
 
   if (desc->use_default_sampler) {
-    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    sampler_info.pNext = NULL;
-    sampler_info.flags = 0;
-    sampler_info.magFilter = VK_FILTER_LINEAR;
-    sampler_info.minFilter = VK_FILTER_LINEAR;
-    sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler_info.mipLodBias = 0.0F;
-    sampler_info.anisotropyEnable = VK_TRUE;
-    sampler_info.maxAnisotropy = 16.0F;
-    sampler_info.compareEnable = VK_FALSE;
-    sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-    sampler_info.minLod = 0.0F;
-    sampler_info.maxLod = load.mips; /* VK_LOD_CLAMP_NONE */
-    sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    sampler_info.unnormalizedCoordinates = VK_FALSE;
+    info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.magFilter = VK_FILTER_LINEAR;
+    info.minFilter = VK_FILTER_LINEAR;
+    info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    info.mipLodBias = 0.0F;
+    info.anisotropyEnable = VK_TRUE;
+    info.maxAnisotropy = 16.0F;
+    info.compareEnable = VK_FALSE;
+    info.compareOp = VK_COMPARE_OP_ALWAYS;
+    info.minLod = 0.0F;
+    info.maxLod = load->mips; /* VK_LOD_CLAMP_NONE */
+    info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    info.unnormalizedCoordinates = VK_FALSE;
   } else {
-    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    sampler_info.pNext = NULL;
-    sampler_info.flags = 0;
-    sampler_info.magFilter = owl_as_vk_filter (desc->sampler_mag_filter);
-    sampler_info.minFilter = owl_as_vk_filter (desc->sampler_min_filter);
-    sampler_info.mipmapMode =
-        owl_as_vk_sampler_mipmap_mode (desc->sampler_mip_mode);
-    sampler_info.addressModeU =
-        owl_as_vk_sampler_addr_mode (desc->sampler_wrap_u);
-    sampler_info.addressModeV =
-        owl_as_vk_sampler_addr_mode (desc->sampler_wrap_v);
-    sampler_info.addressModeW =
-        owl_as_vk_sampler_addr_mode (desc->sampler_wrap_w);
-    sampler_info.mipLodBias = 0.0F;
-    sampler_info.anisotropyEnable = VK_TRUE;
-    sampler_info.maxAnisotropy = 16.0F;
-    sampler_info.compareEnable = VK_FALSE;
-    sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-    sampler_info.minLod = 0.0F;
-    sampler_info.maxLod = load.mips; /* VK_LOD_CLAMP_NONE */
-    sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    sampler_info.unnormalizedCoordinates = VK_FALSE;
+    info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.magFilter = owl_as_vk_filter (desc->sampler_mag_filter);
+    info.minFilter = owl_as_vk_filter (desc->sampler_min_filter);
+    info.mipmapMode = owl_as_vk_sampler_mipmap_mode (desc->sampler_mip_mode);
+    info.addressModeU = owl_as_vk_sampler_address_mode (desc->sampler_wrap_u);
+    info.addressModeV = owl_as_vk_sampler_address_mode (desc->sampler_wrap_v);
+    info.addressModeW = owl_as_vk_sampler_address_mode (desc->sampler_wrap_w);
+    info.mipLodBias = 0.0F;
+    info.anisotropyEnable = VK_TRUE;
+    info.maxAnisotropy = 16.0F;
+    info.compareEnable = VK_FALSE;
+    info.compareOp = VK_COMPARE_OP_ALWAYS;
+    info.minLod = 0.0F;
+    info.maxLod = load->mips; /* VK_LOD_CLAMP_NONE */
+    info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    info.unnormalizedCoordinates = VK_FALSE;
   }
 
   vk_result =
-      vkCreateSampler (ctx->vk_device, &sampler_info, NULL, &img->vk_sampler);
+      vkCreateSampler (ctx->vk_device, &info, NULL, &image->vk_sampler);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_image_view_deinit;
+    goto out;
   }
 
-  set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  set_info.pNext = NULL;
-  set_info.descriptorPool = ctx->vk_set_pool;
-  set_info.descriptorSetCount = 1;
-  set_info.pSetLayouts = &ctx->vk_frag_image_set_layout;
+out:
+  return code;
+}
 
-  vk_result =
-      vkAllocateDescriptorSets (ctx->vk_device, &set_info, &img->vk_set);
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out_error_sampler_deinit;
-  }
+owl_private void
+owl_vk_image_sampler_deinit (struct owl_vk_image *image,
+                             struct owl_vk_context const *ctx)
+{
+  vkDestroySampler (ctx->vk_device, image->vk_sampler, NULL);
+}
+
+owl_private enum owl_code
+owl_vk_image_upload (struct owl_vk_image *image,
+                     struct owl_vk_context const *ctx,
+                     struct owl_vk_image_load const *load)
+{
+  VkBufferImageCopy copy;
+  struct owl_vk_im_command_buffer cmd;
+
+  enum owl_code code = OWL_SUCCESS;
 
   code = owl_vk_im_command_buffer_begin (&cmd, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_set_deinit;
+    goto out;
 
-  owl_vk_image_transition (img, &cmd, load.mips, 1, VK_IMAGE_LAYOUT_UNDEFINED,
+  owl_vk_image_transition (image, &cmd, load->mips, 1,
+                           VK_IMAGE_LAYOUT_UNDEFINED,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
   copy.bufferOffset = 0;
@@ -526,31 +573,75 @@ owl_vk_image_init (struct owl_vk_image *img, struct owl_vk_context const *ctx,
   copy.imageOffset.x = 0;
   copy.imageOffset.y = 0;
   copy.imageOffset.z = 0;
-  copy.imageExtent.width = load.width;
-  copy.imageExtent.height = load.height;
+  copy.imageExtent.width = load->width;
+  copy.imageExtent.height = load->height;
   copy.imageExtent.depth = 1;
 
-  vkCmdCopyBufferToImage (cmd.vk_command_buffer, load.allocation.vk_buffer,
-                          img->vk_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          1, &copy);
+  vkCmdCopyBufferToImage (cmd.vk_command_buffer, load->allocation.vk_buffer,
+                          image->vk_image,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 
-  owl_vk_image_gen_mips (img, &cmd, load.width, load.height, load.mips);
+  owl_vk_image_generate_mips (image, &cmd, load->width, load->height,
+                              load->mips);
 
   code = owl_vk_im_command_buffer_end (&cmd, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_set_deinit;
+    goto out;
 
-  descriptors[0].sampler = img->vk_sampler;
+out:
+  return code;
+}
+
+owl_private enum owl_code
+owl_vk_image_set_init (struct owl_vk_image *image,
+                       struct owl_vk_context const *ctx)
+{
+  VkDescriptorSetAllocateInfo info;
+
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
+
+  info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  info.pNext = NULL;
+  info.descriptorPool = ctx->vk_set_pool;
+  info.descriptorSetCount = 1;
+  info.pSetLayouts = &ctx->vk_frag_image_set_layout;
+
+  vk_result = vkAllocateDescriptorSets (ctx->vk_device, &info, &image->vk_set);
+  if (VK_SUCCESS != vk_result) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out;
+  }
+
+out:
+  return code;
+}
+
+owl_private void
+owl_vk_image_set_deinit (struct owl_vk_image *image,
+                         struct owl_vk_context const *ctx)
+{
+  vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1, &image->vk_set);
+}
+
+owl_private void
+owl_vk_image_set_write (struct owl_vk_image *image,
+                        struct owl_vk_context const *ctx)
+{
+  VkDescriptorImageInfo descriptors[2];
+  VkWriteDescriptorSet writes[2];
+
+  descriptors[0].sampler = image->vk_sampler;
   descriptors[0].imageView = NULL;
   descriptors[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
   descriptors[1].sampler = VK_NULL_HANDLE;
-  descriptors[1].imageView = img->vk_image_view;
+  descriptors[1].imageView = image->vk_image_view;
   descriptors[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
   writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   writes[0].pNext = NULL;
-  writes[0].dstSet = img->vk_set;
+  writes[0].dstSet = image->vk_set;
   writes[0].dstBinding = 0;
   writes[0].dstArrayElement = 0;
   writes[0].descriptorCount = 1;
@@ -561,7 +652,7 @@ owl_vk_image_init (struct owl_vk_image *img, struct owl_vk_context const *ctx,
 
   writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   writes[1].pNext = NULL;
-  writes[1].dstSet = img->vk_set;
+  writes[1].dstSet = image->vk_set;
   writes[1].dstBinding = 1;
   writes[1].dstArrayElement = 0;
   writes[1].descriptorCount = 1;
@@ -572,25 +663,65 @@ owl_vk_image_init (struct owl_vk_image *img, struct owl_vk_context const *ctx,
 
   vkUpdateDescriptorSets (ctx->vk_device, owl_array_size (writes), writes, 0,
                           NULL);
+}
 
+owl_public enum owl_code
+owl_vk_image_init (struct owl_vk_image *image,
+                   struct owl_vk_context const *ctx,
+                   struct owl_vk_stage_heap *heap,
+                   struct owl_vk_image_desc const *desc)
+{
+  struct owl_vk_image_load load;
+
+  enum owl_code code;
+
+  code = owl_vk_image_load_init (&load, ctx, heap, desc);
+  if (OWL_SUCCESS != code)
+    goto out;
+
+  code = owl_vk_image_image_init (image, ctx, &load);
+  if (OWL_SUCCESS != code)
+    goto out_error_image_load_deinit;
+
+  code = owl_vk_image_memory_init (image, ctx);
+  if (OWL_SUCCESS != code)
+    goto out_error_image_deinit;
+
+  code = owl_vk_image_image_view_init (image, ctx, &load);
+  if (OWL_SUCCESS != code)
+    goto out_error_memory_deinit;
+
+  code = owl_vk_image_sampler_init (image, ctx, desc, &load);
+  if (OWL_SUCCESS != code)
+    goto out_error_image_view_deinit;
+
+  code = owl_vk_image_set_init (image, ctx);
+  if (OWL_SUCCESS != code)
+    goto out_error_sampler_deinit;
+
+  code = owl_vk_image_upload (image, ctx, &load);
+  if (OWL_SUCCESS != code)
+    goto out_error_set_deinit;
+
+  owl_vk_image_set_write (image, ctx);
   owl_vk_image_load_deinit (&load, ctx, heap);
 
   goto out;
 
 out_error_set_deinit:
-  vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1, &img->vk_set);
+  owl_vk_image_set_deinit (image, ctx);
 
 out_error_sampler_deinit:
-  vkDestroySampler (ctx->vk_device, img->vk_sampler, NULL);
+  owl_vk_image_sampler_deinit (image, ctx);
 
 out_error_image_view_deinit:
-  vkDestroyImageView (ctx->vk_device, img->vk_image_view, NULL);
-
-out_error_image_deinit:
-  vkDestroyImage (ctx->vk_device, img->vk_image, NULL);
+  owl_vk_image_image_view_deinit (image, ctx);
 
 out_error_memory_deinit:
-  vkFreeMemory (ctx->vk_device, img->vk_memory, NULL);
+  owl_vk_image_memory_deinit (image, ctx);
+
+out_error_image_deinit:
+  owl_vk_image_image_deinit (image, ctx);
 
 out_error_image_load_deinit:
   owl_vk_image_load_deinit (&load, ctx, heap);
@@ -601,14 +732,16 @@ out:
 }
 
 owl_public void
-owl_vk_image_deinit (struct owl_vk_image *img,
+owl_vk_image_deinit (struct owl_vk_image *image,
                      struct owl_vk_context const *ctx)
 {
-  owl_vk_context_device_wait (ctx);
+  enum owl_code code;
+  code = owl_vk_context_device_wait (ctx);
+  owl_assert (OWL_SUCCESS == code);
 
-  vkDestroySampler (ctx->vk_device, img->vk_sampler, NULL);
-  vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1, &img->vk_set);
-  vkDestroyImageView (ctx->vk_device, img->vk_image_view, NULL);
-  vkFreeMemory (ctx->vk_device, img->vk_memory, NULL);
-  vkDestroyImage (ctx->vk_device, img->vk_image, NULL);
+  owl_vk_image_set_deinit (image, ctx);
+  owl_vk_image_sampler_deinit (image, ctx);
+  owl_vk_image_image_view_deinit (image, ctx);
+  owl_vk_image_memory_deinit (image, ctx);
+  owl_vk_image_image_deinit (image, ctx);
 }
