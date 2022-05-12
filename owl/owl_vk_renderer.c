@@ -179,13 +179,15 @@ owl_vk_renderer_deinit (struct owl_vk_renderer *vkr)
 owl_public enum owl_code
 owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h)
 {
+  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+
   enum owl_code code = OWL_SUCCESS;
 
   code = owl_vk_context_device_wait (&vkr->context);
   if (OWL_SUCCESS != code)
     goto out;
 
-  code = owl_vk_frame_resync (owl_vk_renderer_frame_get (vkr), &vkr->context);
+  code = owl_vk_frame_resync (frame, &vkr->context);
   if (OWL_SUCCESS != code)
     goto out;
 
