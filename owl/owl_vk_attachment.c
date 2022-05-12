@@ -41,91 +41,80 @@ owl_vk_attachment_type_get_aspect (enum owl_vk_attachment_type type)
 }
 
 owl_public enum owl_code
-owl_vk_attachment_init (struct owl_vk_attachment *attachment,
-                        struct owl_vk_context *ctx, owl_i32 w, owl_i32 h,
-                        enum owl_vk_attachment_type type)
+owl_vk_attachment_image_init (struct owl_vk_attachment *attachment,
+                              struct owl_vk_context *ctx, owl_i32 w, owl_i32 h,
+                              enum owl_vk_attachment_type type)
 {
-  VkImageCreateInfo image_info;
-  VkMemoryRequirements req;
-  VkMemoryAllocateInfo memory_info;
-  VkImageViewCreateInfo image_view_info;
+  VkImageCreateInfo info;
 
   VkResult vk_result = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  attachment->width = w;
-  attachment->height = h;
-
-  image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  image_info.pNext = NULL;
-  image_info.flags = 0;
-  image_info.imageType = VK_IMAGE_TYPE_2D;
-  image_info.format = owl_vk_attachment_type_get_format (type, ctx);
-  image_info.extent.width = w;
-  image_info.extent.height = h;
-  image_info.extent.depth = 1;
-  image_info.mipLevels = 1;
-  image_info.arrayLayers = 1;
-  image_info.samples = ctx->msaa;
-  image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-  image_info.usage = owl_vk_attachment_type_get_usage (type);
-  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  image_info.queueFamilyIndexCount = 0;
-  image_info.pQueueFamilyIndices = NULL;
-  image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  info.pNext = NULL;
+  info.flags = 0;
+  info.imageType = VK_IMAGE_TYPE_2D;
+  info.format = owl_vk_attachment_type_get_format (type, ctx);
+  info.extent.width = w;
+  info.extent.height = h;
+  info.extent.depth = 1;
+  info.mipLevels = 1;
+  info.arrayLayers = 1;
+  info.samples = ctx->msaa;
+  info.tiling = VK_IMAGE_TILING_OPTIMAL;
+  info.usage = owl_vk_attachment_type_get_usage (type);
+  info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  info.queueFamilyIndexCount = 0;
+  info.pQueueFamilyIndices = NULL;
+  info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
   vk_result =
-      vkCreateImage (ctx->vk_device, &image_info, NULL, &attachment->vk_image);
+      vkCreateImage (ctx->vk_device, &info, NULL, &attachment->vk_image);
 
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
 
+out:
+  return code;
+}
+
+owl_private void
+owl_vk_attachment_image_deinit (struct owl_vk_attachment *attachment,
+                                struct owl_vk_context const *ctx)
+{
+  vkDestroyImage (ctx->vk_device, attachment->vk_image, NULL);
+}
+
+owl_private enum owl_code
+owl_vk_attachment_memory_init (struct owl_vk_attachment *attachment,
+                               struct owl_vk_context *ctx)
+{
+  VkMemoryRequirements req;
+  VkMemoryAllocateInfo info;
+
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
+
   vkGetImageMemoryRequirements (ctx->vk_device, attachment->vk_image, &req);
 
-  memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  memory_info.pNext = NULL;
-  memory_info.allocationSize = req.size;
-  memory_info.memoryTypeIndex = owl_vk_context_get_memory_type (
+  info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  info.pNext = NULL;
+  info.allocationSize = req.size;
+  info.memoryTypeIndex = owl_vk_context_get_memory_type (
       ctx, req.memoryTypeBits, OWL_MEMORY_PROPERTIES_GPU_ONLY);
 
-  vk_result = vkAllocateMemory (ctx->vk_device, &memory_info, NULL,
-                                &attachment->vk_memory);
+  vk_result =
+      vkAllocateMemory (ctx->vk_device, &info, NULL, &attachment->vk_memory);
 
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_image_deinit;
+    goto out;
   }
 
   vk_result = vkBindImageMemory (ctx->vk_device, attachment->vk_image,
                                  attachment->vk_memory, 0);
-
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out_error_memory_deinit;
-  }
-
-  image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  image_view_info.pNext = NULL;
-  image_view_info.flags = 0;
-  image_view_info.image = attachment->vk_image;
-  image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  image_view_info.format = image_info.format;
-  image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.subresourceRange.aspectMask =
-      owl_vk_attachment_type_get_aspect (type);
-  image_view_info.subresourceRange.baseMipLevel = 0;
-  image_view_info.subresourceRange.levelCount = 1;
-  image_view_info.subresourceRange.baseArrayLayer = 0;
-  image_view_info.subresourceRange.layerCount = 1;
-
-  vk_result = vkCreateImageView (ctx->vk_device, &image_view_info, NULL,
-                                 &attachment->vk_image_view);
-
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_memory_deinit;
@@ -136,8 +125,90 @@ owl_vk_attachment_init (struct owl_vk_attachment *attachment,
 out_error_memory_deinit:
   vkFreeMemory (ctx->vk_device, attachment->vk_memory, NULL);
 
+out:
+  return code;
+}
+
+owl_private void
+owl_vk_attachment_memory_deinit (struct owl_vk_attachment *attachment,
+                                 struct owl_vk_context const *ctx)
+{
+  vkFreeMemory (ctx->vk_device, attachment->vk_memory, NULL);
+}
+
+owl_private enum owl_code
+owl_vk_attachment_image_view_init (struct owl_vk_attachment *attachment,
+                                   struct owl_vk_context *ctx,
+                                   enum owl_vk_attachment_type type)
+{
+  VkImageViewCreateInfo info;
+
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
+
+  info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  info.pNext = NULL;
+  info.flags = 0;
+  info.image = attachment->vk_image;
+  info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  info.format = owl_vk_attachment_type_get_format (type, ctx);
+  info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+  info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+  info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+  info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+  info.subresourceRange.aspectMask = owl_vk_attachment_type_get_aspect (type);
+  info.subresourceRange.baseMipLevel = 0;
+  info.subresourceRange.levelCount = 1;
+  info.subresourceRange.baseArrayLayer = 0;
+  info.subresourceRange.layerCount = 1;
+
+  vk_result = vkCreateImageView (ctx->vk_device, &info, NULL,
+                                 &attachment->vk_image_view);
+  if (VK_SUCCESS != vk_result) {
+    code = OWL_ERROR_UNKNOWN;
+    goto out;
+  }
+
+out:
+  return code;
+}
+
+owl_private void
+owl_vk_attachment_image_view_deinit (struct owl_vk_attachment *attachment,
+                                     struct owl_vk_context const *ctx)
+{
+  vkDestroyImageView (ctx->vk_device, attachment->vk_image_view, NULL);
+}
+
+owl_public enum owl_code
+owl_vk_attachment_init (struct owl_vk_attachment *attachment,
+                        struct owl_vk_context *ctx, owl_i32 w, owl_i32 h,
+                        enum owl_vk_attachment_type type)
+{
+  enum owl_code code;
+
+  attachment->width = w;
+  attachment->height = h;
+
+  code = owl_vk_attachment_image_init (attachment, ctx, w, h, type);
+  if (OWL_SUCCESS != code)
+    goto out;
+
+  code = owl_vk_attachment_memory_init (attachment, ctx);
+  if (OWL_SUCCESS != code)
+    goto out_error_image_deinit;
+
+  code = owl_vk_attachment_image_view_init (attachment, ctx, type);
+  if (OWL_SUCCESS != code)
+    goto out_error_memory_deinit;
+
+  goto out;
+
+out_error_memory_deinit:
+  owl_vk_attachment_memory_deinit (attachment, ctx);
+
 out_error_image_deinit:
-  vkDestroyImage (ctx->vk_device, attachment->vk_image, NULL);
+  owl_vk_attachment_image_deinit (attachment, ctx);
 
 out:
   return code;
@@ -147,7 +218,7 @@ owl_public void
 owl_vk_attachment_deinit (struct owl_vk_attachment *attachment,
                           struct owl_vk_context *ctx)
 {
-  vkDestroyImageView (ctx->vk_device, attachment->vk_image_view, NULL);
-  vkFreeMemory (ctx->vk_device, attachment->vk_memory, NULL);
-  vkDestroyImage (ctx->vk_device, attachment->vk_image, NULL);
+  owl_vk_attachment_image_view_deinit (attachment, ctx);
+  owl_vk_attachment_memory_deinit (attachment, ctx);
+  owl_vk_attachment_image_deinit (attachment, ctx);
 }
