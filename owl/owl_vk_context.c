@@ -202,8 +202,8 @@ owl_vk_context_query_families (struct owl_vk_context *ctx, owl_u32 id)
   vkGetPhysicalDeviceQueueFamilyProperties (ctx->vk_device_options[id],
                                             &property_count, properties);
 
-  ctx->graphics_queue_family = OWL_QUEUE_FAMILY_INDEX_NONE;
-  ctx->present_queue_family  = OWL_QUEUE_FAMILY_INDEX_NONE;
+  ctx->vk_graphics_queue_family = OWL_QUEUE_FAMILY_INDEX_NONE;
+  ctx->vk_present_queue_family  = OWL_QUEUE_FAMILY_INDEX_NONE;
 
   for (i = 0; i < (owl_i32)property_count; ++i) {
     VkBool32 has_surface;
@@ -212,7 +212,7 @@ owl_vk_context_query_families (struct owl_vk_context *ctx, owl_u32 id)
       continue;
 
     if (VK_QUEUE_GRAPHICS_BIT & properties[i].queueFlags)
-      ctx->graphics_queue_family = i;
+      ctx->vk_graphics_queue_family = i;
 
     vk_result = vkGetPhysicalDeviceSurfaceSupportKHR (
         ctx->vk_device_options[id], i, ctx->vk_surface, &has_surface);
@@ -223,12 +223,12 @@ owl_vk_context_query_families (struct owl_vk_context *ctx, owl_u32 id)
     }
 
     if (has_surface)
-      ctx->present_queue_family = i;
+      ctx->vk_present_queue_family = i;
 
-    if (OWL_QUEUE_FAMILY_INDEX_NONE == ctx->graphics_queue_family)
+    if (OWL_QUEUE_FAMILY_INDEX_NONE == ctx->vk_graphics_queue_family)
       continue;
 
-    if (OWL_QUEUE_FAMILY_INDEX_NONE == ctx->present_queue_family)
+    if (OWL_QUEUE_FAMILY_INDEX_NONE == ctx->vk_present_queue_family)
       continue;
 
     found = 1;
@@ -460,14 +460,14 @@ owl_vk_context_device_init (struct owl_vk_context *ctx)
   queue_infos[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_infos[0].pNext            = NULL;
   queue_infos[0].flags            = 0;
-  queue_infos[0].queueFamilyIndex = ctx->graphics_queue_family;
+  queue_infos[0].queueFamilyIndex = ctx->vk_graphics_queue_family;
   queue_infos[0].queueCount       = 1;
   queue_infos[0].pQueuePriorities = &priority;
 
   queue_infos[1].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_infos[1].pNext            = NULL;
   queue_infos[1].flags            = 0;
-  queue_infos[1].queueFamilyIndex = ctx->present_queue_family;
+  queue_infos[1].queueFamilyIndex = ctx->vk_present_queue_family;
   queue_infos[1].queueCount       = 1;
   queue_infos[1].pQueuePriorities = &priority;
 
@@ -476,7 +476,7 @@ owl_vk_context_device_init (struct owl_vk_context *ctx)
   device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   device_info.pNext = NULL;
   device_info.flags = 0;
-  if (ctx->graphics_queue_family == ctx->present_queue_family) {
+  if (ctx->vk_graphics_queue_family == ctx->vk_present_queue_family) {
     device_info.queueCreateInfoCount = 1;
   } else {
     device_info.queueCreateInfoCount = 2;
@@ -493,10 +493,10 @@ owl_vk_context_device_init (struct owl_vk_context *ctx)
   if (VK_SUCCESS != vk_result)
     return OWL_ERROR_UNKNOWN;
 
-  vkGetDeviceQueue (ctx->vk_device, ctx->graphics_queue_family, 0,
+  vkGetDeviceQueue (ctx->vk_device, ctx->vk_graphics_queue_family, 0,
                     &ctx->vk_graphics_queue);
 
-  vkGetDeviceQueue (ctx->vk_device, ctx->present_queue_family, 0,
+  vkGetDeviceQueue (ctx->vk_device, ctx->vk_present_queue_family, 0,
                     &ctx->vk_present_queue);
 
   return OWL_SUCCESS;
@@ -649,7 +649,7 @@ owl_vk_context_pools_init (struct owl_vk_context *ctx)
   command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   command_pool_info.pNext = NULL;
   command_pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-  command_pool_info.queueFamilyIndex = ctx->graphics_queue_family;
+  command_pool_info.queueFamilyIndex = ctx->vk_graphics_queue_family;
 
   vk_result = vkCreateCommandPool (ctx->vk_device, &command_pool_info, NULL,
                                    &ctx->vk_command_pool);
@@ -835,7 +835,7 @@ owl_vk_context_init (struct owl_vk_context   *ctx,
   if (OWL_SUCCESS != code)
     goto out_error_instance_deinit;
 
-  code = owl_vk_context_surface_init (ctx, w);
+  code = owl_vk_context_surface_init (ctx, window);
   if (OWL_SUCCESS != code)
     goto out_error_debug_messenger_deinit;
 

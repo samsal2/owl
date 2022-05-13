@@ -55,8 +55,8 @@ owl_vk_swapchain_swapchain_init (struct owl_vk_swapchain     *swapchain,
   VkResult      vk_result = VK_SUCCESS;
   enum owl_code code      = OWL_SUCCESS;
 
-  families[0] = ctx->graphics_queue_family;
-  families[1] = ctx->present_queue_family;
+  families[0] = ctx->vk_graphics_queue_family;
+  families[1] = ctx->vk_present_queue_family;
 
   swapchain->size.width  = w;
   swapchain->size.height = h;
@@ -86,7 +86,7 @@ owl_vk_swapchain_swapchain_init (struct owl_vk_swapchain     *swapchain,
   info.clipped            = VK_TRUE;
   info.oldSwapchain       = VK_NULL_HANDLE;
 
-  if (ctx->graphics_queue_family == ctx->present_queue_family) {
+  if (ctx->vk_graphics_queue_family == ctx->vk_present_queue_family) {
     info.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
     info.queueFamilyIndexCount = 0;
     info.pQueueFamilyIndices   = NULL;

@@ -18,7 +18,7 @@ owl_vk_frame_commands_init (struct owl_vk_frame         *frame,
   command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   command_pool_info.pNext = NULL;
   command_pool_info.flags = 0;
-  command_pool_info.queueFamilyIndex = ctx->graphics_queue_family;
+  command_pool_info.queueFamilyIndex = ctx->vk_graphics_queue_family;
 
   vk_result = vkCreateCommandPool (ctx->vk_device, &command_pool_info, NULL,
                                    &frame->vk_command_pool);

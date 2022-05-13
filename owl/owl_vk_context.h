@@ -25,8 +25,8 @@ struct owl_vk_context {
   VkPhysicalDevice vk_physical_device;
   VkDevice         vk_device;
 
-  owl_u32 graphics_queue_family;
-  owl_u32 present_queue_family;
+  owl_u32 vk_graphics_queue_family;
+  owl_u32 vk_present_queue_family;
   VkQueue vk_graphics_queue;
   VkQueue vk_present_queue;
 
@@ -59,7 +59,7 @@ owl_vk_context_deinit (struct owl_vk_context *ctx);
 owl_public owl_u32
 owl_vk_context_get_memory_type (struct owl_vk_context const *ctx,
                                 owl_u32                      filter,
-                                enum owl_memory_properties   props);
+                                enum owl_memory_properties   properties);
 
 owl_public enum owl_code
 owl_vk_context_device_wait (struct owl_vk_context const *ctx);

@@ -460,6 +460,7 @@ owl_vk_renderer_draw_glyph (struct owl_vk_renderer *vkr,
 
   return owl_vk_renderer_draw_quad (vkr, &quad, matrix);
 }
+
 owl_public enum owl_code
 owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr,
                            char const             *text,

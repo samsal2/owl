@@ -8,8 +8,6 @@
 OWL_BEGIN_DECLS
 
 struct owl_vk_context;
-struct owl_vk_pipeline_manager;
-struct owl_vk_garbage;
 
 struct owl_vk_frame_heap {
   void           *data;
