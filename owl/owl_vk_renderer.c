@@ -73,14 +73,14 @@ owl_vk_renderer_garbages_deinit (struct owl_vk_renderer *vkr)
 }
 
 owl_public enum owl_code
-owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *w)
+owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window)
 {
   owl_i32       width;
   owl_i32       height;
   float         ratio;
   enum owl_code code;
 
-  owl_window_get_framebuffer_size (w, &width, &height);
+  owl_window_get_framebuffer_size (window, &width, &height);
   ratio = (float)width / (float)height;
 
   vkr->current_time  = 0;
@@ -92,7 +92,7 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *w)
   if (OWL_SUCCESS != code)
     goto out;
 
-  code = owl_vk_context_init (&vkr->context, w);
+  code = owl_vk_context_init (&vkr->context, window);
   if (OWL_SUCCESS != code)
     goto out_error_camera_deinit;
 
@@ -674,13 +674,12 @@ owl_vk_renderer_draw_model (struct owl_vk_renderer *vkr,
                             struct owl_model const *model,
                             owl_m4 const            matrix)
 {
-  owl_i32              i;
-  struct owl_vk_frame *frame;
+  owl_i32 i;
 
   owl_u64       offset = 0;
   enum owl_code code   = OWL_SUCCESS;
 
-  frame = owl_vk_renderer_frame_get (vkr);
+  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
 
   vkCmdBindVertexBuffers (frame->vk_command_buffer, 0, 1,
                           &model->vk_vertex_buffer, &offset);

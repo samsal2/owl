@@ -297,9 +297,9 @@ main ()
     perceptualRoughness = material.roughnessFactor;
     metallic            = material.metallicFactor;
     if (material.physicalDescriptorTextureSet > -1) {
-      // Roughness is stored in the 'g' channel, metallic is stored in the 'b'
-      // channel. This layout intentionally reserves the 'r' channel for
-      // (optional) occlusion map data
+      // Roughness is stored in the 'g' channel, metallic is stored in the
+      // 'b' channel. This layout intentionally reserves the 'r' channel
+      // for (optional) occlusion map data
       vec4 mrSample =
           texture (physicalDescriptorMap,
                    material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1);
@@ -310,7 +310,8 @@ main ()
       metallic            = clamp (metallic, 0.0, 1.0);
     }
     // Roughness is authored as perceptual roughness; as is convention,
-    // convert to material roughness by squaring the perceptual roughness [2].
+    // convert to material roughness by squaring the perceptual roughness
+    // [2].
 
     // The albedo may be defined from a base texture or a flat color
     if (material.baseColorTextureSet > -1) {
