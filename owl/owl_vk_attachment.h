@@ -15,23 +15,21 @@ enum owl_vk_attachment_type {
 };
 
 struct owl_vk_attachment {
-  owl_u32        width;
-  owl_u32        height;
-  VkImage        vk_image;
+  owl_u32 width;
+  owl_u32 height;
+  VkImage vk_image;
   VkDeviceMemory vk_memory;
-  VkImageView    vk_image_view;
+  VkImageView vk_image_view;
 };
 
 owl_public enum owl_code
-owl_vk_attachment_init (struct owl_vk_attachment   *attachment,
-                        struct owl_vk_context      *ctx,
-                        owl_i32                     w,
-                        owl_i32                     h,
+owl_vk_attachment_init (struct owl_vk_attachment *attachment,
+                        struct owl_vk_context *ctx, owl_i32 w, owl_i32 h,
                         enum owl_vk_attachment_type type);
 
 owl_public void
 owl_vk_attachment_deinit (struct owl_vk_attachment *attachment,
-                          struct owl_vk_context    *ctx);
+                          struct owl_vk_context *ctx);
 
 OWL_BEGIN_DECLS
 

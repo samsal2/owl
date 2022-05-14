@@ -5,29 +5,27 @@
 #include "owl_vk_im_command_buffer.h"
 
 owl_public enum owl_code
-owl_vk_stage_heap_init (struct owl_vk_stage_heap    *heap,
-                        struct owl_vk_context const *ctx,
-                        owl_u64                      sz)
-{
-  VkBufferCreateInfo   buffer_info;
+owl_vk_stage_heap_init (struct owl_vk_stage_heap *heap,
+                        struct owl_vk_context const *ctx, owl_u64 sz) {
+  VkBufferCreateInfo buffer_info;
   VkMemoryRequirements req;
   VkMemoryAllocateInfo memory_info;
 
-  VkResult      vk_result = VK_SUCCESS;
-  enum owl_code code      = OWL_SUCCESS;
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_SUCCESS;
 
   heap->in_use = 0;
 
   heap->size = sz;
 
-  buffer_info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  buffer_info.pNext                 = NULL;
-  buffer_info.flags                 = 0;
-  buffer_info.size                  = sz;
-  buffer_info.usage                 = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-  buffer_info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+  buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  buffer_info.pNext = NULL;
+  buffer_info.flags = 0;
+  buffer_info.size = sz;
+  buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   buffer_info.queueFamilyIndexCount = 0;
-  buffer_info.pQueueFamilyIndices   = NULL;
+  buffer_info.pQueueFamilyIndices = NULL;
 
   vk_result =
       vkCreateBuffer (ctx->vk_device, &buffer_info, NULL, &heap->vk_buffer);
@@ -38,9 +36,9 @@ owl_vk_stage_heap_init (struct owl_vk_stage_heap    *heap,
 
   vkGetBufferMemoryRequirements (ctx->vk_device, heap->vk_buffer, &req);
 
-  memory_info.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  memory_info.pNext           = NULL;
-  memory_info.allocationSize  = req.size;
+  memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  memory_info.pNext = NULL;
+  memory_info.allocationSize = req.size;
   memory_info.memoryTypeIndex = owl_vk_context_get_memory_type (
       ctx, req.memoryTypeBits, OWL_MEMORY_PROPERTIES_CPU_ONLY);
 
@@ -78,24 +76,21 @@ out:
 }
 
 owl_public void
-owl_vk_stage_heap_deinit (struct owl_vk_stage_heap    *heap,
-                          struct owl_vk_context const *ctx)
-{
+owl_vk_stage_heap_deinit (struct owl_vk_stage_heap *heap,
+                          struct owl_vk_context const *ctx) {
   vkFreeMemory (ctx->vk_device, heap->vk_memory, NULL);
   vkDestroyBuffer (ctx->vk_device, heap->vk_buffer, NULL);
 }
 
 owl_public owl_b32
-owl_vk_stage_heap_has_enough_space (struct owl_vk_stage_heap *heap, owl_u64 sz)
-{
+owl_vk_stage_heap_has_enough_space (struct owl_vk_stage_heap *heap,
+                                    owl_u64 sz) {
   return heap->size > sz;
 }
 
 owl_private enum owl_code
-owl_vk_stage_heap_reserve (struct owl_vk_stage_heap    *heap,
-                           struct owl_vk_context const *ctx,
-                           owl_u64                      sz)
-{
+owl_vk_stage_heap_reserve (struct owl_vk_stage_heap *heap,
+                           struct owl_vk_context const *ctx, owl_u64 sz) {
   enum owl_code code = OWL_SUCCESS;
 
   if (heap->in_use)
@@ -114,12 +109,10 @@ owl_vk_stage_heap_reserve (struct owl_vk_stage_heap    *heap,
 }
 
 owl_public void *
-owl_vk_stage_heap_allocate (struct owl_vk_stage_heap       *heap,
-                            struct owl_vk_context const    *ctx,
-                            owl_u64                         sz,
-                            struct owl_vk_stage_allocation *allocation)
-{
-  owl_byte     *data = NULL;
+owl_vk_stage_heap_allocate (struct owl_vk_stage_heap *heap,
+                            struct owl_vk_context const *ctx, owl_u64 sz,
+                            struct owl_vk_stage_allocation *allocation) {
+  owl_byte *data = NULL;
   enum owl_code code = OWL_SUCCESS;
 
   if (heap->in_use)
@@ -132,15 +125,14 @@ owl_vk_stage_heap_allocate (struct owl_vk_stage_heap       *heap,
   data = heap->data;
 
   allocation->vk_buffer = heap->vk_buffer;
-  heap->in_use          = 1;
+  heap->in_use = 1;
 
   return data;
 }
 
 owl_public void
-owl_vk_stage_heap_free (struct owl_vk_stage_heap    *heap,
-                        struct owl_vk_context const *ctx)
-{
+owl_vk_stage_heap_free (struct owl_vk_stage_heap *heap,
+                        struct owl_vk_context const *ctx) {
   owl_unused (ctx);
 
   heap->in_use = 0;

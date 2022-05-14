@@ -4,17 +4,17 @@ Language:        Cpp
 AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
 AlignArrayOfStructures: None
-AlignConsecutiveMacros: Consecutive
-AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveMacros: None
+AlignConsecutiveAssignments: None
 AlignConsecutiveBitFields: None
-AlignConsecutiveDeclarations: Consecutive
+AlignConsecutiveDeclarations: None
 AlignEscapedNewlines: Right
 AlignOperands:   Align
 AlignTrailingComments: true
-AllowAllArgumentsOnNextLine: false
+AllowAllArgumentsOnNextLine: true
 AllowAllConstructorInitializersOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
-AllowShortEnumsOnASingleLine: false
+AllowShortEnumsOnASingleLine: true
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: All
@@ -28,7 +28,7 @@ AlwaysBreakTemplateDeclarations: MultiLine
 AttributeMacros:
   - __capability
 BinPackArguments: true
-BinPackParameters: false
+BinPackParameters: true
 BraceWrapping:
   AfterCaseLabel:  false
   AfterClass:      false
@@ -50,7 +50,7 @@ BraceWrapping:
   SplitEmptyNamespace: true
 BreakBeforeBinaryOperators: None
 BreakBeforeConceptDeclarations: true
-BreakBeforeBraces: Linux
+BreakBeforeBraces: Attach
 BreakBeforeInheritanceComma: false
 BreakInheritanceList: BeforeColon
 BreakBeforeTernaryOperators: true

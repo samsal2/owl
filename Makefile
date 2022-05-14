@@ -10,10 +10,10 @@ MKDIR = mkdir
 
 BUILDDIR = build
 
-all: owl
+all: ceceo
 
-.PHONY: owl
-owl: $(BUILDDIR)/build.ninja
+.PHONY: ceceo
+ceceo: $(BUILDDIR)/build.ninja
 	$(NINJA) -C$(BUILDDIR)
 
 $(BUILDDIR)/build.ninja: $(BUILDDIR) Makefile

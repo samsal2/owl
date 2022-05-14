@@ -5,7 +5,7 @@
 
 #if defined(__cplusplus)
 #define OWL_BEGIN_DECLS extern "C"
-#define OWL_END_DECLS   }
+#define OWL_END_DECLS }
 #else
 #define OWL_BEGIN_DECLS
 #define OWL_END_DECLS
@@ -13,17 +13,17 @@
 
 OWL_BEGIN_DECLS
 
-#define owl_public        extern
-#define owl_global        static
-#define owl_private       static
+#define owl_public extern
+#define owl_global static
+#define owl_private static
 #define owl_local_persist static
 
-typedef uint8_t  owl_u8;
+typedef uint8_t owl_u8;
 typedef uint16_t owl_u16;
 typedef uint32_t owl_u32;
 typedef uint64_t owl_u64;
 
-typedef int8_t  owl_i8;
+typedef int8_t owl_i8;
 typedef int16_t owl_i16;
 typedef int32_t owl_i32;
 typedef int64_t owl_i64;
@@ -60,9 +60,6 @@ enum owl_code {
   OWL_ERROR_NO_SUITABLE_FORMAT,
   OWL_ERROR_UNKNOWN
 };
-
-typedef owl_i32 owl_renderer_image_id;
-typedef owl_i32 owl_renderer_font_id;
 
 #define OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT 2
 

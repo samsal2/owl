@@ -5,8 +5,8 @@
 #define owl_assert(e) assert (e)
 
 #include <string.h>
-#define owl_memset(dst, c, s)    memset (dst, c, s)
-#define owl_memcpy(dst, src, s)  memcpy (dst, src, s)
+#define owl_memset(dst, c, s) memset (dst, c, s)
+#define owl_memcpy(dst, src, s) memcpy (dst, src, s)
 #define owl_strncpy(dst, src, n) strncpy (dst, src, n)
 #define owl_strncmp(lhs, rhs, n) strncmp (lhs, rhs, n)
 
@@ -37,21 +37,21 @@ owl_debug_log (char const *f, int l, char const *fmt, ...);
 #else /* NDEBUG */
 
 #include <stdlib.h>
-#define owl_malloc(s)     malloc (s)
-#define owl_calloc(c, s)  calloc (c, s)
+#define owl_malloc(s) malloc (s)
+#define owl_calloc(c, s) calloc (c, s)
 #define owl_realloc(p, s) realloc (p, s)
-#define owl_free(p)       free (p)
+#define owl_free(p) free (p)
 
 #define OWL_DEBUG_LOG(...)
 
 #endif /* NDEBUG */
 
-#define owl_clamp(v, l, h)        ((v) < (l) ? (l) : ((v) > (h) ? (h) : (v)))
-#define owl_max(a, b)             ((a) < (b) ? (b) : (a))
-#define owl_min(a, b)             ((a) > (b) ? (b) : (a))
-#define owl_unused(e)             ((void)e)
-#define owl_array_size(a)         (sizeof (a) / sizeof ((a)[0]))
-#define owl_alignu2(v, a)         ((v) + (a)-1) & ~((a)-1)
+#define owl_clamp(v, l, h) ((v) < (l) ? (l) : ((v) > (h) ? (h) : (v)))
+#define owl_max(a, b) ((a) < (b) ? (b) : (a))
+#define owl_min(a, b) ((a) > (b) ? (b) : (a))
+#define owl_unused(e) ((void)e)
+#define owl_array_size(a) (sizeof (a) / sizeof ((a)[0]))
+#define owl_alignu2(v, a) ((v) + (a)-1) & ~((a)-1)
 #define owl_static_assert(e, msg) typedef char owl_static_assert_[!!(e)]
 
 #endif

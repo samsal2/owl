@@ -11,8 +11,7 @@
 #include "owl_window.h"
 
 owl_private enum owl_code
-owl_vk_renderer_frames_init (struct owl_vk_renderer *vkr)
-{
+owl_vk_renderer_frames_init (struct owl_vk_renderer *vkr) {
   owl_i32 i;
 
   enum owl_code code = OWL_SUCCESS;
@@ -34,16 +33,14 @@ out:
 }
 
 owl_private void
-owl_vk_renderer_frames_deinit (struct owl_vk_renderer *vkr)
-{
+owl_vk_renderer_frames_deinit (struct owl_vk_renderer *vkr) {
   owl_i32 i;
   for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i)
     owl_vk_frame_deinit (&vkr->frames[i], &vkr->context);
 }
 
 owl_private enum owl_code
-owl_vk_renderer_garbages_init (struct owl_vk_renderer *vkr)
-{
+owl_vk_renderer_garbages_init (struct owl_vk_renderer *vkr) {
   owl_i32 i;
 
   enum owl_code code = OWL_SUCCESS;
@@ -65,28 +62,26 @@ out:
 }
 
 owl_private void
-owl_vk_renderer_garbages_deinit (struct owl_vk_renderer *vkr)
-{
+owl_vk_renderer_garbages_deinit (struct owl_vk_renderer *vkr) {
   owl_i32 i;
   for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i)
     owl_vk_garbage_deinit (&vkr->garbages[i], &vkr->context);
 }
 
 owl_public enum owl_code
-owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window)
-{
-  owl_i32       width;
-  owl_i32       height;
-  float         ratio;
+owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window) {
+  owl_i32 width;
+  owl_i32 height;
+  float ratio;
   enum owl_code code;
 
   owl_window_get_framebuffer_size (window, &width, &height);
   ratio = (float)width / (float)height;
 
-  vkr->current_time  = 0;
+  vkr->current_time = 0;
   vkr->previous_time = 0;
-  vkr->width         = width;
-  vkr->height        = height;
+  vkr->width = width;
+  vkr->height = height;
 
   code = owl_camera_init (&vkr->camera, ratio);
   if (OWL_SUCCESS != code)
@@ -126,7 +121,7 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window)
   if (OWL_SUCCESS != code)
     goto out_error_garbages_deinit;
 
-  vkr->font  = NULL;
+  vkr->font = NULL;
   vkr->frame = 0;
 
   code = owl_vk_renderer_frames_init (vkr);
@@ -164,8 +159,7 @@ out:
 }
 
 owl_public void
-owl_vk_renderer_deinit (struct owl_vk_renderer *vkr)
-{
+owl_vk_renderer_deinit (struct owl_vk_renderer *vkr) {
   owl_vk_renderer_frames_deinit (vkr);
   owl_vk_stage_heap_deinit (&vkr->stage_heap, &vkr->context);
   owl_vk_renderer_garbages_deinit (vkr);
@@ -178,8 +172,7 @@ owl_vk_renderer_deinit (struct owl_vk_renderer *vkr)
 }
 
 owl_public enum owl_code
-owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h)
-{
+owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h) {
   struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
 
   enum owl_code code = OWL_SUCCESS;
@@ -243,47 +236,39 @@ out:
 }
 
 owl_private struct owl_vk_garbage *
-owl_vk_renderer_garbage_get (struct owl_vk_renderer *vkr)
-{
+owl_vk_renderer_garbage_get (struct owl_vk_renderer *vkr) {
   return &vkr->garbages[vkr->frame];
 }
 
 owl_public void *
-owl_vk_renderer_frame_allocate (struct owl_vk_renderer         *vkr,
-                                owl_u64                         sz,
-                                struct owl_vk_frame_allocation *allocation)
-{
-  struct owl_vk_frame   *frame   = owl_vk_renderer_frame_get (vkr);
+owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 sz,
+                                struct owl_vk_frame_allocation *allocation) {
+  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
   struct owl_vk_garbage *garbage = owl_vk_renderer_garbage_get (vkr);
   return owl_vk_frame_allocate (frame, &vkr->context, garbage, sz, allocation);
 }
 
 owl_public void *
-owl_vk_renderer_stage_allocate (struct owl_vk_renderer         *vkr,
-                                owl_u64                         sz,
-                                struct owl_vk_stage_allocation *allocation)
-{
+owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 sz,
+                                struct owl_vk_stage_allocation *allocation) {
   return owl_vk_stage_heap_allocate (&vkr->stage_heap, &vkr->context, sz,
                                      allocation);
 }
 
 owl_public void
-owl_vk_renderer_stage_heap_free (struct owl_vk_renderer *vkr)
-{
+owl_vk_renderer_stage_heap_free (struct owl_vk_renderer *vkr) {
   owl_vk_stage_heap_free (&vkr->stage_heap, &vkr->context);
 }
 
 owl_public void
 owl_vk_renderer_font_set (struct owl_vk_renderer *vkr,
-                          struct owl_vk_font     *font)
-{
+                          struct owl_vk_font *font) {
   vkr->font = font;
 }
 
 owl_public enum owl_code
-owl_vk_renderer_frame_begin (struct owl_vk_renderer *vkr)
-{
-  struct owl_vk_frame   *frame   = owl_vk_renderer_frame_get (vkr);
+owl_vk_renderer_frame_begin (struct owl_vk_renderer *vkr) {
+  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
   struct owl_vk_garbage *garbage = owl_vk_renderer_garbage_get (vkr);
 
   enum owl_code code = OWL_SUCCESS;
@@ -300,8 +285,7 @@ owl_vk_renderer_frame_begin (struct owl_vk_renderer *vkr)
 }
 
 owl_public enum owl_code
-owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr)
-{
+owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr) {
   struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
 
   enum owl_code code;
@@ -314,34 +298,30 @@ owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr)
     vkr->frame = 0;
 
   vkr->previous_time = vkr->current_time;
-  vkr->current_time  = owl_io_time_stamp_get ();
+  vkr->current_time = owl_io_time_stamp_get ();
 
   return code;
 }
 owl_public struct owl_vk_frame *
-owl_vk_renderer_frame_get (struct owl_vk_renderer *vkr)
-{
+owl_vk_renderer_frame_get (struct owl_vk_renderer *vkr) {
   return &vkr->frames[vkr->frame];
 }
 
 owl_public enum owl_code
 owl_vk_renderer_pipeline_bind (struct owl_vk_renderer *vkr,
-                               enum owl_pipeline_id    id)
-{
+                               enum owl_pipeline_id id) {
   struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
   return owl_vk_pipeline_manager_bind (&vkr->pipelines, id, frame);
 }
 
 owl_public enum owl_code
 owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
-                           struct owl_quad const  *q,
-                           owl_m4 const            matrix)
-{
-  owl_byte                      *data;
-  VkDescriptorSet                sets[2];
-  struct owl_vk_frame           *frame;
-  struct owl_pvm_ubo             ubo;
-  struct owl_pcu_vertex          vertices[4];
+                           struct owl_quad const *q, owl_m4 const matrix) {
+  owl_byte *data;
+  VkDescriptorSet sets[2];
+  struct owl_vk_frame *frame;
+  struct owl_pvm_ubo ubo;
+  struct owl_pcu_vertex vertices[4];
   struct owl_vk_frame_allocation valloc;
   struct owl_vk_frame_allocation ialloc;
   struct owl_vk_frame_allocation ualloc;
@@ -351,38 +331,38 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
   vertices[0].position[0] = q->position0[0];
   vertices[0].position[1] = q->position0[1];
   vertices[0].position[2] = 0.0F;
-  vertices[0].color[0]    = q->color[0];
-  vertices[0].color[1]    = q->color[1];
-  vertices[0].color[2]    = q->color[2];
-  vertices[0].uv[0]       = q->uv0[0];
-  vertices[0].uv[1]       = q->uv0[1];
+  vertices[0].color[0] = q->color[0];
+  vertices[0].color[1] = q->color[1];
+  vertices[0].color[2] = q->color[2];
+  vertices[0].uv[0] = q->uv0[0];
+  vertices[0].uv[1] = q->uv0[1];
 
   vertices[1].position[0] = q->position1[0];
   vertices[1].position[1] = q->position0[1];
   vertices[1].position[2] = 0.0F;
-  vertices[1].color[0]    = q->color[0];
-  vertices[1].color[1]    = q->color[1];
-  vertices[1].color[2]    = q->color[2];
-  vertices[1].uv[0]       = q->uv1[0];
-  vertices[1].uv[1]       = q->uv0[1];
+  vertices[1].color[0] = q->color[0];
+  vertices[1].color[1] = q->color[1];
+  vertices[1].color[2] = q->color[2];
+  vertices[1].uv[0] = q->uv1[0];
+  vertices[1].uv[1] = q->uv0[1];
 
   vertices[2].position[0] = q->position0[0];
   vertices[2].position[1] = q->position1[1];
   vertices[2].position[2] = 0.0F;
-  vertices[2].color[0]    = q->color[0];
-  vertices[2].color[1]    = q->color[1];
-  vertices[2].color[2]    = q->color[2];
-  vertices[2].uv[0]       = q->uv0[0];
-  vertices[2].uv[1]       = q->uv1[1];
+  vertices[2].color[0] = q->color[0];
+  vertices[2].color[1] = q->color[1];
+  vertices[2].color[2] = q->color[2];
+  vertices[2].uv[0] = q->uv0[0];
+  vertices[2].uv[1] = q->uv1[1];
 
   vertices[3].position[0] = q->position1[0];
   vertices[3].position[1] = q->position1[1];
   vertices[3].position[2] = 0.0F;
-  vertices[3].color[0]    = q->color[0];
-  vertices[3].color[1]    = q->color[1];
-  vertices[3].color[2]    = q->color[2];
-  vertices[3].uv[0]       = q->uv1[0];
-  vertices[3].uv[1]       = q->uv1[1];
+  vertices[3].color[0] = q->color[0];
+  vertices[3].color[1] = q->color[1];
+  vertices[3].color[2] = q->color[2];
+  vertices[3].uv[0] = q->uv1[0];
+  vertices[3].uv[1] = q->uv1[1];
 
   owl_m4_copy (vkr->camera.projection, ubo.projection);
   owl_m4_copy (vkr->camera.view, ubo.view);
@@ -427,10 +407,9 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
 owl_public enum owl_code
 owl_vk_renderer_draw_glyph (struct owl_vk_renderer *vkr,
                             struct owl_glyph const *glyph,
-                            owl_v3 const            color)
-{
-  owl_m4          matrix;
-  owl_v3          scale;
+                            owl_v3 const color) {
+  owl_m4 matrix;
+  owl_v3 scale;
   struct owl_quad quad;
 
   scale[0] = 2.0F / (float)vkr->height;
@@ -462,13 +441,10 @@ owl_vk_renderer_draw_glyph (struct owl_vk_renderer *vkr,
 }
 
 owl_public enum owl_code
-owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr,
-                           char const             *text,
-                           owl_v3 const            position,
-                           owl_v3 const            color)
-{
+owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr, char const *text,
+                           owl_v3 const position, owl_v3 const color) {
   char const *c;
-  owl_v2      offset;
+  owl_v2 offset;
 
   enum owl_code code = OWL_SUCCESS;
 
@@ -492,26 +468,25 @@ owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr,
 
 owl_private enum owl_code
 owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
-                                 owl_model_node_id       id,
+                                 owl_model_node_id id,
                                  struct owl_model const *model,
-                                 owl_m4 const            matrix)
-{
-  owl_i32                        i;
-  owl_byte                      *data;
-  owl_model_node_id              parent;
-  struct owl_model_node const   *node;
-  struct owl_model_mesh const   *mesh;
-  struct owl_model_skin const   *skin;
-  struct owl_model_skin_ssbo    *ssbo;
-  struct owl_model_ubo1          ubo1;
-  struct owl_model_ubo2          ubo2;
-  struct owl_vk_frame           *frame;
+                                 owl_m4 const matrix) {
+  owl_i32 i;
+  owl_byte *data;
+  owl_model_node_id parent;
+  struct owl_model_node const *node;
+  struct owl_model_mesh const *mesh;
+  struct owl_model_skin const *skin;
+  struct owl_model_skin_ssbo *ssbo;
+  struct owl_model_ubo1 ubo1;
+  struct owl_model_ubo2 ubo2;
+  struct owl_vk_frame *frame;
   struct owl_vk_frame_allocation u1alloc;
   struct owl_vk_frame_allocation u2alloc;
 
   enum owl_code code = OWL_SUCCESS;
 
-  node  = &model->nodes[id];
+  node = &model->nodes[id];
   frame = owl_vk_renderer_frame_get (vkr);
 
   for (i = 0; i < node->child_count; ++i) {
@@ -561,15 +536,15 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
       &u1alloc.vk_model_ubo2_set, 1, &u1alloc.offset32);
 
   for (i = 0; i < mesh->primitive_count; ++i) {
-    VkDescriptorSet                         sets[4];
-    struct owl_model_primitive const       *primitive;
-    struct owl_model_material const        *material;
-    struct owl_model_texture const         *base_color_texture;
-    struct owl_model_texture const         *normal_texture;
-    struct owl_model_texture const         *physical_desc_texture;
-    struct owl_model_image const           *base_color_image;
-    struct owl_model_image const           *normal_image;
-    struct owl_model_image const           *physical_desc_image;
+    VkDescriptorSet sets[4];
+    struct owl_model_primitive const *primitive;
+    struct owl_model_material const *material;
+    struct owl_model_texture const *base_color_texture;
+    struct owl_model_texture const *normal_texture;
+    struct owl_model_texture const *physical_desc_texture;
+    struct owl_model_image const *base_color_image;
+    struct owl_model_image const *normal_image;
+    struct owl_model_image const *physical_desc_image;
     struct owl_model_material_push_constant push_constant;
 
     primitive = &model->primitives[mesh->primitives[i]];
@@ -580,12 +555,12 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
 
     material = &model->materials[primitive->material];
 
-    base_color_texture    = &model->textures[material->base_color_texture];
-    normal_texture        = &model->textures[material->normal_texture];
+    base_color_texture = &model->textures[material->base_color_texture];
+    normal_texture = &model->textures[material->normal_texture];
     physical_desc_texture = &model->textures[material->physical_desc_texture];
 
-    base_color_image    = &model->images[base_color_texture->image];
-    normal_image        = &model->images[normal_texture->image];
+    base_color_image = &model->images[base_color_texture->image];
+    normal_image = &model->images[normal_texture->image];
     physical_desc_image = &model->images[physical_desc_texture->image];
 
     sets[0] = base_color_image->image.vk_set;
@@ -651,10 +626,10 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
       push_constant.emissive_uv_set = 0;
     }
 
-    push_constant.metallic_factor   = 0.0F;
-    push_constant.roughness_factor  = 0.0F;
-    push_constant.roughness_factor  = 0.0F;
-    push_constant.alpha_mask        = 0.0F;
+    push_constant.metallic_factor = 0.0F;
+    push_constant.roughness_factor = 0.0F;
+    push_constant.roughness_factor = 0.0F;
+    push_constant.alpha_mask = 0.0F;
     push_constant.alpha_mask_cutoff = material->alpha_cutoff;
 
     vkCmdPushConstants (frame->vk_command_buffer,
@@ -672,12 +647,11 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
 owl_public enum owl_code
 owl_vk_renderer_draw_model (struct owl_vk_renderer *vkr,
                             struct owl_model const *model,
-                            owl_m4 const            matrix)
-{
+                            owl_m4 const matrix) {
   owl_i32 i;
 
-  owl_u64       offset = 0;
-  enum owl_code code   = OWL_SUCCESS;
+  owl_u64 offset = 0;
+  enum owl_code code = OWL_SUCCESS;
 
   struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
 
