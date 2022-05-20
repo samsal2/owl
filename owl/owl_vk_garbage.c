@@ -27,11 +27,16 @@ owl_vk_garbage_deinit (struct owl_vk_garbage *garbage,
 owl_public enum owl_code
 owl_vk_garbage_add_frame (struct owl_vk_garbage *garbage,
                           struct owl_vk_frame *frame) {
+  struct owl_vk_frame_heap const *src;
+  struct owl_vk_frame_heap *dst;
+
   if (OWL_VK_GARBAGE_MAX_HEAP_COUNT <= garbage->heap_count)
     return OWL_ERROR_UNKNOWN;
 
-  owl_vk_frame_heap_unsafe_copy (&garbage->heaps[garbage->heap_count++],
-                                 &frame->heap);
+  src = &frame->heap;
+  dst = &garbage->heaps[garbage->heap_count++];
+
+  owl_vk_frame_heap_unsafe_copy (dst, src);
 
   return OWL_SUCCESS;
 }
@@ -39,11 +44,16 @@ owl_vk_garbage_add_frame (struct owl_vk_garbage *garbage,
 owl_public enum owl_code
 owl_vk_garbage_pop_frame (struct owl_vk_garbage *garbage,
                           struct owl_vk_frame *frame) {
+  struct owl_vk_frame_heap const *src;
+  struct owl_vk_frame_heap *dst;
+
   if (0 >= garbage->heap_count)
     return OWL_ERROR_UNKNOWN;
 
-  owl_vk_frame_heap_unsafe_copy (&frame->heap,
-                                 &garbage->heaps[--garbage->heap_count]);
+  src = &garbage->heaps[--garbage->heap_count];
+  dst = &frame->heap;
+
+  owl_vk_frame_heap_unsafe_copy (dst, src);
 
   return OWL_SUCCESS;
 }
