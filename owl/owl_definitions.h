@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #if defined(__cplusplus)
-#define OWL_BEGIN_DECLS extern "C"
+#define OWL_BEGIN_DECLS extern "C" {
 #define OWL_END_DECLS }
 #else
 #define OWL_BEGIN_DECLS
