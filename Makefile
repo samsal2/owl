@@ -1,7 +1,7 @@
 .POSIX:
 .SUFFIXES:
 
-TYPE = Release
+TYPE = Debug
 CMAKEOPTS = -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 CMAKE = cmake
@@ -10,10 +10,10 @@ MKDIR = mkdir
 
 BUILDDIR = build
 
-all: ceceo
+all: owl
 
-.PHONY: ceceo
-ceceo: $(BUILDDIR)/build.ninja
+.PHONY: owl
+owl: $(BUILDDIR)/build.ninja
 	$(NINJA) -C$(BUILDDIR)
 
 $(BUILDDIR)/build.ninja: $(BUILDDIR) Makefile
