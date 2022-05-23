@@ -89,8 +89,12 @@ owl_private enum owl_code
 owl_vk_frame_commands_reset (struct owl_vk_frame *frame,
                              struct owl_vk_context const *ctx) {
   VkResult vk_result;
+
   vk_result = vkResetCommandPool (ctx->vk_device, frame->vk_command_pool, 0);
-  return VK_SUCCESS != vk_result ? OWL_ERROR_UNKNOWN : OWL_SUCCESS;
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
+
+  return OWL_SUCCESS;
 }
 
 owl_public void
@@ -228,7 +232,10 @@ owl_vk_frame_end_recording (struct owl_vk_frame *frame,
   vkCmdEndRenderPass (frame->vk_command_buffer);
 
   vk_result = vkEndCommandBuffer (frame->vk_command_buffer);
-  return VK_SUCCESS != vk_result ? OWL_ERROR_UNKNOWN : OWL_SUCCESS;
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
+
+  return OWL_SUCCESS;
 }
 
 owl_private enum owl_code

@@ -10,6 +10,8 @@
 #include "owl_vk_image.h"
 #include "owl_window.h"
 
+#define OWL_DEFAULT_FRAME_SIZE (1 << 8)
+
 owl_private enum owl_code
 owl_vk_renderer_frames_init (struct owl_vk_renderer *vkr) {
   owl_i32 i;
@@ -17,7 +19,8 @@ owl_vk_renderer_frames_init (struct owl_vk_renderer *vkr) {
   enum owl_code code = OWL_SUCCESS;
 
   for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i) {
-    code = owl_vk_frame_init (&vkr->frames[i], &vkr->context, 1 << 8);
+    code = owl_vk_frame_init (&vkr->frames[i], &vkr->context,
+                              OWL_DEFAULT_FRAME_SIZE);
     if (OWL_SUCCESS != code)
       goto out_error_frames_deinit;
   }
@@ -70,18 +73,18 @@ owl_vk_renderer_garbages_deinit (struct owl_vk_renderer *vkr) {
 
 owl_public enum owl_code
 owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window) {
-  owl_i32 width;
-  owl_i32 height;
+  owl_i32 w;
+  owl_i32 h;
   float ratio;
   enum owl_code code;
 
-  owl_window_get_framebuffer_size (window, &width, &height);
-  ratio = (float)width / (float)height;
+  owl_window_get_framebuffer_size (window, &w, &h);
+  ratio = (float)w / (float)h;
 
   vkr->current_time = 0;
   vkr->previous_time = 0;
-  vkr->width = width;
-  vkr->height = height;
+  vkr->width = w;
+  vkr->height = h;
 
   code = owl_camera_init (&vkr->camera, ratio);
   if (OWL_SUCCESS != code)
@@ -91,14 +94,13 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window) {
   if (OWL_SUCCESS != code)
     goto out_error_camera_deinit;
 
-  code = owl_vk_attachment_init (&vkr->color_attachment, &vkr->context, width,
-                                 height, OWL_VK_ATTACHMENT_TYPE_COLOR);
+  code = owl_vk_attachment_init (&vkr->color_attachment, &vkr->context, w,
+                                 h, OWL_VK_ATTACHMENT_TYPE_COLOR);
   if (OWL_SUCCESS != code)
     goto out_error_context_deinit;
 
   code = owl_vk_attachment_init (&vkr->depth_stencil_attachment, &vkr->context,
-                                 width, height,
-                                 OWL_VK_ATTACHMENT_TYPE_DEPTH_STENCIL);
+                                 w, h, OWL_VK_ATTACHMENT_TYPE_DEPTH_STENCIL);
   if (OWL_SUCCESS != code)
     goto out_error_color_attachment_deinit;
 
