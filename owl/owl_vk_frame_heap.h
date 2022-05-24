@@ -23,7 +23,7 @@ struct owl_vk_frame_heap {
 
 owl_public enum owl_code
 owl_vk_frame_heap_init (struct owl_vk_frame_heap *heap,
-                        struct owl_vk_context const *ctx, owl_u64 sz);
+                        struct owl_vk_context const *ctx, owl_u64 size);
 
 owl_public void
 owl_vk_frame_heap_deinit (struct owl_vk_frame_heap *heap,
@@ -45,7 +45,7 @@ struct owl_vk_frame_allocation {
 owl_public void *
 owl_vk_frame_heap_unsafe_allocate (struct owl_vk_frame_heap *heap,
                                    struct owl_vk_context const *ctx,
-                                   owl_u64 sz,
+                                   owl_u64 size,
                                    struct owl_vk_frame_allocation *allocation);
 
 owl_public void
@@ -54,7 +54,7 @@ owl_vk_frame_heap_free (struct owl_vk_frame_heap *heap,
 
 owl_public owl_b32
 owl_vk_frame_heap_has_enough_space (struct owl_vk_frame_heap const *heap,
-                                    owl_u64 sz);
+                                    owl_u64 size);
 
 owl_public owl_u64
 owl_vk_frame_heap_offset (struct owl_vk_frame_heap const *heap);

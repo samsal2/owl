@@ -22,8 +22,7 @@ static owl_m4 matrix;
   } while (0)
 
 int
-main (void)
-{
+main (void) {
   owl_v3 offset = {0.0F, 0.0F, -1.0F};
 
   window = malloc (sizeof (*window));
@@ -63,11 +62,8 @@ main (void)
     owl_model_anim_update (model, renderer->frame,
                            time_stamp - prev_time_stamp, 0);
 
-    owl_vk_renderer_pipeline_bind (renderer, OWL_PIPELINE_ID_MODEL);
     owl_vk_renderer_draw_model (renderer, model, matrix);
-
-    owl_vk_renderer_pipeline_bind (renderer, OWL_PIPELINE_ID_TEXT);
-    owl_ui_renderer_stats_draw (renderer);
+    owl_ui_draw_renderer_state (renderer);
 
     code = owl_vk_renderer_frame_end (renderer);
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == code) {

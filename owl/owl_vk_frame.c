@@ -58,14 +58,14 @@ owl_vk_frame_commands_deinit (struct owl_vk_frame *frame,
 
 owl_public enum owl_code
 owl_vk_frame_init (struct owl_vk_frame *frame,
-                   struct owl_vk_context const *ctx, owl_u64 sz) {
+                   struct owl_vk_context const *ctx, owl_u64 size) {
   enum owl_code code;
 
   code = owl_vk_frame_commands_init (frame, ctx);
   if (OWL_SUCCESS != code)
     goto out;
 
-  code = owl_vk_frame_heap_init (&frame->heap, ctx, sz);
+  code = owl_vk_frame_heap_init (&frame->heap, ctx, size);
   if (OWL_SUCCESS != code)
     goto out_error_commads_deinit;
 
@@ -132,32 +132,35 @@ out:
   return code;
 }
 
+owl_private owl_u64
+owl_vk_frame_calc_new_size (struct owl_vk_frame *frame, owl_u64 request) {
+  return owl_alignu2 (frame->heap.offset + request, frame->heap.alignment) * 2;
+}
+
 owl_public enum owl_code
 owl_vk_frame_reserve (struct owl_vk_frame *frame,
                       struct owl_vk_context const *ctx,
-                      struct owl_vk_garbage *garbage, owl_u64 sz) {
-  owl_u64 new_sz;
+                      struct owl_vk_garbage *garbage, owl_u64 size) {
+  owl_u64 new_size;
+
   enum owl_code code = OWL_SUCCESS;
 
-  if (owl_vk_frame_heap_has_enough_space (&frame->heap, sz))
+  if (owl_vk_frame_heap_has_enough_space (&frame->heap, size))
     goto out;
 
   code = owl_vk_garbage_add_frame (garbage, frame);
   if (OWL_SUCCESS != code)
     goto out;
 
-  new_sz = owl_vk_frame_heap_offset (&frame->heap) + sz;
-  new_sz = owl_alignu2 (new_sz, frame->heap.alignment);
-  new_sz *= 2;
+  new_size = owl_vk_frame_calc_new_size (frame, size);
 
-  code = owl_vk_frame_heap_init (&frame->heap, ctx, new_sz);
+  code = owl_vk_frame_heap_init (&frame->heap, ctx, new_size);
   if (OWL_SUCCESS != code)
-    goto out_error_garbage_pop_frame;
+    goto out_error_pop_frame;
 
   goto out;
 
-  /* leave this frame in it's original state */
-out_error_garbage_pop_frame:
+out_error_pop_frame:
   owl_vk_garbage_pop_frame (garbage, frame);
 
 out:
@@ -167,15 +170,16 @@ out:
 owl_public void *
 owl_vk_frame_allocate (struct owl_vk_frame *frame,
                        struct owl_vk_context const *ctx,
-                       struct owl_vk_garbage *garbage, owl_u64 sz,
+                       struct owl_vk_garbage *garbage, owl_u64 size,
                        struct owl_vk_frame_allocation *allocation) {
   enum owl_code code;
 
-  code = owl_vk_frame_reserve (frame, ctx, garbage, sz);
+  code = owl_vk_frame_reserve (frame, ctx, garbage, size);
   if (OWL_SUCCESS != code)
     return NULL;
 
-  return owl_vk_frame_heap_unsafe_allocate (&frame->heap, ctx, sz, allocation);
+  return owl_vk_frame_heap_unsafe_allocate (&frame->heap, ctx, size,
+                                            allocation);
 }
 
 owl_public void
@@ -192,7 +196,6 @@ owl_vk_frame_begin_recording (struct owl_vk_frame *frame,
   VkRenderPassBeginInfo render_pass_info;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   command_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   command_buffer_info.pNext = NULL;
@@ -201,10 +204,8 @@ owl_vk_frame_begin_recording (struct owl_vk_frame *frame,
 
   vk_result =
       vkBeginCommandBuffer (frame->vk_command_buffer, &command_buffer_info);
-  if (OWL_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (OWL_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   render_pass_info.pNext = NULL;
@@ -219,14 +220,14 @@ owl_vk_frame_begin_recording (struct owl_vk_frame *frame,
   vkCmdBeginRenderPass (frame->vk_command_buffer, &render_pass_info,
                         VK_SUBPASS_CONTENTS_INLINE);
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private enum owl_code
 owl_vk_frame_end_recording (struct owl_vk_frame *frame,
                             struct owl_vk_context const *ctx) {
   VkResult vk_result = VK_SUCCESS;
+
   owl_unused (ctx);
 
   vkCmdEndRenderPass (frame->vk_command_buffer);
@@ -244,8 +245,6 @@ owl_vk_frame_submit (struct owl_vk_frame *frame,
   VkSubmitInfo info;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
-
   VkPipelineStageFlags stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
   info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -260,14 +259,10 @@ owl_vk_frame_submit (struct owl_vk_frame *frame,
 
   vk_result = vkQueueSubmit (ctx->vk_graphics_queue, 1, &info,
                              frame->sync.vk_in_flight_fence);
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
-
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_public enum owl_code
@@ -280,20 +275,18 @@ owl_vk_frame_begin (struct owl_vk_frame *frame,
   owl_vk_frame_free (frame, ctx);
 
   code = owl_vk_swapchain_acquire_next_image (swapchain, ctx, &frame->sync);
-  if (OWL_SUCCESS != code) {
-    goto out;
-  }
+  if (OWL_SUCCESS != code)
+    return code;
 
   code = owl_vk_frame_prepare (frame, ctx);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
   code = owl_vk_frame_begin_recording (frame, ctx, swapchain);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_public enum owl_code
@@ -303,30 +296,22 @@ owl_vk_frame_end (struct owl_vk_frame *frame, struct owl_vk_context const *ctx,
 
   code = owl_vk_frame_end_recording (frame, ctx);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
   code = owl_vk_frame_submit (frame, ctx);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
   code = owl_vk_swapchain_present (swapchain, ctx, &frame->sync);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_public enum owl_code
 owl_vk_frame_resync (struct owl_vk_frame *frame,
                      struct owl_vk_context const *ctx) {
-  enum owl_code code;
-
   owl_vk_frame_sync_deinit (&frame->sync, ctx);
-  code = owl_vk_frame_sync_init (&frame->sync, ctx);
-  if (OWL_SUCCESS != code)
-    goto out;
-
-out:
-  return code;
+  return owl_vk_frame_sync_init (&frame->sync, ctx);
 }

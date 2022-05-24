@@ -15,7 +15,7 @@ owl_static_assert (
 
 owl_private enum owl_code
 owl_vk_font_file_init (char const *path, owl_byte **data) {
-  owl_u64 sz;
+  owl_u64 size;
   FILE *file;
 
   enum owl_code code = OWL_SUCCESS;
@@ -28,17 +28,17 @@ owl_vk_font_file_init (char const *path, owl_byte **data) {
 
   fseek (file, 0, SEEK_END);
 
-  sz = ftell (file);
+  size = ftell (file);
 
   fseek (file, 0, SEEK_SET);
 
-  *data = owl_malloc (sz);
+  *data = owl_malloc (size);
   if (!*data) {
     code = OWL_ERROR_BAD_ALLOCATION;
     goto out_file_close;
   }
 
-  fread (*data, sz, 1, file);
+  fread (*data, size, 1, file);
 
 out_file_close:
   fclose (file);
@@ -60,7 +60,7 @@ owl_vk_font_file_deinit (owl_byte *data) {
 owl_public enum owl_code
 owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
                   struct owl_vk_stage_heap *heap, char const *path,
-                  owl_i32 sz) {
+                  owl_i32 size) {
   owl_b32 stb_result;
   owl_byte *file;
   owl_byte *bitmap;
@@ -89,9 +89,9 @@ owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
 
   stbtt_PackSetOversampling (&pack, 2, 2);
 
-  stb_result = stbtt_PackFontRange (&pack, file, 0, sz, OWL_VK_FONT_FIRST_CHAR,
-                                    OWL_VK_FONT_CHAR_COUNT,
-                                    (stbtt_packedchar *)(&font->chars[0]));
+  stb_result = stbtt_PackFontRange (
+      &pack, file, 0, size, OWL_VK_FONT_FIRST_CHAR, OWL_VK_FONT_CHAR_COUNT,
+      (stbtt_packedchar *)(&font->chars[0]));
   if (!stb_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_pack_deinit;

@@ -6,12 +6,14 @@
 #include <stdio.h>
 
 owl_public void
-owl_ui_renderer_stats_draw (struct owl_vk_renderer *vkr) {
+owl_ui_draw_renderer_state (struct owl_vk_renderer *vkr) {
   char buffer[256];
   owl_v2 position;
   owl_v3 color;
 
   struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+
+  owl_vk_renderer_pipeline_bind (vkr, OWL_PIPELINE_ID_TEXT);
 
   snprintf (buffer, sizeof (buffer), "framerate: %2.f fps",
             1 / (vkr->current_time - vkr->previous_time));

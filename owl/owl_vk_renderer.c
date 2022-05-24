@@ -94,8 +94,8 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window) {
   if (OWL_SUCCESS != code)
     goto out_error_camera_deinit;
 
-  code = owl_vk_attachment_init (&vkr->color_attachment, &vkr->context, w,
-                                 h, OWL_VK_ATTACHMENT_TYPE_COLOR);
+  code = owl_vk_attachment_init (&vkr->color_attachment, &vkr->context, w, h,
+                                 OWL_VK_ATTACHMENT_TYPE_COLOR);
   if (OWL_SUCCESS != code)
     goto out_error_context_deinit;
 
@@ -243,17 +243,18 @@ owl_vk_renderer_garbage_get (struct owl_vk_renderer *vkr) {
 }
 
 owl_public void *
-owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 sz,
+owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
                                 struct owl_vk_frame_allocation *allocation) {
   struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
   struct owl_vk_garbage *garbage = owl_vk_renderer_garbage_get (vkr);
-  return owl_vk_frame_allocate (frame, &vkr->context, garbage, sz, allocation);
+  return owl_vk_frame_allocate (frame, &vkr->context, garbage, size,
+                                allocation);
 }
 
 owl_public void *
-owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 sz,
+owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
                                 struct owl_vk_stage_allocation *allocation) {
-  return owl_vk_stage_heap_allocate (&vkr->stage_heap, &vkr->context, sz,
+  return owl_vk_stage_heap_allocate (&vkr->stage_heap, &vkr->context, size,
                                      allocation);
 }
 
@@ -288,9 +289,9 @@ owl_vk_renderer_frame_begin (struct owl_vk_renderer *vkr) {
 
 owl_public enum owl_code
 owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr) {
-  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
-
   enum owl_code code;
+
+  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
 
   code = owl_vk_frame_end (frame, &vkr->context, &vkr->swapchain);
   if (OWL_SUCCESS != code)
@@ -301,6 +302,10 @@ owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr) {
 
   vkr->previous_time = vkr->current_time;
   vkr->current_time = owl_io_time_stamp_get ();
+
+  code = owl_vk_renderer_pipeline_bind (vkr, OWL_PIPELINE_ID_NONE);
+  if (OWL_SUCCESS != code)
+    return code;
 
   return code;
 }
@@ -656,6 +661,10 @@ owl_vk_renderer_draw_model (struct owl_vk_renderer *vkr,
   enum owl_code code = OWL_SUCCESS;
 
   struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+
+  code = owl_vk_renderer_pipeline_bind (vkr, OWL_PIPELINE_ID_MODEL);
+  if (OWL_SUCCESS != code)
+    return code;
 
   vkCmdBindVertexBuffers (frame->vk_command_buffer, 0, 1,
                           &model->vk_vertex_buffer, &offset);

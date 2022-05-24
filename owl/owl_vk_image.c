@@ -41,7 +41,7 @@ owl_vk_image_load_init_from_file (struct owl_vk_image_load *load,
   owl_i32 width;
   owl_i32 height;
   owl_i32 chans;
-  owl_u64 sz;
+  owl_u64 size;
   owl_byte *data;
   owl_byte *stage_data;
   enum owl_code code = OWL_SUCCESS;
@@ -59,14 +59,14 @@ owl_vk_image_load_init_from_file (struct owl_vk_image_load *load,
   load->height = (owl_u32)height;
   load->mips = owl_vk_image_calculate_mips (load->width, load->height);
 
-  sz = load->width * load->height * owl_pixel_format_size (load->format);
+  size = load->width * load->height * owl_pixel_format_size (load->format);
 
-  stage_data = owl_vk_stage_heap_allocate (heap, ctx, sz, &load->allocation);
+  stage_data = owl_vk_stage_heap_allocate (heap, ctx, size, &load->allocation);
   if (!stage_data) {
     code = OWL_ERROR_UNKNOWN;
     goto out_data_deinit;
   }
-  owl_memcpy (stage_data, data, sz);
+  owl_memcpy (stage_data, data, size);
 
 out_data_deinit:
   stbi_image_free (data);
@@ -80,7 +80,7 @@ owl_vk_image_load_init_from_data (struct owl_vk_image_load *load,
                                   struct owl_vk_context const *ctx,
                                   struct owl_vk_stage_heap *heap,
                                   struct owl_vk_image_desc const *desc) {
-  owl_u64 sz;
+  owl_u64 size;
   owl_byte *stage_data;
   enum owl_code code = OWL_SUCCESS;
 
@@ -91,14 +91,14 @@ owl_vk_image_load_init_from_data (struct owl_vk_image_load *load,
   load->height = (owl_u32)desc->src_data_height;
   load->mips = owl_vk_image_calculate_mips (load->width, load->height);
 
-  sz = load->width * load->height * owl_pixel_format_size (load->format);
+  size = load->width * load->height * owl_pixel_format_size (load->format);
 
-  stage_data = owl_vk_stage_heap_allocate (heap, ctx, sz, &load->allocation);
+  stage_data = owl_vk_stage_heap_allocate (heap, ctx, size, &load->allocation);
   if (!stage_data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
-  owl_memcpy (stage_data, desc->src_data, sz);
+  owl_memcpy (stage_data, desc->src_data, size);
 
 out:
   return code;

@@ -48,11 +48,11 @@ owl_public enum owl_code
 owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h);
 
 owl_public void *
-owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 sz,
+owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
                                 struct owl_vk_frame_allocation *allocation);
 
 owl_public void *
-owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 sz,
+owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
                                 struct owl_vk_stage_allocation *allocation);
 
 owl_public void

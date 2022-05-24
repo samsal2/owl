@@ -51,7 +51,7 @@ owl_debug_log (char const *f, int l, char const *fmt, ...);
 #define owl_min(a, b) ((a) > (b) ? (b) : (a))
 #define owl_unused(e) ((void)e)
 #define owl_array_size(a) (sizeof (a) / sizeof ((a)[0]))
-#define owl_alignu2(v, a) ((v) + (a)-1) & ~((a)-1)
+#define owl_alignu2(v, a) (((v) + (a)-1) & ~((a)-1))
 #define owl_static_assert(e, msg) typedef char owl_static_assert_[!!(e)]
 
 #endif

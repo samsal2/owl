@@ -8,17 +8,18 @@
 
 owl_public enum owl_code
 owl_vk_frame_heap_buffer_init (struct owl_vk_frame_heap *heap,
-                               struct owl_vk_context const *ctx, owl_u64 sz) {
+                               struct owl_vk_context const *ctx,
+                               owl_u64 size) {
   VkBufferCreateInfo info;
 
   VkResult vk_result = VK_SUCCESS;
 
-  heap->size = sz;
+  heap->size = size;
 
   info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   info.pNext = NULL;
   info.flags = 0;
-  info.size = sz;
+  info.size = size;
   info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
                VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -193,10 +194,10 @@ owl_vk_frame_heap_sets_write (struct owl_vk_frame_heap *heap,
 
 owl_public enum owl_code
 owl_vk_frame_heap_init (struct owl_vk_frame_heap *heap,
-                        struct owl_vk_context const *ctx, owl_u64 sz) {
+                        struct owl_vk_context const *ctx, owl_u64 size) {
   enum owl_code code;
 
-  code = owl_vk_frame_heap_buffer_init (heap, ctx, sz);
+  code = owl_vk_frame_heap_buffer_init (heap, ctx, size);
   if (OWL_SUCCESS != code)
     goto out;
 
@@ -238,8 +239,8 @@ owl_vk_frame_heap_unmap (struct owl_vk_frame_heap *heap,
 
 owl_public owl_b32
 owl_vk_frame_heap_has_enough_space (struct owl_vk_frame_heap const *heap,
-                                    owl_u64 sz) {
-  return (sz + heap->offset) <= heap->size;
+                                    owl_u64 size) {
+  return (size + heap->offset) <= heap->size;
 }
 
 owl_private void
@@ -255,22 +256,23 @@ owl_vk_frame_heap_fill_allocation (
 }
 
 owl_private owl_u64
-owl_vk_frame_heap_offset_update (struct owl_vk_frame_heap *heap, owl_u64 sz) {
+owl_vk_frame_heap_offset_update (struct owl_vk_frame_heap *heap,
+                                 owl_u64 size) {
   owl_u64 const previous = heap->offset;
-  heap->offset = owl_alignu2 (previous + sz, heap->alignment);
+  heap->offset = owl_alignu2 (previous + size, heap->alignment);
   return previous;
 }
 
 owl_public void *
 owl_vk_frame_heap_unsafe_allocate (
     struct owl_vk_frame_heap *heap, struct owl_vk_context const *ctx,
-    owl_u64 sz, struct owl_vk_frame_allocation *allocation) {
+    owl_u64 size, struct owl_vk_frame_allocation *allocation) {
   owl_u64 offset;
 
   owl_unused (ctx);
 
   owl_vk_frame_heap_fill_allocation (heap, allocation);
-  offset = owl_vk_frame_heap_offset_update (heap, sz);
+  offset = owl_vk_frame_heap_offset_update (heap, size);
 
   return &((owl_byte *)heap->data)[offset];
 }

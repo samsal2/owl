@@ -206,7 +206,7 @@ owl_private enum owl_code
 owl_model_load_init (struct owl_model_load *load,
                      struct cgltf_data const *gltf,
                      struct owl_vk_renderer *vkr) {
-  owl_u64 sz;
+  owl_u64 size;
   enum owl_code code = OWL_SUCCESS;
 
   owl_unused (vkr);
@@ -218,15 +218,15 @@ owl_model_load_init (struct owl_model_load *load,
 
   owl_model_load_find_capacities (load, gltf);
 
-  sz = (owl_u64)load->vertex_capacity * sizeof (*load->vertices);
-  load->vertices = owl_malloc (sz);
+  size = (owl_u64)load->vertex_capacity * sizeof (*load->vertices);
+  load->vertices = owl_malloc (size);
   if (!load->vertices) {
     code = OWL_ERROR_BAD_ALLOCATION;
     goto out;
   }
 
-  sz = (owl_u64)load->index_capacity * sizeof (owl_u32);
-  load->indices = owl_malloc (sz);
+  size = (owl_u64)load->index_capacity * sizeof (owl_u32);
+  load->indices = owl_malloc (size);
   if (!load->indices) {
     code = OWL_ERROR_BAD_ALLOCATION;
     goto out_error_vertices_free;
@@ -488,7 +488,7 @@ owl_model_buffers_load (struct owl_model *model,
   VkBufferCreateInfo buffer_info;
   VkMemoryRequirements req;
   VkMemoryAllocateInfo memory_info;
-  owl_u64 sz;
+  owl_u64 size;
   owl_byte *data;
   VkBufferCopy copy;
   struct owl_vk_im_command_buffer cmd;
@@ -500,12 +500,12 @@ owl_model_buffers_load (struct owl_model *model,
   owl_assert (load->vertex_count == load->vertex_capacity);
   owl_assert (load->index_count == load->index_capacity);
 
-  sz = (owl_u64)load->vertex_capacity * sizeof (struct owl_pnuujw_vertex);
+  size = (owl_u64)load->vertex_capacity * sizeof (struct owl_pnuujw_vertex);
 
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.pNext = NULL;
   buffer_info.flags = 0;
-  buffer_info.size = sz;
+  buffer_info.size = size;
   buffer_info.usage =
       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
   buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -548,16 +548,16 @@ owl_model_buffers_load (struct owl_model *model,
   if (OWL_SUCCESS != code)
     goto out;
 
-  data = owl_vk_renderer_stage_allocate (vkr, sz, &allocation);
+  data = owl_vk_renderer_stage_allocate (vkr, size, &allocation);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
-  owl_memcpy (data, load->vertices, sz);
+  owl_memcpy (data, load->vertices, size);
 
   copy.srcOffset = 0;
   copy.dstOffset = 0;
-  copy.size = sz;
+  copy.size = size;
 
   vkCmdCopyBuffer (cmd.vk_command_buffer, allocation.vk_buffer,
                    model->vk_vertex_buffer, 1, &copy);
@@ -568,12 +568,12 @@ owl_model_buffers_load (struct owl_model *model,
 
   owl_vk_renderer_stage_heap_free (vkr);
 
-  sz = (owl_u64)load->index_capacity * sizeof (owl_u32);
+  size = (owl_u64)load->index_capacity * sizeof (owl_u32);
 
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.pNext = NULL;
   buffer_info.flags = 0;
-  buffer_info.size = sz;
+  buffer_info.size = size;
   buffer_info.usage =
       VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
   buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -616,16 +616,16 @@ owl_model_buffers_load (struct owl_model *model,
   if (OWL_SUCCESS != code)
     goto out;
 
-  data = owl_vk_renderer_stage_allocate (vkr, sz, &allocation);
+  data = owl_vk_renderer_stage_allocate (vkr, size, &allocation);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
-  owl_memcpy (data, load->indices, sz);
+  owl_memcpy (data, load->indices, size);
 
   copy.srcOffset = 0;
   copy.dstOffset = 0;
-  copy.size = sz;
+  copy.size = size;
 
   vkCmdCopyBuffer (cmd.vk_command_buffer, allocation.vk_buffer,
                    model->vk_index_buffer, 1, &copy);
@@ -672,10 +672,8 @@ owl_model_nodes_load (struct owl_model *model, struct cgltf_data const *gltf,
 
   for (i = 0; i < (owl_i32)gltf->nodes_count; ++i) {
     code = owl_model_node_load (model, gltf, &gltf->nodes[i], &load, vkr);
-
-    if (OWL_SUCCESS != code) {
+    if (OWL_SUCCESS != code)
       goto out_error_deinit_load_state;
-    }
   }
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gs->nodes_count) {

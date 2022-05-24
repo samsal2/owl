@@ -705,10 +705,13 @@ owl_public enum owl_code
 owl_vk_pipeline_manager_bind (struct owl_vk_pipeline_manager *pm,
                               enum owl_pipeline_id id,
                               struct owl_vk_frame const *frame) {
-  if (OWL_PIPELINE_ID_NONE == id)
+  if (pm->active_pipeline == id)
     return OWL_SUCCESS;
 
   pm->active_pipeline = id;
+
+  if (OWL_PIPELINE_ID_NONE == id)
+    return OWL_SUCCESS;
 
   vkCmdBindPipeline (frame->vk_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                      pm->vk_pipelines[id]);

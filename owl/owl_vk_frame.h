@@ -22,7 +22,7 @@ struct owl_vk_frame {
 
 owl_public enum owl_code
 owl_vk_frame_init (struct owl_vk_frame *frame,
-                   struct owl_vk_context const *ctx, owl_u64 sz);
+                   struct owl_vk_context const *ctx, owl_u64 size);
 
 owl_public void
 owl_vk_frame_deinit (struct owl_vk_frame *frame,
@@ -39,7 +39,7 @@ owl_vk_frame_prepare (struct owl_vk_frame *frame,
 owl_public void *
 owl_vk_frame_allocate (struct owl_vk_frame *frame,
                        struct owl_vk_context const *ctx,
-                       struct owl_vk_garbage *garbage, owl_u64 sz,
+                       struct owl_vk_garbage *garbage, owl_u64 size,
                        struct owl_vk_frame_allocation *allocation);
 
 owl_public void
