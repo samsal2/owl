@@ -278,7 +278,7 @@ owl_vk_frame_heap_unsafe_allocate (
 }
 
 owl_public owl_u64
-owl_vk_frame_heap_offset (struct owl_vk_frame_heap const *heap) {
+owl_vk_frame_heap_get_offset (struct owl_vk_frame_heap const *heap) {
   return heap->offset;
 }
 

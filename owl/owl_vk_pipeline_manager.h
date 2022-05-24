@@ -51,7 +51,7 @@ owl_vk_pipeline_manager_bind (struct owl_vk_pipeline_manager *pm,
                               struct owl_vk_frame const *frame);
 
 owl_public VkPipelineLayout
-owl_vk_pipeline_manager_layout_get (struct owl_vk_pipeline_manager const *pm);
+owl_vk_pipeline_manager_get_layout (struct owl_vk_pipeline_manager const *pm);
 
 OWL_END_DECLS
 

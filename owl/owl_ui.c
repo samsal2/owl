@@ -11,9 +11,9 @@ owl_ui_draw_renderer_state (struct owl_vk_renderer *vkr) {
   owl_v2 position;
   owl_v3 color;
 
-  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
 
-  owl_vk_renderer_pipeline_bind (vkr, OWL_PIPELINE_ID_TEXT);
+  owl_vk_renderer_bind_pipeline (vkr, OWL_PIPELINE_ID_TEXT);
 
   snprintf (buffer, sizeof (buffer), "framerate: %2.f fps",
             1 / (vkr->current_time - vkr->previous_time));

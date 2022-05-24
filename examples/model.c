@@ -38,7 +38,7 @@ main (void) {
   CHECK (owl_vk_font_init (font, &renderer->context, &renderer->stage_heap,
                            "../../assets/Inconsolata-Regular.ttf", 64.0F));
 
-  owl_vk_renderer_font_set (renderer, font);
+  owl_vk_renderer_set_font (renderer, font);
 
   owl_m4_identity (matrix);
   owl_m4_translate (offset, matrix);
@@ -51,7 +51,7 @@ main (void) {
     prev_time_stamp = time_stamp;
     time_stamp = owl_io_time_stamp_get ();
 
-    code = owl_vk_renderer_frame_begin (renderer);
+    code = owl_vk_renderer_begin_frame (renderer);
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == code) {
       owl_i32 w, h;
       owl_window_get_framebuffer_size (window, &w, &h);
@@ -65,7 +65,7 @@ main (void) {
     owl_vk_renderer_draw_model (renderer, model, matrix);
     owl_ui_draw_renderer_state (renderer);
 
-    code = owl_vk_renderer_frame_end (renderer);
+    code = owl_vk_renderer_end_frame (renderer);
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == code) {
       owl_i32 w, h;
       owl_window_get_framebuffer_size (window, &w, &h);

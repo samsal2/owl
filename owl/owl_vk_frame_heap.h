@@ -57,7 +57,7 @@ owl_vk_frame_heap_has_enough_space (struct owl_vk_frame_heap const *heap,
                                     owl_u64 size);
 
 owl_public owl_u64
-owl_vk_frame_heap_offset (struct owl_vk_frame_heap const *heap);
+owl_vk_frame_heap_get_offset (struct owl_vk_frame_heap const *heap);
 
 owl_public void
 owl_vk_frame_heap_unsafe_copy (struct owl_vk_frame_heap *dst,

@@ -59,21 +59,21 @@ owl_public void
 owl_vk_renderer_stage_heap_free (struct owl_vk_renderer *vkr);
 
 owl_public void
-owl_vk_renderer_font_set (struct owl_vk_renderer *vkr,
+owl_vk_renderer_set_font (struct owl_vk_renderer *vkr,
                           struct owl_vk_font *font);
 
 owl_public enum owl_code
-owl_vk_renderer_frame_begin (struct owl_vk_renderer *vkr);
+owl_vk_renderer_begin_frame (struct owl_vk_renderer *vkr);
 
 owl_public enum owl_code
-owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr);
+owl_vk_renderer_end_frame (struct owl_vk_renderer *vkr);
 
 owl_public enum owl_code
-owl_vk_renderer_pipeline_bind (struct owl_vk_renderer *vkr,
+owl_vk_renderer_bind_pipeline (struct owl_vk_renderer *vkr,
                                enum owl_pipeline_id id);
 
 owl_public struct owl_vk_frame *
-owl_vk_renderer_frame_get (struct owl_vk_renderer *vkr);
+owl_vk_renderer_get_frame (struct owl_vk_renderer *vkr);
 
 struct owl_quad;
 

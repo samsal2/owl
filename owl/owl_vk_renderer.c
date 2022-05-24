@@ -175,7 +175,7 @@ owl_vk_renderer_deinit (struct owl_vk_renderer *vkr) {
 
 owl_public enum owl_code
 owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h) {
-  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
 
   enum owl_code code = OWL_SUCCESS;
 
@@ -245,7 +245,7 @@ owl_vk_renderer_garbage_get (struct owl_vk_renderer *vkr) {
 owl_public void *
 owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
                                 struct owl_vk_frame_allocation *allocation) {
-  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
   struct owl_vk_garbage *garbage = owl_vk_renderer_garbage_get (vkr);
   return owl_vk_frame_allocate (frame, &vkr->context, garbage, size,
                                 allocation);
@@ -264,14 +264,14 @@ owl_vk_renderer_stage_heap_free (struct owl_vk_renderer *vkr) {
 }
 
 owl_public void
-owl_vk_renderer_font_set (struct owl_vk_renderer *vkr,
+owl_vk_renderer_set_font (struct owl_vk_renderer *vkr,
                           struct owl_vk_font *font) {
   vkr->font = font;
 }
 
 owl_public enum owl_code
-owl_vk_renderer_frame_begin (struct owl_vk_renderer *vkr) {
-  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+owl_vk_renderer_begin_frame (struct owl_vk_renderer *vkr) {
+  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
   struct owl_vk_garbage *garbage = owl_vk_renderer_garbage_get (vkr);
 
   enum owl_code code = OWL_SUCCESS;
@@ -288,10 +288,10 @@ owl_vk_renderer_frame_begin (struct owl_vk_renderer *vkr) {
 }
 
 owl_public enum owl_code
-owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr) {
+owl_vk_renderer_end_frame (struct owl_vk_renderer *vkr) {
   enum owl_code code;
 
-  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
 
   code = owl_vk_frame_end (frame, &vkr->context, &vkr->swapchain);
   if (OWL_SUCCESS != code)
@@ -303,21 +303,21 @@ owl_vk_renderer_frame_end (struct owl_vk_renderer *vkr) {
   vkr->previous_time = vkr->current_time;
   vkr->current_time = owl_io_time_stamp_get ();
 
-  code = owl_vk_renderer_pipeline_bind (vkr, OWL_PIPELINE_ID_NONE);
+  code = owl_vk_renderer_bind_pipeline (vkr, OWL_PIPELINE_ID_NONE);
   if (OWL_SUCCESS != code)
     return code;
 
   return code;
 }
 owl_public struct owl_vk_frame *
-owl_vk_renderer_frame_get (struct owl_vk_renderer *vkr) {
+owl_vk_renderer_get_frame (struct owl_vk_renderer *vkr) {
   return &vkr->frames[vkr->frame];
 }
 
 owl_public enum owl_code
-owl_vk_renderer_pipeline_bind (struct owl_vk_renderer *vkr,
+owl_vk_renderer_bind_pipeline (struct owl_vk_renderer *vkr,
                                enum owl_pipeline_id id) {
-  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
   return owl_vk_pipeline_manager_bind (&vkr->pipelines, id, frame);
 }
 
@@ -393,7 +393,7 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
   sets[0] = ualloc.vk_pvm_ubo_set;
   sets[1] = q->texture->vk_set;
 
-  frame = owl_vk_renderer_frame_get (vkr);
+  frame = owl_vk_renderer_get_frame (vkr);
   vkCmdBindVertexBuffers (frame->vk_command_buffer, 0, 1, &valloc.vk_buffer,
                           &valloc.offset);
 
@@ -402,7 +402,7 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
 
   vkCmdBindDescriptorSets (
       frame->vk_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-      owl_vk_pipeline_manager_layout_get (&vkr->pipelines), 0,
+      owl_vk_pipeline_manager_get_layout (&vkr->pipelines), 0,
       owl_array_size (sets), sets, 1, &ualloc.offset32);
 
   vkCmdDrawIndexed (frame->vk_command_buffer, owl_array_size (indices), 1, 0,
@@ -494,7 +494,7 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
   enum owl_code code = OWL_SUCCESS;
 
   node = &model->nodes[id];
-  frame = owl_vk_renderer_frame_get (vkr);
+  frame = owl_vk_renderer_get_frame (vkr);
 
   for (i = 0; i < node->child_count; ++i) {
     code = owl_vk_renderer_draw_model_node (vkr, node->children[i], model,
@@ -529,7 +529,7 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
 
   vkCmdBindDescriptorSets (
       frame->vk_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-      owl_vk_pipeline_manager_layout_get (&vkr->pipelines), 0, 1,
+      owl_vk_pipeline_manager_get_layout (&vkr->pipelines), 0, 1,
       &u1alloc.vk_model_ubo1_set, 1, &u1alloc.offset32);
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo2), &u2alloc);
@@ -539,7 +539,7 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
 
   vkCmdBindDescriptorSets (
       frame->vk_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-      owl_vk_pipeline_manager_layout_get (&vkr->pipelines), 5, 1,
+      owl_vk_pipeline_manager_get_layout (&vkr->pipelines), 5, 1,
       &u1alloc.vk_model_ubo2_set, 1, &u1alloc.offset32);
 
   for (i = 0; i < mesh->primitive_count; ++i) {
@@ -577,7 +577,7 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
 
     vkCmdBindDescriptorSets (
         frame->vk_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        owl_vk_pipeline_manager_layout_get (&vkr->pipelines), 1,
+        owl_vk_pipeline_manager_get_layout (&vkr->pipelines), 1,
         owl_array_size (sets), sets, 0, NULL);
 
     push_constant.base_color_factor[0] = material->base_color_factor[0];
@@ -640,7 +640,7 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
     push_constant.alpha_mask_cutoff = material->alpha_cutoff;
 
     vkCmdPushConstants (frame->vk_command_buffer,
-                        owl_vk_pipeline_manager_layout_get (&vkr->pipelines),
+                        owl_vk_pipeline_manager_get_layout (&vkr->pipelines),
                         VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                         sizeof (push_constant), &push_constant);
 
@@ -660,9 +660,9 @@ owl_vk_renderer_draw_model (struct owl_vk_renderer *vkr,
   owl_u64 offset = 0;
   enum owl_code code = OWL_SUCCESS;
 
-  struct owl_vk_frame *frame = owl_vk_renderer_frame_get (vkr);
+  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
 
-  code = owl_vk_renderer_pipeline_bind (vkr, OWL_PIPELINE_ID_MODEL);
+  code = owl_vk_renderer_bind_pipeline (vkr, OWL_PIPELINE_ID_MODEL);
   if (OWL_SUCCESS != code)
     return code;
 
