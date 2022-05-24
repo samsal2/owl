@@ -56,7 +56,10 @@ owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
                                 struct owl_vk_stage_allocation *allocation);
 
 owl_public void
-owl_vk_renderer_stage_heap_free (struct owl_vk_renderer *vkr);
+owl_vk_renderer_stage_free (struct owl_vk_renderer *vkr);
+
+owl_public void
+owl_vk_renderer_frame_free (struct owl_vk_renderer *vkr);
 
 owl_public void
 owl_vk_renderer_set_font (struct owl_vk_renderer *vkr,

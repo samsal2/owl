@@ -109,7 +109,7 @@ owl_vk_frame_heap_sets_init (struct owl_vk_frame_heap *heap,
   info.pSetLayouts = &ctx->vk_vert_ubo_set_layout;
 
   vk_result =
-      vkAllocateDescriptorSets (ctx->vk_device, &info, &heap->vk_pvm_ubo_set);
+      vkAllocateDescriptorSets (ctx->vk_device, &info, &heap->vk_pvm_ubo);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -117,8 +117,8 @@ owl_vk_frame_heap_sets_init (struct owl_vk_frame_heap *heap,
 
   info.pSetLayouts = &ctx->vk_both_ubo_set_layout;
 
-  vk_result = vkAllocateDescriptorSets (ctx->vk_device, &info,
-                                        &heap->vk_model_ubo1_set);
+  vk_result =
+      vkAllocateDescriptorSets (ctx->vk_device, &info, &heap->vk_model_ubo1);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_pvm_ubo_set_deinit;
@@ -126,8 +126,8 @@ owl_vk_frame_heap_sets_init (struct owl_vk_frame_heap *heap,
 
   info.pSetLayouts = &ctx->vk_frag_ubo_set_layout;
 
-  vk_result = vkAllocateDescriptorSets (ctx->vk_device, &info,
-                                        &heap->vk_model_ubo2_set);
+  vk_result =
+      vkAllocateDescriptorSets (ctx->vk_device, &info, &heap->vk_model_ubo2);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_model_ubo1_set_deinit;
@@ -137,11 +137,11 @@ owl_vk_frame_heap_sets_init (struct owl_vk_frame_heap *heap,
 
 out_error_model_ubo1_set_deinit:
   vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1,
-                        &heap->vk_model_ubo1_set);
+                        &heap->vk_model_ubo1);
 
 out_error_pvm_ubo_set_deinit:
   vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1,
-                        &heap->vk_pvm_ubo_set);
+                        &heap->vk_pvm_ubo);
 
 out:
   return code;
@@ -151,11 +151,11 @@ owl_private void
 owl_vk_frame_heap_sets_deinit (struct owl_vk_frame_heap *heap,
                                struct owl_vk_context const *ctx) {
   vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1,
-                        &heap->vk_model_ubo2_set);
+                        &heap->vk_model_ubo2);
   vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1,
-                        &heap->vk_model_ubo1_set);
+                        &heap->vk_model_ubo1);
   vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1,
-                        &heap->vk_pvm_ubo_set);
+                        &heap->vk_pvm_ubo);
 }
 
 owl_private void
@@ -170,7 +170,7 @@ owl_vk_frame_heap_sets_write (struct owl_vk_frame_heap *heap,
 
   write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   write.pNext = NULL;
-  write.dstSet = heap->vk_pvm_ubo_set;
+  write.dstSet = heap->vk_pvm_ubo;
   write.dstBinding = 0;
   write.dstArrayElement = 0;
   write.descriptorCount = 1;
@@ -182,12 +182,12 @@ owl_vk_frame_heap_sets_write (struct owl_vk_frame_heap *heap,
   vkUpdateDescriptorSets (ctx->vk_device, 1, &write, 0, NULL);
 
   descriptor.range = sizeof (struct owl_model_ubo1);
-  write.dstSet = heap->vk_model_ubo1_set;
+  write.dstSet = heap->vk_model_ubo1;
 
   vkUpdateDescriptorSets (ctx->vk_device, 1, &write, 0, NULL);
 
   descriptor.range = sizeof (struct owl_model_ubo2);
-  write.dstSet = heap->vk_model_ubo2_set;
+  write.dstSet = heap->vk_model_ubo2;
 
   vkUpdateDescriptorSets (ctx->vk_device, 1, &write, 0, NULL);
 }
@@ -250,9 +250,9 @@ owl_vk_frame_heap_fill_allocation (
   allocation->offset32 = (owl_u32)heap->offset;
   allocation->offset = heap->offset;
   allocation->vk_buffer = heap->vk_buffer;
-  allocation->vk_pvm_ubo_set = heap->vk_pvm_ubo_set;
-  allocation->vk_model_ubo1_set = heap->vk_model_ubo1_set;
-  allocation->vk_model_ubo2_set = heap->vk_model_ubo2_set;
+  allocation->vk_pvm_ubo_set = heap->vk_pvm_ubo;
+  allocation->vk_model_ubo1_set = heap->vk_model_ubo1;
+  allocation->vk_model_ubo2_set = heap->vk_model_ubo2;
 }
 
 owl_private owl_u64
@@ -299,7 +299,7 @@ owl_vk_frame_heap_unsafe_copy (struct owl_vk_frame_heap *dst,
   dst->alignment = src->alignment;
   dst->vk_memory = src->vk_memory;
   dst->vk_buffer = src->vk_buffer;
-  dst->vk_pvm_ubo_set = src->vk_pvm_ubo_set;
-  dst->vk_model_ubo1_set = src->vk_model_ubo1_set;
-  dst->vk_model_ubo2_set = src->vk_model_ubo2_set;
+  dst->vk_pvm_ubo = src->vk_pvm_ubo;
+  dst->vk_model_ubo1 = src->vk_model_ubo1;
+  dst->vk_model_ubo2 = src->vk_model_ubo2;
 }

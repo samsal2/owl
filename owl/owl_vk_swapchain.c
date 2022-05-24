@@ -303,9 +303,9 @@ owl_vk_swapchain_acquire_next_image (struct owl_vk_swapchain *swapchain,
   VkResult vk_result = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  vk_result = vkAcquireNextImageKHR (
-      ctx->vk_device, swapchain->vk_swapchain, (owl_u64)-1,
-      sync->vk_image_available_semaphore, VK_NULL_HANDLE, &swapchain->image);
+  vk_result = vkAcquireNextImageKHR (ctx->vk_device, swapchain->vk_swapchain,
+                                     (owl_u64)-1, sync->vk_image_available,
+                                     VK_NULL_HANDLE, &swapchain->image);
 
   if (VK_ERROR_OUT_OF_DATE_KHR == vk_result) {
     code = OWL_ERROR_OUTDATED_SWAPCHAIN;
@@ -334,7 +334,7 @@ owl_vk_swapchain_present (struct owl_vk_swapchain *swapchain,
   info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   info.pNext = NULL;
   info.waitSemaphoreCount = 1;
-  info.pWaitSemaphores = &sync->vk_render_done_semaphore;
+  info.pWaitSemaphores = &sync->vk_render_done;
   info.swapchainCount = 1;
   info.pSwapchains = &swapchain->vk_swapchain;
   info.pImageIndices = &swapchain->image;

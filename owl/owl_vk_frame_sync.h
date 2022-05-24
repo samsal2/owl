@@ -10,9 +10,9 @@ OWL_BEGIN_DECLS
 struct owl_vk_context;
 
 struct owl_vk_frame_sync {
-  VkFence vk_in_flight_fence;
-  VkSemaphore vk_render_done_semaphore;
-  VkSemaphore vk_image_available_semaphore;
+  VkFence vk_in_flight;
+  VkSemaphore vk_render_done;
+  VkSemaphore vk_image_available;
 };
 
 owl_public enum owl_code

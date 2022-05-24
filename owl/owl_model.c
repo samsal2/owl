@@ -566,7 +566,7 @@ owl_model_buffers_load (struct owl_model *model,
   if (OWL_SUCCESS != code)
     goto out;
 
-  owl_vk_renderer_stage_heap_free (vkr);
+  owl_vk_renderer_stage_free (vkr);
 
   size = (owl_u64)load->index_capacity * sizeof (owl_u32);
 
@@ -634,7 +634,7 @@ owl_model_buffers_load (struct owl_model *model,
   if (OWL_SUCCESS != code)
     goto out;
 
-  owl_vk_renderer_stage_heap_free (vkr);
+  owl_vk_renderer_stage_free (vkr);
 
 out:
   return code;

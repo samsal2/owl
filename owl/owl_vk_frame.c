@@ -250,15 +250,15 @@ owl_vk_frame_submit (struct owl_vk_frame *frame,
   info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   info.pNext = NULL;
   info.waitSemaphoreCount = 1;
-  info.pWaitSemaphores = &frame->sync.vk_image_available_semaphore;
+  info.pWaitSemaphores = &frame->sync.vk_image_available;
   info.signalSemaphoreCount = 1;
-  info.pSignalSemaphores = &frame->sync.vk_render_done_semaphore;
+  info.pSignalSemaphores = &frame->sync.vk_render_done;
   info.pWaitDstStageMask = &stage;
   info.commandBufferCount = 1;
   info.pCommandBuffers = &frame->vk_command_buffer;
 
   vk_result = vkQueueSubmit (ctx->vk_graphics_queue, 1, &info,
-                             frame->sync.vk_in_flight_fence);
+                             frame->sync.vk_in_flight);
   if (VK_SUCCESS != vk_result)
     return OWL_ERROR_UNKNOWN;
 

@@ -99,8 +99,8 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
     info.codeSize = sizeof (spv);
     info.pCode = spv;
 
-    vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &pm->vk_basic_vert_shader);
+    vk_result =
+        vkCreateShaderModule (ctx->vk_device, &info, NULL, &pm->vk_basic_vert);
 
     if (VK_SUCCESS != vk_result) {
       code = OWL_ERROR_UNKNOWN;
@@ -121,8 +121,8 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
     info.codeSize = sizeof (spv);
     info.pCode = spv;
 
-    vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &pm->vk_basic_frag_shader);
+    vk_result =
+        vkCreateShaderModule (ctx->vk_device, &info, NULL, &pm->vk_basic_frag);
 
     if (VK_SUCCESS != vk_result) {
       code = OWL_ERROR_UNKNOWN;
@@ -143,8 +143,8 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
     info.codeSize = sizeof (spv);
     info.pCode = spv;
 
-    vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &pm->vk_text_frag_shader);
+    vk_result =
+        vkCreateShaderModule (ctx->vk_device, &info, NULL, &pm->vk_text_frag);
 
     if (VK_SUCCESS != vk_result) {
       code = OWL_ERROR_UNKNOWN;
@@ -165,8 +165,8 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
     info.codeSize = sizeof (spv);
     info.pCode = spv;
 
-    vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &pm->vk_model_vert_shader);
+    vk_result =
+        vkCreateShaderModule (ctx->vk_device, &info, NULL, &pm->vk_model_vert);
 
     if (VK_SUCCESS != vk_result) {
       goto out_error_text_frag_shader_deinit;
@@ -186,8 +186,8 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
     info.codeSize = sizeof (spv);
     info.pCode = spv;
 
-    vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &pm->vk_model_frag_shader);
+    vk_result =
+        vkCreateShaderModule (ctx->vk_device, &info, NULL, &pm->vk_model_frag);
 
     if (VK_SUCCESS != vk_result) {
       goto out_error_model_vert_shader_deinit;
@@ -197,16 +197,16 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
   goto out;
 
 out_error_model_vert_shader_deinit:
-  vkDestroyShaderModule (ctx->vk_device, pm->vk_model_vert_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_model_vert, NULL);
 
 out_error_text_frag_shader_deinit:
-  vkDestroyShaderModule (ctx->vk_device, pm->vk_text_frag_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_text_frag, NULL);
 
 out_error_basic_frag_shader_deinit:
-  vkDestroyShaderModule (ctx->vk_device, pm->vk_basic_frag_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_basic_frag, NULL);
 
 out_error_basic_vert_shader_deinit:
-  vkDestroyShaderModule (ctx->vk_device, pm->vk_basic_vert_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_basic_vert, NULL);
 
 out:
   return code;
@@ -216,11 +216,11 @@ owl_private void
 owl_vk_pipeline_manager_shaders_deinit (struct owl_vk_pipeline_manager *pm,
                                         struct owl_vk_context *ctx) {
 
-  vkDestroyShaderModule (ctx->vk_device, pm->vk_model_frag_shader, NULL);
-  vkDestroyShaderModule (ctx->vk_device, pm->vk_model_vert_shader, NULL);
-  vkDestroyShaderModule (ctx->vk_device, pm->vk_text_frag_shader, NULL);
-  vkDestroyShaderModule (ctx->vk_device, pm->vk_basic_frag_shader, NULL);
-  vkDestroyShaderModule (ctx->vk_device, pm->vk_basic_vert_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_model_frag, NULL);
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_model_vert, NULL);
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_text_frag, NULL);
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_basic_frag, NULL);
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_basic_vert, NULL);
 }
 
 owl_private enum owl_code
@@ -546,7 +546,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       stages[0].pNext = NULL;
       stages[0].flags = 0;
       stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-      stages[0].module = pm->vk_basic_vert_shader;
+      stages[0].module = pm->vk_basic_vert;
       stages[0].pName = "main";
       stages[0].pSpecializationInfo = NULL;
 
@@ -554,7 +554,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       stages[1].pNext = NULL;
       stages[1].flags = 0;
       stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-      stages[1].module = pm->vk_basic_frag_shader;
+      stages[1].module = pm->vk_basic_frag;
       stages[1].pName = "main";
       stages[1].pSpecializationInfo = NULL;
       break;
@@ -564,7 +564,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       stages[0].pNext = NULL;
       stages[0].flags = 0;
       stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-      stages[0].module = pm->vk_basic_vert_shader;
+      stages[0].module = pm->vk_basic_vert;
       stages[0].pName = "main";
       stages[0].pSpecializationInfo = NULL;
 
@@ -572,7 +572,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       stages[1].pNext = NULL;
       stages[1].flags = 0;
       stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-      stages[1].module = pm->vk_text_frag_shader;
+      stages[1].module = pm->vk_text_frag;
       stages[1].pName = "main";
       stages[1].pSpecializationInfo = NULL;
       break;
@@ -582,7 +582,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       stages[0].pNext = NULL;
       stages[0].flags = 0;
       stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-      stages[0].module = pm->vk_model_vert_shader;
+      stages[0].module = pm->vk_model_vert;
       stages[0].pName = "main";
       stages[0].pSpecializationInfo = NULL;
 
@@ -590,7 +590,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       stages[1].pNext = NULL;
       stages[1].flags = 0;
       stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-      stages[1].module = pm->vk_model_frag_shader;
+      stages[1].module = pm->vk_model_frag;
       stages[1].pName = "main";
       stages[1].pSpecializationInfo = NULL;
       break;

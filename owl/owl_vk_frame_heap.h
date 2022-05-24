@@ -16,9 +16,9 @@ struct owl_vk_frame_heap {
   VkDeviceSize alignment;
   VkDeviceMemory vk_memory;
   VkBuffer vk_buffer;
-  VkDescriptorSet vk_pvm_ubo_set;
-  VkDescriptorSet vk_model_ubo1_set;
-  VkDescriptorSet vk_model_ubo2_set;
+  VkDescriptorSet vk_pvm_ubo;
+  VkDescriptorSet vk_model_ubo1;
+  VkDescriptorSet vk_model_ubo2;
 };
 
 owl_public enum owl_code

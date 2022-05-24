@@ -15,8 +15,8 @@ owl_vk_frame_sync_init (struct owl_vk_frame_sync *sync,
   fence_info.pNext = NULL;
   fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-  vk_result = vkCreateFence (ctx->vk_device, &fence_info, NULL,
-                             &sync->vk_in_flight_fence);
+  vk_result =
+      vkCreateFence (ctx->vk_device, &fence_info, NULL, &sync->vk_in_flight);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -27,14 +27,14 @@ owl_vk_frame_sync_init (struct owl_vk_frame_sync *sync,
   semaphore_info.flags = 0;
 
   vk_result = vkCreateSemaphore (ctx->vk_device, &semaphore_info, NULL,
-                                 &sync->vk_render_done_semaphore);
+                                 &sync->vk_render_done);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_in_flight_fence_deinit;
   }
 
   vk_result = vkCreateSemaphore (ctx->vk_device, &semaphore_info, NULL,
-                                 &sync->vk_image_available_semaphore);
+                                 &sync->vk_image_available);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out_error_render_done_semaphore_deinit;
@@ -43,10 +43,10 @@ owl_vk_frame_sync_init (struct owl_vk_frame_sync *sync,
   goto out;
 
 out_error_render_done_semaphore_deinit:
-  vkDestroySemaphore (ctx->vk_device, sync->vk_render_done_semaphore, NULL);
+  vkDestroySemaphore (ctx->vk_device, sync->vk_render_done, NULL);
 
 out_error_in_flight_fence_deinit:
-  vkDestroyFence (ctx->vk_device, sync->vk_in_flight_fence, NULL);
+  vkDestroyFence (ctx->vk_device, sync->vk_in_flight, NULL);
 
 out:
   return code;
@@ -55,10 +55,9 @@ out:
 owl_public void
 owl_vk_frame_sync_deinit (struct owl_vk_frame_sync *sync,
                           struct owl_vk_context const *ctx) {
-  vkDestroySemaphore (ctx->vk_device, sync->vk_image_available_semaphore,
-                      NULL);
-  vkDestroySemaphore (ctx->vk_device, sync->vk_render_done_semaphore, NULL);
-  vkDestroyFence (ctx->vk_device, sync->vk_in_flight_fence, NULL);
+  vkDestroySemaphore (ctx->vk_device, sync->vk_image_available, NULL);
+  vkDestroySemaphore (ctx->vk_device, sync->vk_render_done, NULL);
+  vkDestroyFence (ctx->vk_device, sync->vk_in_flight, NULL);
 }
 
 owl_public enum owl_code
@@ -67,8 +66,8 @@ owl_vk_frame_sync_wait (struct owl_vk_frame_sync *sync,
   VkResult vk_result = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  vk_result = vkWaitForFences (ctx->vk_device, 1, &sync->vk_in_flight_fence,
-                               VK_TRUE, (owl_u64)-1);
+  vk_result = vkWaitForFences (ctx->vk_device, 1, &sync->vk_in_flight, VK_TRUE,
+                               (owl_u64)-1);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -84,7 +83,7 @@ owl_vk_frame_sync_reset (struct owl_vk_frame_sync *sync,
   VkResult vk_result = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  vk_result = vkResetFences (ctx->vk_device, 1, &sync->vk_in_flight_fence);
+  vk_result = vkResetFences (ctx->vk_device, 1, &sync->vk_in_flight);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -97,7 +96,7 @@ out:
 owl_public void
 owl_vk_frame_sync_unsafe_copy (struct owl_vk_frame_sync *dst,
                                struct owl_vk_frame_sync const *src) {
-  dst->vk_in_flight_fence = src->vk_in_flight_fence;
-  dst->vk_render_done_semaphore = src->vk_render_done_semaphore;
-  dst->vk_image_available_semaphore = src->vk_image_available_semaphore;
+  dst->vk_in_flight = src->vk_in_flight;
+  dst->vk_render_done = src->vk_render_done;
+  dst->vk_image_available = src->vk_image_available;
 }

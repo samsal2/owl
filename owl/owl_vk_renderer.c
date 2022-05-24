@@ -11,6 +11,7 @@
 #include "owl_window.h"
 
 #define OWL_DEFAULT_FRAME_SIZE (1 << 8)
+#define OWL_DEFAULT_STAGE_SIZE (1 << 16)
 
 owl_private enum owl_code
 owl_vk_renderer_frames_init (struct owl_vk_renderer *vkr) {
@@ -119,7 +120,8 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window) {
   if (OWL_SUCCESS != code)
     goto out_error_pipelines_deinit;
 
-  code = owl_vk_stage_heap_init (&vkr->stage_heap, &vkr->context, 1 << 16);
+  code = owl_vk_stage_heap_init (&vkr->stage_heap, &vkr->context,
+                                 OWL_DEFAULT_STAGE_SIZE);
   if (OWL_SUCCESS != code)
     goto out_error_garbages_deinit;
 
@@ -175,9 +177,9 @@ owl_vk_renderer_deinit (struct owl_vk_renderer *vkr) {
 
 owl_public enum owl_code
 owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h) {
-  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
-
   enum owl_code code = OWL_SUCCESS;
+
+  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
 
   code = owl_vk_context_device_wait (&vkr->context);
   if (OWL_SUCCESS != code)
@@ -259,8 +261,14 @@ owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
 }
 
 owl_public void
-owl_vk_renderer_stage_heap_free (struct owl_vk_renderer *vkr) {
+owl_vk_renderer_stage_free (struct owl_vk_renderer *vkr) {
   owl_vk_stage_heap_free (&vkr->stage_heap, &vkr->context);
+}
+
+owl_public void
+owl_vk_renderer_frame_free (struct owl_vk_renderer *vkr) {
+  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
+  owl_vk_frame_free (frame, &vkr->context);
 }
 
 owl_public void
@@ -271,10 +279,10 @@ owl_vk_renderer_set_font (struct owl_vk_renderer *vkr,
 
 owl_public enum owl_code
 owl_vk_renderer_begin_frame (struct owl_vk_renderer *vkr) {
+  enum owl_code code = OWL_SUCCESS;
+
   struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
   struct owl_vk_garbage *garbage = owl_vk_renderer_garbage_get (vkr);
-
-  enum owl_code code = OWL_SUCCESS;
 
   code = owl_vk_frame_begin (frame, &vkr->context, &vkr->swapchain);
   if (OWL_SUCCESS != code)
@@ -673,8 +681,8 @@ owl_vk_renderer_draw_model (struct owl_vk_renderer *vkr,
                         VK_INDEX_TYPE_UINT32);
 
   for (i = 0; i < model->root_count; ++i) {
-    code =
-        owl_vk_renderer_draw_model_node (vkr, model->roots[i], model, matrix);
+    owl_model_node_id const root = model->roots[i];
+    code = owl_vk_renderer_draw_model_node (vkr, root, model, matrix);
     if (OWL_SUCCESS != code)
       return code;
   }
