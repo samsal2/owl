@@ -114,7 +114,7 @@ struct owl_model_material {
 struct owl_model_skin_ssbo {
   owl_m4 matrix;
   owl_m4 joint_matices[OWL_MODEL_MAX_JOINT_COUNT];
-  owl_i32 joint_matrice_count;
+  owl_i32 joint_matrix_count;
 };
 
 struct owl_model_skin {

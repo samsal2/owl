@@ -14,14 +14,14 @@
 #define OWL_DEFAULT_STAGE_SIZE (1 << 16)
 
 owl_private enum owl_code
-owl_vk_renderer_frames_init (struct owl_vk_renderer *vkr) {
+owl_vk_renderer_frames_init (struct owl_vk_frame *frames, owl_i32 count,
+                             struct owl_vk_context *ctx) {
   owl_i32 i;
 
   enum owl_code code = OWL_SUCCESS;
 
-  for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i) {
-    code = owl_vk_frame_init (&vkr->frames[i], &vkr->context,
-                              OWL_DEFAULT_FRAME_SIZE);
+  for (i = 0; i < count; ++i) {
+    code = owl_vk_frame_init (&frames[i], ctx, OWL_DEFAULT_FRAME_SIZE);
     if (OWL_SUCCESS != code)
       goto out_error_frames_deinit;
   }
@@ -30,27 +30,29 @@ owl_vk_renderer_frames_init (struct owl_vk_renderer *vkr) {
 
 out_error_frames_deinit:
   for (i = i - 1; i >= 0; --i)
-    owl_vk_frame_deinit (&vkr->frames[i], &vkr->context);
+    owl_vk_frame_deinit (frames, ctx);
 
 out:
   return code;
 }
 
 owl_private void
-owl_vk_renderer_frames_deinit (struct owl_vk_renderer *vkr) {
+owl_vk_renderer_frames_deinit (struct owl_vk_frame *frames, owl_i32 count,
+                               struct owl_vk_context *ctx) {
   owl_i32 i;
-  for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i)
-    owl_vk_frame_deinit (&vkr->frames[i], &vkr->context);
+  for (i = 0; i < count; ++i)
+    owl_vk_frame_deinit (&frames[i], ctx);
 }
 
 owl_private enum owl_code
-owl_vk_renderer_garbages_init (struct owl_vk_renderer *vkr) {
+owl_vk_renderer_garbages_init (struct owl_vk_garbage *garbages, owl_i32 count,
+                               struct owl_vk_context *ctx) {
   owl_i32 i;
 
   enum owl_code code = OWL_SUCCESS;
 
-  for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i) {
-    code = owl_vk_garbage_init (&vkr->garbages[i], &vkr->context);
+  for (i = 0; i < count; ++i) {
+    code = owl_vk_garbage_init (&garbages[i], ctx);
     if (OWL_SUCCESS != code)
       goto out_error_garbages_deinit;
   }
@@ -59,17 +61,18 @@ owl_vk_renderer_garbages_init (struct owl_vk_renderer *vkr) {
 
 out_error_garbages_deinit:
   for (i = i - 1; i >= 0; --i)
-    owl_vk_garbage_deinit (&vkr->garbages[i], &vkr->context);
+    owl_vk_garbage_deinit (&garbages[i], ctx);
 
 out:
   return code;
 }
 
 owl_private void
-owl_vk_renderer_garbages_deinit (struct owl_vk_renderer *vkr) {
+owl_vk_renderer_garbages_deinit (struct owl_vk_garbage *garbages,
+                                 owl_i32 count, struct owl_vk_context *ctx) {
   owl_i32 i;
-  for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i)
-    owl_vk_garbage_deinit (&vkr->garbages[i], &vkr->context);
+  for (i = 0; i < count; ++i)
+    owl_vk_garbage_deinit (&garbages[i], ctx);
 }
 
 owl_public enum owl_code
@@ -116,7 +119,8 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window) {
   if (OWL_SUCCESS != code)
     goto out_error_swapchain_deinit;
 
-  code = owl_vk_renderer_garbages_init (vkr);
+  code = owl_vk_renderer_garbages_init (
+      &vkr->garbages[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
   if (OWL_SUCCESS != code)
     goto out_error_pipelines_deinit;
 
@@ -128,7 +132,8 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window) {
   vkr->font = NULL;
   vkr->frame = 0;
 
-  code = owl_vk_renderer_frames_init (vkr);
+  code = owl_vk_renderer_frames_init (
+      &vkr->frames[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
   if (OWL_SUCCESS != code)
     goto out_error_stage_heap_deinit;
 
@@ -138,7 +143,8 @@ out_error_stage_heap_deinit:
   owl_vk_stage_heap_deinit (&vkr->stage_heap, &vkr->context);
 
 out_error_garbages_deinit:
-  owl_vk_renderer_garbages_deinit (vkr);
+  owl_vk_renderer_garbages_deinit (
+      &vkr->garbages[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
 
 out_error_pipelines_deinit:
   owl_vk_pipeline_manager_deinit (&vkr->pipelines, &vkr->context);
@@ -164,9 +170,11 @@ out:
 
 owl_public void
 owl_vk_renderer_deinit (struct owl_vk_renderer *vkr) {
-  owl_vk_renderer_frames_deinit (vkr);
+  owl_vk_renderer_frames_deinit (
+      &vkr->frames[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
   owl_vk_stage_heap_deinit (&vkr->stage_heap, &vkr->context);
-  owl_vk_renderer_garbages_deinit (vkr);
+  owl_vk_renderer_garbages_deinit (
+      &vkr->garbages[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
   owl_vk_pipeline_manager_deinit (&vkr->pipelines, &vkr->context);
   owl_vk_swapchain_deinit (&vkr->swapchain, &vkr->context);
   owl_vk_attachment_deinit (&vkr->depth_stencil_attachment, &vkr->context);
@@ -184,6 +192,11 @@ owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h) {
   code = owl_vk_context_device_wait (&vkr->context);
   if (OWL_SUCCESS != code)
     goto out;
+
+  /* FIXME(samuel): could in theory init first, deinit second. But if init
+   *                it would probably just lead to an outdate swapchain spam
+   *                and all would already would be too broken to continue
+   */
 
   code = owl_vk_frame_resync (frame, &vkr->context);
   if (OWL_SUCCESS != code)

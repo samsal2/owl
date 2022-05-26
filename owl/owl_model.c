@@ -861,7 +861,7 @@ owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
           owl_m4_copy (inverse_bind_matrices[k], ssbo->joint_matices[k]);
         }
 
-        ssbo->joint_matrice_count = skin->joint_count;
+        ssbo->joint_matrix_count = skin->joint_count;
       }
     }
   }
