@@ -55,7 +55,7 @@ owl_vk_attachment_image_init (struct owl_vk_attachment *attachment,
   info.extent.depth = 1;
   info.mipLevels = 1;
   info.arrayLayers = 1;
-  info.samples = ctx->msaa;
+  info.samples = ctx->vk_msaa;
   info.tiling = VK_IMAGE_TILING_OPTIMAL;
   info.usage = owl_vk_attachment_type_get_usage (type);
   info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -106,12 +106,12 @@ owl_vk_attachment_memory_init (struct owl_vk_attachment *attachment,
                                  attachment->vk_memory, 0);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
   }
 
   goto out;
 
-out_error_memory_deinit:
+error_memory_deinit:
   vkFreeMemory (ctx->vk_device, attachment->vk_memory, NULL);
 
 out:
@@ -177,18 +177,18 @@ owl_vk_attachment_init (struct owl_vk_attachment *attachment,
 
   code = owl_vk_attachment_memory_init (attachment, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_image_deinit;
+    goto error_image_deinit;
 
   code = owl_vk_attachment_image_view_init (attachment, ctx, type);
   if (OWL_SUCCESS != code)
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
 
   goto out;
 
-out_error_memory_deinit:
+error_memory_deinit:
   owl_vk_attachment_memory_deinit (attachment, ctx);
 
-out_error_image_deinit:
+error_image_deinit:
   owl_vk_attachment_image_deinit (attachment, ctx);
 
 out:

@@ -36,12 +36,12 @@ owl_vk_frame_commands_init (struct owl_vk_frame *frame,
                                         &frame->vk_command_buffer);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_command_pool_deinit;
+    goto error_command_pool_deinit;
   }
 
   goto out;
 
-out_error_command_pool_deinit:
+error_command_pool_deinit:
   vkDestroyCommandPool (ctx->vk_device, frame->vk_command_pool, NULL);
 
 out:
@@ -67,18 +67,18 @@ owl_vk_frame_init (struct owl_vk_frame *frame,
 
   code = owl_vk_frame_heap_init (&frame->heap, ctx, size);
   if (OWL_SUCCESS != code)
-    goto out_error_commads_deinit;
+    goto error_commads_deinit;
 
   code = owl_vk_frame_sync_init (&frame->sync, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_frame_heap_deinit;
+    goto error_frame_heap_deinit;
 
   goto out;
 
-out_error_frame_heap_deinit:
+error_frame_heap_deinit:
   owl_vk_frame_heap_deinit (&frame->heap, ctx);
 
-out_error_commads_deinit:
+error_commads_deinit:
   owl_vk_frame_commands_deinit (frame, ctx);
 
 out:
@@ -118,18 +118,17 @@ owl_vk_frame_prepare (struct owl_vk_frame *frame,
 
   code = owl_vk_frame_wait (frame, ctx);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
   code = owl_vk_frame_sync_reset (&frame->sync, ctx);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
   code = owl_vk_frame_commands_reset (frame, ctx);
   if (OWL_SUCCESS != code)
-    goto out;
+    return code;
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private owl_u64
@@ -156,11 +155,11 @@ owl_vk_frame_reserve (struct owl_vk_frame *frame,
 
   code = owl_vk_frame_heap_init (&frame->heap, ctx, new_size);
   if (OWL_SUCCESS != code)
-    goto out_error_pop_frame;
+    goto error_pop_frame;
 
   goto out;
 
-out_error_pop_frame:
+error_pop_frame:
   owl_vk_garbage_pop_frame (garbage, frame);
 
 out:

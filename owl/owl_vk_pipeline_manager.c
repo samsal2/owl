@@ -57,12 +57,12 @@ owl_vk_pipeline_manager_pipeline_layouts_init (
 
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_model_pipeline_layout_deinit;
+    goto error_model_pipeline_layout_deinit;
   }
 
   goto out;
 
-out_error_model_pipeline_layout_deinit:
+error_model_pipeline_layout_deinit:
   vkDestroyPipelineLayout (ctx->vk_device, pm->vk_common_pipeline_layout,
                            NULL);
 
@@ -126,7 +126,7 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
 
     if (VK_SUCCESS != vk_result) {
       code = OWL_ERROR_UNKNOWN;
-      goto out_error_basic_vert_shader_deinit;
+      goto error_basic_vert_shader_deinit;
     }
   }
 
@@ -148,7 +148,7 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
 
     if (VK_SUCCESS != vk_result) {
       code = OWL_ERROR_UNKNOWN;
-      goto out_error_basic_frag_shader_deinit;
+      goto error_basic_frag_shader_deinit;
     }
   }
 
@@ -169,7 +169,7 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
         vkCreateShaderModule (ctx->vk_device, &info, NULL, &pm->vk_model_vert);
 
     if (VK_SUCCESS != vk_result) {
-      goto out_error_text_frag_shader_deinit;
+      goto error_text_frag_shader_deinit;
     }
   }
 
@@ -190,7 +190,7 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
         vkCreateShaderModule (ctx->vk_device, &info, NULL, &pm->vk_model_frag);
 
     if (VK_SUCCESS != vk_result) {
-      goto out_error_model_vert_shader_deinit;
+      goto error_model_vert_shader_deinit;
     }
   }
 
@@ -211,7 +211,7 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
                                       &pm->vk_skybox_vert);
 
     if (VK_SUCCESS != vk_result) {
-      goto out_error_model_frag_shader_deinit;
+      goto error_model_frag_shader_deinit;
     }
   }
 
@@ -232,28 +232,28 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
                                       &pm->vk_skybox_frag);
 
     if (VK_SUCCESS != vk_result) {
-      goto out_error_skybox_vert_shader_deinit;
+      goto error_skybox_vert_shader_deinit;
     }
   }
 
   goto out;
 
-out_error_skybox_vert_shader_deinit:
+error_skybox_vert_shader_deinit:
   vkDestroyShaderModule (ctx->vk_device, pm->vk_skybox_vert, NULL);
 
-out_error_model_frag_shader_deinit:
+error_model_frag_shader_deinit:
   vkDestroyShaderModule (ctx->vk_device, pm->vk_model_frag, NULL);
 
-out_error_model_vert_shader_deinit:
+error_model_vert_shader_deinit:
   vkDestroyShaderModule (ctx->vk_device, pm->vk_model_vert, NULL);
 
-out_error_text_frag_shader_deinit:
+error_text_frag_shader_deinit:
   vkDestroyShaderModule (ctx->vk_device, pm->vk_text_frag, NULL);
 
-out_error_basic_frag_shader_deinit:
+error_basic_frag_shader_deinit:
   vkDestroyShaderModule (ctx->vk_device, pm->vk_basic_frag, NULL);
 
-out_error_basic_vert_shader_deinit:
+error_basic_vert_shader_deinit:
   vkDestroyShaderModule (ctx->vk_device, pm->vk_basic_vert, NULL);
 
 out:
@@ -529,7 +529,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
           VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
       multisample.pNext = NULL;
       multisample.flags = 0;
-      multisample.rasterizationSamples = ctx->msaa;
+      multisample.rasterizationSamples = ctx->vk_msaa;
       multisample.sampleShadingEnable = VK_FALSE;
       multisample.minSampleShading = 1.0F;
       multisample.pSampleMask = NULL;
@@ -749,13 +749,13 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
                                            &info, NULL, &pm->vk_pipelines[i]);
     if (VK_SUCCESS != vk_result) {
       code = OWL_ERROR_UNKNOWN;
-      goto out_error_pipelines_deinit;
+      goto error_pipelines_deinit;
     }
   }
 
   goto out;
 
-out_error_pipelines_deinit:
+error_pipelines_deinit:
   for (i = i - 1; i >= 0; --i) {
     vkDestroyPipeline (ctx->vk_device, pm->vk_pipelines[i], NULL);
   }
@@ -784,18 +784,18 @@ owl_vk_pipeline_manager_init (struct owl_vk_pipeline_manager *pm,
 
   code = owl_vk_pipeline_manager_shaders_init (pm, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_pipeline_layouts_deinit;
+    goto error_pipeline_layouts_deinit;
 
   code = owl_vk_pipeline_manager_pipelines_init (pm, ctx, swapchain);
   if (OWL_SUCCESS != code)
-    goto out_error_shaders_deinit;
+    goto error_shaders_deinit;
 
   goto out;
 
-out_error_shaders_deinit:
+error_shaders_deinit:
   owl_vk_pipeline_manager_shaders_deinit (pm, ctx);
 
-out_error_pipeline_layouts_deinit:
+error_pipeline_layouts_deinit:
   owl_vk_pipeline_manager_pipeline_layouts_deinit (pm, ctx);
 
 out:

@@ -30,22 +30,22 @@ owl_vk_frame_sync_init (struct owl_vk_frame_sync *sync,
                                  &sync->vk_render_done);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_in_flight_fence_deinit;
+    goto error_in_flight_fence_deinit;
   }
 
   vk_result = vkCreateSemaphore (ctx->vk_device, &semaphore_info, NULL,
                                  &sync->vk_image_available);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_render_done_semaphore_deinit;
+    goto error_render_done_semaphore_deinit;
   }
 
   goto out;
 
-out_error_render_done_semaphore_deinit:
+error_render_done_semaphore_deinit:
   vkDestroySemaphore (ctx->vk_device, sync->vk_render_done, NULL);
 
-out_error_in_flight_fence_deinit:
+error_in_flight_fence_deinit:
   vkDestroyFence (ctx->vk_device, sync->vk_in_flight, NULL);
 
 out:

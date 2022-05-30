@@ -161,13 +161,13 @@ owl_vk_swapchain_image_views_init (struct owl_vk_swapchain *swapchain,
 
     if (VK_SUCCESS != vk_result) {
       code = OWL_ERROR_UNKNOWN;
-      goto out_error_image_views_deinit;
+      goto error_image_views_deinit;
     }
   }
 
   goto out;
 
-out_error_image_views_deinit:
+error_image_views_deinit:
   for (i = i - 1; i >= 0; --i)
     vkDestroyImageView (ctx->vk_device, swapchain->vk_image_views[i], NULL);
 
@@ -215,13 +215,13 @@ owl_vk_swapchain_framebuffers_init (
                                      &swapchain->vk_framebuffers[i]);
     if (VK_SUCCESS != vk_result) {
       code = OWL_ERROR_UNKNOWN;
-      goto out_error_framebuffers_deinit;
+      goto error_framebuffers_deinit;
     }
   }
 
   goto out;
 
-out_error_framebuffers_deinit:
+error_framebuffers_deinit:
   for (i = i - 1; i >= 0; --i)
     vkDestroyFramebuffer (ctx->vk_device, swapchain->vk_framebuffers[i], NULL);
 
@@ -258,16 +258,16 @@ owl_vk_swapchain_init (struct owl_vk_swapchain *swapchain,
 
   code = owl_vk_swapchain_images_init (swapchain, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_vk_swapchain_deinit;
+    goto error_vk_swapchain_deinit;
 
   code = owl_vk_swapchain_image_views_init (swapchain, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_vk_swapchain_deinit;
+    goto error_vk_swapchain_deinit;
 
   code = owl_vk_swapchain_framebuffers_init (swapchain, ctx, color,
                                              depth_stencil);
   if (OWL_SUCCESS != code)
-    goto out_error_image_views_deinit;
+    goto error_image_views_deinit;
 
   swapchain->clear_values[0].color.float32[0] = 0.0F;
   swapchain->clear_values[0].color.float32[1] = 0.0F;
@@ -278,10 +278,10 @@ owl_vk_swapchain_init (struct owl_vk_swapchain *swapchain,
 
   goto out;
 
-out_error_image_views_deinit:
+error_image_views_deinit:
   owl_vk_swapchain_image_views_deinit (swapchain, ctx);
 
-out_error_vk_swapchain_deinit:
+error_vk_swapchain_deinit:
   owl_vk_swapchain_vk_swapchain_deinit (swapchain, ctx);
 
 out:

@@ -46,29 +46,29 @@ owl_vk_stage_heap_init (struct owl_vk_stage_heap *heap,
       vkAllocateMemory (ctx->vk_device, &memory_info, NULL, &heap->vk_memory);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_buffer_deinit;
+    goto error_buffer_deinit;
   }
 
   vk_result =
       vkBindBufferMemory (ctx->vk_device, heap->vk_buffer, heap->vk_memory, 0);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
   }
 
   vk_result =
       vkMapMemory (ctx->vk_device, heap->vk_memory, 0, size, 0, &heap->data);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
   }
 
   goto out;
 
-out_error_memory_deinit:
+error_memory_deinit:
   vkFreeMemory (ctx->vk_device, heap->vk_memory, NULL);
 
-out_error_buffer_deinit:
+error_buffer_deinit:
   vkDestroyBuffer (ctx->vk_device, heap->vk_buffer, NULL);
 
 out:

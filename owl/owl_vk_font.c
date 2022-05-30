@@ -77,14 +77,14 @@ owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
   bitmap = owl_calloc (OWL_VK_FONT_ATLAS_SIZE, sizeof (owl_byte));
   if (!bitmap) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_file_deinit;
+    goto error_file_deinit;
   }
 
   stb_result = stbtt_PackBegin (&pack, bitmap, OWL_VK_FONT_ATLAS_WIDTH,
                                 OWL_VK_FONT_ATLAS_HEIGHT, 0, 1, NULL);
   if (!stb_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_bitmap_deinit;
+    goto error_bitmap_deinit;
   }
 
   stbtt_PackSetOversampling (&pack, 2, 2);
@@ -94,7 +94,7 @@ owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
       (stbtt_packedchar *)(&font->chars[0]));
   if (!stb_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_pack_deinit;
+    goto error_pack_deinit;
   }
 
   stbtt_PackEnd (&pack);
@@ -116,7 +116,7 @@ owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
   code = owl_vk_image_init (&font->atlas, ctx, heap, &desc);
   if (OWL_SUCCESS != code) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_pack_deinit;
+    goto error_pack_deinit;
   }
 
   owl_free (bitmap);
@@ -124,13 +124,13 @@ owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
 
   goto out;
 
-out_error_pack_deinit:
+error_pack_deinit:
   stbtt_PackEnd (&pack);
 
-out_error_bitmap_deinit:
+error_bitmap_deinit:
   owl_free (bitmap);
 
-out_error_file_deinit:
+error_file_deinit:
   owl_vk_font_file_deinit (file);
 
 out:

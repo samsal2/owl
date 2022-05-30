@@ -19,10 +19,9 @@ owl_vk_context_debug_messenger_callback (
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT type,
     VkDebugUtilsMessengerCallbackDataEXT const *data, void *user_data) {
-  struct owl_renderer const *renderer = user_data;
 
   owl_unused (type);
-  owl_unused (renderer);
+  owl_unused (user_data);
 
   if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
     fprintf (stderr,
@@ -56,6 +55,8 @@ owl_vk_context_instance_init (struct owl_vk_context *ctx,
   VkApplicationInfo app;
   VkInstanceCreateInfo info;
 
+  VkResult vk_result = VK_SUCCESS;
+
   app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   app.pNext = NULL;
   app.pApplicationName = window->title;
@@ -78,7 +79,8 @@ owl_vk_context_instance_init (struct owl_vk_context *ctx,
   info.ppEnabledExtensionNames =
       owl_window_get_instance_extensions (&info.enabledExtensionCount);
 
-  if (VK_SUCCESS != vkCreateInstance (&info, NULL, &ctx->vk_instance))
+  vk_result = vkCreateInstance (&info, NULL, &ctx->vk_instance);
+  if (VK_SUCCESS != vk_result)
     return OWL_ERROR_UNKNOWN;
 
   return OWL_SUCCESS;
@@ -141,8 +143,11 @@ owl_vk_context_debug_messenger_deinit (struct owl_vk_context *ctx) {
 owl_private enum owl_code
 owl_vk_context_surface_init (struct owl_vk_context *ctx,
                              struct owl_window const *window) {
-  return owl_window_create_vk_surface (window, ctx->vk_instance,
+  enum owl_code code;
+
+  code = owl_window_create_vk_surface (window, ctx->vk_instance,
                                        &ctx->vk_surface);
+  return code;
 }
 
 owl_private void
@@ -240,15 +245,19 @@ owl_validate_device_extensions (owl_u32 extension_count,
   owl_u32 j;
   owl_b32 extensions_found[owl_array_size (device_extensions)];
 
-  for (i = 0; i < (owl_i32)owl_array_size (device_extensions); ++i) {
+  for (i = 0; i < (owl_i32)owl_array_size (device_extensions); ++i)
     extensions_found[i] = 0;
-  }
 
-  for (i = 0; i < (owl_i32)extension_count; ++i)
-    for (j = 0; j < owl_array_size (device_extensions); ++j)
-      if (!owl_strncmp (device_extensions[j], extensions[i].extensionName,
-                        VK_MAX_EXTENSION_NAME_SIZE))
-        extensions_found[j] = 1;
+  for (i = 0; i < (owl_i32)extension_count; ++i) {
+    for (j = 0; j < owl_array_size (device_extensions); ++j) {
+      owl_i32 same;
+
+      same = !owl_strncmp (device_extensions[j], extensions[i].extensionName,
+                           VK_MAX_EXTENSION_NAME_SIZE);
+
+      extensions_found[j] = same;
+    }
+  }
 
   for (i = 0; i < (owl_i32)owl_array_size (device_extensions); ++i)
     if (!extensions_found[i])
@@ -321,7 +330,6 @@ owl_vk_context_physical_device_select (struct owl_vk_context *ctx) {
     }
 
     owl_free (extensions);
-
     return OWL_SUCCESS;
   }
 
@@ -389,10 +397,10 @@ owl_vk_context_msaa_ensure (struct owl_vk_context const *ctx) {
   limit &= properties.limits.framebufferColorSampleCounts;
   limit &= properties.limits.framebufferDepthSampleCounts;
 
-  if (VK_SAMPLE_COUNT_1_BIT & ctx->msaa)
+  if (VK_SAMPLE_COUNT_1_BIT & ctx->vk_msaa)
     return OWL_ERROR_UNKNOWN;
 
-  if (!(limit & ctx->msaa))
+  if (!(limit & ctx->vk_msaa))
     return OWL_ERROR_UNKNOWN;
 
   return OWL_SUCCESS;
@@ -538,7 +546,7 @@ owl_vk_context_main_render_pass_init (struct owl_vk_context *ctx) {
   /* color */
   attachments[0].flags = 0;
   attachments[0].format = ctx->vk_surface_format.format;
-  attachments[0].samples = ctx->msaa;
+  attachments[0].samples = ctx->vk_msaa;
   attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
   attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -549,7 +557,7 @@ owl_vk_context_main_render_pass_init (struct owl_vk_context *ctx) {
   /* depth */
   attachments[1].flags = 0;
   attachments[1].format = ctx->vk_depth_stencil_format;
-  attachments[1].samples = ctx->msaa;
+  attachments[1].samples = ctx->vk_msaa;
   attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
   attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -664,12 +672,12 @@ owl_vk_context_pools_init (struct owl_vk_context *ctx) {
                                       &ctx->vk_set_pool);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_command_pool_deinit;
+    goto error_command_pool_deinit;
   }
 
   goto out;
 
-out_error_command_pool_deinit:
+error_command_pool_deinit:
   vkDestroyCommandPool (ctx->vk_device, ctx->vk_command_pool, NULL);
 
 out:
@@ -715,7 +723,7 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx) {
                                            &ctx->vk_frag_ubo_set_layout);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_vert_ubo_set_layout_deinit;
+    goto error_vert_ubo_set_layout_deinit;
   }
 
   bindings[0].stageFlags =
@@ -725,7 +733,7 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx) {
                                            &ctx->vk_both_ubo_set_layout);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_frag_ubo_set_layout_deinit;
+    goto error_frag_ubo_set_layout_deinit;
   }
 
   bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -735,7 +743,7 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx) {
                                            &ctx->vk_vert_ssbo_set_layout);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_both_ubo_set_layout_deinit;
+    goto error_both_ubo_set_layout_deinit;
   }
 
   bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
@@ -753,24 +761,24 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx) {
                                            &ctx->vk_frag_image_set_layout);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_vert_ssbo_set_layout_deinit;
+    goto error_vert_ssbo_set_layout_deinit;
   }
 
   goto out;
 
-out_error_vert_ssbo_set_layout_deinit:
+error_vert_ssbo_set_layout_deinit:
   vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_vert_ssbo_set_layout,
                                 NULL);
 
-out_error_both_ubo_set_layout_deinit:
+error_both_ubo_set_layout_deinit:
   vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_both_ubo_set_layout,
                                 NULL);
 
-out_error_frag_ubo_set_layout_deinit:
+error_frag_ubo_set_layout_deinit:
   vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_frag_ubo_set_layout,
                                 NULL);
 
-out_error_vert_ubo_set_layout_deinit:
+error_vert_ubo_set_layout_deinit:
   vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_vert_ubo_set_layout,
                                 NULL);
 
@@ -805,86 +813,83 @@ owl_vk_context_init (struct owl_vk_context *ctx,
 
   code = owl_vk_context_debug_messenger_init (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_instance_deinit;
+    goto error_instance_deinit;
 
   code = owl_vk_context_surface_init (ctx, window);
   if (OWL_SUCCESS != code)
-    goto out_error_debug_messenger_deinit;
+    goto error_debug_messenger_deinit;
 
 #else
 
   code = owl_vk_context_surface_init (ctx, window);
   if (OWL_SUCCESS != code)
-    goto out_error_instance_deinit;
+    goto error_instance_deinit;
 
 #endif
 
   code = owl_vk_context_device_options_fill (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_surface_deinit;
+    goto error_surface_deinit;
 
   code = owl_vk_context_physical_device_select (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_surface_deinit;
+    goto error_surface_deinit;
 
   ctx->vk_surface_format.format = VK_FORMAT_B8G8R8A8_SRGB;
   ctx->vk_surface_format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-
   code = owl_vk_context_surface_format_ensure (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_surface_deinit;
+    goto error_surface_deinit;
 
-  ctx->msaa = VK_SAMPLE_COUNT_2_BIT;
-
+  ctx->vk_msaa = VK_SAMPLE_COUNT_2_BIT;
   code = owl_vk_context_msaa_ensure (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_surface_deinit;
+    goto error_surface_deinit;
 
   ctx->vk_present_mode = VK_PRESENT_MODE_FIFO_KHR;
-
   code = owl_vk_context_present_mode_ensure (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_surface_deinit;
+    goto error_surface_deinit;
 
   code = owl_vk_context_device_init (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_surface_deinit;
+    goto error_surface_deinit;
 
   code = owl_vk_context_depth_stencil_format_ensure (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_device_deinit;
+    goto error_device_deinit;
 
   code = owl_vk_context_main_render_pass_init (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_device_deinit;
+    goto error_device_deinit;
 
   code = owl_vk_context_pools_init (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_main_render_pass_deinit;
+    goto error_main_render_pass_deinit;
 
   code = owl_vk_context_set_layouts_init (ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_pools_deinit;
+    goto error_pools_deinit;
 
   goto out;
-out_error_pools_deinit:
+error_pools_deinit:
   owl_vk_context_pools_deinit (ctx);
 
-out_error_main_render_pass_deinit:
+error_main_render_pass_deinit:
   owl_vk_context_main_render_pass_init (ctx);
 
-out_error_device_deinit:
+error_device_deinit:
   owl_vk_context_device_deinit (ctx);
 
-out_error_surface_deinit:
+error_surface_deinit:
   owl_vk_context_surface_deinit (ctx);
 
 #if defined(OWL_ENABLE_VALIDATION)
-out_error_debug_messenger_deinit:
+error_debug_messenger_deinit:
   owl_vk_context_debug_messenger_deinit (ctx);
 #endif
 
-out_error_instance_deinit:
+error_instance_deinit:
   owl_vk_context_instance_deinit (ctx);
 
 out:

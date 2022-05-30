@@ -117,7 +117,7 @@ owl_window_init (struct owl_window *w, owl_i32 width, owl_i32 height,
 
   if (!w->opaque) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_glfw_deinit;
+    goto error_glfw_deinit;
   }
 #if 0
   glfwSetWindowSizeCallback(w->data, owl_window_window_size_callback);
@@ -131,7 +131,7 @@ owl_window_init (struct owl_window *w, owl_i32 width, owl_i32 height,
 
   goto out;
 
-out_error_glfw_deinit:
+error_glfw_deinit:
   glfwTerminate ();
 
 out:

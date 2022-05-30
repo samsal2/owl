@@ -78,12 +78,12 @@ owl_skybox_memory_init (struct owl_skybox *sb,
       vkBindImageMemory (ctx->vk_device, sb->vk_image, sb->vk_memory, 0);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
   }
 
   goto out;
 
-out_error_memory_deinit:
+error_memory_deinit:
   vkFreeMemory (ctx->vk_device, sb->vk_memory, NULL);
 
 out:
@@ -341,33 +341,33 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
 
   code = owl_skybox_image_init (sb, w, h, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_data_free;
+    goto error_data_free;
 
   code = owl_skybox_memory_init (sb, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_image_deinit;
+    goto error_image_deinit;
 
   code = owl_skybox_image_view_init (sb, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
 
   code = owl_vk_im_command_buffer_begin (&im, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_image_view_deinit;
+    goto error_image_view_deinit;
 
   owl_skybox_transition (sb, &im, 1, 6, VK_IMAGE_LAYOUT_UNDEFINED,
                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
   code = owl_vk_im_command_buffer_end (&im, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_image_view_deinit;
+    goto error_image_view_deinit;
 
   offset = 0;
   size = w * h * 4;
   stage = owl_vk_stage_heap_allocate (heap, ctx, size * 6, &alloc);
   if (!stage) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_image_view_deinit;
+    goto error_image_view_deinit;
   }
 
   for (i = 0; i < (owl_i32)owl_array_size (names); ++i) {
@@ -377,7 +377,7 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
       data = stbi_load (src, &w, &h, &c, STBI_rgb_alpha);
       if (!data) {
         code = OWL_ERROR_UNKNOWN;
-        goto out_error_stage_heap_free;
+        goto error_stage_heap_free;
       }
     }
 
@@ -405,7 +405,7 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
 
   code = owl_vk_im_command_buffer_begin (&im, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_stage_heap_free;
+    goto error_stage_heap_free;
 
   vkCmdCopyBufferToImage (im.vk_command_buffer, alloc.vk_buffer, sb->vk_image,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, copies);
@@ -416,15 +416,15 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
   /* FIXME(samuel): correctly error out of im command buffer */
   code = owl_vk_im_command_buffer_end (&im, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_stage_heap_free;
+    goto error_stage_heap_free;
 
   code = owl_skybox_sampler_init (sb, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_stage_heap_free;
+    goto error_stage_heap_free;
 
   code = owl_skybox_set_init (sb, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_sampler_deinit;
+    goto error_sampler_deinit;
 
   owl_skybox_set_write (sb, ctx);
 
@@ -432,22 +432,22 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
 
   goto out;
 
-out_error_sampler_deinit:
+error_sampler_deinit:
   owl_skybox_sampler_deinit (sb, ctx);
 
-out_error_stage_heap_free:
+error_stage_heap_free:
   owl_vk_stage_heap_free (heap, ctx);
 
-out_error_image_view_deinit:
+error_image_view_deinit:
   owl_skybox_image_view_deinit (sb, ctx);
 
-out_error_memory_deinit:
+error_memory_deinit:
   owl_skybox_memory_deinit (sb, ctx);
 
-out_error_image_deinit:
+error_image_deinit:
   owl_skybox_image_deinit (sb, ctx);
 
-out_error_data_free:
+error_data_free:
   if (data)
     stbi_image_free (data);
 

@@ -229,12 +229,12 @@ owl_model_load_init (struct owl_model_load *load,
   load->indices = owl_malloc (size);
   if (!load->indices) {
     code = OWL_ERROR_BAD_ALLOCATION;
-    goto out_error_vertices_free;
+    goto error_vertices_free;
   }
 
   goto out;
 
-out_error_vertices_free:
+error_vertices_free:
   owl_free (load->vertices);
 
 out:
@@ -665,7 +665,7 @@ owl_model_nodes_load (struct owl_model *model, struct cgltf_data const *gltf,
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gltf->nodes_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto out_error_deinit_load_state;
+    goto error_deinit_load_state;
   }
 
   model->node_count = (owl_i32)gltf->nodes_count;
@@ -673,12 +673,12 @@ owl_model_nodes_load (struct owl_model *model, struct cgltf_data const *gltf,
   for (i = 0; i < (owl_i32)gltf->nodes_count; ++i) {
     code = owl_model_node_load (model, gltf, &gltf->nodes[i], &load, vkr);
     if (OWL_SUCCESS != code)
-      goto out_error_deinit_load_state;
+      goto error_deinit_load_state;
   }
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gs->nodes_count) {
     code = OWL_ERROR_OUT_OF_BOUNDS;
-    goto out_error_deinit_load_state;
+    goto error_deinit_load_state;
   }
 
   model->root_count = (owl_i32)gs->nodes_count;
@@ -689,7 +689,7 @@ owl_model_nodes_load (struct owl_model *model, struct cgltf_data const *gltf,
 
   owl_model_buffers_load (model, &load, vkr);
 
-out_error_deinit_load_state:
+error_deinit_load_state:
   owl_model_load_deinit (&load, vkr);
 
 out:
@@ -1053,48 +1053,48 @@ owl_model_init (struct owl_model *model, struct owl_vk_renderer *vkr,
 
   if (cgltf_result_success != cgltf_load_buffers (&options, data, path)) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_data_free;
+    goto error_data_free;
   }
 
   owl_assert (0 == vkr->stage_heap.in_use);
 
   code = owl_model_images_load (model, data, vkr);
   if (OWL_SUCCESS != code) {
-    goto out_error_data_free;
+    goto error_data_free;
   }
 
   owl_assert (0 == vkr->stage_heap.in_use);
 
   code = owl_model_textures_load (model, data, vkr);
   if (OWL_SUCCESS != code) {
-    goto out_error_data_free;
+    goto error_data_free;
   }
 
   owl_assert (0 == vkr->stage_heap.in_use);
 
   code = owl_model_materials_load (model, data, vkr);
   if (OWL_SUCCESS != code) {
-    goto out_error_data_free;
+    goto error_data_free;
   }
 
   owl_assert (0 == vkr->stage_heap.in_use);
 
   code = owl_model_nodes_load (model, data, vkr);
   if (OWL_SUCCESS != code) {
-    goto out_error_data_free;
+    goto error_data_free;
   }
 
   code = owl_model_skins_load (model, data, vkr);
   if (OWL_SUCCESS != code) {
-    goto out_error_data_free;
+    goto error_data_free;
   }
 
   code = owl_model_anims_load (vkr, data, model);
   if (OWL_SUCCESS != code) {
-    goto out_error_data_free;
+    goto error_data_free;
   }
 
-out_error_data_free:
+error_data_free:
   cgltf_free (data);
 
 out:

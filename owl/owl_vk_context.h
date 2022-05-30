@@ -30,7 +30,7 @@ struct owl_vk_context {
   VkQueue vk_graphics_queue;
   VkQueue vk_present_queue;
 
-  VkSampleCountFlagBits msaa;
+  VkSampleCountFlagBits vk_msaa;
   VkPresentModeKHR vk_present_mode;
 
   VkFormat vk_depth_stencil_format;

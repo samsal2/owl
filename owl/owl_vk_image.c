@@ -82,7 +82,6 @@ owl_vk_image_load_init_from_data (struct owl_vk_image_load *load,
                                   struct owl_vk_image_desc const *desc) {
   owl_u64 size;
   owl_byte *stage_data;
-  enum owl_code code = OWL_SUCCESS;
 
   owl_assert (OWL_VK_IMAGE_SRC_TYPE_DATA == desc->src_type);
 
@@ -92,16 +91,12 @@ owl_vk_image_load_init_from_data (struct owl_vk_image_load *load,
   load->mips = owl_vk_image_calculate_mips (load->width, load->height);
 
   size = load->width * load->height * owl_pixel_format_size (load->format);
-
   stage_data = owl_vk_stage_heap_allocate (heap, ctx, size, &load->allocation);
-  if (!stage_data) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out;
-  }
+  if (!stage_data)
+    return OWL_ERROR_UNKNOWN;
   owl_memcpy (stage_data, desc->src_data, size);
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private enum owl_code
@@ -393,12 +388,12 @@ owl_vk_image_memory_init (struct owl_vk_image *image,
       vkBindImageMemory (ctx->vk_device, image->vk_image, image->vk_memory, 0);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
   }
 
   goto out;
 
-out_error_memory_deinit:
+error_memory_deinit:
   vkFreeMemory (ctx->vk_device, image->vk_memory, NULL);
 
 out:
@@ -646,53 +641,52 @@ owl_vk_image_init (struct owl_vk_image *image,
 
   code = owl_vk_image_image_init (image, ctx, &load);
   if (OWL_SUCCESS != code)
-    goto out_error_image_load_deinit;
+    goto error_image_load_deinit;
 
   code = owl_vk_image_memory_init (image, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_image_deinit;
+    goto error_image_deinit;
 
   code = owl_vk_image_image_view_init (image, ctx, &load);
   if (OWL_SUCCESS != code)
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
 
   code = owl_vk_image_sampler_init (image, ctx, desc, &load);
   if (OWL_SUCCESS != code)
-    goto out_error_image_view_deinit;
+    goto error_image_view_deinit;
 
   code = owl_vk_image_set_init (image, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_sampler_deinit;
+    goto error_sampler_deinit;
 
   code = owl_vk_image_upload (image, ctx, &load);
   if (OWL_SUCCESS != code)
-    goto out_error_set_deinit;
+    goto error_set_deinit;
 
   owl_vk_image_set_write (image, ctx);
   owl_vk_image_load_deinit (&load, ctx, heap);
 
   goto out;
 
-out_error_set_deinit:
+error_set_deinit:
   owl_vk_image_set_deinit (image, ctx);
 
-out_error_sampler_deinit:
+error_sampler_deinit:
   owl_vk_image_sampler_deinit (image, ctx);
 
-out_error_image_view_deinit:
+error_image_view_deinit:
   owl_vk_image_image_view_deinit (image, ctx);
 
-out_error_memory_deinit:
+error_memory_deinit:
   owl_vk_image_memory_deinit (image, ctx);
 
-out_error_image_deinit:
+error_image_deinit:
   owl_vk_image_image_deinit (image, ctx);
 
-out_error_image_load_deinit:
+error_image_load_deinit:
   owl_vk_image_load_deinit (&load, ctx, heap);
 
 out:
-  owl_assert (0 == heap->in_use);
   return code;
 }
 

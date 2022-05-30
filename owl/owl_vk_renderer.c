@@ -24,12 +24,12 @@ owl_vk_renderer_frames_init (struct owl_vk_frame *frames, owl_i32 count,
   for (i = 0; i < count; ++i) {
     code = owl_vk_frame_init (&frames[i], ctx, OWL_DEFAULT_FRAME_SIZE);
     if (OWL_SUCCESS != code)
-      goto out_error_frames_deinit;
+      goto error_frames_deinit;
   }
 
   goto out;
 
-out_error_frames_deinit:
+error_frames_deinit:
   for (i = i - 1; i >= 0; --i)
     owl_vk_frame_deinit (frames, ctx);
 
@@ -55,12 +55,12 @@ owl_vk_renderer_garbages_init (struct owl_vk_garbage *garbages, owl_i32 count,
   for (i = 0; i < count; ++i) {
     code = owl_vk_garbage_init (&garbages[i], ctx);
     if (OWL_SUCCESS != code)
-      goto out_error_garbages_deinit;
+      goto error_garbages_deinit;
   }
 
   goto out;
 
-out_error_garbages_deinit:
+error_garbages_deinit:
   for (i = i - 1; i >= 0; --i)
     owl_vk_garbage_deinit (&garbages[i], ctx);
 
@@ -97,38 +97,38 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window) {
 
   code = owl_vk_context_init (&vkr->context, window);
   if (OWL_SUCCESS != code)
-    goto out_error_camera_deinit;
+    goto error_camera_deinit;
 
   code = owl_vk_attachment_init (&vkr->color_attachment, &vkr->context, w, h,
                                  OWL_VK_ATTACHMENT_TYPE_COLOR);
   if (OWL_SUCCESS != code)
-    goto out_error_context_deinit;
+    goto error_context_deinit;
 
   code = owl_vk_attachment_init (&vkr->depth_stencil_attachment, &vkr->context,
                                  w, h, OWL_VK_ATTACHMENT_TYPE_DEPTH_STENCIL);
   if (OWL_SUCCESS != code)
-    goto out_error_color_attachment_deinit;
+    goto error_color_attachment_deinit;
 
   code = owl_vk_swapchain_init (&vkr->swapchain, &vkr->context,
                                 &vkr->color_attachment,
                                 &vkr->depth_stencil_attachment);
   if (OWL_SUCCESS != code)
-    goto out_error_depth_attachment_deinit;
+    goto error_depth_attachment_deinit;
 
   code = owl_vk_pipeline_manager_init (&vkr->pipelines, &vkr->context,
                                        &vkr->swapchain);
   if (OWL_SUCCESS != code)
-    goto out_error_swapchain_deinit;
+    goto error_swapchain_deinit;
 
   code = owl_vk_renderer_garbages_init (
       &vkr->garbages[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
   if (OWL_SUCCESS != code)
-    goto out_error_pipelines_deinit;
+    goto error_pipelines_deinit;
 
   code = owl_vk_stage_heap_init (&vkr->stage_heap, &vkr->context,
                                  OWL_DEFAULT_STAGE_SIZE);
   if (OWL_SUCCESS != code)
-    goto out_error_garbages_deinit;
+    goto error_garbages_deinit;
 
   vkr->font = NULL;
   vkr->frame = 0;
@@ -136,33 +136,33 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window) {
   code = owl_vk_renderer_frames_init (
       &vkr->frames[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
   if (OWL_SUCCESS != code)
-    goto out_error_stage_heap_deinit;
+    goto error_stage_heap_deinit;
 
   goto out;
 
-out_error_stage_heap_deinit:
+error_stage_heap_deinit:
   owl_vk_stage_heap_deinit (&vkr->stage_heap, &vkr->context);
 
-out_error_garbages_deinit:
+error_garbages_deinit:
   owl_vk_renderer_garbages_deinit (
       &vkr->garbages[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
 
-out_error_pipelines_deinit:
+error_pipelines_deinit:
   owl_vk_pipeline_manager_deinit (&vkr->pipelines, &vkr->context);
 
-out_error_swapchain_deinit:
+error_swapchain_deinit:
   owl_vk_swapchain_deinit (&vkr->swapchain, &vkr->context);
 
-out_error_depth_attachment_deinit:
+error_depth_attachment_deinit:
   owl_vk_attachment_deinit (&vkr->depth_stencil_attachment, &vkr->context);
 
-out_error_color_attachment_deinit:
+error_color_attachment_deinit:
   owl_vk_attachment_deinit (&vkr->color_attachment, &vkr->context);
 
-out_error_context_deinit:
+error_context_deinit:
   owl_vk_context_deinit (&vkr->context);
 
-out_error_camera_deinit:
+error_camera_deinit:
   owl_camera_deinit (&vkr->camera);
 
 out:
@@ -216,37 +216,37 @@ owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h) {
   code = owl_vk_attachment_init (&vkr->color_attachment, &vkr->context, w, h,
                                  OWL_VK_ATTACHMENT_TYPE_COLOR);
   if (OWL_SUCCESS != code)
-    goto out_error_camera_deinit;
+    goto error_camera_deinit;
 
   code = owl_vk_attachment_init (&vkr->depth_stencil_attachment, &vkr->context,
                                  w, h, OWL_VK_ATTACHMENT_TYPE_DEPTH_STENCIL);
   if (OWL_SUCCESS != code)
-    goto out_error_color_attachment_deinit;
+    goto error_color_attachment_deinit;
 
   code = owl_vk_swapchain_init (&vkr->swapchain, &vkr->context,
                                 &vkr->color_attachment,
                                 &vkr->depth_stencil_attachment);
   if (OWL_SUCCESS != code)
-    goto out_error_depth_attachment_deinit;
+    goto error_depth_attachment_deinit;
 
   code = owl_vk_pipeline_manager_init (&vkr->pipelines, &vkr->context,
                                        &vkr->swapchain);
   if (OWL_SUCCESS != code)
-    goto out_error_swapchain_deinit;
+    goto error_swapchain_deinit;
 
   goto out;
 
   /* FIXME(samuel): if anything fails, then vkr is in an invalid state */
-out_error_swapchain_deinit:
+error_swapchain_deinit:
   owl_vk_swapchain_deinit (&vkr->swapchain, &vkr->context);
 
-out_error_depth_attachment_deinit:
+error_depth_attachment_deinit:
   owl_vk_attachment_deinit (&vkr->depth_stencil_attachment, &vkr->context);
 
-out_error_color_attachment_deinit:
+error_color_attachment_deinit:
   owl_vk_attachment_deinit (&vkr->color_attachment, &vkr->context);
 
-out_error_camera_deinit:
+error_camera_deinit:
   owl_camera_deinit (&vkr->camera);
 
 out:

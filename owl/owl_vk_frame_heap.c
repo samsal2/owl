@@ -69,19 +69,19 @@ owl_vk_frame_heap_memory_init (struct owl_vk_frame_heap *heap,
       vkBindBufferMemory (ctx->vk_device, heap->vk_buffer, heap->vk_memory, 0);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
   }
 
   vk_result = vkMapMemory (ctx->vk_device, heap->vk_memory, 0, heap->size, 0,
                            &heap->data);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
   }
 
   goto out;
 
-out_error_memory_deinit:
+error_memory_deinit:
   vkFreeMemory (ctx->vk_device, heap->vk_memory, NULL);
 
 out:
@@ -121,7 +121,7 @@ owl_vk_frame_heap_sets_init (struct owl_vk_frame_heap *heap,
       vkAllocateDescriptorSets (ctx->vk_device, &info, &heap->vk_model_ubo1);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_pvm_ubo_set_deinit;
+    goto error_pvm_ubo_set_deinit;
   }
 
   info.pSetLayouts = &ctx->vk_frag_ubo_set_layout;
@@ -130,16 +130,16 @@ owl_vk_frame_heap_sets_init (struct owl_vk_frame_heap *heap,
       vkAllocateDescriptorSets (ctx->vk_device, &info, &heap->vk_model_ubo2);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_model_ubo1_set_deinit;
+    goto error_model_ubo1_set_deinit;
   }
 
   goto out;
 
-out_error_model_ubo1_set_deinit:
+error_model_ubo1_set_deinit:
   vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1,
                         &heap->vk_model_ubo1);
 
-out_error_pvm_ubo_set_deinit:
+error_pvm_ubo_set_deinit:
   vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool, 1,
                         &heap->vk_pvm_ubo);
 
@@ -203,20 +203,20 @@ owl_vk_frame_heap_init (struct owl_vk_frame_heap *heap,
 
   code = owl_vk_frame_heap_memory_init (heap, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_buffer_deinit;
+    goto error_buffer_deinit;
 
   code = owl_vk_frame_heap_sets_init (heap, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_memory_deinit;
+    goto error_memory_deinit;
 
   owl_vk_frame_heap_sets_write (heap, ctx);
 
   goto out;
 
-out_error_memory_deinit:
+error_memory_deinit:
   owl_vk_frame_heap_memory_deinit (heap, ctx);
 
-out_error_buffer_deinit:
+error_buffer_deinit:
   owl_vk_frame_heap_buffer_deinit (heap, ctx);
 
 out:
