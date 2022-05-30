@@ -65,7 +65,6 @@ owl_vk_attachment_image_init (struct owl_vk_attachment *attachment,
 
   vk_result =
       vkCreateImage (ctx->vk_device, &info, NULL, &attachment->vk_image);
-
   if (VK_SUCCESS != vk_result)
     return OWL_ERROR_UNKNOWN;
 

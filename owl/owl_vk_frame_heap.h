@@ -46,7 +46,7 @@ owl_public void *
 owl_vk_frame_heap_unsafe_allocate (struct owl_vk_frame_heap *heap,
                                    struct owl_vk_context const *ctx,
                                    owl_u64 size,
-                                   struct owl_vk_frame_allocation *allocation);
+                                   struct owl_vk_frame_allocation *alloc);
 
 owl_public void
 owl_vk_frame_heap_free (struct owl_vk_frame_heap *heap,

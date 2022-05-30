@@ -46,6 +46,16 @@ owl_debug_log (char const *f, int l, char const *fmt, ...);
 
 #endif /* NDEBUG */
 
+#if defined(OWL_DEBUG_PARANOID)
+#if defined(NDEBUG)
+#error "Debug must be enabled for owl_assert_paranoid"
+#endif
+#include <assert.h>
+#define owl_assert_paranoid(e) assert (e)
+#else
+#define owl_assert_paranoid(e)
+#endif
+
 #define owl_clamp(v, l, h) ((v) < (l) ? (l) : ((v) > (h) ? (h) : (v)))
 #define owl_max(a, b) ((a) < (b) ? (b) : (a))
 #define owl_min(a, b) ((a) > (b) ? (b) : (a))

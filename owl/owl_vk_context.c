@@ -165,7 +165,7 @@ owl_vk_context_device_options_fill (struct owl_vk_context *ctx) {
     return OWL_ERROR_UNKNOWN;
 
   if (OWL_VK_CONTEXT_MAX_DEVICE_OPTION_COUNT <= ctx->vk_device_option_count)
-    return OWL_ERROR_OUT_OF_BOUNDS;
+    return OWL_ERROR_OUT_OF_SPACE;
 
   vk_result = vkEnumeratePhysicalDevices (
       ctx->vk_instance, &ctx->vk_device_option_count, ctx->vk_device_options);
@@ -270,7 +270,7 @@ owl_private enum owl_code
 owl_vk_context_physical_device_select (struct owl_vk_context *ctx) {
   owl_i32 i;
 
-  VkResult vk_result = VK_SUCCESS;
+  VkResult vk_result;
 
   for (i = 0; i < (owl_i32)ctx->vk_device_option_count; ++i) {
     owl_b32 has_families;
@@ -314,7 +314,7 @@ owl_vk_context_physical_device_select (struct owl_vk_context *ctx) {
 
     extensions = owl_malloc (extension_count * sizeof (*extensions));
     if (!extensions)
-      return OWL_ERROR_BAD_ALLOCATION;
+      return OWL_ERROR_NO_MEMORY;
 
     vk_result = vkEnumerateDeviceExtensionProperties (
         ctx->vk_physical_device, NULL, &extension_count, extensions);
@@ -354,7 +354,7 @@ owl_vk_context_surface_format_ensure (struct owl_vk_context const *ctx) {
 
   formats = owl_malloc (format_count * sizeof (*formats));
   if (!formats) {
-    code = OWL_ERROR_BAD_ALLOCATION;
+    code = OWL_ERROR_NO_MEMORY;
     goto out;
   }
 
@@ -362,7 +362,7 @@ owl_vk_context_surface_format_ensure (struct owl_vk_context const *ctx) {
       ctx->vk_physical_device, ctx->vk_surface, &format_count, formats);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_formats_free;
+    goto cleanup;
   }
 
   for (i = 0; i < (owl_i32)format_count; ++i) {
@@ -373,13 +373,13 @@ owl_vk_context_surface_format_ensure (struct owl_vk_context const *ctx) {
       continue;
 
     code = OWL_SUCCESS;
-    goto out_formats_free;
+    goto cleanup;
   }
 
   /* if the loop ends without finding a format */
-  code = OWL_ERROR_NO_SUITABLE_FORMAT;
+  code = OWL_ERROR_NO_SURFACE_FORMAT;
 
-out_formats_free:
+cleanup:
   owl_free (formats);
 
 out:
@@ -872,6 +872,7 @@ owl_vk_context_init (struct owl_vk_context *ctx,
     goto error_pools_deinit;
 
   goto out;
+
 error_pools_deinit:
   owl_vk_context_pools_deinit (ctx);
 

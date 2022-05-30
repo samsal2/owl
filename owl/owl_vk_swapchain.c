@@ -13,32 +13,25 @@ owl_vk_swapchain_size_ensure (struct owl_vk_swapchain *swapchain,
   VkSurfaceCapabilitiesKHR capabilities;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
 
   vk_result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR (
       ctx->vk_physical_device, ctx->vk_surface, &capabilities);
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_SUCCESS;
-    goto out;
-  }
+  if (VK_SUCCESS != vk_result)
+    return OWL_ERROR_UNKNOWN;
 
   if (OWL_UNRESTRICTED_DIMENSION == capabilities.currentExtent.width) {
     swapchain->size = capabilities.currentExtent;
   } else {
-    owl_u32 const min_width = capabilities.minImageExtent.width;
-    owl_u32 const min_height = capabilities.minImageExtent.height;
-    owl_u32 const max_width = capabilities.maxImageExtent.width;
-    owl_u32 const max_height = capabilities.maxImageExtent.height;
-
     swapchain->size.width =
-        owl_clamp (swapchain->size.width, min_width, max_width);
+        owl_clamp (swapchain->size.width, capabilities.minImageExtent.width,
+                   capabilities.maxImageExtent.width);
 
     swapchain->size.height =
-        owl_clamp (swapchain->size.height, min_height, max_height);
+        owl_clamp (swapchain->size.height, capabilities.minImageExtent.height,
+                   capabilities.maxImageExtent.height);
   }
 
-out:
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private enum owl_code
@@ -54,6 +47,9 @@ owl_vk_swapchain_swapchain_init (struct owl_vk_swapchain *swapchain,
 
   families[0] = ctx->vk_graphics_queue_family;
   families[1] = ctx->vk_present_queue_family;
+
+  owl_assert (w);
+  owl_assert (h);
 
   swapchain->size.width = w;
   swapchain->size.height = h;
@@ -118,7 +114,7 @@ owl_vk_swapchain_images_init (struct owl_vk_swapchain *swapchain,
     return OWL_ERROR_UNKNOWN;
 
   if (OWL_VK_SWAPCHAIN_MAX_IMAGE_COUNT <= swapchain->vk_image_count)
-    return OWL_ERROR_OUT_OF_BOUNDS;
+    return OWL_ERROR_OUT_OF_SPACE;
 
   vk_result = vkGetSwapchainImagesKHR (ctx->vk_device, swapchain->vk_swapchain,
                                        &swapchain->vk_image_count,
@@ -300,26 +296,28 @@ owl_public enum owl_code
 owl_vk_swapchain_acquire_next_image (struct owl_vk_swapchain *swapchain,
                                      struct owl_vk_context const *ctx,
                                      struct owl_vk_frame_sync const *sync) {
-  VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
+  VkResult vk_result;
 
   vk_result = vkAcquireNextImageKHR (ctx->vk_device, swapchain->vk_swapchain,
                                      (owl_u64)-1, sync->vk_image_available,
                                      VK_NULL_HANDLE, &swapchain->image);
 
-  if (VK_ERROR_OUT_OF_DATE_KHR == vk_result) {
-    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-  } else if (VK_SUBOPTIMAL_KHR == vk_result) {
-    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-  } else if (VK_ERROR_SURFACE_LOST_KHR == vk_result) {
-    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-  } else if (VK_SUCCESS == vk_result) {
-    code = OWL_SUCCESS;
-  } else {
-    code = OWL_ERROR_UNKNOWN;
-  }
+  if (VK_SUCCESS == vk_result)
+    return OWL_SUCCESS;
 
-  return code;
+  if (VK_ERROR_OUT_OF_DATE_KHR == vk_result)
+    return OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE;
+
+  if (VK_SUBOPTIMAL_KHR == vk_result)
+    return OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE;
+
+  if (VK_ERROR_SURFACE_LOST_KHR == vk_result)
+    return OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE;
+
+  if (VK_SUCCESS == vk_result)
+    return OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE;
+
+  return OWL_ERROR_UNKNOWN;
 }
 
 owl_public enum owl_code
@@ -328,8 +326,7 @@ owl_vk_swapchain_present (struct owl_vk_swapchain *swapchain,
                           struct owl_vk_frame_sync const *sync) {
   VkPresentInfoKHR info;
 
-  VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_SUCCESS;
+  VkResult vk_result;
 
   info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   info.pNext = NULL;
@@ -342,13 +339,20 @@ owl_vk_swapchain_present (struct owl_vk_swapchain *swapchain,
 
   vk_result = vkQueuePresentKHR (ctx->vk_present_queue, &info);
 
-  if (VK_ERROR_OUT_OF_DATE_KHR == vk_result) {
-    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-  } else if (VK_SUBOPTIMAL_KHR == vk_result) {
-    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-  } else if (VK_ERROR_SURFACE_LOST_KHR == vk_result) {
-    code = OWL_ERROR_OUTDATED_SWAPCHAIN;
-  }
+  if (VK_SUCCESS == vk_result)
+    return OWL_SUCCESS;
 
-  return code;
+  if (VK_ERROR_OUT_OF_DATE_KHR == vk_result)
+    return OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE;
+
+  if (VK_SUBOPTIMAL_KHR == vk_result)
+    return OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE;
+
+  if (VK_ERROR_SURFACE_LOST_KHR == vk_result)
+    return OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE;
+
+  if (VK_SUCCESS == vk_result)
+    return OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE;
+
+  return OWL_ERROR_UNKNOWN;
 }

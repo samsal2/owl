@@ -14,8 +14,9 @@ owl_vk_stage_heap_init (struct owl_vk_stage_heap *heap,
   VkResult vk_result = VK_SUCCESS;
   enum owl_code code = OWL_SUCCESS;
 
-  heap->in_use = 0;
+  owl_assert (size && "Expected a size bigger than 0");
 
+  heap->in_use = 0;
   heap->size = size;
 
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -91,19 +92,20 @@ owl_vk_stage_heap_has_enough_space (struct owl_vk_stage_heap *heap,
 owl_private enum owl_code
 owl_vk_stage_heap_reserve (struct owl_vk_stage_heap *heap,
                            struct owl_vk_context const *ctx, owl_u64 size) {
-  enum owl_code code = OWL_SUCCESS;
+  owl_assert (!heap->in_use && "Must be freed before using it again");
 
   if (heap->in_use)
     return OWL_ERROR_UNKNOWN;
 
-  if (owl_vk_stage_heap_has_enough_space (heap, size))
-    return OWL_SUCCESS;
+  if (!owl_vk_stage_heap_has_enough_space (heap, size)) {
+    enum owl_code code;
 
-  owl_vk_stage_heap_deinit (heap, ctx);
+    owl_vk_stage_heap_deinit (heap, ctx);
 
-  code = owl_vk_stage_heap_init (heap, ctx, 2 * size);
-  if (OWL_SUCCESS != code)
-    return code;
+    code = owl_vk_stage_heap_init (heap, ctx, 2 * size);
+    if (OWL_SUCCESS != code)
+      return code;
+  }
 
   return OWL_SUCCESS;
 }
@@ -111,7 +113,7 @@ owl_vk_stage_heap_reserve (struct owl_vk_stage_heap *heap,
 owl_public void *
 owl_vk_stage_heap_allocate (struct owl_vk_stage_heap *heap,
                             struct owl_vk_context const *ctx, owl_u64 size,
-                            struct owl_vk_stage_allocation *allocation) {
+                            struct owl_vk_stage_allocation *alloc) {
   owl_byte *data = NULL;
   enum owl_code code = OWL_SUCCESS;
 
@@ -123,8 +125,7 @@ owl_vk_stage_heap_allocate (struct owl_vk_stage_heap *heap,
     return NULL;
 
   data = heap->data;
-
-  allocation->vk_buffer = heap->vk_buffer;
+  alloc->vk_buffer = heap->vk_buffer;
   heap->in_use = 1;
 
   return data;
@@ -134,6 +135,6 @@ owl_public void
 owl_vk_stage_heap_free (struct owl_vk_stage_heap *heap,
                         struct owl_vk_context const *ctx) {
   owl_unused (ctx);
-
+  owl_assert (heap->in_use && "Must've allocated something before freeing");
   heap->in_use = 0;
 }

@@ -335,7 +335,7 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
   snprintf (src, OWL_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path, names[0]);
   data = stbi_load (src, &w, &h, &c, STBI_rgb_alpha);
   if (!data) {
-    code = OWL_ERROR_UNKNOWN;
+    code = OWL_ERROR_NOT_FOUND;
     goto out;
   }
 
@@ -351,22 +351,11 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
   if (OWL_SUCCESS != code)
     goto error_memory_deinit;
 
-  code = owl_vk_im_command_buffer_begin (&im, ctx);
-  if (OWL_SUCCESS != code)
-    goto error_image_view_deinit;
-
-  owl_skybox_transition (sb, &im, 1, 6, VK_IMAGE_LAYOUT_UNDEFINED,
-                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-  code = owl_vk_im_command_buffer_end (&im, ctx);
-  if (OWL_SUCCESS != code)
-    goto error_image_view_deinit;
-
   offset = 0;
   size = w * h * 4;
   stage = owl_vk_stage_heap_allocate (heap, ctx, size * 6, &alloc);
   if (!stage) {
-    code = OWL_ERROR_UNKNOWN;
+    code = OWL_ERROR_NO_STAGE_MEMORY;
     goto error_image_view_deinit;
   }
 
@@ -376,7 +365,7 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
       snprintf (src, OWL_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path, names[i]);
       data = stbi_load (src, &w, &h, &c, STBI_rgb_alpha);
       if (!data) {
-        code = OWL_ERROR_UNKNOWN;
+        code = OWL_ERROR_NOT_FOUND;
         goto error_stage_heap_free;
       }
     }
@@ -405,7 +394,10 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
 
   code = owl_vk_im_command_buffer_begin (&im, ctx);
   if (OWL_SUCCESS != code)
-    goto error_stage_heap_free;
+    goto error_image_view_deinit;
+
+  owl_skybox_transition (sb, &im, 1, 6, VK_IMAGE_LAYOUT_UNDEFINED,
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
   vkCmdCopyBufferToImage (im.vk_command_buffer, alloc.vk_buffer, sb->vk_image,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, copies);

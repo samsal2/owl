@@ -21,6 +21,8 @@ owl_vk_renderer_frames_init (struct owl_vk_frame *frames, owl_i32 count,
 
   enum owl_code code = OWL_SUCCESS;
 
+  owl_assert (0 <= count);
+
   for (i = 0; i < count; ++i) {
     code = owl_vk_frame_init (&frames[i], ctx, OWL_DEFAULT_FRAME_SIZE);
     if (OWL_SUCCESS != code)
@@ -41,6 +43,9 @@ owl_private void
 owl_vk_renderer_frames_deinit (struct owl_vk_frame *frames, owl_i32 count,
                                struct owl_vk_context *ctx) {
   owl_i32 i;
+
+  owl_assert (0 <= count);
+
   for (i = 0; i < count; ++i)
     owl_vk_frame_deinit (&frames[i], ctx);
 }
@@ -51,6 +56,8 @@ owl_vk_renderer_garbages_init (struct owl_vk_garbage *garbages, owl_i32 count,
   owl_i32 i;
 
   enum owl_code code = OWL_SUCCESS;
+
+  owl_assert (0 <= count);
 
   for (i = 0; i < count; ++i) {
     code = owl_vk_garbage_init (&garbages[i], ctx);
@@ -72,6 +79,9 @@ owl_private void
 owl_vk_renderer_garbages_deinit (struct owl_vk_garbage *garbages,
                                  owl_i32 count, struct owl_vk_context *ctx) {
   owl_i32 i;
+
+  owl_assert (0 <= count);
+
   for (i = 0; i < count; ++i)
     owl_vk_garbage_deinit (&garbages[i], ctx);
 }
@@ -255,16 +265,17 @@ out:
 
 owl_private struct owl_vk_garbage *
 owl_vk_renderer_garbage_get (struct owl_vk_renderer *vkr) {
+  owl_assert_paranoid (vkr->frame >= 0);
+  owl_assert_paranoid (vkr->frame < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT);
   return &vkr->garbages[vkr->frame];
 }
 
 owl_public void *
 owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
-                                struct owl_vk_frame_allocation *allocation) {
+                                struct owl_vk_frame_allocation *alloc) {
   struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
   struct owl_vk_garbage *garbage = owl_vk_renderer_garbage_get (vkr);
-  return owl_vk_frame_allocate (frame, &vkr->context, garbage, size,
-                                allocation);
+  return owl_vk_frame_allocate (frame, &vkr->context, garbage, size, alloc);
 }
 
 owl_public void *
@@ -333,6 +344,8 @@ owl_vk_renderer_end_frame (struct owl_vk_renderer *vkr) {
 }
 owl_public struct owl_vk_frame *
 owl_vk_renderer_get_frame (struct owl_vk_renderer *vkr) {
+  owl_assert_paranoid (vkr->frame >= 0);
+  owl_assert_paranoid (vkr->frame < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT);
   return &vkr->frames[vkr->frame];
 }
 
@@ -475,7 +488,7 @@ owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr, char const *text,
   char const *c;
   owl_v2 offset;
 
-  enum owl_code code = OWL_SUCCESS;
+  enum owl_code code;
 
   offset[0] = position[0] * (float)vkr->width;
   offset[1] = position[1] * (float)vkr->height;
@@ -492,7 +505,7 @@ owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr, char const *text,
       return code;
   }
 
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_private enum owl_code
@@ -513,7 +526,7 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
   struct owl_vk_frame_allocation u1alloc;
   struct owl_vk_frame_allocation u2alloc;
 
-  enum owl_code code = OWL_SUCCESS;
+  enum owl_code code;
 
   node = &model->nodes[id];
   frame = owl_vk_renderer_get_frame (vkr);

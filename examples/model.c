@@ -61,7 +61,7 @@ main (void) {
     owl_camera_rotate (&renderer->camera, axis, 0.01);
 
     code = owl_vk_renderer_begin_frame (renderer);
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == code) {
+    if (OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE == code) {
       owl_i32 w, h;
       owl_window_get_framebuffer_size (window, &w, &h);
       owl_vk_renderer_resize (renderer, w, h);
@@ -77,7 +77,7 @@ main (void) {
     owl_ui_draw_renderer_state (renderer);
 
     code = owl_vk_renderer_end_frame (renderer);
-    if (OWL_ERROR_OUTDATED_SWAPCHAIN == code) {
+    if (OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE == code) {
       owl_i32 w, h;
       owl_window_get_framebuffer_size (window, &w, &h);
       owl_vk_renderer_resize (renderer, w, h);

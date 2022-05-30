@@ -34,7 +34,7 @@ owl_vk_font_file_init (char const *path, owl_byte **data) {
 
   *data = owl_malloc (size);
   if (!*data) {
-    code = OWL_ERROR_BAD_ALLOCATION;
+    code = OWL_ERROR_NO_MEMORY;
     goto out_file_close;
   }
 

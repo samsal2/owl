@@ -109,7 +109,7 @@ owl_model_materials_load (struct owl_model *model,
   owl_unused (vkr);
 
   if (OWL_MODEL_MAX_NAME_LENGTH <= (owl_i32)gltf->materials_count) {
-    code = OWL_ERROR_OUT_OF_BOUNDS;
+    code = OWL_ERROR_OUT_OF_SPACE;
     goto out;
   }
 
@@ -221,14 +221,14 @@ owl_model_load_init (struct owl_model_load *load,
   size = (owl_u64)load->vertex_capacity * sizeof (*load->vertices);
   load->vertices = owl_malloc (size);
   if (!load->vertices) {
-    code = OWL_ERROR_BAD_ALLOCATION;
+    code = OWL_ERROR_NO_MEMORY;
     goto out;
   }
 
   size = (owl_u64)load->index_capacity * sizeof (owl_u32);
   load->indices = owl_malloc (size);
   if (!load->indices) {
-    code = OWL_ERROR_BAD_ALLOCATION;
+    code = OWL_ERROR_NO_MEMORY;
     goto error_vertices_free;
   }
 
@@ -265,7 +265,7 @@ owl_model_node_load (struct owl_model *model, struct cgltf_data const *gltf,
   nid = (owl_model_node_id)(gn - gltf->nodes);
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= nid) {
-    code = OWL_ERROR_OUT_OF_BOUNDS;
+    code = OWL_ERROR_OUT_OF_SPACE;
     goto out;
   }
 
@@ -278,7 +278,7 @@ owl_model_node_load (struct owl_model *model, struct cgltf_data const *gltf,
   }
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gn->children_count) {
-    code = OWL_ERROR_OUT_OF_BOUNDS;
+    code = OWL_ERROR_OUT_OF_SPACE;
     goto out;
   }
 
@@ -331,7 +331,7 @@ owl_model_node_load (struct owl_model *model, struct cgltf_data const *gltf,
     node->mesh = model->mesh_count++;
 
     if (OWL_MODEL_MAX_ARRAY_COUNT <= node->mesh) {
-      code = OWL_ERROR_OUT_OF_BOUNDS;
+      code = OWL_ERROR_OUT_OF_SPACE;
       goto out;
     }
 
@@ -357,7 +357,7 @@ owl_model_node_load (struct owl_model *model, struct cgltf_data const *gltf,
       md->primitives[i] = model->primitive_count++;
 
       if (OWL_MODEL_MAX_ARRAY_COUNT <= md->primitives[i]) {
-        code = OWL_ERROR_OUT_OF_BOUNDS;
+        code = OWL_ERROR_OUT_OF_SPACE;
         goto out;
       }
 
@@ -664,7 +664,7 @@ owl_model_nodes_load (struct owl_model *model, struct cgltf_data const *gltf,
   }
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gltf->nodes_count) {
-    code = OWL_ERROR_OUT_OF_BOUNDS;
+    code = OWL_ERROR_OUT_OF_SPACE;
     goto error_deinit_load_state;
   }
 
@@ -677,7 +677,7 @@ owl_model_nodes_load (struct owl_model *model, struct cgltf_data const *gltf,
   }
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gs->nodes_count) {
-    code = OWL_ERROR_OUT_OF_BOUNDS;
+    code = OWL_ERROR_OUT_OF_SPACE;
     goto error_deinit_load_state;
   }
 
@@ -706,7 +706,7 @@ owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gltf->skins_count) {
     owl_assert (0);
-    code = OWL_ERROR_OUT_OF_BOUNDS;
+    code = OWL_ERROR_OUT_OF_SPACE;
     goto out;
   }
 
@@ -728,7 +728,7 @@ owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
 
     if (OWL_MODEL_MAX_JOINT_COUNT <= (owl_i32)gs->joints_count) {
       owl_assert (0);
-      code = OWL_ERROR_OUT_OF_BOUNDS;
+      code = OWL_ERROR_OUT_OF_SPACE;
       goto out;
     }
 
@@ -878,7 +878,7 @@ owl_model_anims_load (struct owl_vk_renderer *vkr,
   owl_unused (vkr);
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gltf->animations_count) {
-    code = OWL_ERROR_OUT_OF_BOUNDS;
+    code = OWL_ERROR_OUT_OF_SPACE;
     goto out;
   }
 
@@ -895,7 +895,7 @@ owl_model_anims_load (struct owl_vk_renderer *vkr,
     anim->current_time = 0.0F;
 
     if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)ga->samplers_count) {
-      code = OWL_ERROR_OUT_OF_BOUNDS;
+      code = OWL_ERROR_OUT_OF_SPACE;
       goto out;
     }
 
@@ -916,14 +916,14 @@ owl_model_anims_load (struct owl_vk_renderer *vkr,
       sid = model->anim_sampler_count++;
 
       if (OWL_MODEL_MAX_ARRAY_COUNT <= sid) {
-        code = OWL_ERROR_OUT_OF_BOUNDS;
+        code = OWL_ERROR_OUT_OF_SPACE;
         goto out;
       }
 
       sampler = &model->anim_samplers[sid];
 
       if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gs->input->count) {
-        code = OWL_ERROR_OUT_OF_BOUNDS;
+        code = OWL_ERROR_OUT_OF_SPACE;
         goto out;
       }
 
@@ -946,7 +946,7 @@ owl_model_anims_load (struct owl_vk_renderer *vkr,
       }
 
       if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gs->output->count) {
-        code = OWL_ERROR_OUT_OF_BOUNDS;
+        code = OWL_ERROR_OUT_OF_SPACE;
         goto out;
       }
 
@@ -988,7 +988,7 @@ owl_model_anims_load (struct owl_vk_renderer *vkr,
     }
 
     if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)ga->channels_count) {
-      code = OWL_ERROR_OUT_OF_BOUNDS;
+      code = OWL_ERROR_OUT_OF_SPACE;
       goto out;
     }
 
@@ -1004,7 +1004,7 @@ owl_model_anims_load (struct owl_vk_renderer *vkr,
       cid = model->anim_chan_count++;
 
       if (OWL_MODEL_MAX_ARRAY_COUNT <= cid) {
-        code = OWL_ERROR_OUT_OF_BOUNDS;
+        code = OWL_ERROR_OUT_OF_SPACE;
         goto out;
       }
 
@@ -1221,7 +1221,7 @@ owl_model_anim_update (struct owl_model *model, owl_i32 frame, float dt,
   enum owl_code code = OWL_SUCCESS;
 
   if (OWL_MODEL_ANIM_NONE == id) {
-    code = OWL_ERROR_OUT_OF_BOUNDS;
+    code = OWL_ERROR_OUT_OF_SPACE;
     goto out;
   }
 

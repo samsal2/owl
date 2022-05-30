@@ -107,7 +107,7 @@ owl_window_init (struct owl_window *w, owl_i32 width, owl_i32 height,
   enum owl_code code = OWL_SUCCESS;
 
   if (!glfwInit ()) {
-    code = OWL_ERROR_BAD_INIT;
+    code = OWL_ERROR_UNKNOWN;
     goto out;
   }
 

@@ -244,15 +244,16 @@ owl_vk_frame_heap_has_enough_space (struct owl_vk_frame_heap const *heap,
 }
 
 owl_private void
-owl_vk_frame_heap_fill_allocation (
-    struct owl_vk_frame_heap const *heap,
-    struct owl_vk_frame_allocation *allocation) {
-  allocation->offset32 = (owl_u32)heap->offset;
-  allocation->offset = heap->offset;
-  allocation->vk_buffer = heap->vk_buffer;
-  allocation->vk_pvm_ubo_set = heap->vk_pvm_ubo;
-  allocation->vk_model_ubo1_set = heap->vk_model_ubo1;
-  allocation->vk_model_ubo2_set = heap->vk_model_ubo2;
+owl_vk_frame_heap_fill_allocation (struct owl_vk_frame_heap const *heap,
+                                   struct owl_vk_frame_allocation *alloc) {
+  owl_assert (heap->offset >= 0);
+
+  alloc->offset32 = (owl_u32)heap->offset;
+  alloc->offset = heap->offset;
+  alloc->vk_buffer = heap->vk_buffer;
+  alloc->vk_pvm_ubo_set = heap->vk_pvm_ubo;
+  alloc->vk_model_ubo1_set = heap->vk_model_ubo1;
+  alloc->vk_model_ubo2_set = heap->vk_model_ubo2;
 }
 
 owl_public owl_u64
@@ -269,14 +270,15 @@ owl_vk_frame_heap_offset_update (struct owl_vk_frame_heap *heap,
 }
 
 owl_public void *
-owl_vk_frame_heap_unsafe_allocate (
-    struct owl_vk_frame_heap *heap, struct owl_vk_context const *ctx,
-    owl_u64 size, struct owl_vk_frame_allocation *allocation) {
+owl_vk_frame_heap_unsafe_allocate (struct owl_vk_frame_heap *heap,
+                                   struct owl_vk_context const *ctx,
+                                   owl_u64 size,
+                                   struct owl_vk_frame_allocation *alloc) {
   owl_u64 offset;
 
   owl_unused (ctx);
 
-  owl_vk_frame_heap_fill_allocation (heap, allocation);
+  owl_vk_frame_heap_fill_allocation (heap, alloc);
   offset = owl_vk_frame_heap_offset_update (heap, size);
 
   return &((owl_byte *)heap->data)[offset];
