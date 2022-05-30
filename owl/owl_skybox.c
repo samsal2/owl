@@ -309,10 +309,10 @@ owl_skybox_set_write (struct owl_skybox *sb,
 owl_public enum owl_code
 owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
                  struct owl_vk_stage_heap *heap, char const *path) {
+  owl_i32 i;
   owl_i32 w;
   owl_i32 h;
   owl_i32 c;
-  owl_byte *data;
 
   char src[OWL_SKYBOX_MAX_PATH_LENGTH];
 
@@ -325,9 +325,14 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
   owl_u64 offset;
   owl_byte *stage;
 
-  enum owl_code code;
+  owl_byte *data = NULL;
+  enum owl_code code = OWL_SUCCESS;
 
-  snprintf (src, OWL_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path, "left.jpg"); //
+  owl_local_persist char const *names[6] = {"left.jpg",  "right.jpg",
+                                            "top.jpg",   "bottom.jpg",
+                                            "front.jpg", "back.jpg"};
+
+  snprintf (src, OWL_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path, names[0]);
   data = stbi_load (src, &w, &h, &c, STBI_rgb_alpha);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
@@ -336,7 +341,7 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
 
   code = owl_skybox_image_init (sb, w, h, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_stage_heap_free;
+    goto out_error_data_free;
 
   code = owl_skybox_memory_init (sb, ctx);
   if (OWL_SUCCESS != code)
@@ -357,172 +362,53 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
   if (OWL_SUCCESS != code)
     goto out_error_image_view_deinit;
 
-  code = owl_vk_im_command_buffer_begin (&im, ctx);
-  if (OWL_SUCCESS != code)
-    goto out_error_image_view_deinit;
-
+  offset = 0;
   size = w * h * 4;
   stage = owl_vk_stage_heap_allocate (heap, ctx, size * 6, &alloc);
-
-  offset = 0;
-  owl_memcpy (stage + offset, data, size);
-
-  copies[0].bufferOffset = offset;
-  copies[0].bufferRowLength = 0;
-  copies[0].bufferImageHeight = 0;
-  copies[0].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  copies[0].imageSubresource.mipLevel = 0;
-  copies[0].imageSubresource.baseArrayLayer = 0;
-  copies[0].imageSubresource.layerCount = 1;
-  copies[0].imageOffset.x = 0;
-  copies[0].imageOffset.y = 0;
-  copies[0].imageOffset.z = 0;
-  copies[0].imageExtent.width = (owl_u32)sb->width;
-  copies[0].imageExtent.height = (owl_u32)sb->height;
-  copies[0].imageExtent.depth = 1;
-
-  stbi_image_free (data);
-
-  snprintf (src, OWL_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path, "right.jpg"); //
-  data = stbi_load (src, &w, &h, &c, STBI_rgb_alpha);
-  if (!data) {
+  if (!stage) {
     code = OWL_ERROR_UNKNOWN;
-    goto out_error_image_deinit;
+    goto out_error_image_view_deinit;
   }
 
-  offset += size;
-  owl_memcpy (stage + offset, data, size);
+  for (i = 0; i < (owl_i32)owl_array_size (names); ++i) {
+    /* the first one was preloaded to get the dimensions */
+    if (0 < i) {
+      snprintf (src, OWL_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path, names[i]);
+      data = stbi_load (src, &w, &h, &c, STBI_rgb_alpha);
+      if (!data) {
+        code = OWL_ERROR_UNKNOWN;
+        goto out_error_stage_heap_free;
+      }
+    }
 
-  copies[1].bufferOffset = offset;
-  copies[1].bufferRowLength = 0;
-  copies[1].bufferImageHeight = 0;
-  copies[1].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  copies[1].imageSubresource.mipLevel = 0;
-  copies[1].imageSubresource.baseArrayLayer = 1;
-  copies[1].imageSubresource.layerCount = 1;
-  copies[1].imageOffset.x = 0;
-  copies[1].imageOffset.y = 0;
-  copies[1].imageOffset.z = 0;
-  copies[1].imageExtent.width = (owl_u32)sb->width;
-  copies[1].imageExtent.height = (owl_u32)sb->height;
-  copies[1].imageExtent.depth = 1;
+    copies[i].bufferOffset = offset;
+    copies[i].bufferRowLength = 0;
+    copies[i].bufferImageHeight = 0;
+    copies[i].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copies[i].imageSubresource.mipLevel = 0;
+    copies[i].imageSubresource.baseArrayLayer = i;
+    copies[i].imageSubresource.layerCount = 1;
+    copies[i].imageOffset.x = 0;
+    copies[i].imageOffset.y = 0;
+    copies[i].imageOffset.z = 0;
+    copies[i].imageExtent.width = (owl_u32)sb->width;
+    copies[i].imageExtent.height = (owl_u32)sb->height;
+    copies[i].imageExtent.depth = 1;
 
-  stbi_image_free (data);
+    owl_memcpy (stage + offset, data, size);
 
-  snprintf (src, OWL_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path, "top.jpg"); //
-  data = stbi_load (src, &w, &h, &c, STBI_rgb_alpha);
-  if (!data) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out_error_image_deinit;
+    stbi_image_free (data);
+    data = NULL;
+
+    offset += size;
   }
 
-  offset += size;
-  owl_memcpy (stage + offset, data, size);
-
-  copies[2].bufferOffset = offset;
-  copies[2].bufferRowLength = 0;
-  copies[2].bufferImageHeight = 0;
-  copies[2].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  copies[2].imageSubresource.mipLevel = 0;
-  copies[2].imageSubresource.baseArrayLayer = 2;
-  copies[2].imageSubresource.layerCount = 1;
-  copies[2].imageOffset.x = 0;
-  copies[2].imageOffset.y = 0;
-  copies[2].imageOffset.z = 0;
-  copies[2].imageExtent.width = (owl_u32)sb->width;
-  copies[2].imageExtent.height = (owl_u32)sb->height;
-  copies[2].imageExtent.depth = 1;
-
-  stbi_image_free (data);
-
-  snprintf (src, OWL_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path, "bottom.jpg"); //
-  data = stbi_load (src, &w, &h, &c, STBI_rgb_alpha);
-  if (!data) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out_error_image_deinit;
-  }
-
-  offset += size;
-  owl_memcpy (stage + offset, data, size);
-
-  copies[3].bufferOffset = offset;
-  copies[3].bufferRowLength = 0;
-  copies[3].bufferImageHeight = 0;
-  copies[3].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  copies[3].imageSubresource.mipLevel = 0;
-  copies[3].imageSubresource.baseArrayLayer = 3;
-  copies[3].imageSubresource.layerCount = 1;
-  copies[3].imageOffset.x = 0;
-  copies[3].imageOffset.y = 0;
-  copies[3].imageOffset.z = 0;
-  copies[3].imageExtent.width = (owl_u32)sb->width;
-  copies[3].imageExtent.height = (owl_u32)sb->height;
-  copies[3].imageExtent.depth = 1;
-
-  stbi_image_free (data);
-
-  snprintf (src, OWL_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path, "back.jpg"); //
-  data = stbi_load (src, &w, &h, &c, STBI_rgb_alpha);
-  if (!data) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out_error_image_deinit;
-  }
-
-  offset += size;
-  owl_memcpy (stage + offset, data, size);
-
-  copies[4].bufferOffset = offset;
-  copies[4].bufferRowLength = 0;
-  copies[4].bufferImageHeight = 0;
-  copies[4].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  copies[4].imageSubresource.mipLevel = 0;
-  copies[4].imageSubresource.baseArrayLayer = 4;
-  copies[4].imageSubresource.layerCount = 1;
-  copies[4].imageOffset.x = 0;
-  copies[4].imageOffset.y = 0;
-  copies[4].imageOffset.z = 0;
-  copies[4].imageExtent.width = (owl_u32)sb->width;
-  copies[4].imageExtent.height = (owl_u32)sb->height;
-  copies[4].imageExtent.depth = 1;
-
-  stbi_image_free (data);
-
-  snprintf (src, OWL_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path, "front.jpg"); //
-  data = stbi_load (src, &w, &h, &c, STBI_rgb_alpha);
-  if (!data) {
-    code = OWL_ERROR_UNKNOWN;
-    goto out_error_image_deinit;
-  }
-
-  offset += size;
-  owl_memcpy (stage + offset, data, size);
-
-  copies[5].bufferOffset = offset;
-  copies[5].bufferRowLength = 0;
-  copies[5].bufferImageHeight = 0;
-  copies[5].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  copies[5].imageSubresource.mipLevel = 0;
-  copies[5].imageSubresource.baseArrayLayer = 5;
-  copies[5].imageSubresource.layerCount = 1;
-  copies[5].imageOffset.x = 0;
-  copies[5].imageOffset.y = 0;
-  copies[5].imageOffset.z = 0;
-  copies[5].imageExtent.width = (owl_u32)sb->width;
-  copies[5].imageExtent.height = (owl_u32)sb->height;
-  copies[5].imageExtent.depth = 1;
-
-  stbi_image_free (data);
+  code = owl_vk_im_command_buffer_begin (&im, ctx);
+  if (OWL_SUCCESS != code)
+    goto out_error_stage_heap_free;
 
   vkCmdCopyBufferToImage (im.vk_command_buffer, alloc.vk_buffer, sb->vk_image,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, copies);
-
-  code = owl_vk_im_command_buffer_end (&im, ctx);
-  if (OWL_SUCCESS != code)
-    goto out_error_image_view_deinit;
-
-  code = owl_vk_im_command_buffer_begin (&im, ctx);
-  if (OWL_SUCCESS != code)
-    goto out_error_image_view_deinit;
 
   owl_skybox_transition (sb, &im, 1, 6, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -530,11 +416,11 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
   /* FIXME(samuel): correctly error out of im command buffer */
   code = owl_vk_im_command_buffer_end (&im, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_image_view_deinit;
+    goto out_error_stage_heap_free;
 
   code = owl_skybox_sampler_init (sb, ctx);
   if (OWL_SUCCESS != code)
-    goto out_error_image_view_deinit;
+    goto out_error_stage_heap_free;
 
   code = owl_skybox_set_init (sb, ctx);
   if (OWL_SUCCESS != code)
@@ -549,6 +435,9 @@ owl_skybox_init (struct owl_skybox *sb, struct owl_vk_context const *ctx,
 out_error_sampler_deinit:
   owl_skybox_sampler_deinit (sb, ctx);
 
+out_error_stage_heap_free:
+  owl_vk_stage_heap_free (heap, ctx);
+
 out_error_image_view_deinit:
   owl_skybox_image_view_deinit (sb, ctx);
 
@@ -558,8 +447,9 @@ out_error_memory_deinit:
 out_error_image_deinit:
   owl_skybox_image_deinit (sb, ctx);
 
-out_error_stage_heap_free:
-  owl_vk_stage_heap_free (heap, ctx);
+out_error_data_free:
+  if (data)
+    stbi_image_free (data);
 
 out:
   return code;
