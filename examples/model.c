@@ -10,6 +10,7 @@ static struct owl_window *window;
 static struct owl_vk_renderer *renderer;
 static struct owl_model *model;
 static struct owl_vk_font *font;
+static struct owl_skybox *skybox;
 static owl_m4 matrix;
 
 #define CHECK(fn)                                                             \
@@ -38,6 +39,10 @@ main (void) {
   CHECK (owl_vk_font_init (font, &renderer->context, &renderer->stage_heap,
                            "../../assets/Inconsolata-Regular.ttf", 64.0F));
 
+  skybox = malloc (sizeof (*skybox));
+  CHECK (owl_skybox_init (skybox, &renderer->context, &renderer->stage_heap,
+                          "../../assets/skybox"));
+
   owl_vk_renderer_set_font (renderer, font);
 
   owl_m4_identity (matrix);
@@ -48,8 +53,12 @@ main (void) {
 
   while (!owl_window_is_done (window)) {
     enum owl_code code;
+    owl_v3 axis = {1.0F, 0.0F, 0.0F};
+
     prev_time_stamp = time_stamp;
     time_stamp = owl_io_time_stamp_get ();
+
+    owl_camera_rotate (&renderer->camera, axis, 0.01);
 
     code = owl_vk_renderer_begin_frame (renderer);
     if (OWL_ERROR_OUTDATED_SWAPCHAIN == code) {
@@ -58,6 +67,8 @@ main (void) {
       owl_vk_renderer_resize (renderer, w, h);
       continue;
     }
+
+    owl_vk_renderer_draw_skybox (renderer, skybox);
 
     owl_model_anim_update (model, renderer->frame,
                            time_stamp - prev_time_stamp, 0);
@@ -75,6 +86,9 @@ main (void) {
 
     owl_window_poll_events (window);
   }
+
+  owl_skybox_deinit (skybox, &renderer->context);
+  free (skybox);
 
   owl_vk_font_deinit (font, &renderer->context);
   free (font);

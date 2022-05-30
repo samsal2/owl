@@ -255,10 +255,15 @@ owl_vk_frame_heap_fill_allocation (
   allocation->vk_model_ubo2_set = heap->vk_model_ubo2;
 }
 
+owl_public owl_u64
+owl_vk_frame_heap_get_offset (struct owl_vk_frame_heap const *heap) {
+  return heap->offset;
+}
+
 owl_private owl_u64
 owl_vk_frame_heap_offset_update (struct owl_vk_frame_heap *heap,
                                  owl_u64 size) {
-  owl_u64 const previous = heap->offset;
+  owl_u64 const previous = owl_vk_frame_heap_get_offset (heap);
   heap->offset = owl_alignu2 (previous + size, heap->alignment);
   return previous;
 }
@@ -275,11 +280,6 @@ owl_vk_frame_heap_unsafe_allocate (
   offset = owl_vk_frame_heap_offset_update (heap, size);
 
   return &((owl_byte *)heap->data)[offset];
-}
-
-owl_public owl_u64
-owl_vk_frame_heap_get_offset (struct owl_vk_frame_heap const *heap) {
-  return heap->offset;
 }
 
 owl_public void

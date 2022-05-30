@@ -5,6 +5,7 @@
 #include "owl_io.h"
 #include "owl_model.h"
 #include "owl_quad.h"
+#include "owl_skybox.h"
 #include "owl_vector_math.h"
 #include "owl_vk_font.h"
 #include "owl_vk_image.h"
@@ -354,7 +355,7 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
   struct owl_vk_frame_allocation ialloc;
   struct owl_vk_frame_allocation ualloc;
 
-  owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
+  owl_local_persist owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
 
   vertices[0].position[0] = q->position0[0];
   vertices[0].position[1] = q->position0[1];
@@ -699,6 +700,90 @@ owl_vk_renderer_draw_model (struct owl_vk_renderer *vkr,
     if (OWL_SUCCESS != code)
       return code;
   }
+
+  return OWL_SUCCESS;
+}
+
+owl_public enum owl_code
+owl_vk_renderer_draw_skybox (struct owl_vk_renderer *vkr,
+                             struct owl_skybox const *sb) {
+  owl_byte *data;
+  struct owl_vk_frame_allocation valloc;
+  struct owl_vk_frame_allocation ialloc;
+  struct owl_vk_frame_allocation ualloc;
+
+  VkDescriptorSet sets[2];
+
+  struct owl_pvm_ubo ubo;
+
+  /*
+   *    4----5
+   *  / |  / |
+   * 0----1  |
+   * |  | |  |
+   * |  6 |  7
+   * | /  | /
+   * 2----3
+   * i reaaaalllly hate italics
+   */
+  owl_local_persist struct owl_p_vertex const vertices[] = {
+      {-1.0F, -1.0F, -1.0F}, /* 0 */
+      {1.0F, -1.0F, -1.0F},  /* 1 */
+      {-1.0F, 1.0F, -1.0F},  /* 2 */
+      {1.0F, 1.0F, -1.0F},   /* 3 */
+      {-1.0F, -1.0F, 1.0F},  /* 4 */
+      {1.0F, -1.0F, 1.0F},   /* 5 */
+      {-1.0F, 1.0F, 1.0F},   /* 6 */
+      {1.0F, 1.0F, 1.0F}};   /* 7 */
+
+  owl_local_persist owl_u32 const indices[] = {
+      2, 3, 1, 1, 0, 2,  /* face 1 ....*/
+      3, 7, 5, 5, 1, 3,  /* face 2 */
+      6, 2, 0, 0, 4, 6,  /* face 3 */
+      7, 6, 4, 4, 5, 7,  /* face 4 */
+      3, 2, 6, 6, 7, 3,  /* face 5 */
+      4, 0, 1, 1, 5, 4}; /* face 6 */
+
+  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
+
+  owl_vk_renderer_bind_pipeline (vkr, OWL_PIPELINE_ID_SKYBOX);
+
+  data = owl_vk_renderer_frame_allocate (vkr, sizeof (vertices), &valloc);
+  if (!data)
+    return OWL_ERROR_UNKNOWN;
+  owl_memcpy (data, vertices, sizeof (vertices));
+
+  data = owl_vk_renderer_frame_allocate (vkr, sizeof (indices), &ialloc);
+  if (!data)
+    return OWL_ERROR_UNKNOWN;
+  owl_memcpy (data, indices, sizeof (indices));
+
+  owl_m4_copy (vkr->camera.projection, ubo.projection);
+  owl_m4_identity (ubo.view);
+  owl_m3_copy (vkr->camera.view, ubo.view);
+  owl_m4_identity (ubo.model);
+
+  data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo), &ualloc);
+  if (!data)
+    return OWL_ERROR_UNKNOWN;
+  owl_memcpy (data, &ubo, sizeof (ubo));
+
+  sets[0] = ualloc.vk_pvm_ubo_set;
+  sets[1] = sb->vk_set;
+
+  vkCmdBindVertexBuffers (frame->vk_command_buffer, 0, 1, &valloc.vk_buffer,
+                          &valloc.offset);
+
+  vkCmdBindIndexBuffer (frame->vk_command_buffer, ialloc.vk_buffer,
+                        ialloc.offset, VK_INDEX_TYPE_UINT32);
+
+  vkCmdBindDescriptorSets (
+      frame->vk_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+      owl_vk_pipeline_manager_get_layout (&vkr->pipelines), 0,
+      owl_array_size (sets), sets, 1, &ualloc.offset32);
+
+  vkCmdDrawIndexed (frame->vk_command_buffer, owl_array_size (indices), 1, 0,
+                    0, 0);
 
   return OWL_SUCCESS;
 }

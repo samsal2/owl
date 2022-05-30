@@ -194,7 +194,55 @@ owl_vk_pipeline_manager_shaders_init (struct owl_vk_pipeline_manager *pm,
     }
   }
 
+  {
+    VkShaderModuleCreateInfo info;
+
+    owl_local_persist owl_u32 const spv[] = {
+#include "owl_glsl_skybox.vert.spv.u32"
+    };
+
+    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.codeSize = sizeof (spv);
+    info.pCode = spv;
+
+    vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
+                                      &pm->vk_skybox_vert);
+
+    if (VK_SUCCESS != vk_result) {
+      goto out_error_model_frag_shader_deinit;
+    }
+  }
+
+  {
+    VkShaderModuleCreateInfo info;
+
+    owl_local_persist owl_u32 const spv[] = {
+#include "owl_glsl_skybox.frag.spv.u32"
+    };
+
+    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.codeSize = sizeof (spv);
+    info.pCode = spv;
+
+    vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
+                                      &pm->vk_skybox_frag);
+
+    if (VK_SUCCESS != vk_result) {
+      goto out_error_skybox_vert_shader_deinit;
+    }
+  }
+
   goto out;
+
+out_error_skybox_vert_shader_deinit:
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_skybox_vert, NULL);
+
+out_error_model_frag_shader_deinit:
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_model_frag, NULL);
 
 out_error_model_vert_shader_deinit:
   vkDestroyShaderModule (ctx->vk_device, pm->vk_model_vert, NULL);
@@ -215,7 +263,8 @@ out:
 owl_private void
 owl_vk_pipeline_manager_shaders_deinit (struct owl_vk_pipeline_manager *pm,
                                         struct owl_vk_context *ctx) {
-
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_skybox_frag, NULL);
+  vkDestroyShaderModule (ctx->vk_device, pm->vk_skybox_vert, NULL);
   vkDestroyShaderModule (ctx->vk_device, pm->vk_model_frag, NULL);
   vkDestroyShaderModule (ctx->vk_device, pm->vk_model_vert, NULL);
   vkDestroyShaderModule (ctx->vk_device, pm->vk_text_frag, NULL);
@@ -309,6 +358,16 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       vert_attributes[5].offset =
           offsetof (struct owl_pnuujw_vertex, weights0);
       break;
+    case OWL_PIPELINE_ID_SKYBOX:
+      vert_bindings[0].binding = 0;
+      vert_bindings[0].stride = sizeof (struct owl_p_vertex);
+      vert_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+      vert_attributes[0].binding = 0;
+      vert_attributes[0].location = 0;
+      vert_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+      vert_attributes[0].offset = offsetof (struct owl_p_vertex, position);
+      break;
     }
 
     switch (i) {
@@ -335,6 +394,16 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       vert_input.vertexAttributeDescriptionCount = 6;
       vert_input.pVertexAttributeDescriptions = vert_attributes;
       break;
+    case OWL_PIPELINE_ID_SKYBOX:
+      vert_input.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+      vert_input.pNext = NULL;
+      vert_input.flags = 0;
+      vert_input.vertexBindingDescriptionCount = 1;
+      vert_input.pVertexBindingDescriptions = vert_bindings;
+      vert_input.vertexAttributeDescriptionCount = 1;
+      vert_input.pVertexAttributeDescriptions = vert_attributes;
+      break;
     }
 
     switch (i) {
@@ -342,6 +411,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
     case OWL_PIPELINE_ID_WIRES:
     case OWL_PIPELINE_ID_TEXT:
     case OWL_PIPELINE_ID_MODEL:
+    case OWL_PIPELINE_ID_SKYBOX:
       input_assembly.sType =
           VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
       input_assembly.pNext = NULL;
@@ -356,6 +426,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
     case OWL_PIPELINE_ID_WIRES:
     case OWL_PIPELINE_ID_TEXT:
     case OWL_PIPELINE_ID_MODEL:
+    case OWL_PIPELINE_ID_SKYBOX:
       viewport.x = 0.0F;
       viewport.y = 0.0F;
       viewport.width = swapchain->size.width;
@@ -381,6 +452,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
     case OWL_PIPELINE_ID_WIRES:
     case OWL_PIPELINE_ID_TEXT:
     case OWL_PIPELINE_ID_MODEL:
+    case OWL_PIPELINE_ID_SKYBOX:
       viewport_state.sType =
           VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
       viewport_state.pNext = NULL;
@@ -395,6 +467,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
     switch (i) {
     case OWL_PIPELINE_ID_BASIC:
     case OWL_PIPELINE_ID_TEXT:
+    case OWL_PIPELINE_ID_SKYBOX:
       resterization.sType =
           VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
       resterization.pNext = NULL;
@@ -451,6 +524,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
     case OWL_PIPELINE_ID_WIRES:
     case OWL_PIPELINE_ID_TEXT:
     case OWL_PIPELINE_ID_MODEL:
+    case OWL_PIPELINE_ID_SKYBOX:
       multisample.sType =
           VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
       multisample.pNext = NULL;
@@ -468,6 +542,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
     case OWL_PIPELINE_ID_BASIC:
     case OWL_PIPELINE_ID_WIRES:
     case OWL_PIPELINE_ID_MODEL:
+    case OWL_PIPELINE_ID_SKYBOX:
       color_blend_attachments[0].blendEnable = VK_FALSE;
       color_blend_attachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
       color_blend_attachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -537,6 +612,21 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       depth_stencil.minDepthBounds = 0.0F;
       depth_stencil.maxDepthBounds = 1.0F;
       break;
+    case OWL_PIPELINE_ID_SKYBOX:
+      depth_stencil.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+      depth_stencil.pNext = NULL;
+      depth_stencil.flags = 0;
+      depth_stencil.depthTestEnable = VK_FALSE;
+      depth_stencil.depthWriteEnable = VK_FALSE;
+      depth_stencil.depthCompareOp = VK_COMPARE_OP_NEVER;
+      depth_stencil.depthBoundsTestEnable = VK_FALSE;
+      depth_stencil.stencilTestEnable = VK_FALSE;
+      owl_memset (&depth_stencil.front, 0, sizeof (depth_stencil.front));
+      owl_memset (&depth_stencil.back, 0, sizeof (depth_stencil.back));
+      depth_stencil.minDepthBounds = 0.0F;
+      depth_stencil.maxDepthBounds = 1.0F;
+      break;
     }
 
     switch (i) {
@@ -594,12 +684,31 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
       stages[1].pName = "main";
       stages[1].pSpecializationInfo = NULL;
       break;
+
+    case OWL_PIPELINE_ID_SKYBOX:
+      stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[0].pNext = NULL;
+      stages[0].flags = 0;
+      stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+      stages[0].module = pm->vk_skybox_vert;
+      stages[0].pName = "main";
+      stages[0].pSpecializationInfo = NULL;
+
+      stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[1].pNext = NULL;
+      stages[1].flags = 0;
+      stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      stages[1].module = pm->vk_skybox_frag;
+      stages[1].pName = "main";
+      stages[1].pSpecializationInfo = NULL;
+      break;
     }
 
     switch (i) {
     case OWL_PIPELINE_ID_BASIC:
     case OWL_PIPELINE_ID_WIRES:
     case OWL_PIPELINE_ID_TEXT:
+    case OWL_PIPELINE_ID_SKYBOX:
       pm->vk_pipeline_layouts[i] = pm->vk_common_pipeline_layout;
       break;
 
@@ -613,6 +722,7 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
     case OWL_PIPELINE_ID_WIRES:
     case OWL_PIPELINE_ID_TEXT:
     case OWL_PIPELINE_ID_MODEL:
+    case OWL_PIPELINE_ID_SKYBOX:
       info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
       info.pNext = NULL;
       info.flags = 0;
@@ -637,7 +747,6 @@ owl_vk_pipeline_manager_pipelines_init (struct owl_vk_pipeline_manager *pm,
 
     vk_result = vkCreateGraphicsPipelines (ctx->vk_device, VK_NULL_HANDLE, 1,
                                            &info, NULL, &pm->vk_pipelines[i]);
-
     if (VK_SUCCESS != vk_result) {
       code = OWL_ERROR_UNKNOWN;
       goto out_error_pipelines_deinit;

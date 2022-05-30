@@ -15,6 +15,8 @@
 OWL_BEGIN_DECLS
 
 struct owl_window;
+struct owl_model;
+struct owl_skybox;
 
 #define OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT 2
 
@@ -94,12 +96,14 @@ owl_public enum owl_code
 owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr, char const *text,
                            owl_v3 const position, owl_v3 const color);
 
-struct owl_model;
-
 owl_public enum owl_code
 owl_vk_renderer_draw_model (struct owl_vk_renderer *vkr,
                             struct owl_model const *model,
                             owl_m4 const matrix);
+
+owl_public enum owl_code
+owl_vk_renderer_draw_skybox (struct owl_vk_renderer *vkr,
+                             struct owl_skybox const *sb);
 OWL_END_DECLS
 
 #endif

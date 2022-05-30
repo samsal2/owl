@@ -18,6 +18,8 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_model.c
   owl_model.h
   owl_quad.h
+  owl_skybox.c
+  owl_skybox.h
   owl_ui.c
   owl_ui.h
   owl_vector_math.c
@@ -59,7 +61,9 @@ set(GLSL_SHADERS
   owl_glsl_basic.frag
   owl_glsl_font.frag
   owl_glsl_model.frag
-  owl_glsl_pbr.frag)
+  owl_glsl_pbr.frag
+  owl_glsl_skybox.vert
+  owl_glsl_skybox.frag)
 
 if ("${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}" STREQUAL "")
   message(AUTHOR_WARNING "missing Vulkan_GLSLANG_VALIDATOR_EXECUTABLE"

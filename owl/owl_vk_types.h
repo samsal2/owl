@@ -5,6 +5,10 @@
 
 OWL_BEGIN_DECLS
 
+struct owl_p_vertex {
+  owl_v3 position;
+};
+
 struct owl_pcu_vertex {
   owl_v3 position;
   owl_v3 color;

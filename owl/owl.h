@@ -4,6 +4,7 @@
 #include "owl_io.h"
 #include "owl_model.h"
 #include "owl_quad.h"
+#include "owl_skybox.h"
 #include "owl_ui.h"
 #include "owl_vector_math.h"
 #include "owl_vk_font.h"

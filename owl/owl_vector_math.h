@@ -9,6 +9,14 @@ OWL_BEGIN_DECLS
 
 #define owl_rad2deg(a) ((a)*57.2957795131F)
 
+/* clang-format off */
+#define owl_m4_identity_value                                                 \
+  {{1.0F, 0.0F, 0.0F, 0.0F},                                                  \
+   {0.0F, 1.0F, 0.0F, 0.0F},                                                  \
+   {0.0F, 0.0F, 1.0F, 0.0F},                                                  \
+   {0.0F, 0.0F, 0.0F, 1.0F}}
+/* clang-format on */
+
 #define owl_v2_set(v, v1, v2)                                                 \
   do {                                                                        \
     (v)[0] = (v1);                                                            \

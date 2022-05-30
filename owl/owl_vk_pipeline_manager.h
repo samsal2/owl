@@ -16,6 +16,7 @@ enum owl_pipeline_id {
   OWL_PIPELINE_ID_WIRES,
   OWL_PIPELINE_ID_TEXT,
   OWL_PIPELINE_ID_MODEL,
+  OWL_PIPELINE_ID_SKYBOX,
   OWL_PIPELINE_ID_COUNT,
   OWL_PIPELINE_ID_NONE = OWL_PIPELINE_ID_COUNT
 };
@@ -26,6 +27,8 @@ struct owl_vk_pipeline_manager {
   VkShaderModule vk_text_frag;
   VkShaderModule vk_model_vert;
   VkShaderModule vk_model_frag;
+  VkShaderModule vk_skybox_vert;
+  VkShaderModule vk_skybox_frag;
 
   VkPipelineLayout vk_common_pipeline_layout;
   VkPipelineLayout vk_model_pipeline_layout;
