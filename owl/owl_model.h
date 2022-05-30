@@ -214,11 +214,11 @@ struct owl_model {
 };
 
 owl_public enum owl_code
-owl_model_init (struct owl_model *model, struct owl_vk_renderer *vkr,
-                char const *path);
+owl_model_init (struct owl_model *model, struct owl_vk_context *ctx,
+                struct owl_vk_stage_heap *heap, char const *path);
 
 owl_public void
-owl_model_deinit (struct owl_model *model, struct owl_vk_renderer *vkr);
+owl_model_deinit (struct owl_model *model, struct owl_vk_context *ctx);
 
 owl_public enum owl_code
 owl_model_anim_update (struct owl_model *model, owl_i32 frame, float dt,

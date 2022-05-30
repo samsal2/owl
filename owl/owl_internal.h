@@ -48,12 +48,12 @@ owl_debug_log (char const *f, int l, char const *fmt, ...);
 
 #if defined(OWL_DEBUG_PARANOID)
 #if defined(NDEBUG)
-#error "Debug must be enabled for owl_assert_paranoid"
+#error "Debug must be enabled for owl_paranoid_assert"
 #endif
 #include <assert.h>
-#define owl_assert_paranoid(e) assert (e)
+#define owl_paranoid_assert(e) assert (e)
 #else
-#define owl_assert_paranoid(e)
+#define owl_paranoid_assert(e)
 #endif
 
 #define owl_clamp(v, l, h) ((v) < (l) ? (l) : ((v) > (h) ? (h) : (v)))

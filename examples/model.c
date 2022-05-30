@@ -33,7 +33,8 @@ main (void) {
   CHECK (owl_vk_renderer_init (renderer, window));
 
   model = malloc (sizeof (*model));
-  CHECK (owl_model_init (model, renderer, "../../assets/CesiumMan.gltf"));
+  CHECK (owl_model_init (model, &renderer->context, &renderer->stage_heap,
+                         "../../assets/CesiumMan.gltf"));
 
   font = malloc (sizeof (*font));
   CHECK (owl_vk_font_init (font, &renderer->context, &renderer->stage_heap,
@@ -57,8 +58,11 @@ main (void) {
 
     prev_time_stamp = time_stamp;
     time_stamp = owl_io_time_stamp_get ();
-
+#if 0
     owl_camera_rotate (&renderer->camera, axis, 0.01);
+#else
+    (void)(axis);
+#endif
 
     code = owl_vk_renderer_begin_frame (renderer);
     if (OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE == code) {
@@ -93,7 +97,7 @@ main (void) {
   owl_vk_font_deinit (font, &renderer->context);
   free (font);
 
-  owl_model_deinit (model, renderer);
+  owl_model_deinit (model, &renderer->context);
   free (model);
 
   owl_vk_renderer_deinit (renderer);

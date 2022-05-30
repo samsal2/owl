@@ -265,8 +265,8 @@ out:
 
 owl_private struct owl_vk_garbage *
 owl_vk_renderer_garbage_get (struct owl_vk_renderer *vkr) {
-  owl_assert_paranoid (vkr->frame >= 0);
-  owl_assert_paranoid (vkr->frame < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT);
+  owl_paranoid_assert (vkr->frame >= 0);
+  owl_paranoid_assert (vkr->frame < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT);
   return &vkr->garbages[vkr->frame];
 }
 
@@ -344,8 +344,8 @@ owl_vk_renderer_end_frame (struct owl_vk_renderer *vkr) {
 }
 owl_public struct owl_vk_frame *
 owl_vk_renderer_get_frame (struct owl_vk_renderer *vkr) {
-  owl_assert_paranoid (vkr->frame >= 0);
-  owl_assert_paranoid (vkr->frame < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT);
+  owl_paranoid_assert (vkr->frame >= 0);
+  owl_paranoid_assert (vkr->frame < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT);
   return &vkr->frames[vkr->frame];
 }
 
@@ -412,17 +412,17 @@ owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (vertices), &valloc);
   if (!data)
-    return OWL_ERROR_UNKNOWN;
+    return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy (data, vertices, sizeof (vertices));
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (indices), &ialloc);
   if (!data)
-    return OWL_ERROR_UNKNOWN;
+    return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy (data, indices, sizeof (indices));
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo), &ualloc);
   if (!data)
-    return OWL_ERROR_UNKNOWN;
+    return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy (data, &ubo, sizeof (ubo));
 
   sets[0] = ualloc.vk_pvm_ubo_set;
@@ -559,7 +559,7 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo1), &u1alloc);
   if (!data)
-    return OWL_ERROR_UNKNOWN;
+    return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy (data, &ubo1, sizeof (ubo1));
 
   vkCmdBindDescriptorSets (
@@ -569,7 +569,7 @@ owl_vk_renderer_draw_model_node (struct owl_vk_renderer *vkr,
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo2), &u2alloc);
   if (!data)
-    return OWL_ERROR_UNKNOWN;
+    return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy (data, &ubo2, sizeof (ubo2));
 
   vkCmdBindDescriptorSets (
@@ -750,12 +750,12 @@ owl_vk_renderer_draw_skybox (struct owl_vk_renderer *vkr,
       {1.0F, 1.0F, 1.0F}};   /* 7 */
 
   owl_local_persist owl_u32 const indices[] = {
-      2, 3, 1, 1, 0, 2,  /* face 1 ....*/
-      3, 7, 5, 5, 1, 3,  /* face 2 */
-      6, 2, 0, 0, 4, 6,  /* face 3 */
-      7, 6, 4, 4, 5, 7,  /* face 4 */
-      3, 2, 6, 6, 7, 3,  /* face 5 */
-      4, 0, 1, 1, 5, 4}; /* face 6 */
+      2, 3, 1, 1, 0, 2,  /* face 0 ....*/
+      3, 7, 5, 5, 1, 3,  /* face 1 */
+      6, 2, 0, 0, 4, 6,  /* face 2 */
+      7, 6, 4, 4, 5, 7,  /* face 3 */
+      3, 2, 6, 6, 7, 3,  /* face 4 */
+      4, 0, 1, 1, 5, 4}; /* face 5 */
 
   struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
 
@@ -763,12 +763,12 @@ owl_vk_renderer_draw_skybox (struct owl_vk_renderer *vkr,
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (vertices), &valloc);
   if (!data)
-    return OWL_ERROR_UNKNOWN;
+    return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy (data, vertices, sizeof (vertices));
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (indices), &ialloc);
   if (!data)
-    return OWL_ERROR_UNKNOWN;
+    return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy (data, indices, sizeof (indices));
 
   owl_m4_copy (vkr->camera.projection, ubo.projection);
@@ -778,7 +778,7 @@ owl_vk_renderer_draw_skybox (struct owl_vk_renderer *vkr,
 
   data = owl_vk_renderer_frame_allocate (vkr, sizeof (ubo), &ualloc);
   if (!data)
-    return OWL_ERROR_UNKNOWN;
+    return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy (data, &ubo, sizeof (ubo));
 
   sets[0] = ualloc.vk_pvm_ubo_set;

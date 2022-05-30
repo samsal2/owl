@@ -3,8 +3,10 @@
 #include "cgltf.h"
 #include "owl_internal.h"
 #include "owl_vector_math.h"
+#include "owl_vk_context.h"
 #include "owl_vk_im_command_buffer.h"
-#include "owl_vk_renderer.h"
+#include "owl_vk_stage_heap.h"
+#include "owl_vk_types.h"
 
 #include <float.h>
 #include <stdio.h>
@@ -46,8 +48,9 @@ owl_model_uri_init (char const *src, struct owl_model_uri *uri) {
 }
 
 owl_private enum owl_code
-owl_model_images_load (struct owl_model *model, struct cgltf_data const *gltf,
-                       struct owl_vk_renderer *vkr) {
+owl_model_images_load (struct owl_model *model, struct owl_vk_context *ctx,
+                       struct owl_vk_stage_heap *heap,
+                       struct cgltf_data const *gltf) {
   owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
@@ -67,8 +70,7 @@ owl_model_images_load (struct owl_model *model, struct cgltf_data const *gltf,
      * requirements . Completely ignoring it for now */
     desc.use_default_sampler = 1;
 
-    code = owl_vk_image_init (&image->image, &vkr->context, &vkr->stage_heap,
-                              &desc);
+    code = owl_vk_image_init (&image->image, ctx, heap, &desc);
     if (OWL_SUCCESS != code) {
       goto out;
     }
@@ -82,12 +84,14 @@ out:
 
 owl_private enum owl_code
 owl_model_textures_load (struct owl_model *model,
-                         struct cgltf_data const *gltf,
-                         struct owl_vk_renderer *vkr) {
+                         struct owl_vk_context const *ctx,
+                         struct owl_vk_stage_heap *heap,
+                         struct cgltf_data const *gltf) {
   owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
-  owl_unused (vkr);
+  owl_unused (ctx);
+  owl_unused (heap);
 
   model->texture_count = (owl_i32)gltf->textures_count;
 
@@ -101,12 +105,14 @@ owl_model_textures_load (struct owl_model *model,
 
 owl_private enum owl_code
 owl_model_materials_load (struct owl_model *model,
-                          struct cgltf_data const *gltf,
-                          struct owl_vk_renderer *vkr) {
+                          struct owl_vk_context const *ctx,
+                          struct owl_vk_stage_heap *heap,
+                          struct cgltf_data const *gltf) {
   owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
-  owl_unused (vkr);
+  owl_unused (ctx);
+  owl_unused (heap);
 
   if (OWL_MODEL_MAX_NAME_LENGTH <= (owl_i32)gltf->materials_count) {
     code = OWL_ERROR_OUT_OF_SPACE;
@@ -204,12 +210,14 @@ owl_model_load_find_capacities (struct owl_model_load *load,
 
 owl_private enum owl_code
 owl_model_load_init (struct owl_model_load *load,
-                     struct cgltf_data const *gltf,
-                     struct owl_vk_renderer *vkr) {
+                     struct owl_vk_context const *ctx,
+                     struct owl_vk_stage_heap *heap,
+                     struct cgltf_data const *gltf) {
   owl_u64 size;
   enum owl_code code = OWL_SUCCESS;
 
-  owl_unused (vkr);
+  owl_unused (ctx);
+  owl_unused (heap);
 
   load->vertex_capacity = 0;
   load->index_capacity = 0;
@@ -243,24 +251,27 @@ out:
 
 owl_private void
 owl_model_load_deinit (struct owl_model_load *load,
-                       struct owl_vk_renderer *vkr) {
-  owl_unused (vkr);
+                       struct owl_vk_context const *ctx) {
+  owl_unused (ctx);
 
   owl_free (load->indices);
   owl_free (load->vertices);
 }
 
 owl_private enum owl_code
-owl_model_node_load (struct owl_model *model, struct cgltf_data const *gltf,
-                     struct cgltf_node const *gn, struct owl_model_load *load,
-                     struct owl_vk_renderer *vkr) {
+owl_model_node_load (struct owl_model *model, struct owl_vk_context const *ctx,
+                     struct owl_vk_stage_heap *heap,
+                     struct cgltf_data const *gltf,
+                     struct cgltf_node const *gn,
+                     struct owl_model_load *load) {
   owl_i32 i;
   owl_model_node_id nid;
   struct owl_model_node *node;
 
   enum owl_code code = OWL_SUCCESS;
 
-  owl_unused (vkr);
+  owl_unused (ctx);
+  owl_unused (heap);
 
   nid = (owl_model_node_id)(gn - gltf->nodes);
 
@@ -483,15 +494,16 @@ out:
 
 owl_private enum owl_code
 owl_model_buffers_load (struct owl_model *model,
-                        struct owl_model_load const *load,
-                        struct owl_vk_renderer *vkr) {
+                        struct owl_vk_context const *ctx,
+                        struct owl_vk_stage_heap *heap,
+                        struct owl_model_load const *load) {
   VkBufferCreateInfo buffer_info;
   VkMemoryRequirements req;
   VkMemoryAllocateInfo memory_info;
   owl_u64 size;
   owl_byte *data;
   VkBufferCopy copy;
-  struct owl_vk_im_command_buffer cmd;
+  struct owl_vk_im_command_buffer im;
   struct owl_vk_stage_allocation allocation;
 
   VkResult vk_result = VK_SUCCESS;
@@ -512,43 +524,42 @@ owl_model_buffers_load (struct owl_model *model,
   buffer_info.queueFamilyIndexCount = 0;
   buffer_info.pQueueFamilyIndices = 0;
 
-  vk_result = vkCreateBuffer (vkr->context.vk_device, &buffer_info, NULL,
+  vk_result = vkCreateBuffer (ctx->vk_device, &buffer_info, NULL,
                               &model->vk_vertex_buffer);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
 
-  vkGetBufferMemoryRequirements (vkr->context.vk_device,
-                                 model->vk_vertex_buffer, &req);
+  vkGetBufferMemoryRequirements (ctx->vk_device, model->vk_vertex_buffer,
+                                 &req);
 
   memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   memory_info.pNext = NULL;
   memory_info.allocationSize = req.size;
   memory_info.memoryTypeIndex = owl_vk_context_get_memory_type (
-      &vkr->context, req.memoryTypeBits, OWL_MEMORY_PROPERTIES_GPU_ONLY);
+      ctx, req.memoryTypeBits, OWL_MEMORY_PROPERTIES_GPU_ONLY);
 
-  vk_result = vkAllocateMemory (vkr->context.vk_device, &memory_info, NULL,
+  vk_result = vkAllocateMemory (ctx->vk_device, &memory_info, NULL,
                                 &model->vk_vertex_memory);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
 
-  vk_result =
-      vkBindBufferMemory (vkr->context.vk_device, model->vk_vertex_buffer,
-                          model->vk_vertex_memory, 0);
+  vk_result = vkBindBufferMemory (ctx->vk_device, model->vk_vertex_buffer,
+                                  model->vk_vertex_memory, 0);
 
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
 
-  code = owl_vk_im_command_buffer_begin (&cmd, &vkr->context);
+  code = owl_vk_im_command_buffer_begin (&im, ctx);
   if (OWL_SUCCESS != code)
     goto out;
 
-  data = owl_vk_renderer_stage_allocate (vkr, size, &allocation);
+  data = owl_vk_stage_heap_allocate (heap, ctx, size, &allocation);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -559,14 +570,14 @@ owl_model_buffers_load (struct owl_model *model,
   copy.dstOffset = 0;
   copy.size = size;
 
-  vkCmdCopyBuffer (cmd.vk_command_buffer, allocation.vk_buffer,
+  vkCmdCopyBuffer (im.vk_command_buffer, allocation.vk_buffer,
                    model->vk_vertex_buffer, 1, &copy);
 
-  code = owl_vk_im_command_buffer_end (&cmd, &vkr->context);
+  code = owl_vk_im_command_buffer_end (&im, ctx);
   if (OWL_SUCCESS != code)
     goto out;
 
-  owl_vk_renderer_stage_free (vkr);
+  owl_vk_stage_heap_free (heap, ctx);
 
   size = (owl_u64)load->index_capacity * sizeof (owl_u32);
 
@@ -580,43 +591,41 @@ owl_model_buffers_load (struct owl_model *model,
   buffer_info.queueFamilyIndexCount = 0;
   buffer_info.pQueueFamilyIndices = 0;
 
-  vk_result = vkCreateBuffer (vkr->context.vk_device, &buffer_info, NULL,
+  vk_result = vkCreateBuffer (ctx->vk_device, &buffer_info, NULL,
                               &model->vk_index_buffer);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
 
-  vkGetBufferMemoryRequirements (vkr->context.vk_device,
-                                 model->vk_index_buffer, &req);
+  vkGetBufferMemoryRequirements (ctx->vk_device, model->vk_index_buffer, &req);
 
   memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   memory_info.pNext = NULL;
   memory_info.allocationSize = req.size;
   memory_info.memoryTypeIndex = owl_vk_context_get_memory_type (
-      &vkr->context, req.memoryTypeBits, OWL_MEMORY_PROPERTIES_GPU_ONLY);
+      ctx, req.memoryTypeBits, OWL_MEMORY_PROPERTIES_GPU_ONLY);
 
-  vk_result = vkAllocateMemory (vkr->context.vk_device, &memory_info, NULL,
+  vk_result = vkAllocateMemory (ctx->vk_device, &memory_info, NULL,
                                 &model->vk_index_memory);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
 
-  vk_result =
-      vkBindBufferMemory (vkr->context.vk_device, model->vk_index_buffer,
-                          model->vk_index_memory, 0);
+  vk_result = vkBindBufferMemory (ctx->vk_device, model->vk_index_buffer,
+                                  model->vk_index_memory, 0);
 
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
 
-  code = owl_vk_im_command_buffer_begin (&cmd, &vkr->context);
+  code = owl_vk_im_command_buffer_begin (&im, ctx);
   if (OWL_SUCCESS != code)
     goto out;
 
-  data = owl_vk_renderer_stage_allocate (vkr, size, &allocation);
+  data = owl_vk_stage_heap_allocate (heap, ctx, size, &allocation);
   if (!data) {
     code = OWL_ERROR_UNKNOWN;
     goto out;
@@ -627,22 +636,24 @@ owl_model_buffers_load (struct owl_model *model,
   copy.dstOffset = 0;
   copy.size = size;
 
-  vkCmdCopyBuffer (cmd.vk_command_buffer, allocation.vk_buffer,
+  vkCmdCopyBuffer (im.vk_command_buffer, allocation.vk_buffer,
                    model->vk_index_buffer, 1, &copy);
 
-  code = owl_vk_im_command_buffer_end (&cmd, &vkr->context);
+  code = owl_vk_im_command_buffer_end (&im, ctx);
   if (OWL_SUCCESS != code)
     goto out;
 
-  owl_vk_renderer_stage_free (vkr);
+  owl_vk_stage_heap_free (heap, ctx);
 
 out:
   return code;
 }
 
 owl_private enum owl_code
-owl_model_nodes_load (struct owl_model *model, struct cgltf_data const *gltf,
-                      struct owl_vk_renderer *vkr) {
+owl_model_nodes_load (struct owl_model *model,
+                      struct owl_vk_context const *ctx,
+                      struct owl_vk_stage_heap *heap,
+                      struct cgltf_data const *gltf) {
   owl_i32 i;
   struct owl_model_load load;
   struct cgltf_scene const *gs;
@@ -650,7 +661,7 @@ owl_model_nodes_load (struct owl_model *model, struct cgltf_data const *gltf,
 
   gs = gltf->scene;
 
-  code = owl_model_load_init (&load, gltf, vkr);
+  code = owl_model_load_init (&load, ctx, heap, gltf);
 
   if (OWL_SUCCESS != code) {
     goto out;
@@ -671,7 +682,8 @@ owl_model_nodes_load (struct owl_model *model, struct cgltf_data const *gltf,
   model->node_count = (owl_i32)gltf->nodes_count;
 
   for (i = 0; i < (owl_i32)gltf->nodes_count; ++i) {
-    code = owl_model_node_load (model, gltf, &gltf->nodes[i], &load, vkr);
+    code =
+        owl_model_node_load (model, ctx, heap, gltf, &gltf->nodes[i], &load);
     if (OWL_SUCCESS != code)
       goto error_deinit_load_state;
   }
@@ -687,22 +699,24 @@ owl_model_nodes_load (struct owl_model *model, struct cgltf_data const *gltf,
     model->roots[i] = (owl_model_node_id)(gs->nodes[i] - gltf->nodes);
   }
 
-  owl_model_buffers_load (model, &load, vkr);
+  owl_model_buffers_load (model, ctx, heap, &load);
 
 error_deinit_load_state:
-  owl_model_load_deinit (&load, vkr);
+  owl_model_load_deinit (&load, ctx);
 
 out:
   return code;
 }
 
 owl_private enum owl_code
-owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
-                      struct owl_vk_renderer *vkr) {
+owl_model_skins_load (struct owl_model *model,
+                      struct owl_vk_context const *ctx,
+                      struct owl_vk_stage_heap *heap,
+                      struct cgltf_data const *gltf) {
   owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
-  owl_unused (vkr);
+  owl_unused (heap);
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gltf->skins_count) {
     owl_assert (0);
@@ -764,7 +778,7 @@ owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
       info.pQueueFamilyIndices = NULL;
 
       for (j = 0; j < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
-        OWL_VK_CHECK (vkCreateBuffer (vkr->context.vk_device, &info, NULL,
+        OWL_VK_CHECK (vkCreateBuffer (ctx->vk_device, &info, NULL,
                                       &skin->ssbo_buffers[j]));
       }
     }
@@ -773,8 +787,8 @@ owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
       VkMemoryRequirements requirements;
       VkMemoryAllocateInfo info;
 
-      vkGetBufferMemoryRequirements (vkr->context.vk_device,
-                                     skin->ssbo_buffers[0], &requirements);
+      vkGetBufferMemoryRequirements (ctx->vk_device, skin->ssbo_buffers[0],
+                                     &requirements);
 
       skin->ssbo_buffer_alignment = requirements.alignment;
       skin->ssbo_buffer_aligned_size =
@@ -785,15 +799,14 @@ owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
       info.allocationSize = skin->ssbo_buffer_aligned_size *
                             OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT;
       info.memoryTypeIndex = owl_vk_context_get_memory_type (
-          &vkr->context, requirements.memoryTypeBits,
-          OWL_MEMORY_PROPERTIES_CPU_ONLY);
+          ctx, requirements.memoryTypeBits, OWL_MEMORY_PROPERTIES_CPU_ONLY);
 
-      OWL_VK_CHECK (vkAllocateMemory (vkr->context.vk_device, &info, NULL,
-                                      &skin->ssbo_memory));
+      OWL_VK_CHECK (
+          vkAllocateMemory (ctx->vk_device, &info, NULL, &skin->ssbo_memory));
 
       for (j = 0; j < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
         OWL_VK_CHECK (vkBindBufferMemory (
-            vkr->context.vk_device, skin->ssbo_buffers[j], skin->ssbo_memory,
+            ctx->vk_device, skin->ssbo_buffers[j], skin->ssbo_memory,
             (owl_u64)j * skin->ssbo_buffer_aligned_size));
       }
     }
@@ -803,16 +816,16 @@ owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
       VkDescriptorSetAllocateInfo info;
 
       for (j = 0; j < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j)
-        layouts[j] = vkr->context.vk_vert_ssbo_set_layout;
+        layouts[j] = ctx->vk_vert_ssbo_set_layout;
 
       info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
       info.pNext = NULL;
-      info.descriptorPool = vkr->context.vk_set_pool;
+      info.descriptorPool = ctx->vk_set_pool;
       info.descriptorSetCount = OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT;
       info.pSetLayouts = layouts;
 
-      OWL_VK_CHECK (vkAllocateDescriptorSets (vkr->context.vk_device, &info,
-                                              skin->ssbo_sets));
+      OWL_VK_CHECK (
+          vkAllocateDescriptorSets (ctx->vk_device, &info, skin->ssbo_sets));
     }
 
     {
@@ -835,7 +848,7 @@ owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
         write.pBufferInfo = &info;
         write.pTexelBufferView = NULL;
 
-        vkUpdateDescriptorSets (vkr->context.vk_device, 1, &write, 0, NULL);
+        vkUpdateDescriptorSets (ctx->vk_device, 1, &write, 0, NULL);
       }
     }
 
@@ -843,8 +856,8 @@ owl_model_skins_load (struct owl_model *model, struct cgltf_data const *gltf,
       owl_i32 k;
       void *data;
 
-      vkMapMemory (vkr->context.vk_device, skin->ssbo_memory, 0, VK_WHOLE_SIZE,
-                   0, &data);
+      vkMapMemory (ctx->vk_device, skin->ssbo_memory, 0, VK_WHOLE_SIZE, 0,
+                   &data);
 
       for (j = 0; j < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
         owl_u64 offset = (owl_u64)j * skin->ssbo_buffer_aligned_size;
@@ -870,12 +883,14 @@ out:
 }
 
 owl_private enum owl_code
-owl_model_anims_load (struct owl_vk_renderer *vkr,
+owl_model_anims_load (struct owl_vk_context const *ctx,
+                      struct owl_vk_stage_heap *heap,
                       struct cgltf_data const *gltf, struct owl_model *model) {
   owl_i32 i;
   enum owl_code code = OWL_SUCCESS;
 
-  owl_unused (vkr);
+  owl_unused (ctx);
+  owl_unused (heap);
 
   if (OWL_MODEL_MAX_ARRAY_COUNT <= (owl_i32)gltf->animations_count) {
     code = OWL_ERROR_OUT_OF_SPACE;
@@ -1023,8 +1038,9 @@ out:
 }
 
 owl_public enum owl_code
-owl_model_init (struct owl_model *model, struct owl_vk_renderer *vkr,
-                char const *path) {
+owl_model_init (struct owl_model *model, struct owl_vk_context *ctx,
+                struct owl_vk_stage_heap *heap, char const *path) {
+
   struct cgltf_options options;
   struct cgltf_data *data = NULL;
 
@@ -1056,40 +1072,32 @@ owl_model_init (struct owl_model *model, struct owl_vk_renderer *vkr,
     goto error_data_free;
   }
 
-  owl_assert (0 == vkr->stage_heap.in_use);
-
-  code = owl_model_images_load (model, data, vkr);
+  code = owl_model_images_load (model, ctx, heap, data);
   if (OWL_SUCCESS != code) {
     goto error_data_free;
   }
 
-  owl_assert (0 == vkr->stage_heap.in_use);
-
-  code = owl_model_textures_load (model, data, vkr);
+  code = owl_model_textures_load (model, ctx, heap, data);
   if (OWL_SUCCESS != code) {
     goto error_data_free;
   }
 
-  owl_assert (0 == vkr->stage_heap.in_use);
-
-  code = owl_model_materials_load (model, data, vkr);
+  code = owl_model_materials_load (model, ctx, heap, data);
   if (OWL_SUCCESS != code) {
     goto error_data_free;
   }
 
-  owl_assert (0 == vkr->stage_heap.in_use);
-
-  code = owl_model_nodes_load (model, data, vkr);
+  code = owl_model_nodes_load (model, ctx, heap, data);
   if (OWL_SUCCESS != code) {
     goto error_data_free;
   }
 
-  code = owl_model_skins_load (model, data, vkr);
+  code = owl_model_skins_load (model, ctx, heap, data);
   if (OWL_SUCCESS != code) {
     goto error_data_free;
   }
 
-  code = owl_model_anims_load (vkr, data, model);
+  code = owl_model_anims_load (ctx, heap, data, model);
   if (OWL_SUCCESS != code) {
     goto error_data_free;
   }
@@ -1102,32 +1110,31 @@ out:
 }
 
 void
-owl_model_deinit (struct owl_model *model, struct owl_vk_renderer *vkr) {
+owl_model_deinit (struct owl_model *model, struct owl_vk_context *ctx) {
   owl_i32 i;
 
-  OWL_VK_CHECK (vkDeviceWaitIdle (vkr->context.vk_device));
+  owl_vk_context_device_wait (ctx);
 
-  vkFreeMemory (vkr->context.vk_device, model->vk_index_memory, NULL);
-  vkDestroyBuffer (vkr->context.vk_device, model->vk_index_buffer, NULL);
-  vkFreeMemory (vkr->context.vk_device, model->vk_vertex_memory, NULL);
-  vkDestroyBuffer (vkr->context.vk_device, model->vk_vertex_buffer, NULL);
+  vkFreeMemory (ctx->vk_device, model->vk_index_memory, NULL);
+  vkDestroyBuffer (ctx->vk_device, model->vk_index_buffer, NULL);
+  vkFreeMemory (ctx->vk_device, model->vk_vertex_memory, NULL);
+  vkDestroyBuffer (ctx->vk_device, model->vk_vertex_buffer, NULL);
 
   for (i = 0; i < model->image_count; ++i) {
-    owl_vk_image_deinit (&model->images[i].image, &vkr->context);
+    owl_vk_image_deinit (&model->images[i].image, ctx);
   }
 
   for (i = 0; i < model->skin_count; ++i) {
     owl_i32 j;
 
-    vkFreeDescriptorSets (vkr->context.vk_device, vkr->context.vk_set_pool,
+    vkFreeDescriptorSets (ctx->vk_device, ctx->vk_set_pool,
                           OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT,
                           model->skins[i].ssbo_sets);
 
-    vkFreeMemory (vkr->context.vk_device, model->skins[i].ssbo_memory, NULL);
+    vkFreeMemory (ctx->vk_device, model->skins[i].ssbo_memory, NULL);
 
     for (j = 0; j < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
-      vkDestroyBuffer (vkr->context.vk_device, model->skins[i].ssbo_buffers[j],
-                       NULL);
+      vkDestroyBuffer (ctx->vk_device, model->skins[i].ssbo_buffers[j], NULL);
     }
   }
 }
