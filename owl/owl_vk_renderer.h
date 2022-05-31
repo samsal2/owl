@@ -18,8 +18,6 @@ struct owl_window;
 struct owl_model;
 struct owl_skybox;
 
-#define OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT 2
-
 struct owl_vk_renderer {
   owl_i32 width;
   owl_i32 height;
@@ -28,7 +26,7 @@ struct owl_vk_renderer {
   struct owl_camera camera;
   struct owl_vk_context context;
   struct owl_vk_attachment color_attachment;
-  struct owl_vk_attachment depth_stencil_attachment;
+  struct owl_vk_attachment depth_attachment;
   struct owl_vk_swapchain swapchain;
   struct owl_vk_pipeline_manager pipelines;
   struct owl_vk_stage_heap stage_heap;
@@ -51,11 +49,11 @@ owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h);
 
 owl_public void *
 owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
-                                struct owl_vk_frame_allocation *allocation);
+                                struct owl_vk_frame_allocation *alloc);
 
 owl_public void *
 owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
-                                struct owl_vk_stage_allocation *allocation);
+                                struct owl_vk_stage_allocation *alloc);
 
 owl_public void
 owl_vk_renderer_stage_free (struct owl_vk_renderer *vkr);

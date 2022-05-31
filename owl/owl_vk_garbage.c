@@ -7,19 +7,20 @@
 owl_public enum owl_code
 owl_vk_garbage_init (struct owl_vk_garbage *garbage,
                      struct owl_vk_context const *ctx) {
-  enum owl_code code = OWL_SUCCESS;
-
   owl_unused (ctx);
 
   garbage->heap_count = 0;
 
-  return code;
+  return OWL_SUCCESS;
 }
 
 owl_public void
 owl_vk_garbage_deinit (struct owl_vk_garbage *garbage,
                        struct owl_vk_context const *ctx) {
   owl_i32 i;
+
+  owl_assert (0 <= garbage->heap_count);
+
   for (i = 0; i < garbage->heap_count; ++i)
     owl_vk_frame_heap_deinit (&garbage->heaps[i], ctx);
 }

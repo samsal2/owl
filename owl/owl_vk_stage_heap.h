@@ -36,7 +36,7 @@ owl_vk_stage_heap_has_enough_space (struct owl_vk_stage_heap *heap,
 owl_public void *
 owl_vk_stage_heap_allocate (struct owl_vk_stage_heap *heap,
                             struct owl_vk_context const *ctx, owl_u64 size,
-                            struct owl_vk_stage_allocation *allocation);
+                            struct owl_vk_stage_allocation *alloc);
 
 owl_public void
 owl_vk_stage_heap_free (struct owl_vk_stage_heap *heap,

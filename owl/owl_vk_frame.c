@@ -170,15 +170,14 @@ owl_public void *
 owl_vk_frame_allocate (struct owl_vk_frame *frame,
                        struct owl_vk_context const *ctx,
                        struct owl_vk_garbage *garbage, owl_u64 size,
-                       struct owl_vk_frame_allocation *allocation) {
+                       struct owl_vk_frame_allocation *alloc) {
   enum owl_code code;
 
   code = owl_vk_frame_reserve (frame, ctx, garbage, size);
   if (OWL_SUCCESS != code)
     return NULL;
 
-  return owl_vk_frame_heap_unsafe_allocate (&frame->heap, ctx, size,
-                                            allocation);
+  return owl_vk_frame_heap_unsafe_allocate (&frame->heap, ctx, size, alloc);
 }
 
 owl_public void
@@ -190,7 +189,7 @@ owl_vk_frame_free (struct owl_vk_frame *frame,
 owl_private enum owl_code
 owl_vk_frame_begin_recording (struct owl_vk_frame *frame,
                               struct owl_vk_context const *ctx,
-                              struct owl_vk_swapchain *swapchain) {
+                              struct owl_vk_swapchain *sc) {
   VkCommandBufferBeginInfo command_buffer_info;
   VkRenderPassBeginInfo render_pass_info;
 
@@ -209,12 +208,12 @@ owl_vk_frame_begin_recording (struct owl_vk_frame *frame,
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   render_pass_info.pNext = NULL;
   render_pass_info.renderPass = ctx->vk_main_render_pass;
-  render_pass_info.framebuffer = swapchain->vk_framebuffers[swapchain->image];
+  render_pass_info.framebuffer = sc->vk_framebuffers[sc->image];
   render_pass_info.renderArea.offset.x = 0;
   render_pass_info.renderArea.offset.y = 0;
-  render_pass_info.renderArea.extent = swapchain->size;
-  render_pass_info.clearValueCount = owl_array_size (swapchain->clear_values);
-  render_pass_info.pClearValues = swapchain->clear_values;
+  render_pass_info.renderArea.extent = sc->size;
+  render_pass_info.clearValueCount = owl_array_size (sc->clear_values);
+  render_pass_info.pClearValues = sc->clear_values;
 
   vkCmdBeginRenderPass (frame->vk_command_buffer, &render_pass_info,
                         VK_SUBPASS_CONTENTS_INLINE);
@@ -267,13 +266,13 @@ owl_vk_frame_submit (struct owl_vk_frame *frame,
 owl_public enum owl_code
 owl_vk_frame_begin (struct owl_vk_frame *frame,
                     struct owl_vk_context const *ctx,
-                    struct owl_vk_swapchain *swapchain) {
+                    struct owl_vk_swapchain *sc) {
   enum owl_code code;
 
   /* free the previous allocations */
   owl_vk_frame_free (frame, ctx);
 
-  code = owl_vk_swapchain_acquire_next_image (swapchain, ctx, &frame->sync);
+  code = owl_vk_swapchain_acquire_next_image (sc, ctx, &frame->sync);
   if (OWL_SUCCESS != code)
     return code;
 
@@ -281,7 +280,7 @@ owl_vk_frame_begin (struct owl_vk_frame *frame,
   if (OWL_SUCCESS != code)
     return code;
 
-  code = owl_vk_frame_begin_recording (frame, ctx, swapchain);
+  code = owl_vk_frame_begin_recording (frame, ctx, sc);
   if (OWL_SUCCESS != code)
     return code;
 
@@ -290,7 +289,7 @@ owl_vk_frame_begin (struct owl_vk_frame *frame,
 
 owl_public enum owl_code
 owl_vk_frame_end (struct owl_vk_frame *frame, struct owl_vk_context const *ctx,
-                  struct owl_vk_swapchain *swapchain) {
+                  struct owl_vk_swapchain *sc) {
   enum owl_code code;
 
   code = owl_vk_frame_end_recording (frame, ctx);
@@ -301,7 +300,7 @@ owl_vk_frame_end (struct owl_vk_frame *frame, struct owl_vk_context const *ctx,
   if (OWL_SUCCESS != code)
     return code;
 
-  code = owl_vk_swapchain_present (swapchain, ctx, &frame->sync);
+  code = owl_vk_swapchain_present (sc, ctx, &frame->sync);
   if (OWL_SUCCESS != code)
     return code;
 

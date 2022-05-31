@@ -42,7 +42,7 @@ struct owl_vk_pipeline_manager {
 owl_public enum owl_code
 owl_vk_pipeline_manager_init (struct owl_vk_pipeline_manager *pm,
                               struct owl_vk_context *ctx,
-                              struct owl_vk_swapchain *swapchain);
+                              struct owl_vk_swapchain *sc);
 
 owl_public void
 owl_vk_pipeline_manager_deinit (struct owl_vk_pipeline_manager *pm,

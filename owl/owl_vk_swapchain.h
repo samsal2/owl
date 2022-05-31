@@ -26,22 +26,22 @@ struct owl_vk_swapchain {
 };
 
 owl_public enum owl_code
-owl_vk_swapchain_init (struct owl_vk_swapchain *swapchain,
+owl_vk_swapchain_init (struct owl_vk_swapchain *sc,
                        struct owl_vk_context const *ctx,
                        struct owl_vk_attachment const *color,
-                       struct owl_vk_attachment const *depth_stencil);
+                       struct owl_vk_attachment const *depth);
 
 owl_public void
-owl_vk_swapchain_deinit (struct owl_vk_swapchain *swapchain,
+owl_vk_swapchain_deinit (struct owl_vk_swapchain *sc,
                          struct owl_vk_context const *ctx);
 
 owl_public enum owl_code
-owl_vk_swapchain_acquire_next_image (struct owl_vk_swapchain *swapchain,
+owl_vk_swapchain_acquire_next_image (struct owl_vk_swapchain *sc,
                                      struct owl_vk_context const *ctx,
                                      struct owl_vk_frame_sync const *sync);
 
 owl_public enum owl_code
-owl_vk_swapchain_present (struct owl_vk_swapchain *swapchain,
+owl_vk_swapchain_present (struct owl_vk_swapchain *sc,
                           struct owl_vk_context const *ctx,
                           struct owl_vk_frame_sync const *sync);
 

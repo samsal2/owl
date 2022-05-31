@@ -40,7 +40,7 @@ owl_public void *
 owl_vk_frame_allocate (struct owl_vk_frame *frame,
                        struct owl_vk_context const *ctx,
                        struct owl_vk_garbage *garbage, owl_u64 size,
-                       struct owl_vk_frame_allocation *allocation);
+                       struct owl_vk_frame_allocation *alloc);
 
 owl_public void
 owl_vk_frame_free (struct owl_vk_frame *frame,
@@ -49,11 +49,11 @@ owl_vk_frame_free (struct owl_vk_frame *frame,
 owl_public enum owl_code
 owl_vk_frame_begin (struct owl_vk_frame *frame,
                     struct owl_vk_context const *ctx,
-                    struct owl_vk_swapchain *swapchain);
+                    struct owl_vk_swapchain *sc);
 
 owl_public enum owl_code
 owl_vk_frame_end (struct owl_vk_frame *frame, struct owl_vk_context const *ctx,
-                  struct owl_vk_swapchain *swapchain);
+                  struct owl_vk_swapchain *sc);
 
 owl_public enum owl_code
 owl_vk_frame_resync (struct owl_vk_frame *frame,

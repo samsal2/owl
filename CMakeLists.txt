@@ -75,7 +75,7 @@ target_link_options(${PROJECT_NAME} PUBLIC
     -fsanitize=bounds
 #		-fsanitize=leak
   ">"
-	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
+	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Release>>:"
     -flto
   ">")
 

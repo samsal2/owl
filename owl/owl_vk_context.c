@@ -810,7 +810,6 @@ owl_vk_context_init (struct owl_vk_context *ctx,
     goto out;
 
 #if defined(OWL_ENABLE_VALIDATION)
-
   code = owl_vk_context_debug_messenger_init (ctx);
   if (OWL_SUCCESS != code)
     goto error_instance_deinit;
@@ -818,13 +817,10 @@ owl_vk_context_init (struct owl_vk_context *ctx,
   code = owl_vk_context_surface_init (ctx, window);
   if (OWL_SUCCESS != code)
     goto error_debug_messenger_deinit;
-
 #else
-
   code = owl_vk_context_surface_init (ctx, window);
   if (OWL_SUCCESS != code)
     goto error_instance_deinit;
-
 #endif
 
   code = owl_vk_context_device_options_fill (ctx);

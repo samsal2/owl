@@ -11,7 +11,7 @@
 #include "owl_vk_image.h"
 #include "owl_window.h"
 
-#define OWL_DEFAULT_FRAME_SIZE (1 << 8)
+#define OWL_DEFAULT_FRAME_SIZE (1 << 16)
 #define OWL_DEFAULT_STAGE_SIZE (1 << 16)
 
 owl_private enum owl_code
@@ -114,14 +114,14 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window) {
   if (OWL_SUCCESS != code)
     goto error_context_deinit;
 
-  code = owl_vk_attachment_init (&vkr->depth_stencil_attachment, &vkr->context,
-                                 w, h, OWL_VK_ATTACHMENT_TYPE_DEPTH_STENCIL);
+  code = owl_vk_attachment_init (&vkr->depth_attachment, &vkr->context, w, h,
+                                 OWL_VK_ATTACHMENT_TYPE_DEPTH_STENCIL);
   if (OWL_SUCCESS != code)
     goto error_color_attachment_deinit;
 
-  code = owl_vk_swapchain_init (&vkr->swapchain, &vkr->context,
-                                &vkr->color_attachment,
-                                &vkr->depth_stencil_attachment);
+  code =
+      owl_vk_swapchain_init (&vkr->swapchain, &vkr->context,
+                             &vkr->color_attachment, &vkr->depth_attachment);
   if (OWL_SUCCESS != code)
     goto error_depth_attachment_deinit;
 
@@ -164,7 +164,7 @@ error_swapchain_deinit:
   owl_vk_swapchain_deinit (&vkr->swapchain, &vkr->context);
 
 error_depth_attachment_deinit:
-  owl_vk_attachment_deinit (&vkr->depth_stencil_attachment, &vkr->context);
+  owl_vk_attachment_deinit (&vkr->depth_attachment, &vkr->context);
 
 error_color_attachment_deinit:
   owl_vk_attachment_deinit (&vkr->color_attachment, &vkr->context);
@@ -188,7 +188,7 @@ owl_vk_renderer_deinit (struct owl_vk_renderer *vkr) {
       &vkr->garbages[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
   owl_vk_pipeline_manager_deinit (&vkr->pipelines, &vkr->context);
   owl_vk_swapchain_deinit (&vkr->swapchain, &vkr->context);
-  owl_vk_attachment_deinit (&vkr->depth_stencil_attachment, &vkr->context);
+  owl_vk_attachment_deinit (&vkr->depth_attachment, &vkr->context);
   owl_vk_attachment_deinit (&vkr->color_attachment, &vkr->context);
   owl_vk_context_deinit (&vkr->context);
   owl_camera_deinit (&vkr->camera);
@@ -197,7 +197,6 @@ owl_vk_renderer_deinit (struct owl_vk_renderer *vkr) {
 owl_public enum owl_code
 owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h) {
   enum owl_code code = OWL_SUCCESS;
-
   struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
 
   code = owl_vk_context_device_wait (&vkr->context);
@@ -215,10 +214,11 @@ owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h) {
 
   owl_vk_pipeline_manager_deinit (&vkr->pipelines, &vkr->context);
   owl_vk_swapchain_deinit (&vkr->swapchain, &vkr->context);
-  owl_vk_attachment_deinit (&vkr->depth_stencil_attachment, &vkr->context);
+  owl_vk_attachment_deinit (&vkr->depth_attachment, &vkr->context);
   owl_vk_attachment_deinit (&vkr->color_attachment, &vkr->context);
   owl_camera_deinit (&vkr->camera);
 
+  /* FIXME (samuel): maybe, don't reset the camera when resizing? */
   code = owl_camera_init (&vkr->camera, (float)w / (float)h);
   if (OWL_SUCCESS != code)
     goto out;
@@ -228,14 +228,14 @@ owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h) {
   if (OWL_SUCCESS != code)
     goto error_camera_deinit;
 
-  code = owl_vk_attachment_init (&vkr->depth_stencil_attachment, &vkr->context,
-                                 w, h, OWL_VK_ATTACHMENT_TYPE_DEPTH_STENCIL);
+  code = owl_vk_attachment_init (&vkr->depth_attachment, &vkr->context, w, h,
+                                 OWL_VK_ATTACHMENT_TYPE_DEPTH_STENCIL);
   if (OWL_SUCCESS != code)
     goto error_color_attachment_deinit;
 
-  code = owl_vk_swapchain_init (&vkr->swapchain, &vkr->context,
-                                &vkr->color_attachment,
-                                &vkr->depth_stencil_attachment);
+  code =
+      owl_vk_swapchain_init (&vkr->swapchain, &vkr->context,
+                             &vkr->color_attachment, &vkr->depth_attachment);
   if (OWL_SUCCESS != code)
     goto error_depth_attachment_deinit;
 
@@ -251,7 +251,7 @@ error_swapchain_deinit:
   owl_vk_swapchain_deinit (&vkr->swapchain, &vkr->context);
 
 error_depth_attachment_deinit:
-  owl_vk_attachment_deinit (&vkr->depth_stencil_attachment, &vkr->context);
+  owl_vk_attachment_deinit (&vkr->depth_attachment, &vkr->context);
 
 error_color_attachment_deinit:
   owl_vk_attachment_deinit (&vkr->color_attachment, &vkr->context);
@@ -280,9 +280,9 @@ owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
 
 owl_public void *
 owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
-                                struct owl_vk_stage_allocation *allocation) {
+                                struct owl_vk_stage_allocation *alloc) {
   return owl_vk_stage_heap_allocate (&vkr->stage_heap, &vkr->context, size,
-                                     allocation);
+                                     alloc);
 }
 
 owl_public void
@@ -292,8 +292,7 @@ owl_vk_renderer_stage_free (struct owl_vk_renderer *vkr) {
 
 owl_public void
 owl_vk_renderer_frame_free (struct owl_vk_renderer *vkr) {
-  struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
-  owl_vk_frame_free (frame, &vkr->context);
+  owl_vk_frame_free (owl_vk_renderer_get_frame (vkr), &vkr->context);
 }
 
 owl_public void
