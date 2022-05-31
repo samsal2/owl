@@ -15,17 +15,15 @@
 #define OWL_DEFAULT_STAGE_SIZE (1 << 16)
 
 owl_private enum owl_code
-owl_vk_renderer_frames_init (struct owl_vk_frame   *frames,
-                             owl_i32                count,
-                             struct owl_vk_context *ctx)
+owl_vk_renderer_frames_init (
+    struct owl_vk_frame    frames[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT],
+    struct owl_vk_context *ctx)
 {
   owl_i32 i;
 
   enum owl_code code = OWL_SUCCESS;
 
-  owl_assert (0 <= count);
-
-  for (i = 0; i < count; ++i)
+  for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i)
   {
     code = owl_vk_frame_init (&frames[i], ctx, OWL_DEFAULT_FRAME_SIZE);
     if (OWL_SUCCESS != code)
@@ -43,30 +41,26 @@ out:
 }
 
 owl_private void
-owl_vk_renderer_frames_deinit (struct owl_vk_frame   *frames,
-                               owl_i32                count,
-                               struct owl_vk_context *ctx)
+owl_vk_renderer_frames_deinit (
+    struct owl_vk_frame    frames[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT],
+    struct owl_vk_context *ctx)
 {
   owl_i32 i;
 
-  owl_assert (0 <= count);
-
-  for (i = 0; i < count; ++i)
+  for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i)
     owl_vk_frame_deinit (&frames[i], ctx);
 }
 
 owl_private enum owl_code
-owl_vk_renderer_garbages_init (struct owl_vk_garbage *garbages,
-                               owl_i32                count,
-                               struct owl_vk_context *ctx)
+owl_vk_renderer_garbages_init (
+    struct owl_vk_garbage  garbages[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT],
+    struct owl_vk_context *ctx)
 {
   owl_i32 i;
 
   enum owl_code code = OWL_SUCCESS;
 
-  owl_assert (0 <= count);
-
-  for (i = 0; i < count; ++i)
+  for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i)
   {
     code = owl_vk_garbage_init (&garbages[i], ctx);
     if (OWL_SUCCESS != code)
@@ -84,15 +78,13 @@ out:
 }
 
 owl_private void
-owl_vk_renderer_garbages_deinit (struct owl_vk_garbage *garbages,
-                                 owl_i32                count,
-                                 struct owl_vk_context *ctx)
+owl_vk_renderer_garbages_deinit (
+    struct owl_vk_garbage  garbages[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT],
+    struct owl_vk_context *ctx)
 {
   owl_i32 i;
 
-  owl_assert (0 <= count);
-
-  for (i = 0; i < count; ++i)
+  for (i = 0; i < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i)
     owl_vk_garbage_deinit (&garbages[i], ctx);
 }
 
@@ -141,8 +133,7 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window)
   if (OWL_SUCCESS != code)
     goto error_swapchain_deinit;
 
-  code = owl_vk_renderer_garbages_init (
-      &vkr->garbages[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
+  code = owl_vk_renderer_garbages_init (vkr->garbages, &vkr->context);
   if (OWL_SUCCESS != code)
     goto error_pipelines_deinit;
 
@@ -154,8 +145,7 @@ owl_vk_renderer_init (struct owl_vk_renderer *vkr, struct owl_window *window)
   vkr->font  = NULL;
   vkr->frame = 0;
 
-  code = owl_vk_renderer_frames_init (
-      &vkr->frames[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
+  code = owl_vk_renderer_frames_init (vkr->frames, &vkr->context);
   if (OWL_SUCCESS != code)
     goto error_stage_heap_deinit;
 
@@ -165,8 +155,7 @@ error_stage_heap_deinit:
   owl_vk_stage_heap_deinit (&vkr->stage_heap, &vkr->context);
 
 error_garbages_deinit:
-  owl_vk_renderer_garbages_deinit (
-      &vkr->garbages[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
+  owl_vk_renderer_garbages_deinit (vkr->garbages, &vkr->context);
 
 error_pipelines_deinit:
   owl_vk_pipelines_deinit (&vkr->pipelines, &vkr->context);
@@ -193,11 +182,9 @@ out:
 owl_public void
 owl_vk_renderer_deinit (struct owl_vk_renderer *vkr)
 {
-  owl_vk_renderer_frames_deinit (
-      &vkr->frames[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
+  owl_vk_renderer_frames_deinit (vkr->frames, &vkr->context);
   owl_vk_stage_heap_deinit (&vkr->stage_heap, &vkr->context);
-  owl_vk_renderer_garbages_deinit (
-      &vkr->garbages[0], OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT, &vkr->context);
+  owl_vk_renderer_garbages_deinit (vkr->garbages, &vkr->context);
   owl_vk_pipelines_deinit (&vkr->pipelines, &vkr->context);
   owl_vk_swapchain_deinit (&vkr->swapchain, &vkr->context);
   owl_vk_attachment_deinit (&vkr->depth_attachment, &vkr->context);

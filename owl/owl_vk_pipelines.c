@@ -288,7 +288,7 @@ owl_vk_pipelines_shaders_deinit (struct owl_vk_pipelines *ps,
 }
 
 owl_private enum owl_code
-owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
+owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *ps,
                                 struct owl_vk_context const   *ctx,
                                 struct owl_vk_swapchain const *sc,
                                 enum owl_vk_pipeline_id        id)
@@ -590,7 +590,7 @@ owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
     stages[0].pNext  = NULL;
     stages[0].flags  = 0;
     stages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = pm->vk_basic_vert;
+    stages[0].module = ps->vk_basic_vert;
     stages[0].pName  = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -598,7 +598,7 @@ owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
     stages[1].pNext  = NULL;
     stages[1].flags  = 0;
     stages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = pm->vk_basic_frag;
+    stages[1].module = ps->vk_basic_frag;
     stages[1].pName  = "main";
     stages[1].pSpecializationInfo = NULL;
   }
@@ -608,7 +608,7 @@ owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
     stages[0].pNext  = NULL;
     stages[0].flags  = 0;
     stages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = pm->vk_basic_vert;
+    stages[0].module = ps->vk_basic_vert;
     stages[0].pName  = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -616,7 +616,7 @@ owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
     stages[1].pNext  = NULL;
     stages[1].flags  = 0;
     stages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = pm->vk_text_frag;
+    stages[1].module = ps->vk_text_frag;
     stages[1].pName  = "main";
     stages[1].pSpecializationInfo = NULL;
   }
@@ -626,7 +626,7 @@ owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
     stages[0].pNext  = NULL;
     stages[0].flags  = 0;
     stages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = pm->vk_model_vert;
+    stages[0].module = ps->vk_model_vert;
     stages[0].pName  = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -634,7 +634,7 @@ owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
     stages[1].pNext  = NULL;
     stages[1].flags  = 0;
     stages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = pm->vk_model_frag;
+    stages[1].module = ps->vk_model_frag;
     stages[1].pName  = "main";
     stages[1].pSpecializationInfo = NULL;
   }
@@ -644,7 +644,7 @@ owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
     stages[0].pNext  = NULL;
     stages[0].flags  = 0;
     stages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = pm->vk_skybox_vert;
+    stages[0].module = ps->vk_skybox_vert;
     stages[0].pName  = "main";
     stages[0].pSpecializationInfo = NULL;
 
@@ -652,18 +652,18 @@ owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
     stages[1].pNext  = NULL;
     stages[1].flags  = 0;
     stages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = pm->vk_skybox_frag;
+    stages[1].module = ps->vk_skybox_frag;
     stages[1].pName  = "main";
     stages[1].pSpecializationInfo = NULL;
   }
 
   if (OWL_VK_PIPELINE_ID_MODEL == id)
   {
-    pm->vk_pipeline_layouts[id] = pm->vk_model_layout;
+    ps->vk_pipeline_layouts[id] = ps->vk_model_layout;
   }
   else
   {
-    pm->vk_pipeline_layouts[id] = pm->vk_common_layout;
+    ps->vk_pipeline_layouts[id] = ps->vk_common_layout;
   }
 
   info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -680,7 +680,7 @@ owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
   info.pDepthStencilState  = &depth_stencil;
   info.pColorBlendState    = &color_blend;
   info.pDynamicState       = NULL;
-  info.layout              = pm->vk_pipeline_layouts[id];
+  info.layout              = ps->vk_pipeline_layouts[id];
   info.renderPass          = ctx->vk_main_render_pass;
   info.subpass             = 0;
   info.basePipelineHandle  = VK_NULL_HANDLE;
@@ -688,7 +688,7 @@ owl_vk_pipelines_pipeline_init (struct owl_vk_pipelines       *pm,
 
   /* TODO(samuel): create all pipelines in a single batch */
   vk_result = vkCreateGraphicsPipelines (ctx->vk_device, VK_NULL_HANDLE, 1,
-                                         &info, NULL, &pm->vk_pipelines[id]);
+                                         &info, NULL, &ps->vk_pipelines[id]);
   if (VK_SUCCESS != vk_result)
     return OWL_ERROR_UNKNOWN;
 
@@ -770,12 +770,12 @@ out:
 }
 
 owl_public void
-owl_vk_pipelines_deinit (struct owl_vk_pipelines *pm,
+owl_vk_pipelines_deinit (struct owl_vk_pipelines *ps,
                          struct owl_vk_context   *ctx)
 {
-  owl_vk_pipelines_pipelines_deinit (pm, ctx);
-  owl_vk_pipelines_shaders_deinit (pm, ctx);
-  owl_vk_pipelines_layouts_deinit (pm, ctx);
+  owl_vk_pipelines_pipelines_deinit (ps, ctx);
+  owl_vk_pipelines_shaders_deinit (ps, ctx);
+  owl_vk_pipelines_layouts_deinit (ps, ctx);
 }
 
 owl_public enum owl_code
