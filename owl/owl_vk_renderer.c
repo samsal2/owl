@@ -339,17 +339,17 @@ owl_vk_renderer_end_frame (struct owl_vk_renderer *vkr)
   if (OWL_SUCCESS != code)
     return code;
 
+  code = owl_vk_renderer_bind_pipeline (vkr, OWL_VK_PIPELINE_ID_NONE);
+  if (OWL_SUCCESS != code)
+    return code;
+
   if (OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT == ++vkr->frame)
     vkr->frame = 0;
 
   vkr->previous_time = vkr->current_time;
   vkr->current_time  = owl_io_time_stamp_get ();
 
-  code = owl_vk_renderer_bind_pipeline (vkr, OWL_VK_PIPELINE_ID_NONE);
-  if (OWL_SUCCESS != code)
-    return code;
-
-  return code;
+  return OWL_SUCCESS;
 }
 owl_public struct owl_vk_frame *
 owl_vk_renderer_get_frame (struct owl_vk_renderer *vkr)
