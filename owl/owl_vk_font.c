@@ -3,7 +3,7 @@
 #include "owl_internal.h"
 #include "owl_vector_math.h"
 #include "owl_vk_context.h"
-#include "owl_vk_pipeline_manager.h"
+#include "owl_vk_pipelines.h"
 #include "owl_vk_stage_heap.h"
 #include "stb_truetype.h"
 
@@ -14,14 +14,16 @@ owl_static_assert (
     "owl_packed_char and stbtt_packedchar must represent the same struct");
 
 owl_private enum owl_code
-owl_vk_font_file_init (char const *path, owl_byte **data) {
+owl_vk_font_file_init (char const *path, owl_byte **data)
+{
   owl_u64 size;
-  FILE *file;
+  FILE   *file;
 
   enum owl_code code = OWL_SUCCESS;
 
   file = fopen (path, "rb");
-  if (!file) {
+  if (!file)
+  {
     code = OWL_ERROR_UNKNOWN;
     goto out;
   }
@@ -33,7 +35,8 @@ owl_vk_font_file_init (char const *path, owl_byte **data) {
   fseek (file, 0, SEEK_SET);
 
   *data = owl_malloc (size);
-  if (!*data) {
+  if (!*data)
+  {
     code = OWL_ERROR_NO_MEMORY;
     goto out_file_close;
   }
@@ -48,7 +51,8 @@ out:
 }
 
 owl_private void
-owl_vk_font_file_deinit (owl_byte *data) {
+owl_vk_font_file_deinit (owl_byte *data)
+{
   owl_free (data);
 }
 
@@ -58,14 +62,17 @@ owl_vk_font_file_deinit (owl_byte *data) {
   (OWL_VK_FONT_ATLAS_HEIGHT * OWL_VK_FONT_ATLAS_WIDTH)
 
 owl_public enum owl_code
-owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
-                  struct owl_vk_stage_heap *heap, char const *path,
-                  owl_i32 size) {
-  owl_b32 stb_result;
+owl_vk_font_init (struct owl_vk_font       *font,
+                  struct owl_vk_context    *ctx,
+                  struct owl_vk_stage_heap *heap,
+                  char const               *path,
+                  owl_i32                   size)
+{
+  owl_b32   stb_result;
   owl_byte *file;
   owl_byte *bitmap;
 
-  stbtt_pack_context pack;
+  stbtt_pack_context       pack;
   struct owl_vk_image_desc desc;
 
   enum owl_code code = OWL_SUCCESS;
@@ -75,14 +82,16 @@ owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
     goto out;
 
   bitmap = owl_calloc (OWL_VK_FONT_ATLAS_SIZE, sizeof (owl_byte));
-  if (!bitmap) {
+  if (!bitmap)
+  {
     code = OWL_ERROR_UNKNOWN;
     goto error_file_deinit;
   }
 
   stb_result = stbtt_PackBegin (&pack, bitmap, OWL_VK_FONT_ATLAS_WIDTH,
                                 OWL_VK_FONT_ATLAS_HEIGHT, 0, 1, NULL);
-  if (!stb_result) {
+  if (!stb_result)
+  {
     code = OWL_ERROR_UNKNOWN;
     goto error_bitmap_deinit;
   }
@@ -92,29 +101,31 @@ owl_vk_font_init (struct owl_vk_font *font, struct owl_vk_context *ctx,
   stb_result = stbtt_PackFontRange (
       &pack, file, 0, size, OWL_VK_FONT_FIRST_CHAR, OWL_VK_FONT_CHAR_COUNT,
       (stbtt_packedchar *)(&font->chars[0]));
-  if (!stb_result) {
+  if (!stb_result)
+  {
     code = OWL_ERROR_UNKNOWN;
     goto error_pack_deinit;
   }
 
   stbtt_PackEnd (&pack);
 
-  desc.src_type = OWL_VK_IMAGE_SRC_TYPE_DATA;
-  desc.src_path = NULL;
-  desc.src_data = bitmap;
-  desc.src_data_width = OWL_VK_FONT_ATLAS_WIDTH;
-  desc.src_data_height = OWL_VK_FONT_ATLAS_HEIGHT;
+  desc.src_type              = OWL_VK_IMAGE_SRC_TYPE_DATA;
+  desc.src_path              = NULL;
+  desc.src_data              = bitmap;
+  desc.src_data_width        = OWL_VK_FONT_ATLAS_WIDTH;
+  desc.src_data_height       = OWL_VK_FONT_ATLAS_HEIGHT;
   desc.src_data_pixel_format = OWL_PIXEL_FORMAT_R8_UNORM;
-  desc.use_default_sampler = 0;
-  desc.sampler_mip_mode = OWL_SAMPLER_MIP_MODE_NEAREST;
-  desc.sampler_min_filter = OWL_SAMPLER_FILTER_NEAREST;
-  desc.sampler_mag_filter = OWL_SAMPLER_FILTER_NEAREST;
-  desc.sampler_wrap_u = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  desc.sampler_wrap_v = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  desc.sampler_wrap_w = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  desc.use_default_sampler   = 0;
+  desc.sampler_mip_mode      = OWL_SAMPLER_MIP_MODE_NEAREST;
+  desc.sampler_min_filter    = OWL_SAMPLER_FILTER_NEAREST;
+  desc.sampler_mag_filter    = OWL_SAMPLER_FILTER_NEAREST;
+  desc.sampler_wrap_u        = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  desc.sampler_wrap_v        = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  desc.sampler_wrap_w        = OWL_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
   code = owl_vk_image_init (&font->atlas, ctx, heap, &desc);
-  if (OWL_SUCCESS != code) {
+  if (OWL_SUCCESS != code)
+  {
     code = OWL_ERROR_UNKNOWN;
     goto error_pack_deinit;
   }
@@ -138,16 +149,19 @@ out:
 }
 
 owl_public void
-owl_vk_font_deinit (struct owl_vk_font *font,
-                    struct owl_vk_context const *ctx) {
+owl_vk_font_deinit (struct owl_vk_font *font, struct owl_vk_context const *ctx)
+{
   owl_vk_image_deinit (&font->atlas, ctx);
 }
 
 owl_public enum owl_code
-owl_vk_font_fill_glyph (struct owl_vk_font *font, char c, owl_v2 offset,
-                        struct owl_glyph *glyph) {
+owl_vk_font_fill_glyph (struct owl_vk_font *font,
+                        char                c,
+                        owl_v2              offset,
+                        struct owl_glyph   *glyph)
+{
   stbtt_aligned_quad quad;
-  enum owl_code code = OWL_SUCCESS;
+  enum owl_code      code = OWL_SUCCESS;
 
   stbtt_GetPackedQuad ((stbtt_packedchar *)(&font->chars[0]),
                        OWL_VK_FONT_ATLAS_WIDTH, OWL_VK_FONT_ATLAS_HEIGHT,

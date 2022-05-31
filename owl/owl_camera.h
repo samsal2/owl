@@ -5,7 +5,8 @@
 
 OWL_BEGIN_DECLS
 
-struct owl_camera {
+struct owl_camera
+{
   owl_v3 eye;
   owl_v3 up;
   owl_v4 direction;

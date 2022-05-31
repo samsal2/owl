@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 owl_public double
-owl_io_time_stamp_get (void) {
+owl_io_time_stamp_get (void)
+{
   return glfwGetTime ();
 }

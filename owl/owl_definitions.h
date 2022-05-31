@@ -4,7 +4,9 @@
 #include <stdint.h>
 
 #if defined(__cplusplus)
-#define OWL_BEGIN_DECLS extern "C" {
+#define OWL_BEGIN_DECLS                                                       \
+  extern "C"                                                                  \
+  {
 #define OWL_END_DECLS }
 #else
 #define OWL_BEGIN_DECLS
@@ -18,12 +20,12 @@ OWL_BEGIN_DECLS
 #define owl_private static
 #define owl_local_persist static
 
-typedef uint8_t owl_u8;
+typedef uint8_t  owl_u8;
 typedef uint16_t owl_u16;
 typedef uint32_t owl_u32;
 typedef uint64_t owl_u64;
 
-typedef int8_t owl_i8;
+typedef int8_t  owl_i8;
 typedef int16_t owl_i16;
 typedef int32_t owl_i32;
 typedef int64_t owl_i64;
@@ -46,7 +48,8 @@ typedef owl_v2 owl_m2[2];
 typedef owl_v3 owl_m3[3];
 typedef owl_v4 owl_m4[4];
 
-enum owl_code {
+enum owl_code
+{
   OWL_SUCCESS,
   OWL_ERROR_NO_FRAME_MEMORY,
   OWL_ERROR_NO_STAGE_MEMORY,

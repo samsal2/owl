@@ -7,7 +7,7 @@
 #include "owl_vk_context.h"
 #include "owl_vk_frame.h"
 #include "owl_vk_garbage.h"
-#include "owl_vk_pipeline_manager.h"
+#include "owl_vk_pipelines.h"
 #include "owl_vk_stage_heap.h"
 #include "owl_vk_swapchain.h"
 #include "owl_vk_types.h"
@@ -18,23 +18,24 @@ struct owl_window;
 struct owl_model;
 struct owl_skybox;
 
-struct owl_vk_renderer {
-  owl_i32 width;
-  owl_i32 height;
-  double current_time;
-  double previous_time;
-  struct owl_camera camera;
-  struct owl_vk_context context;
+struct owl_vk_renderer
+{
+  owl_i32                  width;
+  owl_i32                  height;
+  double                   current_time;
+  double                   previous_time;
+  struct owl_camera        camera;
+  struct owl_vk_context    context;
   struct owl_vk_attachment color_attachment;
   struct owl_vk_attachment depth_attachment;
-  struct owl_vk_swapchain swapchain;
-  struct owl_vk_pipeline_manager pipelines;
+  struct owl_vk_swapchain  swapchain;
+  struct owl_vk_pipelines  pipelines;
   struct owl_vk_stage_heap stage_heap;
 
   struct owl_vk_font *font;
 
-  owl_i32 frame;
-  struct owl_vk_frame frames[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  owl_i32               frame;
+  struct owl_vk_frame   frames[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT];
   struct owl_vk_garbage garbages[OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT];
 };
 
@@ -48,11 +49,13 @@ owl_public enum owl_code
 owl_vk_renderer_resize (struct owl_vk_renderer *vkr, owl_i32 w, owl_i32 h);
 
 owl_public void *
-owl_vk_renderer_frame_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
+owl_vk_renderer_frame_allocate (struct owl_vk_renderer         *vkr,
+                                owl_u64                         size,
                                 struct owl_vk_frame_allocation *alloc);
 
 owl_public void *
-owl_vk_renderer_stage_allocate (struct owl_vk_renderer *vkr, owl_u64 size,
+owl_vk_renderer_stage_allocate (struct owl_vk_renderer         *vkr,
+                                owl_u64                         size,
                                 struct owl_vk_stage_allocation *alloc);
 
 owl_public void
@@ -63,7 +66,7 @@ owl_vk_renderer_frame_free (struct owl_vk_renderer *vkr);
 
 owl_public void
 owl_vk_renderer_set_font (struct owl_vk_renderer *vkr,
-                          struct owl_vk_font *font);
+                          struct owl_vk_font     *font);
 
 owl_public enum owl_code
 owl_vk_renderer_begin_frame (struct owl_vk_renderer *vkr);
@@ -73,7 +76,7 @@ owl_vk_renderer_end_frame (struct owl_vk_renderer *vkr);
 
 owl_public enum owl_code
 owl_vk_renderer_bind_pipeline (struct owl_vk_renderer *vkr,
-                               enum owl_pipeline_id id);
+                               enum owl_vk_pipeline_id id);
 
 owl_public struct owl_vk_frame *
 owl_vk_renderer_get_frame (struct owl_vk_renderer *vkr);
@@ -82,25 +85,29 @@ struct owl_quad;
 
 owl_public enum owl_code
 owl_vk_renderer_draw_quad (struct owl_vk_renderer *vkr,
-                           struct owl_quad const *q, owl_m4 const matrix);
+                           struct owl_quad const  *q,
+                           owl_m4 const            matrix);
 
 struct owl_glyph;
 
 owl_public enum owl_code
 owl_vk_renderer_draw_glyph (struct owl_vk_renderer *vkr,
-                            struct owl_glyph const *glyph, owl_v3 const color);
+                            struct owl_glyph const *glyph,
+                            owl_v3 const            color);
 
 owl_public enum owl_code
-owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr, char const *text,
-                           owl_v3 const position, owl_v3 const color);
+owl_vk_renderer_draw_text (struct owl_vk_renderer *vkr,
+                           char const             *text,
+                           owl_v3 const            position,
+                           owl_v3 const            color);
 
 owl_public enum owl_code
 owl_vk_renderer_draw_model (struct owl_vk_renderer *vkr,
                             struct owl_model const *model,
-                            owl_m4 const matrix);
+                            owl_m4 const            matrix);
 
 owl_public enum owl_code
-owl_vk_renderer_draw_skybox (struct owl_vk_renderer *vkr,
+owl_vk_renderer_draw_skybox (struct owl_vk_renderer  *vkr,
                              struct owl_skybox const *sb);
 OWL_END_DECLS
 

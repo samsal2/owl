@@ -9,58 +9,61 @@ OWL_BEGIN_DECLS
 
 struct owl_vk_context;
 
-struct owl_vk_frame_heap {
-  void *data;
-  VkDeviceSize offset;
-  VkDeviceSize size;
-  VkDeviceSize alignment;
-  VkDeviceMemory vk_memory;
-  VkBuffer vk_buffer;
+struct owl_vk_frame_heap
+{
+  void           *data;
+  VkDeviceSize    offset;
+  VkDeviceSize    size;
+  VkDeviceSize    alignment;
+  VkDeviceMemory  vk_memory;
+  VkBuffer        vk_buffer;
   VkDescriptorSet vk_pvm_ubo;
   VkDescriptorSet vk_model_ubo1;
   VkDescriptorSet vk_model_ubo2;
 };
 
 owl_public enum owl_code
-owl_vk_frame_heap_init (struct owl_vk_frame_heap *heap,
-                        struct owl_vk_context const *ctx, owl_u64 size);
+owl_vk_frame_heap_init (struct owl_vk_frame_heap    *heap,
+                        struct owl_vk_context const *ctx,
+                        owl_u64                      size);
 
 owl_public void
-owl_vk_frame_heap_deinit (struct owl_vk_frame_heap *heap,
+owl_vk_frame_heap_deinit (struct owl_vk_frame_heap    *heap,
                           struct owl_vk_context const *ctx);
 
 owl_public void
-owl_vk_frame_heap_unmap (struct owl_vk_frame_heap *heap,
+owl_vk_frame_heap_unmap (struct owl_vk_frame_heap    *heap,
                          struct owl_vk_context const *ctx);
 
-struct owl_vk_frame_allocation {
-  owl_u32 offset32;
-  VkDeviceSize offset;
-  VkBuffer vk_buffer;
+struct owl_vk_frame_allocation
+{
+  owl_u32         offset32;
+  VkDeviceSize    offset;
+  VkBuffer        vk_buffer;
   VkDescriptorSet vk_pvm_ubo_set;
   VkDescriptorSet vk_model_ubo1_set;
   VkDescriptorSet vk_model_ubo2_set;
 };
 
 owl_public void *
-owl_vk_frame_heap_unsafe_allocate (struct owl_vk_frame_heap *heap,
-                                   struct owl_vk_context const *ctx,
-                                   owl_u64 size,
+owl_vk_frame_heap_unsafe_allocate (struct owl_vk_frame_heap       *heap,
+                                   struct owl_vk_context const    *ctx,
+                                   owl_u64                         size,
                                    struct owl_vk_frame_allocation *alloc);
 
 owl_public void
-owl_vk_frame_heap_free (struct owl_vk_frame_heap *heap,
+owl_vk_frame_heap_free (struct owl_vk_frame_heap    *heap,
                         struct owl_vk_context const *ctx);
 
 owl_public owl_b32
 owl_vk_frame_heap_has_enough_space (struct owl_vk_frame_heap const *heap,
-                                    owl_u64 size);
+                                    owl_u64                         size);
 
 owl_public owl_u64
 owl_vk_frame_heap_get_offset (struct owl_vk_frame_heap const *heap);
 
 owl_public void
-owl_vk_frame_heap_unsafe_copy (struct owl_vk_frame_heap *dst,
+owl_vk_frame_heap_unsafe_copy (struct owl_vk_frame_heap       *dst,
                                struct owl_vk_frame_heap const *src);
 
 OWL_END_DECLS

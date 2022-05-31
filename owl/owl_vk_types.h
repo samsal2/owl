@@ -5,17 +5,20 @@
 
 OWL_BEGIN_DECLS
 
-struct owl_p_vertex {
+struct owl_p_vertex
+{
   owl_v3 position;
 };
 
-struct owl_pcu_vertex {
+struct owl_pcu_vertex
+{
   owl_v3 position;
   owl_v3 color;
   owl_v2 uv;
 };
 
-struct owl_pnuujw_vertex {
+struct owl_pnuujw_vertex
+{
   owl_v3 position;
   owl_v3 normal;
   owl_v2 uv0;
@@ -24,7 +27,8 @@ struct owl_pnuujw_vertex {
   owl_v4 weights0;
 };
 
-struct owl_pvm_ubo {
+struct owl_pvm_ubo
+{
   owl_m4 projection;
   owl_m4 view;
   owl_m4 model;

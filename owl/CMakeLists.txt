@@ -42,8 +42,8 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_vk_im_command_buffer.h
   owl_vk_image.c
   owl_vk_image.h
-  owl_vk_pipeline_manager.c
-  owl_vk_pipeline_manager.h
+  owl_vk_pipelines.c
+  owl_vk_pipelines.h
   owl_vk_renderer.c
   owl_vk_renderer.h
   owl_vk_stage_heap.c

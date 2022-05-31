@@ -1,6 +1,7 @@
 #version 450
 
-layout (set = 0, binding = 0) uniform UBO {
+layout (set = 0, binding = 0) uniform UBO
+{
   mat4 projection;
   mat4 view;
   mat4 model;
@@ -15,10 +16,11 @@ layout (location = 0) out vec3 out_color;
 layout (location = 1) out vec2 out_uv;
 
 void
-main () {
+main ()
+{
   out_color = in_color;
-  out_uv = in_uv;
+  out_uv    = in_uv;
 
-  gl_Position =
-      ubo.projection * ubo.view * ubo.model * vec4 (in_position, 1.0);
+  gl_Position
+      = ubo.projection * ubo.view * ubo.model * vec4 (in_position, 1.0);
 }

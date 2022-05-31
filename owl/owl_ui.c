@@ -6,14 +6,15 @@
 #include <stdio.h>
 
 owl_public void
-owl_ui_draw_renderer_state (struct owl_vk_renderer *vkr) {
-  char buffer[256];
+owl_ui_draw_renderer_state (struct owl_vk_renderer *vkr)
+{
+  char   buffer[256];
   owl_v2 position;
   owl_v3 color;
 
   struct owl_vk_frame *frame = owl_vk_renderer_get_frame (vkr);
 
-  owl_vk_renderer_bind_pipeline (vkr, OWL_PIPELINE_ID_TEXT);
+  owl_vk_renderer_bind_pipeline (vkr, OWL_VK_PIPELINE_ID_TEXT);
 
   snprintf (buffer, sizeof (buffer), "framerate: %2.f fps",
             1 / (vkr->current_time - vkr->previous_time));
@@ -43,7 +44,8 @@ owl_ui_draw_renderer_state (struct owl_vk_renderer *vkr) {
 }
 
 owl_public void
-owl_ui_model_stats_draw (struct owl_vk_renderer *vkr, struct owl_model *m) {
+owl_ui_model_stats_draw (struct owl_vk_renderer *vkr, struct owl_model *m)
+{
   owl_unused (vkr);
   owl_unused (m);
 }
