@@ -22,16 +22,16 @@ owl_vk_swapchain_size_ensure (struct owl_vk_swapchain     *sc,
 
   if (OWL_UNRESTRICTED_DIMENSION == capabilities.currentExtent.width)
   {
-    sc->size = capabilities.currentExtent;
+    sc->extent = capabilities.currentExtent;
   }
   else
   {
-    sc->size.width
-        = owl_clamp (sc->size.width, capabilities.minImageExtent.width,
+    sc->extent.width
+        = owl_clamp (sc->extent.width, capabilities.minImageExtent.width,
                      capabilities.maxImageExtent.width);
 
-    sc->size.height
-        = owl_clamp (sc->size.height, capabilities.minImageExtent.height,
+    sc->extent.height
+        = owl_clamp (sc->extent.height, capabilities.minImageExtent.height,
                      capabilities.maxImageExtent.height);
   }
 
@@ -57,9 +57,9 @@ owl_vk_swapchain_swapchain_init (struct owl_vk_swapchain     *sc,
   owl_assert (w);
   owl_assert (h);
 
-  sc->size.width  = w;
-  sc->size.height = h;
-  code            = owl_vk_swapchain_size_ensure (sc, ctx);
+  sc->extent.width  = w;
+  sc->extent.height = h;
+  code              = owl_vk_swapchain_size_ensure (sc, ctx);
   if (OWL_SUCCESS != code)
     return code;
 
@@ -75,8 +75,8 @@ owl_vk_swapchain_swapchain_init (struct owl_vk_swapchain     *sc,
   info.minImageCount      = OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT;
   info.imageFormat        = ctx->vk_surface_format.format;
   info.imageColorSpace    = ctx->vk_surface_format.colorSpace;
-  info.imageExtent.width  = sc->size.width;
-  info.imageExtent.height = sc->size.height;
+  info.imageExtent.width  = sc->extent.width;
+  info.imageExtent.height = sc->extent.height;
   info.imageArrayLayers   = 1;
   info.imageUsage         = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   info.preTransform       = capabilities.currentTransform;
@@ -219,8 +219,8 @@ owl_vk_swapchain_framebuffers_init (struct owl_vk_swapchain        *sc,
     info.renderPass      = ctx->vk_main_render_pass;
     info.attachmentCount = owl_array_size (attachments);
     info.pAttachments    = attachments;
-    info.width           = sc->size.width;
-    info.height          = sc->size.height;
+    info.width           = sc->extent.width;
+    info.height          = sc->extent.height;
     info.layers          = 1;
 
     vk_result = vkCreateFramebuffer (ctx->vk_device, &info, NULL,

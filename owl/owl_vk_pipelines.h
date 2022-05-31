@@ -24,13 +24,13 @@ enum owl_vk_pipeline_id
 
 struct owl_vk_pipelines
 {
-  VkShaderModule vk_basic_vert;
-  VkShaderModule vk_basic_frag;
-  VkShaderModule vk_text_frag;
-  VkShaderModule vk_model_vert;
-  VkShaderModule vk_model_frag;
-  VkShaderModule vk_skybox_vert;
-  VkShaderModule vk_skybox_frag;
+  VkShaderModule vk_basic_vert_shader;
+  VkShaderModule vk_basic_frag_shader;
+  VkShaderModule vk_text_frag_shader;
+  VkShaderModule vk_model_vert_shader;
+  VkShaderModule vk_model_frag_shader;
+  VkShaderModule vk_skybox_vert_shader;
+  VkShaderModule vk_skybox_frag_shader;
 
   enum owl_vk_pipeline_id active;
 

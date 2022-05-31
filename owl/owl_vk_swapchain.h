@@ -16,7 +16,7 @@ struct owl_vk_swapchain
 {
   VkSwapchainKHR vk_swapchain;
 
-  VkExtent2D   size;
+  VkExtent2D   extent;
   VkClearValue clear_values[2];
 
   owl_u32       image;

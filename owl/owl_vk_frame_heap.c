@@ -114,7 +114,7 @@ owl_vk_frame_heap_sets_init (struct owl_vk_frame_heap    *heap,
   info.pNext              = NULL;
   info.descriptorPool     = ctx->vk_set_pool;
   info.descriptorSetCount = 1;
-  info.pSetLayouts        = &ctx->vk_vert_ubo_set_layout;
+  info.pSetLayouts        = &ctx->vk_ubo_vert_set_layout;
 
   vk_result
       = vkAllocateDescriptorSets (ctx->vk_device, &info, &heap->vk_pvm_ubo);
@@ -124,7 +124,7 @@ owl_vk_frame_heap_sets_init (struct owl_vk_frame_heap    *heap,
     goto out;
   }
 
-  info.pSetLayouts = &ctx->vk_both_ubo_set_layout;
+  info.pSetLayouts = &ctx->vk_ubo_both_set_layout;
 
   vk_result
       = vkAllocateDescriptorSets (ctx->vk_device, &info, &heap->vk_model_ubo1);
@@ -134,7 +134,7 @@ owl_vk_frame_heap_sets_init (struct owl_vk_frame_heap    *heap,
     goto error_pvm_ubo_set_deinit;
   }
 
-  info.pSetLayouts = &ctx->vk_frag_ubo_set_layout;
+  info.pSetLayouts = &ctx->vk_ubo_frag_set_layout;
 
   vk_result
       = vkAllocateDescriptorSets (ctx->vk_device, &info, &heap->vk_model_ubo2);

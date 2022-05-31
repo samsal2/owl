@@ -628,7 +628,7 @@ owl_vk_image_set_init (struct owl_vk_image         *image,
   info.pNext              = NULL;
   info.descriptorPool     = ctx->vk_set_pool;
   info.descriptorSetCount = 1;
-  info.pSetLayouts        = &ctx->vk_frag_image_set_layout;
+  info.pSetLayouts        = &ctx->vk_image_frag_set_layout;
 
   vk_result = vkAllocateDescriptorSets (ctx->vk_device, &info, &image->vk_set);
   if (VK_SUCCESS != vk_result)

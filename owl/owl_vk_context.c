@@ -761,7 +761,7 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
   info.pBindings    = bindings;
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
-                                           &ctx->vk_vert_ubo_set_layout);
+                                           &ctx->vk_ubo_vert_set_layout);
   if (VK_SUCCESS != vk_result)
   {
     code = OWL_ERROR_UNKNOWN;
@@ -771,7 +771,7 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
   bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
-                                           &ctx->vk_frag_ubo_set_layout);
+                                           &ctx->vk_ubo_frag_set_layout);
   if (VK_SUCCESS != vk_result)
   {
     code = OWL_ERROR_UNKNOWN;
@@ -782,7 +782,7 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
       = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
-                                           &ctx->vk_both_ubo_set_layout);
+                                           &ctx->vk_ubo_both_set_layout);
   if (VK_SUCCESS != vk_result)
   {
     code = OWL_ERROR_UNKNOWN;
@@ -793,7 +793,7 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
   bindings[0].stageFlags     = VK_SHADER_STAGE_VERTEX_BIT;
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
-                                           &ctx->vk_vert_ssbo_set_layout);
+                                           &ctx->vk_ssbo_vert_set_layout);
   if (VK_SUCCESS != vk_result)
   {
     code = OWL_ERROR_UNKNOWN;
@@ -812,7 +812,7 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
   info.bindingCount = 2;
 
   vk_result = vkCreateDescriptorSetLayout (ctx->vk_device, &info, NULL,
-                                           &ctx->vk_frag_image_set_layout);
+                                           &ctx->vk_image_frag_set_layout);
   if (VK_SUCCESS != vk_result)
   {
     code = OWL_ERROR_UNKNOWN;
@@ -822,19 +822,19 @@ owl_vk_context_set_layouts_init (struct owl_vk_context *ctx)
   goto out;
 
 error_vert_ssbo_set_layout_deinit:
-  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_vert_ssbo_set_layout,
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_ssbo_vert_set_layout,
                                 NULL);
 
 error_both_ubo_set_layout_deinit:
-  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_both_ubo_set_layout,
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_ubo_both_set_layout,
                                 NULL);
 
 error_frag_ubo_set_layout_deinit:
-  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_frag_ubo_set_layout,
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_ubo_frag_set_layout,
                                 NULL);
 
 error_vert_ubo_set_layout_deinit:
-  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_vert_ubo_set_layout,
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_ubo_vert_set_layout,
                                 NULL);
 
 out:
@@ -844,15 +844,15 @@ out:
 owl_private void
 owl_vk_context_set_layouts_deinit (struct owl_vk_context *ctx)
 {
-  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_frag_image_set_layout,
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_image_frag_set_layout,
                                 NULL);
-  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_vert_ssbo_set_layout,
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_ssbo_vert_set_layout,
                                 NULL);
-  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_both_ubo_set_layout,
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_ubo_both_set_layout,
                                 NULL);
-  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_frag_ubo_set_layout,
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_ubo_frag_set_layout,
                                 NULL);
-  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_vert_ubo_set_layout,
+  vkDestroyDescriptorSetLayout (ctx->vk_device, ctx->vk_ubo_vert_set_layout,
                                 NULL);
 }
 

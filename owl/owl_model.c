@@ -931,7 +931,7 @@ owl_model_skins_load (struct owl_model            *model,
       VkDescriptorSetAllocateInfo info;
 
       for (j = 0; j < OWL_VK_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j)
-        layouts[j] = ctx->vk_vert_ssbo_set_layout;
+        layouts[j] = ctx->vk_ssbo_vert_set_layout;
 
       info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
       info.pNext              = NULL;

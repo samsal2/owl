@@ -281,7 +281,7 @@ owl_skybox_set_init (struct owl_skybox *sb, struct owl_vk_context const *ctx)
   info.pNext              = NULL;
   info.descriptorPool     = ctx->vk_set_pool;
   info.descriptorSetCount = 1;
-  info.pSetLayouts        = &ctx->vk_frag_image_set_layout;
+  info.pSetLayouts        = &ctx->vk_image_frag_set_layout;
 
   vk_result = vkAllocateDescriptorSets (ctx->vk_device, &info, &sb->vk_set);
   if (VK_SUCCESS != vk_result)

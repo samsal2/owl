@@ -34,11 +34,11 @@ struct owl_vk_context
   VkRenderPass             vk_main_render_pass;
   VkDescriptorPool         vk_set_pool;
   VkCommandPool            vk_command_pool;
-  VkDescriptorSetLayout    vk_vert_ubo_set_layout;
-  VkDescriptorSetLayout    vk_frag_ubo_set_layout;
-  VkDescriptorSetLayout    vk_both_ubo_set_layout;
-  VkDescriptorSetLayout    vk_vert_ssbo_set_layout;
-  VkDescriptorSetLayout    vk_frag_image_set_layout;
+  VkDescriptorSetLayout    vk_ubo_vert_set_layout;
+  VkDescriptorSetLayout    vk_ubo_frag_set_layout;
+  VkDescriptorSetLayout    vk_ubo_both_set_layout;
+  VkDescriptorSetLayout    vk_ssbo_vert_set_layout;
+  VkDescriptorSetLayout    vk_image_frag_set_layout;
 
   owl_u32          vk_device_option_count;
   VkPhysicalDevice vk_device_options[OWL_VK_CONTEXT_MAX_DEVICE_OPTION_COUNT];

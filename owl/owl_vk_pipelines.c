@@ -18,8 +18,8 @@ owl_vk_pipelines_layouts_init (struct owl_vk_pipelines *ps,
   VkResult      vk_result = VK_SUCCESS;
   enum owl_code code      = OWL_SUCCESS;
 
-  sets[0] = ctx->vk_vert_ubo_set_layout;
-  sets[1] = ctx->vk_frag_image_set_layout;
+  sets[0] = ctx->vk_ubo_vert_set_layout;
+  sets[1] = ctx->vk_image_frag_set_layout;
 
   info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   info.pNext                  = NULL;
@@ -42,12 +42,12 @@ owl_vk_pipelines_layouts_init (struct owl_vk_pipelines *ps,
   range.offset     = 0;
   range.size       = sizeof (struct owl_model_material_push_constant);
 
-  sets[0] = ctx->vk_both_ubo_set_layout;
-  sets[1] = ctx->vk_frag_image_set_layout;
-  sets[2] = ctx->vk_frag_image_set_layout;
-  sets[3] = ctx->vk_frag_image_set_layout;
-  sets[4] = ctx->vk_vert_ssbo_set_layout;
-  sets[5] = ctx->vk_frag_ubo_set_layout;
+  sets[0] = ctx->vk_ubo_both_set_layout;
+  sets[1] = ctx->vk_image_frag_set_layout;
+  sets[2] = ctx->vk_image_frag_set_layout;
+  sets[3] = ctx->vk_image_frag_set_layout;
+  sets[4] = ctx->vk_ssbo_vert_set_layout;
+  sets[5] = ctx->vk_ubo_frag_set_layout;
 
   info.pushConstantRangeCount = 1;
   info.pPushConstantRanges    = &range;
@@ -105,7 +105,7 @@ owl_vk_pipelines_shaders_init (struct owl_vk_pipelines *ps,
     info.pCode    = spv;
 
     vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &ps->vk_basic_vert);
+                                      &ps->vk_basic_vert_shader);
 
     if (VK_SUCCESS != vk_result)
     {
@@ -128,7 +128,7 @@ owl_vk_pipelines_shaders_init (struct owl_vk_pipelines *ps,
     info.pCode    = spv;
 
     vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &ps->vk_basic_frag);
+                                      &ps->vk_basic_frag_shader);
 
     if (VK_SUCCESS != vk_result)
     {
@@ -151,7 +151,7 @@ owl_vk_pipelines_shaders_init (struct owl_vk_pipelines *ps,
     info.pCode    = spv;
 
     vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &ps->vk_text_frag);
+                                      &ps->vk_text_frag_shader);
 
     if (VK_SUCCESS != vk_result)
     {
@@ -174,7 +174,7 @@ owl_vk_pipelines_shaders_init (struct owl_vk_pipelines *ps,
     info.pCode    = spv;
 
     vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &ps->vk_model_vert);
+                                      &ps->vk_model_vert_shader);
 
     if (VK_SUCCESS != vk_result)
     {
@@ -197,7 +197,7 @@ owl_vk_pipelines_shaders_init (struct owl_vk_pipelines *ps,
     info.pCode    = spv;
 
     vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &ps->vk_model_frag);
+                                      &ps->vk_model_frag_shader);
 
     if (VK_SUCCESS != vk_result)
     {
@@ -220,7 +220,7 @@ owl_vk_pipelines_shaders_init (struct owl_vk_pipelines *ps,
     info.pCode    = spv;
 
     vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &ps->vk_skybox_vert);
+                                      &ps->vk_skybox_vert_shader);
 
     if (VK_SUCCESS != vk_result)
     {
@@ -243,7 +243,7 @@ owl_vk_pipelines_shaders_init (struct owl_vk_pipelines *ps,
     info.pCode    = spv;
 
     vk_result = vkCreateShaderModule (ctx->vk_device, &info, NULL,
-                                      &ps->vk_skybox_frag);
+                                      &ps->vk_skybox_frag_shader);
 
     if (VK_SUCCESS != vk_result)
     {
@@ -255,22 +255,22 @@ owl_vk_pipelines_shaders_init (struct owl_vk_pipelines *ps,
   goto out;
 
 error_skybox_vert_shader_deinit:
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_skybox_vert, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_skybox_vert_shader, NULL);
 
 error_model_frag_shader_deinit:
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_model_frag, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_model_frag_shader, NULL);
 
 error_model_vert_shader_deinit:
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_model_vert, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_model_vert_shader, NULL);
 
 error_text_frag_shader_deinit:
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_text_frag, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_text_frag_shader, NULL);
 
 error_basic_frag_shader_deinit:
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_basic_frag, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_basic_frag_shader, NULL);
 
 error_basic_vert_shader_deinit:
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_basic_vert, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_basic_vert_shader, NULL);
 
 out:
   return code;
@@ -280,13 +280,13 @@ owl_private void
 owl_vk_pipelines_shaders_deinit (struct owl_vk_pipelines *ps,
                                  struct owl_vk_context   *ctx)
 {
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_skybox_frag, NULL);
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_skybox_vert, NULL);
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_model_frag, NULL);
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_model_vert, NULL);
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_text_frag, NULL);
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_basic_frag, NULL);
-  vkDestroyShaderModule (ctx->vk_device, ps->vk_basic_vert, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_skybox_frag_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_skybox_vert_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_model_frag_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_model_vert_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_text_frag_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_basic_frag_shader, NULL);
+  vkDestroyShaderModule (ctx->vk_device, ps->vk_basic_vert_shader, NULL);
 }
 
 owl_private enum owl_code
@@ -346,14 +346,14 @@ owl_vk_pipelines_basic_init (struct owl_vk_pipelines       *ps,
 
   viewport.x        = 0.0F;
   viewport.y        = 0.0F;
-  viewport.width    = sc->size.width;
-  viewport.height   = sc->size.height;
+  viewport.width    = sc->extent.width;
+  viewport.height   = sc->extent.height;
   viewport.minDepth = 0.0F;
   viewport.maxDepth = 1.0F;
 
   scissor.offset.x = 0;
   scissor.offset.y = 0;
-  scissor.extent   = sc->size;
+  scissor.extent   = sc->extent;
 
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_state.pNext = NULL;
@@ -429,7 +429,7 @@ owl_vk_pipelines_basic_init (struct owl_vk_pipelines       *ps,
   stages[0].pNext  = NULL;
   stages[0].flags  = 0;
   stages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-  stages[0].module = ps->vk_basic_vert;
+  stages[0].module = ps->vk_basic_vert_shader;
   stages[0].pName  = "main";
   stages[0].pSpecializationInfo = NULL;
 
@@ -437,7 +437,7 @@ owl_vk_pipelines_basic_init (struct owl_vk_pipelines       *ps,
   stages[1].pNext  = NULL;
   stages[1].flags  = 0;
   stages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-  stages[1].module = ps->vk_basic_frag;
+  stages[1].module = ps->vk_basic_frag_shader;
   stages[1].pName  = "main";
   stages[1].pSpecializationInfo = NULL;
 
@@ -539,14 +539,14 @@ owl_vk_pipelines_wires_init (struct owl_vk_pipelines       *ps,
 
   viewport.x        = 0.0F;
   viewport.y        = 0.0F;
-  viewport.width    = sc->size.width;
-  viewport.height   = sc->size.height;
+  viewport.width    = sc->extent.width;
+  viewport.height   = sc->extent.height;
   viewport.minDepth = 0.0F;
   viewport.maxDepth = 1.0F;
 
   scissor.offset.x = 0;
   scissor.offset.y = 0;
-  scissor.extent   = sc->size;
+  scissor.extent   = sc->extent;
 
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_state.pNext = NULL;
@@ -622,7 +622,7 @@ owl_vk_pipelines_wires_init (struct owl_vk_pipelines       *ps,
   stages[0].pNext  = NULL;
   stages[0].flags  = 0;
   stages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-  stages[0].module = ps->vk_basic_vert;
+  stages[0].module = ps->vk_basic_vert_shader;
   stages[0].pName  = "main";
   stages[0].pSpecializationInfo = NULL;
 
@@ -630,7 +630,7 @@ owl_vk_pipelines_wires_init (struct owl_vk_pipelines       *ps,
   stages[1].pNext  = NULL;
   stages[1].flags  = 0;
   stages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-  stages[1].module = ps->vk_basic_frag;
+  stages[1].module = ps->vk_basic_frag_shader;
   stages[1].pName  = "main";
   stages[1].pSpecializationInfo = NULL;
 
@@ -732,14 +732,14 @@ owl_vk_pipelines_text_init (struct owl_vk_pipelines       *ps,
 
   viewport.x        = 0.0F;
   viewport.y        = 0.0F;
-  viewport.width    = sc->size.width;
-  viewport.height   = sc->size.height;
+  viewport.width    = sc->extent.width;
+  viewport.height   = sc->extent.height;
   viewport.minDepth = 0.0F;
   viewport.maxDepth = 1.0F;
 
   scissor.offset.x = 0;
   scissor.offset.y = 0;
-  scissor.extent   = sc->size;
+  scissor.extent   = sc->extent;
 
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_state.pNext = NULL;
@@ -817,7 +817,7 @@ owl_vk_pipelines_text_init (struct owl_vk_pipelines       *ps,
   stages[0].pNext  = NULL;
   stages[0].flags  = 0;
   stages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-  stages[0].module = ps->vk_basic_vert;
+  stages[0].module = ps->vk_basic_vert_shader;
   stages[0].pName  = "main";
   stages[0].pSpecializationInfo = NULL;
 
@@ -825,7 +825,7 @@ owl_vk_pipelines_text_init (struct owl_vk_pipelines       *ps,
   stages[1].pNext  = NULL;
   stages[1].flags  = 0;
   stages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-  stages[1].module = ps->vk_text_frag;
+  stages[1].module = ps->vk_text_frag_shader;
   stages[1].pName  = "main";
   stages[1].pSpecializationInfo = NULL;
 
@@ -942,14 +942,14 @@ owl_vk_pipelines_model_init (struct owl_vk_pipelines       *ps,
 
   viewport.x        = 0.0F;
   viewport.y        = 0.0F;
-  viewport.width    = sc->size.width;
-  viewport.height   = sc->size.height;
+  viewport.width    = sc->extent.width;
+  viewport.height   = sc->extent.height;
   viewport.minDepth = 0.0F;
   viewport.maxDepth = 1.0F;
 
   scissor.offset.x = 0;
   scissor.offset.y = 0;
-  scissor.extent   = sc->size;
+  scissor.extent   = sc->extent;
 
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_state.pNext = NULL;
@@ -1025,7 +1025,7 @@ owl_vk_pipelines_model_init (struct owl_vk_pipelines       *ps,
   stages[0].pNext  = NULL;
   stages[0].flags  = 0;
   stages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-  stages[0].module = ps->vk_model_vert;
+  stages[0].module = ps->vk_model_vert_shader;
   stages[0].pName  = "main";
   stages[0].pSpecializationInfo = NULL;
 
@@ -1033,7 +1033,7 @@ owl_vk_pipelines_model_init (struct owl_vk_pipelines       *ps,
   stages[1].pNext  = NULL;
   stages[1].flags  = 0;
   stages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-  stages[1].module = ps->vk_model_frag;
+  stages[1].module = ps->vk_model_frag_shader;
   stages[1].pName  = "main";
   stages[1].pSpecializationInfo = NULL;
 
@@ -1125,14 +1125,14 @@ owl_vk_pipelines_skybox_init (struct owl_vk_pipelines       *ps,
 
   viewport.x        = 0.0F;
   viewport.y        = 0.0F;
-  viewport.width    = sc->size.width;
-  viewport.height   = sc->size.height;
+  viewport.width    = sc->extent.width;
+  viewport.height   = sc->extent.height;
   viewport.minDepth = 0.0F;
   viewport.maxDepth = 1.0F;
 
   scissor.offset.x = 0;
   scissor.offset.y = 0;
-  scissor.extent   = sc->size;
+  scissor.extent   = sc->extent;
 
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_state.pNext = NULL;
@@ -1208,7 +1208,7 @@ owl_vk_pipelines_skybox_init (struct owl_vk_pipelines       *ps,
   stages[0].pNext  = NULL;
   stages[0].flags  = 0;
   stages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-  stages[0].module = ps->vk_skybox_vert;
+  stages[0].module = ps->vk_skybox_vert_shader;
   stages[0].pName  = "main";
   stages[0].pSpecializationInfo = NULL;
 
@@ -1216,7 +1216,7 @@ owl_vk_pipelines_skybox_init (struct owl_vk_pipelines       *ps,
   stages[1].pNext  = NULL;
   stages[1].flags  = 0;
   stages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-  stages[1].module = ps->vk_skybox_frag;
+  stages[1].module = ps->vk_skybox_frag_shader;
   stages[1].pName  = "main";
   stages[1].pSpecializationInfo = NULL;
 

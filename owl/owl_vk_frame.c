@@ -228,7 +228,7 @@ owl_vk_frame_begin_recording (struct owl_vk_frame         *frame,
   render_pass_info.framebuffer = sc->vk_framebuffers[sc->image];
   render_pass_info.renderArea.offset.x = 0;
   render_pass_info.renderArea.offset.y = 0;
-  render_pass_info.renderArea.extent   = sc->size;
+  render_pass_info.renderArea.extent   = sc->extent;
   render_pass_info.clearValueCount     = owl_array_size (sc->clear_values);
   render_pass_info.pClearValues        = sc->clear_values;
 
