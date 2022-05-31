@@ -32,10 +32,10 @@ struct owl_vk_pipelines
   VkShaderModule vk_skybox_vert;
   VkShaderModule vk_skybox_frag;
 
-  VkPipelineLayout vk_common_layout;
-  VkPipelineLayout vk_model_layout;
-
   enum owl_vk_pipeline_id active;
+
+  VkPipelineLayout vk_common_pipeline_layout;
+  VkPipelineLayout vk_model_pipeline_layout;
 
   VkPipeline       vk_pipelines[OWL_VK_PIPELINE_ID_COUNT];
   VkPipelineLayout vk_pipeline_layouts[OWL_VK_PIPELINE_ID_COUNT];
