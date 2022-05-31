@@ -733,7 +733,7 @@ owl_vk_renderer_draw_skybox (struct owl_vk_renderer *vkr,
    *  / |  / |
    * 0----1  |
    * |  | |  |
-   * |  6 |  7
+   * |  6-|--7
    * | /  | /
    * 2----3
    * i reaaaalllly hate italics
