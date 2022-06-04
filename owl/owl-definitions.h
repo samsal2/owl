@@ -1,0 +1,64 @@
+#ifndef OWL_DEFINITIONS_H_
+#define OWL_DEFINITIONS_H_
+
+#include <stdint.h>
+
+#if defined(__cplusplus)
+#define OWL_BEGIN_DECLS extern "C" {
+#define OWL_END_DECLS }
+#else
+#define OWL_BEGIN_DECLS
+#define OWL_END_DECLS
+#endif
+
+OWL_BEGIN_DECLS
+
+#define owl_public extern
+#define owl_global static
+#define owl_private static
+#define owl_local_persist static
+
+typedef uint8_t owl_u8;
+typedef uint16_t owl_u16;
+typedef uint32_t owl_u32;
+typedef uint64_t owl_u64;
+
+typedef int8_t owl_i8;
+typedef int16_t owl_i16;
+typedef int32_t owl_i32;
+typedef int64_t owl_i64;
+
+typedef int32_t owl_b32;
+
+typedef unsigned char owl_byte;
+
+typedef float owl_v2[2];
+typedef float owl_v3[3];
+typedef float owl_v4[4];
+
+typedef float owl_q4[4];
+
+typedef owl_i32 owl_v2i[2];
+typedef owl_i32 owl_v3i[3];
+typedef owl_i32 owl_v4i[4];
+
+typedef owl_v2 owl_m2[2];
+typedef owl_v3 owl_m3[3];
+typedef owl_v4 owl_m4[4];
+
+enum owl_code {
+  OWL_OK = 0,
+  OWL_ERROR_NO_FRAME_MEMORY,
+  OWL_ERROR_NO_UPLOAD_MEMORY,
+  OWL_ERROR_NO_MEMORY,
+  OWL_ERROR_NOT_FOUND,
+  OWL_ERROR_NO_SPACE,
+  OWL_ERROR_REQUIRES_RESIZE,
+  OWL_ERROR_FATAL
+};
+
+#define OWL_VK_IN_FLIGHT_FRAMES 3
+
+OWL_END_DECLS
+
+#endif

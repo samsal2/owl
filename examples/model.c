@@ -6,103 +6,79 @@
 
 static double prev_time_stamp;
 static double time_stamp;
-static struct owl_window *window;
+static struct owl_plataform *window;
 static struct owl_vk_renderer *renderer;
 static struct owl_model *model;
-static struct owl_vk_font *font;
-static struct owl_skybox *skybox;
 static owl_m4 matrix;
 
 #define CHECK(fn)                                                             \
   do {                                                                        \
     enum owl_code code = (fn);                                                \
-    if (OWL_SUCCESS != (code)) {                                              \
-      printf ("something went wrong in call: %s, code %i\n", (#fn), code);    \
+    if (code) {                                                               \
+      printf("something went wrong in call: %s, code %i\n", (#fn), code);     \
       return 0;                                                               \
     }                                                                         \
   } while (0)
 
 int
-main (void) {
+main(void)
+{
   owl_v3 offset = {0.0F, 0.0F, -1.0F};
 
-  window = malloc (sizeof (*window));
-  CHECK (owl_window_init (window, 600, 600, "model"));
+  window = malloc(sizeof(*window));
+  CHECK(owl_plataform_init(window, 600, 600, "model"));
 
-  renderer = malloc (sizeof (*renderer));
-  CHECK (owl_vk_renderer_init (renderer, window));
+  renderer = malloc(sizeof(*renderer));
+  CHECK(owl_vk_renderer_init(renderer, window));
 
-  model = malloc (sizeof (*model));
-  CHECK (owl_model_init (model, &renderer->context, &renderer->stage_heap,
-                         "../../assets/CesiumMan.gltf"));
+  model = malloc(sizeof(*model));
+  CHECK(owl_model_init(model, renderer, "../../assets/CesiumMan.gltf"));
 
-  font = malloc (sizeof (*font));
-  CHECK (owl_vk_font_init (font, &renderer->context, &renderer->stage_heap,
-                           "../../assets/Inconsolata-Regular.ttf", 64.0F));
+  CHECK(owl_vk_font_load(renderer, 64.0F,
+                         "../../assets/Inconsolata-Regular.ttf"));
 
-  skybox = malloc (sizeof (*skybox));
-  CHECK (owl_skybox_init (skybox, &renderer->context, &renderer->stage_heap,
-                          "../../assets/skybox"));
+  CHECK(owl_vk_skybox_load(renderer, "../../assets/skybox"));
 
-  owl_vk_renderer_set_font (renderer, font);
-
-  owl_m4_identity (matrix);
-  owl_m4_translate (offset, matrix);
+  owl_m4_identity(matrix);
+  owl_m4_translate(offset, matrix);
 
   prev_time_stamp = 0;
   time_stamp = 0;
 
-  while (!owl_window_is_done (window)) {
-    enum owl_code code;
+  while (!owl_plataform_should_close(window)) {
     owl_v3 axis = {1.0F, 0.0F, 0.0F};
+    owl_v3 position = {-0.8F, -0.8F, 0.0F};
+    owl_v3 color = {1.0F, 1.0F, 1.0F};
 
     prev_time_stamp = time_stamp;
-    time_stamp = owl_io_time_stamp_get ();
+    time_stamp = owl_plataform_get_time(window);
 #if 0
     owl_camera_rotate (&renderer->camera, axis, 0.01);
 #else
     (void)(axis);
 #endif
 
-    code = owl_vk_renderer_begin_frame (renderer);
-    if (OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE == code) {
-      owl_i32 w, h;
-      owl_window_get_framebuffer_size (window, &w, &h);
-      owl_vk_renderer_resize (renderer, w, h);
-      continue;
-    }
+    CHECK(owl_vk_frame_begin(renderer));
 
-    owl_vk_renderer_draw_skybox (renderer, skybox);
+    owl_vk_draw_skybox(renderer);
 
-    owl_model_anim_update (model, renderer->frame,
-                           time_stamp - prev_time_stamp, 0);
+    owl_model_anim_update(model, renderer->frame, time_stamp - prev_time_stamp,
+                          0);
 
-    owl_vk_renderer_draw_model (renderer, model, matrix);
-    owl_ui_draw_renderer_state (renderer);
+    owl_vk_draw_model(renderer, model, matrix);
+    owl_vk_draw_text(renderer, "hihihi", position, color);
 
-    code = owl_vk_renderer_end_frame (renderer);
-    if (OWL_ERROR_SWAPCHAIN_REQUIRES_RESIZE == code) {
-      owl_i32 w, h;
-      owl_window_get_framebuffer_size (window, &w, &h);
-      owl_vk_renderer_resize (renderer, w, h);
-      continue;
-    }
+    CHECK(owl_vk_frame_end(renderer));
 
-    owl_window_poll_events (window);
+    owl_plataform_poll_events(window);
   }
 
-  owl_skybox_deinit (skybox, &renderer->context);
-  free (skybox);
+  owl_model_deinit(model, renderer);
+  free(model);
 
-  owl_vk_font_deinit (font, &renderer->context);
-  free (font);
+  owl_vk_renderer_deinit(renderer);
+  free(renderer);
 
-  owl_model_deinit (model, &renderer->context);
-  free (model);
-
-  owl_vk_renderer_deinit (renderer);
-  free (renderer);
-
-  owl_window_deinit (window);
-  free (window);
+  owl_plataform_deinit(window);
+  free(window);
 }

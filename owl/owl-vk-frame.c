@@ -1,0 +1,319 @@
+#include "owl-vk-frame.h"
+
+#include "owl-definitions.h"
+#include "owl-internal.h"
+#include "owl-vk-init.h"
+#include "owl-vk-pipeline.h"
+#include "owl-vk-renderer.h"
+#include "owl-vk-swapchain.h"
+#include "owl-vk-types.h"
+
+owl_private void
+owl_vk_collect_frame_garbage(struct owl_vk_renderer *vk)
+{
+  owl_u32 i;
+
+  for (i = 0; i < vk->num_frame_garbage_descriptor_sets[vk->frame]; ++i)
+    vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
+                         &vk->frame_garbage_descriptor_sets[vk->frame][i]);
+
+  vk->num_frame_garbage_descriptor_sets[vk->frame] = 0;
+
+  for (i = 0; i < vk->num_frame_garbage_memories[vk->frame]; ++i)
+    vkFreeMemory(vk->device, vk->frame_garbage_memories[vk->frame][i], NULL);
+
+  vk->num_frame_garbage_memories[vk->frame] = 0;
+
+  for (i = 0; i < vk->num_frame_garbage_buffers[vk->frame]; ++i)
+    vkDestroyBuffer(vk->device, vk->frame_garbage_buffers[vk->frame][i], NULL);
+
+  vk->num_frame_garbage_buffers[vk->frame] = 0;
+}
+
+owl_private enum owl_code
+owl_vk_push_frame_garbage(struct owl_vk_renderer *vk)
+{
+  owl_u32 i;
+
+  for (i = 0; i < vk->num_swapchain_images; ++i) {
+    if (vk->num_frame_garbage_buffers[i] + 1 > OWL_MAX_GARBAGE_ITEMS)
+      return OWL_ERROR_NO_SPACE;
+
+    if (vk->num_frame_garbage_memories[i] + 1 > OWL_MAX_GARBAGE_ITEMS)
+      return OWL_ERROR_NO_SPACE;
+
+    if (vk->num_frame_garbage_descriptor_sets[i] + 3 > OWL_MAX_GARBAGE_ITEMS)
+      return OWL_ERROR_NO_SPACE;
+  }
+
+  for (i = 0; i < vk->num_swapchain_images; ++i) {
+    owl_u32 pos;
+
+    pos = vk->num_frame_garbage_buffers[i]++;
+    vk->frame_garbage_buffers[i][pos] = vk->frame_heap_buffers[i];
+    vk->frame_command_buffers[i] = VK_NULL_HANDLE;
+
+    vkUnmapMemory(vk->device, vk->frame_heap_memories[i]);
+    pos = vk->num_frame_garbage_memories[i]++;
+    vk->frame_garbage_memories[i][pos] = vk->frame_heap_memories[i];
+    vk->frame_heap_memories[i] = VK_NULL_HANDLE;
+
+    pos = vk->num_frame_garbage_descriptor_sets[i]++;
+    vk->frame_garbage_descriptor_sets[i][pos] =
+        vk->frame_heap_pvm_descriptor_sets[i];
+    vk->frame_heap_pvm_descriptor_sets[i] = VK_NULL_HANDLE;
+
+    pos = vk->num_frame_garbage_descriptor_sets[i]++;
+    vk->frame_garbage_descriptor_sets[i][pos] =
+        vk->frame_heap_model1_descriptor_sets[i];
+    vk->frame_heap_model1_descriptor_sets[i] = VK_NULL_HANDLE;
+
+    pos = vk->num_frame_garbage_descriptor_sets[vk->frame]++;
+    vk->frame_garbage_descriptor_sets[i][pos] =
+        vk->frame_heap_model2_descriptor_sets[i];
+    vk->frame_heap_model2_descriptor_sets[i] = VK_NULL_HANDLE;
+  }
+
+  return OWL_OK;
+}
+
+owl_private enum owl_code
+owl_vk_pop_frame_garbage(struct owl_vk_renderer *vk)
+{
+  owl_u32 i;
+
+  for (i = 0; i < vk->num_swapchain_images; ++i) {
+    owl_u32 pos;
+
+    pos = --vk->num_frame_garbage_buffers[i];
+    vk->frame_heap_buffers[i] = vk->frame_garbage_buffers[i][pos];
+
+    pos = --vk->num_frame_garbage_memories[i];
+    vk->frame_heap_memories[i] = vk->frame_garbage_memories[i][pos];
+
+    /* TODO (samuel): check the result */
+    vkUnmapMemory(vk->device, vk->frame_heap_memories[i]);
+
+    pos = --vk->num_frame_garbage_descriptor_sets[i];
+    vk->frame_heap_pvm_descriptor_sets[i] =
+        vk->frame_garbage_descriptor_sets[i][pos];
+
+    pos = --vk->num_frame_garbage_descriptor_sets[i];
+    vk->frame_heap_model1_descriptor_sets[i] =
+        vk->frame_garbage_descriptor_sets[i][pos];
+
+    pos = --vk->num_frame_garbage_descriptor_sets[i];
+    vk->frame_heap_model2_descriptor_sets[i] =
+        vk->frame_garbage_descriptor_sets[i][pos];
+  }
+
+  return OWL_OK;
+}
+
+owl_public enum owl_code
+owl_vk_frame_reserve(struct owl_vk_renderer *vk, owl_u64 size)
+{
+  if (vk->frame_heap_size < (size + vk->frame_heap_offset)) {
+    owl_u64 nsize;
+    enum owl_code code;
+
+    code = owl_vk_push_frame_garbage(vk);
+    if (code)
+      return code;
+
+    nsize = (size + vk->frame_heap_offset) * 2;
+    nsize = owl_alignu2(nsize, vk->frame_heap_alignment);
+
+    code = owl_vk_init_frame_heaps(vk, nsize);
+    if (code) {
+      owl_vk_pop_frame_garbage(vk);
+      return code;
+    }
+  }
+
+  return OWL_OK;
+}
+
+owl_public void *
+owl_vk_frame_alloc(struct owl_vk_renderer *vk, owl_u64 size,
+                   struct owl_vk_frame_allocation *alloc)
+{
+  enum owl_code code;
+
+  owl_byte *data = NULL;
+
+  code = owl_vk_frame_reserve(vk, size);
+  if (!code) {
+    owl_u64 offset;
+
+    offset = vk->frame_heap_offset;
+
+    vk->frame_heap_offset = owl_alignu2(offset + size,
+                                        vk->frame_heap_alignment);
+
+    data = &((owl_byte *)vk->frame_heap_data[vk->frame])[offset];
+
+    alloc->offset32 = (owl_u32)offset;
+    alloc->offset = offset;
+    alloc->buffer = vk->frame_heap_buffers[vk->frame];
+    alloc->pvm_descriptor_set = vk->frame_heap_pvm_descriptor_sets[vk->frame];
+    alloc->model1_descriptor_set =
+        vk->frame_heap_model1_descriptor_sets[vk->frame];
+    alloc->model2_descriptor_set =
+        vk->frame_heap_model2_descriptor_sets[vk->frame];
+  }
+
+  return data;
+}
+
+owl_public enum owl_code
+owl_vk_frame_begin(struct owl_vk_renderer *vk)
+{
+  VkSemaphore image_available_semaphore;
+
+  VkResult vk_result = VK_SUCCESS;
+  enum owl_code code = OWL_OK;
+
+  owl_vk_bind_pipeline(vk, OWL_VK_PIPELINE_NONE);
+
+  image_available_semaphore = vk->frame_image_available_semaphores[vk->frame];
+  vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, (owl_u64)-1,
+                                    image_available_semaphore, VK_NULL_HANDLE,
+                                    &vk->swapchain_image);
+  if (!vk_result) {
+    VkFence in_flight_fence;
+
+    in_flight_fence = vk->frame_in_flight_fences[vk->frame];
+    vk_result = vkWaitForFences(vk->device, 1, &in_flight_fence, VK_TRUE,
+                                (owl_u64)-1);
+    if (!vk_result) {
+      vk_result = vkResetFences(vk->device, 1, &in_flight_fence);
+      if (!vk_result) {
+        VkCommandPool command_pool;
+        command_pool = vk->frame_command_pools[vk->frame];
+        vk_result = vkResetCommandPool(vk->device, command_pool, 0);
+        if (!vk_result) {
+          VkCommandBuffer command_buffer;
+          VkCommandBufferBeginInfo command_buffer_info;
+
+          owl_vk_collect_frame_garbage(vk);
+
+          command_buffer_info.sType =
+              VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+          command_buffer_info.pNext = NULL;
+          command_buffer_info.flags =
+              VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+          command_buffer_info.pInheritanceInfo = NULL;
+
+          command_buffer = vk->frame_command_buffers[vk->frame];
+          vk_result = vkBeginCommandBuffer(command_buffer,
+                                           &command_buffer_info);
+          if (!vk_result) {
+            VkFramebuffer swapchain_framebuffer;
+            VkRenderPassBeginInfo render_pass_info;
+
+            swapchain_framebuffer =
+                vk->swapchain_framebuffers[vk->swapchain_image];
+
+            render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            render_pass_info.pNext = NULL;
+            render_pass_info.renderPass = vk->main_render_pass;
+            render_pass_info.framebuffer = swapchain_framebuffer;
+            render_pass_info.renderArea.offset.x = 0;
+            render_pass_info.renderArea.offset.y = 0;
+            render_pass_info.renderArea.extent.width = vk->swapchain_width;
+            render_pass_info.renderArea.extent.height = vk->swapchain_height;
+            render_pass_info.clearValueCount =
+                owl_array_size(vk->swapchain_clear_values);
+            render_pass_info.pClearValues = vk->swapchain_clear_values;
+
+            vkCmdBeginRenderPass(command_buffer, &render_pass_info,
+                                 VK_SUBPASS_CONTENTS_INLINE);
+          }
+        } else {
+          code = OWL_ERROR_FATAL;
+        }
+      } else {
+        code = OWL_ERROR_FATAL;
+      }
+    } else {
+      code = OWL_ERROR_FATAL;
+    }
+  } else if (VK_ERROR_OUT_OF_DATE_KHR == vk_result ||
+             VK_SUBOPTIMAL_KHR == vk_result ||
+             VK_ERROR_SURFACE_LOST_KHR == vk_result) {
+
+    code = owl_vk_swapchain_resize(vk);
+
+    if (!code)
+      code = owl_vk_frame_begin(vk);
+  }
+
+  return code;
+}
+
+owl_public enum owl_code
+owl_vk_frame_end(struct owl_vk_renderer *vk)
+{
+  VkCommandBuffer command_buffer;
+  VkResult vk_result;
+  enum owl_code code = OWL_OK;
+
+  command_buffer = vk->frame_command_buffers[vk->frame];
+
+  vkCmdEndRenderPass(command_buffer);
+
+  vk_result = vkEndCommandBuffer(command_buffer);
+  if (!vk_result) {
+    VkPipelineStageFlagBits stage;
+    VkSemaphore image_available_semaphore;
+    VkSemaphore render_done_semaphore;
+    VkSubmitInfo submit_info;
+
+    stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    image_available_semaphore =
+        vk->frame_image_available_semaphores[vk->frame];
+
+    render_done_semaphore = vk->frame_render_done_semaphores[vk->frame];
+
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.pNext = NULL;
+    submit_info.waitSemaphoreCount = 1;
+    submit_info.pWaitSemaphores = &image_available_semaphore;
+    submit_info.signalSemaphoreCount = 1;
+    submit_info.pSignalSemaphores = &render_done_semaphore;
+    submit_info.pWaitDstStageMask = &stage;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &command_buffer;
+
+    vk_result = vkQueueSubmit(vk->graphics_queue, 1, &submit_info,
+                              vk->frame_in_flight_fences[vk->frame]);
+    if (!vk_result) {
+      VkPresentInfoKHR present_info;
+
+      present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+      present_info.pNext = NULL;
+      present_info.waitSemaphoreCount = 1;
+      present_info.pWaitSemaphores = &render_done_semaphore;
+      present_info.swapchainCount = 1;
+      present_info.pSwapchains = &vk->swapchain;
+      present_info.pImageIndices = &vk->swapchain_image;
+      present_info.pResults = NULL;
+
+      vk_result = vkQueuePresentKHR(vk->present_queue, &present_info);
+      if (VK_ERROR_OUT_OF_DATE_KHR == vk_result ||
+          VK_SUBOPTIMAL_KHR == vk_result ||
+          VK_ERROR_SURFACE_LOST_KHR == vk_result) {
+        code = owl_vk_swapchain_resize(vk);
+      }
+    }
+  }
+
+  if (vk->num_swapchain_images == ++vk->frame)
+    vk->frame = 0;
+
+  vk->frame_heap_offset = 0;
+
+  return code;
+}

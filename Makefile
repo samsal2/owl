@@ -28,7 +28,7 @@ modules:
 
 .PHONY: format
 format:
-	clang-format -i owl/owl_*
+	clang-format -i owl/owl_* owl/owl-*
 
 .PHONY: clean
 clean:
