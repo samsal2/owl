@@ -3,33 +3,33 @@
 #include "owl-internal.h"
 #include "owl-vk-renderer.h"
 
-owl_public owl_u32
-owl_vk_find_memory_type(struct owl_vk_renderer *vk, owl_u32 filter,
-                        owl_u32 prop)
+owl_public uint32_t
+owl_vk_find_memory_type(struct owl_vk_renderer *vk, uint32_t filter,
+                        uint32_t prop)
 {
-  owl_u32 ty;
+  uint32_t ty;
   VkPhysicalDeviceMemoryProperties memprops;
 
   vkGetPhysicalDeviceMemoryProperties(vk->physical_device, &memprops);
 
   for (ty = 0; ty < memprops.memoryTypeCount; ++ty) {
-    owl_u32 cur = memprops.memoryTypes[ty].propertyFlags;
+    uint32_t cur = memprops.memoryTypes[ty].propertyFlags;
 
     if ((cur & prop) && (filter & (1U << ty)))
       return ty;
   }
 
-  return (owl_u32)-1;
+  return (uint32_t)-1;
 }
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_begin_im_command_buffer(struct owl_vk_renderer *vk)
 {
   VkCommandBufferAllocateInfo command_buffer_info;
   VkCommandBufferBeginInfo begin_info;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_OK;
+  owl_code code = OWL_OK;
 
   owl_assert(!vk->im_command_buffer);
 
@@ -67,13 +67,13 @@ out:
   return code;
 }
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_end_im_command_buffer(struct owl_vk_renderer *vk)
 {
   VkSubmitInfo submit_info;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_OK;
+  owl_code code = OWL_OK;
 
   owl_assert(vk->im_command_buffer);
 

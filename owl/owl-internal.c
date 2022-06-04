@@ -45,11 +45,11 @@ owl_debug_free(void *p, char const *f, int l)
 }
 
 void
-owl_debug_log(char const *f, int l, char const *fmt, ...)
+owl_debug_log(char const *f, int l, char const *format, ...)
 {
   va_list args;
-  va_start(args, fmt);
+  va_start(args, format);
   printf("\033[33m[OWL_DEBUG_LOG]\033[0m \033[31m(f:%s l:%d)\033[0m ", f, l);
-  vprintf(fmt, args);
+  vprintf(format, args);
   va_end(args);
 }

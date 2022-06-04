@@ -5,14 +5,14 @@
 #include "owl-vk-init.h"
 #include "owl-vk-renderer.h"
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_swapchain_resize(struct owl_vk_renderer *vk)
 {
-  owl_u32 width;
-  owl_u32 height;
+  uint32_t width;
+  uint32_t height;
 
   VkResult vk_result;
-  enum owl_code code;
+  owl_code code;
 
   vk_result = vkDeviceWaitIdle(vk->device);
   if (vk_result) {

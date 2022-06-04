@@ -11,7 +11,7 @@
 owl_private void
 owl_vk_collect_frame_garbage(struct owl_vk_renderer *vk)
 {
-  owl_u32 i;
+  uint32_t i;
 
   for (i = 0; i < vk->num_frame_garbage_descriptor_sets[vk->frame]; ++i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
@@ -30,10 +30,10 @@ owl_vk_collect_frame_garbage(struct owl_vk_renderer *vk)
   vk->num_frame_garbage_buffers[vk->frame] = 0;
 }
 
-owl_private enum owl_code
+owl_private owl_code
 owl_vk_push_frame_garbage(struct owl_vk_renderer *vk)
 {
-  owl_u32 i;
+  uint32_t i;
 
   for (i = 0; i < vk->num_swapchain_images; ++i) {
     if (vk->num_frame_garbage_buffers[i] + 1 > OWL_MAX_GARBAGE_ITEMS)
@@ -47,7 +47,7 @@ owl_vk_push_frame_garbage(struct owl_vk_renderer *vk)
   }
 
   for (i = 0; i < vk->num_swapchain_images; ++i) {
-    owl_u32 pos;
+    uint32_t pos;
 
     pos = vk->num_frame_garbage_buffers[i]++;
     vk->frame_garbage_buffers[i][pos] = vk->frame_heap_buffers[i];
@@ -77,13 +77,13 @@ owl_vk_push_frame_garbage(struct owl_vk_renderer *vk)
   return OWL_OK;
 }
 
-owl_private enum owl_code
+owl_private owl_code
 owl_vk_pop_frame_garbage(struct owl_vk_renderer *vk)
 {
-  owl_u32 i;
+  uint32_t i;
 
   for (i = 0; i < vk->num_swapchain_images; ++i) {
-    owl_u32 pos;
+    uint32_t pos;
 
     pos = --vk->num_frame_garbage_buffers[i];
     vk->frame_heap_buffers[i] = vk->frame_garbage_buffers[i][pos];
@@ -110,12 +110,12 @@ owl_vk_pop_frame_garbage(struct owl_vk_renderer *vk)
   return OWL_OK;
 }
 
-owl_public enum owl_code
-owl_vk_frame_reserve(struct owl_vk_renderer *vk, owl_u64 size)
+owl_public owl_code
+owl_vk_frame_reserve(struct owl_vk_renderer *vk, uint64_t size)
 {
   if (vk->frame_heap_size < (size + vk->frame_heap_offset)) {
-    owl_u64 nsize;
-    enum owl_code code;
+    uint64_t nsize;
+    owl_code code;
 
     code = owl_vk_push_frame_garbage(vk);
     if (code)
@@ -135,25 +135,25 @@ owl_vk_frame_reserve(struct owl_vk_renderer *vk, owl_u64 size)
 }
 
 owl_public void *
-owl_vk_frame_alloc(struct owl_vk_renderer *vk, owl_u64 size,
+owl_vk_frame_alloc(struct owl_vk_renderer *vk, uint64_t size,
                    struct owl_vk_frame_allocation *alloc)
 {
-  enum owl_code code;
+  owl_code code;
 
-  owl_byte *data = NULL;
+  uint8_t *data = NULL;
 
   code = owl_vk_frame_reserve(vk, size);
   if (!code) {
-    owl_u64 offset;
+    uint64_t offset;
 
     offset = vk->frame_heap_offset;
 
     vk->frame_heap_offset = owl_alignu2(offset + size,
                                         vk->frame_heap_alignment);
 
-    data = &((owl_byte *)vk->frame_heap_data[vk->frame])[offset];
+    data = &((uint8_t *)vk->frame_heap_data[vk->frame])[offset];
 
-    alloc->offset32 = (owl_u32)offset;
+    alloc->offset32 = (uint32_t)offset;
     alloc->offset = offset;
     alloc->buffer = vk->frame_heap_buffers[vk->frame];
     alloc->pvm_descriptor_set = vk->frame_heap_pvm_descriptor_sets[vk->frame];
@@ -166,18 +166,18 @@ owl_vk_frame_alloc(struct owl_vk_renderer *vk, owl_u64 size,
   return data;
 }
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_frame_begin(struct owl_vk_renderer *vk)
 {
   VkSemaphore image_available_semaphore;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_OK;
+  owl_code code = OWL_OK;
 
   owl_vk_bind_pipeline(vk, OWL_VK_PIPELINE_NONE);
 
   image_available_semaphore = vk->frame_image_available_semaphores[vk->frame];
-  vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, (owl_u64)-1,
+  vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, (uint64_t)-1,
                                     image_available_semaphore, VK_NULL_HANDLE,
                                     &vk->swapchain_image);
   if (!vk_result) {
@@ -185,7 +185,7 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk)
 
     in_flight_fence = vk->frame_in_flight_fences[vk->frame];
     vk_result = vkWaitForFences(vk->device, 1, &in_flight_fence, VK_TRUE,
-                                (owl_u64)-1);
+                                (uint64_t)-1);
     if (!vk_result) {
       vk_result = vkResetFences(vk->device, 1, &in_flight_fence);
       if (!vk_result) {
@@ -252,12 +252,12 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk)
   return code;
 }
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_frame_end(struct owl_vk_renderer *vk)
 {
   VkCommandBuffer command_buffer;
   VkResult vk_result;
-  enum owl_code code = OWL_OK;
+  owl_code code = OWL_OK;
 
   command_buffer = vk->frame_command_buffers[vk->frame];
 

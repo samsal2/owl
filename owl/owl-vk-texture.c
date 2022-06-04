@@ -9,9 +9,9 @@
 #include <math.h>
 
 owl_public VkFormat
-owl_vk_pixel_format_as_vk_format(enum owl_pixel_format fmt)
+owl_vk_pixel_format_as_vk_format(enum owl_pixel_format format)
 {
-  switch (fmt) {
+  switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
     return VK_FORMAT_R8_UNORM;
 
@@ -20,22 +20,22 @@ owl_vk_pixel_format_as_vk_format(enum owl_pixel_format fmt)
   }
 }
 
-owl_public owl_u64
-owl_vk_pixel_format_size(enum owl_pixel_format fmt)
+owl_public uint64_t
+owl_vk_pixel_format_size(enum owl_pixel_format format)
 {
-  switch (fmt) {
+  switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
-    return 1 * sizeof(owl_u8);
+    return 1 * sizeof(uint8_t);
 
   case OWL_PIXEL_FORMAT_R8G8B8A8_SRGB:
-    return 4 * sizeof(owl_u8);
+    return 4 * sizeof(uint8_t);
   }
 }
 
-owl_public owl_u32
-owl_vk_texture_calc_mips(owl_i32 w, owl_i32 h)
+owl_public uint32_t
+owl_vk_texture_calc_mips(int32_t w, int32_t h)
 {
-  return (owl_u32)(floor(log2(owl_max(w, h))) + 1);
+  return (uint32_t)(floor(log2(owl_max(w, h))) + 1);
 }
 
 owl_private void
@@ -106,9 +106,9 @@ owl_private void
 owl_vk_texture_gen_mipmaps(struct owl_vk_texture *texture,
                            struct owl_vk_renderer *vk)
 {
-  owl_i32 i;
-  owl_i32 width;
-  owl_i32 height;
+  int32_t i;
+  int32_t width;
+  int32_t height;
   VkImageMemoryBarrier barrier;
 
   if (1 == texture->mips || 0 == texture->mips)
@@ -131,7 +131,7 @@ owl_vk_texture_gen_mipmaps(struct owl_vk_texture *texture,
   barrier.subresourceRange.layerCount = 1;
   barrier.subresourceRange.levelCount = 1;
 
-  for (i = 0; i < (owl_i32)(texture->mips - 1); ++i) {
+  for (i = 0; i < (int32_t)(texture->mips - 1); ++i) {
     VkImageBlit blit;
 
     barrier.subresourceRange.baseMipLevel = i;
@@ -193,16 +193,16 @@ owl_vk_texture_gen_mipmaps(struct owl_vk_texture *texture,
   texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
                     struct owl_vk_texture_desc *desc)
 {
-  owl_i32 width;
-  owl_i32 height;
-  owl_u32 mips;
+  int32_t width;
+  int32_t height;
+  uint32_t mips;
   enum owl_pixel_format pixel_format;
 
-  owl_byte *upload_data;
+  uint8_t *upload_data;
   struct owl_vk_upload_allocation upload_alloc;
 
   VkImageCreateInfo image_info;
@@ -215,12 +215,12 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
   VkBufferImageCopy copy;
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_OK;
+  owl_code code = OWL_OK;
 
   switch (desc->src) {
   case OWL_TEXTURE_SRC_DATA: {
-    owl_byte *data;
-    owl_u64 size;
+    uint8_t *data;
+    uint64_t size;
 
     data = desc->src_data;
     width = desc->src_data_width;
@@ -237,9 +237,9 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
 
   } break;
   case OWL_TEXTURE_SRC_FILE: {
-    owl_byte *data;
-    owl_i32 channels;
-    owl_u64 size;
+    uint8_t *data;
+    int32_t channels;
+    uint64_t size;
 
     data = stbi_load(desc->src_file_path, &width, &height, &channels,
                      STBI_rgb_alpha);
@@ -373,8 +373,8 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
   copy.imageOffset.x = 0;
   copy.imageOffset.y = 0;
   copy.imageOffset.z = 0;
-  copy.imageExtent.width = (owl_u32)width;
-  copy.imageExtent.height = (owl_u32)height;
+  copy.imageExtent.width = (uint32_t)width;
+  copy.imageExtent.height = (uint32_t)height;
   copy.imageExtent.depth = 1;
 
   vkCmdCopyBufferToImage(vk->im_command_buffer, upload_alloc.buffer,

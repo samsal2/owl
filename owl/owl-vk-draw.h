@@ -18,18 +18,18 @@ struct owl_quad {
   struct owl_vk_texture *texture;
 };
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,
                  owl_m4 const matrix);
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_draw_skybox(struct owl_vk_renderer *vk);
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_draw_text(struct owl_vk_renderer *vk, char const *text,
                  owl_v3 const position, owl_v3 const color);
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_draw_model(struct owl_vk_renderer *vk, struct owl_model const *model,
                   owl_m4 const matrix);
 

@@ -12,16 +12,16 @@ struct owl_plataform {
   void *opaque;
 };
 
-owl_public enum owl_code
-owl_plataform_init(struct owl_plataform *plataform, owl_i32 width,
-                   owl_i32 height, char const *title);
+owl_public owl_code
+owl_plataform_init(struct owl_plataform *plataform, int32_t width,
+                   int32_t height, char const *title);
 
 owl_public void
 owl_plataform_deinit(struct owl_plataform *plataform);
 
-owl_public enum owl_code
+owl_public owl_code
 owl_plataform_get_vulkan_extensions(struct owl_plataform *plataform,
-                                    owl_u32 *num_extensions,
+                                    uint32_t *num_extensions,
                                     char const *const **extensions);
 
 owl_public char const *
@@ -29,17 +29,17 @@ owl_plataform_get_title(struct owl_plataform const *plataform);
 
 owl_public void
 owl_plataform_get_window_dimensions(struct owl_plataform const *plataform,
-                                    owl_u32 *width, owl_u32 *height);
+                                    uint32_t *width, uint32_t *height);
 
 owl_public void
 owl_plataform_get_framebuffer_dimensions(struct owl_plataform const *plataform,
-                                         owl_u32 *width, owl_u32 *height);
+                                         uint32_t *width, uint32_t *height);
 
-owl_public enum owl_code
+owl_public owl_code
 owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
                                     struct owl_vk_renderer *vk);
 
-owl_public owl_b32
+owl_public int32_t
 owl_plataform_should_close(struct owl_plataform *plataform);
 
 owl_public void

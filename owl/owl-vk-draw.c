@@ -9,11 +9,11 @@
 #include "owl-vk-texture.h"
 #include "owl-vk-types.h"
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,
                  owl_m4 const matrix)
 {
-  owl_byte *data;
+  uint8_t *data;
   VkDescriptorSet sets[2];
   VkCommandBuffer command_buffer;
   struct owl_pvm_ubo ubo;
@@ -22,7 +22,7 @@ owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,
   struct owl_vk_frame_allocation ialloc;
   struct owl_vk_frame_allocation ualloc;
 
-  owl_local_persist owl_u32 const indices[] = {2, 3, 1, 1, 0, 2};
+  owl_local_persist uint32_t const indices[] = {2, 3, 1, 1, 0, 2};
 
   command_buffer = vk->frame_command_buffers[vk->frame];
 
@@ -98,7 +98,7 @@ owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,
   return OWL_OK;
 }
 
-owl_private enum owl_code
+owl_private owl_code
 owl_vk_draw_glyph(struct owl_vk_renderer *vk, struct owl_vk_glyph *glyph,
                   owl_v3 const color)
 {
@@ -134,14 +134,14 @@ owl_vk_draw_glyph(struct owl_vk_renderer *vk, struct owl_vk_glyph *glyph,
   return owl_vk_draw_quad(vk, &quad, matrix);
 }
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_draw_text(struct owl_vk_renderer *vk, char const *text,
                  owl_v3 const position, owl_v3 const color)
 {
   char const *c;
   owl_v2 offset;
 
-  enum owl_code code;
+  owl_code code;
 
   owl_vk_bind_pipeline(vk, OWL_VK_PIPELINE_TEXT);
 
@@ -163,12 +163,12 @@ owl_vk_draw_text(struct owl_vk_renderer *vk, char const *text,
   return OWL_OK;
 }
 
-owl_private enum owl_code
+owl_private owl_code
 owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
                        struct owl_model const *model, owl_m4 const matrix)
 {
-  owl_i32 i;
-  owl_byte *data;
+  int32_t i;
+  uint8_t *data;
   owl_model_node_id parent;
   struct owl_model_node const *node;
   struct owl_model_mesh const *mesh;
@@ -179,7 +179,7 @@ owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
   struct owl_vk_frame_allocation u1alloc;
   struct owl_vk_frame_allocation u2alloc;
 
-  enum owl_code code;
+  owl_code code;
 
   node = &model->nodes[id];
 
@@ -337,14 +337,14 @@ owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
   return OWL_OK;
 }
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_draw_model(struct owl_vk_renderer *vk, struct owl_model const *model,
                   owl_m4 const matrix)
 {
-  owl_i32 i;
+  int32_t i;
 
-  owl_u64 offset = 0;
-  enum owl_code code = OWL_OK;
+  uint64_t offset = 0;
+  owl_code code = OWL_OK;
 
   code = owl_vk_bind_pipeline(vk, OWL_VK_PIPELINE_MODEL);
   if (OWL_OK != code)
@@ -366,10 +366,10 @@ owl_vk_draw_model(struct owl_vk_renderer *vk, struct owl_model const *model,
   return OWL_OK;
 }
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_draw_skybox(struct owl_vk_renderer *vk)
 {
-  owl_byte *data;
+  uint8_t *data;
   struct owl_vk_frame_allocation valloc;
   struct owl_vk_frame_allocation ialloc;
   struct owl_vk_frame_allocation ualloc;
@@ -398,7 +398,7 @@ owl_vk_draw_skybox(struct owl_vk_renderer *vk)
       {-1.0F, 1.0F, 1.0F},   /* 6 */
       {1.0F, 1.0F, 1.0F}};   /* 7 */
 
-  owl_local_persist owl_u32 const indices[] = {
+  owl_local_persist uint32_t const indices[] = {
       2, 3, 1, 1, 0, 2,  /* face 0 ....*/
       3, 7, 5, 5, 1, 3,  /* face 1 */
       6, 2, 0, 0, 4, 6,  /* face 2 */

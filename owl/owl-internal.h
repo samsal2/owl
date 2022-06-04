@@ -33,7 +33,7 @@ owl_debug_free(void *p, char const *f, int l);
 
 #define OWL_DEBUG_LOG(...) owl_debug_log(__FILE__, __LINE__, __VA_ARGS__)
 void
-owl_debug_log(char const *f, int l, char const *fmt, ...);
+owl_debug_log(char const *f, int l, char const *format, ...);
 
 #else /* NDEBUG */
 

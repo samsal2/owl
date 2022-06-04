@@ -12,16 +12,16 @@ owl_static_assert(
     sizeof(struct owl_vk_packed_char) == sizeof(stbtt_packedchar),
     "owl_packed_char and stbtt_packedchar must represent the same struct");
 
-owl_private enum owl_code
-owl_vk_load_file(char const *path, owl_byte **file)
+owl_private owl_code
+owl_vk_load_file(char const *path, uint8_t **file)
 {
   FILE *fp;
 
-  enum owl_code code = OWL_OK;
+  owl_code code = OWL_OK;
 
   fp = fopen(path, "rb");
   if (fp) {
-    owl_u64 size;
+    uint64_t size;
 
     fseek(fp, 0, SEEK_END);
     size = ftell(fp);
@@ -43,7 +43,7 @@ owl_vk_load_file(char const *path, owl_byte **file)
 }
 
 owl_private void
-owl_vk_unload_file(owl_byte *data)
+owl_vk_unload_file(uint8_t *data)
 {
   owl_free(data);
 }
@@ -53,17 +53,17 @@ owl_vk_unload_file(owl_byte *data)
 #define OWL_VK_FONT_ATLAS_SIZE                                                \
   (OWL_VK_FONT_ATLAS_HEIGHT * OWL_VK_FONT_ATLAS_WIDTH)
 
-owl_public enum owl_code
-owl_vk_font_load(struct owl_vk_renderer *vk, owl_u64 size, char const *path)
+owl_public owl_code
+owl_vk_font_load(struct owl_vk_renderer *vk, uint64_t size, char const *path)
 {
   int res;
-  owl_byte *file;
-  owl_byte *bitmap;
+  uint8_t *file;
+  uint8_t *bitmap;
 
   stbtt_pack_context pack;
   struct owl_vk_texture_desc desc;
 
-  enum owl_code code = OWL_OK;
+  owl_code code = OWL_OK;
 
   if (vk->font_loaded)
     owl_vk_font_unload(vk);
@@ -72,7 +72,7 @@ owl_vk_font_load(struct owl_vk_renderer *vk, owl_u64 size, char const *path)
   if (OWL_OK != code)
     goto out;
 
-  bitmap = owl_calloc(OWL_VK_FONT_ATLAS_SIZE, sizeof(owl_byte));
+  bitmap = owl_calloc(OWL_VK_FONT_ATLAS_SIZE, sizeof(uint8_t));
   if (!bitmap) {
     code = OWL_ERROR_FATAL;
     goto error_unload_file;
@@ -137,12 +137,12 @@ owl_vk_font_unload(struct owl_vk_renderer *vk)
   vk->font_loaded = 0;
 }
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_font_fill_glyph(struct owl_vk_renderer *vk, char c, owl_v2 offset,
                        struct owl_vk_glyph *glyph)
 {
   stbtt_aligned_quad quad;
-  enum owl_code code = OWL_OK;
+  owl_code code = OWL_OK;
 
   stbtt_GetPackedQuad((stbtt_packedchar *)(&vk->font_chars[0]),
                       OWL_VK_FONT_ATLAS_WIDTH, OWL_VK_FONT_ATLAS_HEIGHT,

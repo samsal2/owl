@@ -72,15 +72,15 @@ owl_vk_skybox_transition(struct owl_vk_renderer *vk, VkImageLayout src_layout,
                        0, NULL, 1, &barrier);
 }
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
 {
-  owl_i32 i;
-  owl_i32 width;
-  owl_i32 height;
-  owl_i32 chans;
-  owl_u64 image_size;
-  owl_byte *data = NULL;
+  int32_t i;
+  int32_t width;
+  int32_t height;
+  int32_t chans;
+  uint64_t image_size;
+  uint8_t *data = NULL;
 
   int ret;
   char file[OWL_VK_SKYBOX_MAX_PATH_LENGTH];
@@ -93,15 +93,15 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
   VkDescriptorImageInfo descriptors[2];
   VkWriteDescriptorSet writes[2];
 
-  owl_u32 upload_offset;
-  owl_byte *upload_data;
-  owl_u64 upload_size;
+  uint32_t upload_offset;
+  uint8_t *upload_data;
+  uint64_t upload_size;
   struct owl_vk_upload_allocation upload_alloc;
 
   VkBufferImageCopy copies[6];
 
   VkResult vk_result = VK_SUCCESS;
-  enum owl_code code = OWL_OK;
+  owl_code code = OWL_OK;
 
   owl_local_persist char const *names[6] = {"left.jpg",  "right.jpg",
                                             "top.jpg",   "bottom.jpg",
@@ -127,8 +127,8 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
   image_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
   image_info.imageType = VK_IMAGE_TYPE_2D;
   image_info.format = VK_FORMAT_R8G8B8A8_SRGB;
-  image_info.extent.width = (owl_u32)width;
-  image_info.extent.height = (owl_u32)height;
+  image_info.extent.width = (uint32_t)width;
+  image_info.extent.height = (uint32_t)height;
   image_info.extent.depth = 1;
   image_info.mipLevels = 1;
   image_info.arrayLayers = 6; /* 6 sides of the cube */
@@ -215,7 +215,7 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
     goto error_free_descriptor_set;
   }
 
-  for (i = 0; i < (owl_i32)owl_array_size(names); ++i) {
+  for (i = 0; i < (int32_t)owl_array_size(names); ++i) {
     if (0 < i) {
       ret = snprintf(file, OWL_VK_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path,
                      names[i]);
@@ -236,8 +236,8 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
     copies[i].imageOffset.x = 0;
     copies[i].imageOffset.y = 0;
     copies[i].imageOffset.z = 0;
-    copies[i].imageExtent.width = (owl_u32)width;
-    copies[i].imageExtent.height = (owl_u32)height;
+    copies[i].imageExtent.width = (uint32_t)width;
+    copies[i].imageExtent.height = (uint32_t)height;
     copies[i].imageExtent.depth = 1;
 
     owl_memcpy(upload_data + upload_offset, data, image_size);

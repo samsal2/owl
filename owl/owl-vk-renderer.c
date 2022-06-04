@@ -9,17 +9,17 @@
 
 #define OWL_VK_DEFAULT_HEAP_SIZE (1 << 16)
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_renderer_init(struct owl_vk_renderer *vk,
                      struct owl_plataform *plataform)
 {
-  owl_u32 width;
-  owl_u32 height;
+  uint32_t width;
+  uint32_t height;
 
   owl_v3 eye;
   owl_v3 direction;
   owl_v3 up;
-  enum owl_code code;
+  owl_code code;
 
   float const fov = owl_deg2rad(45.0F);
   float const near = 0.01;

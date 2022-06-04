@@ -13,7 +13,7 @@ static owl_m4 matrix;
 
 #define CHECK(fn)                                                             \
   do {                                                                        \
-    enum owl_code code = (fn);                                                \
+    owl_code code = (fn);                                                     \
     if (code) {                                                               \
       printf("something went wrong in call: %s, code %i\n", (#fn), code);     \
       return 0;                                                               \

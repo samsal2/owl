@@ -5,7 +5,7 @@
 
 struct owl_vk_renderer;
 
-enum owl_code
+owl_code
 owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path);
 
 owl_public void

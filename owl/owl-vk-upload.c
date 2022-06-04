@@ -6,14 +6,14 @@
 
 #include "owl-internal.h"
 
-owl_public enum owl_code
-owl_vk_upload_reserve(struct owl_vk_renderer *vk, owl_u64 size)
+owl_public owl_code
+owl_vk_upload_reserve(struct owl_vk_renderer *vk, uint64_t size)
 {
   if (vk->upload_heap_in_use)
     return OWL_ERROR_FATAL;
 
   if (vk->upload_heap_size < size) {
-    enum owl_code code;
+    owl_code code;
 
     /* FIXME (samuel): init first */
     owl_vk_deinit_upload_heap(vk);
@@ -27,10 +27,10 @@ owl_vk_upload_reserve(struct owl_vk_renderer *vk, owl_u64 size)
 }
 
 owl_public void *
-owl_vk_upload_alloc(struct owl_vk_renderer *vk, owl_u64 size,
+owl_vk_upload_alloc(struct owl_vk_renderer *vk, uint64_t size,
                     struct owl_vk_upload_allocation *alloc)
 {
-  enum owl_code code;
+  owl_code code;
 
   if (vk->upload_heap_in_use)
     return NULL;

@@ -2,7 +2,7 @@
 
 #include "owl-vk-renderer.h"
 
-owl_public enum owl_code
+owl_public owl_code
 owl_vk_bind_pipeline(struct owl_vk_renderer *vk, enum owl_vk_pipeline id)
 {
   if (vk->pipeline == id)
