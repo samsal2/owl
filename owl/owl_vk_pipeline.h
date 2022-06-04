@@ -1,7 +1,7 @@
 #ifndef OWL_VK_PIPELINE_H_
 #define OWL_VK_PIPELINE_H_
 
-#include "owl-definitions.h"
+#include "owl_definitions.h"
 
 OWL_BEGIN_DECLS
 

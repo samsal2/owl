@@ -1,13 +1,13 @@
-#include "owl-model.h"
+#include "owl_model.h"
 
 #include "cgltf.h"
-#include "owl-internal.h"
-#include "owl-vector-math.h"
-#include "owl-vk-frame.h"
-#include "owl-vk-misc.h"
-#include "owl-vk-renderer.h"
-#include "owl-vk-types.h"
-#include "owl-vk-upload.h"
+#include "owl_internal.h"
+#include "owl_vector_math.h"
+#include "owl_vk_frame.h"
+#include "owl_vk_misc.h"
+#include "owl_vk_renderer.h"
+#include "owl_vk_types.h"
+#include "owl_vk_upload.h"
 
 #include <float.h>
 #include <stdio.h>

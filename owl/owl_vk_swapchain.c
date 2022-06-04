@@ -1,9 +1,9 @@
-#include "owl-vk-swapchain.h"
+#include "owl_vk_swapchain.h"
 
-#include "owl-internal.h"
-#include "owl-plataform.h"
-#include "owl-vk-init.h"
-#include "owl-vk-renderer.h"
+#include "owl_internal.h"
+#include "owl_plataform.h"
+#include "owl_vk_init.h"
+#include "owl_vk_renderer.h"
 
 owl_public owl_code
 owl_vk_swapchain_resize(struct owl_vk_renderer *vk)

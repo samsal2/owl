@@ -1,6 +1,6 @@
-#include "owl-vk-pipeline.h"
+#include "owl_vk_pipeline.h"
 
-#include "owl-vk-renderer.h"
+#include "owl_vk_renderer.h"
 
 owl_public owl_code
 owl_vk_bind_pipeline(struct owl_vk_renderer *vk, enum owl_vk_pipeline id)

@@ -1,13 +1,13 @@
-#include "owl-vk-draw.h"
+#include "owl_vk_draw.h"
 
-#include "owl-internal.h"
-#include "owl-model.h"
-#include "owl-vector-math.h"
-#include "owl-vk-font.h"
-#include "owl-vk-frame.h"
-#include "owl-vk-renderer.h"
-#include "owl-vk-texture.h"
-#include "owl-vk-types.h"
+#include "owl_internal.h"
+#include "owl_model.h"
+#include "owl_vector_math.h"
+#include "owl_vk_font.h"
+#include "owl_vk_frame.h"
+#include "owl_vk_renderer.h"
+#include "owl_vk_texture.h"
+#include "owl_vk_types.h"
 
 owl_public owl_code
 owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,

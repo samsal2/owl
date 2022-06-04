@@ -1,8 +1,8 @@
-#include "owl-plataform.h"
+#include "owl_plataform.h"
 
-#include "owl-internal.h"
+#include "owl_internal.h"
 
-#include "owl-vk-renderer.h"
+#include "owl_vk_renderer.h"
 
 /* clang-format off */
 #define GLFW_INCLUDE_NONE

@@ -1,7 +1,7 @@
 #ifndef OWL_VK_SKYBOX_H_
 #define OWL_VK_SKYBOX_H_
 
-#include "owl-definitions.h"
+#include "owl_definitions.h"
 
 struct owl_vk_renderer;
 

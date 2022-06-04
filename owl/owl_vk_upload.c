@@ -1,10 +1,10 @@
 
-#include "owl-vk-upload.h"
+#include "owl_vk_upload.h"
 
-#include "owl-vk-init.h"
-#include "owl-vk-renderer.h"
+#include "owl_vk_init.h"
+#include "owl_vk_renderer.h"
 
-#include "owl-internal.h"
+#include "owl_internal.h"
 
 owl_public owl_code
 owl_vk_upload_reserve(struct owl_vk_renderer *vk, uint64_t size)

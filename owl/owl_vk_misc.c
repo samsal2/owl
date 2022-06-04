@@ -1,7 +1,7 @@
-#include "owl-vk-misc.h"
+#include "owl_vk_misc.h"
 
-#include "owl-internal.h"
-#include "owl-vk-renderer.h"
+#include "owl_internal.h"
+#include "owl_vk_renderer.h"
 
 owl_public uint32_t
 owl_vk_find_memory_type(struct owl_vk_renderer *vk, uint32_t filter,

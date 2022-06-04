@@ -1,12 +1,12 @@
-#include "owl-vk-frame.h"
+#include "owl_vk_frame.h"
 
-#include "owl-definitions.h"
-#include "owl-internal.h"
-#include "owl-vk-init.h"
-#include "owl-vk-pipeline.h"
-#include "owl-vk-renderer.h"
-#include "owl-vk-swapchain.h"
-#include "owl-vk-types.h"
+#include "owl_definitions.h"
+#include "owl_internal.h"
+#include "owl_vk_init.h"
+#include "owl_vk_pipeline.h"
+#include "owl_vk_renderer.h"
+#include "owl_vk_swapchain.h"
+#include "owl_vk_types.h"
 
 owl_private void
 owl_vk_collect_frame_garbage(struct owl_vk_renderer *vk)

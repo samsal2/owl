@@ -1,11 +1,11 @@
-#include "owl-vk-renderer.h"
+#include "owl_vk_renderer.h"
 
-#include "owl-internal.h"
-#include "owl-plataform.h"
-#include "owl-vector-math.h"
-#include "owl-vk-font.h"
-#include "owl-vk-init.h"
-#include "owl-vk-skybox.h"
+#include "owl_internal.h"
+#include "owl_plataform.h"
+#include "owl_vector_math.h"
+#include "owl_vk_font.h"
+#include "owl_vk_init.h"
+#include "owl_vk_skybox.h"
 
 #define OWL_VK_DEFAULT_HEAP_SIZE (1 << 16)
 

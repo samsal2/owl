@@ -1,7 +1,7 @@
 #ifndef OWL_VK_FRAME_H_
 #define OWL_VK_FRAME_H_
 
-#include "owl-definitions.h"
+#include "owl_definitions.h"
 
 #include <vulkan/vulkan.h>
 

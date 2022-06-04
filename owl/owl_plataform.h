@@ -1,7 +1,7 @@
 #ifndef OWL_PLATAFORM_H_
 #define OWL_PLATAFORM_H_
 
-#include "owl-definitions.h"
+#include "owl_definitions.h"
 
 OWL_BEGIN_DECLS
 

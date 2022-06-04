@@ -1,10 +1,10 @@
-#include "owl-vk-skybox.h"
+#include "owl_vk_skybox.h"
 
-#include "owl-internal.h"
-#include "owl-vk-misc.h"
-#include "owl-vk-renderer.h"
-#include "owl-vk-texture.h"
-#include "owl-vk-upload.h"
+#include "owl_internal.h"
+#include "owl_vk_misc.h"
+#include "owl_vk_renderer.h"
+#include "owl_vk_texture.h"
+#include "owl_vk_upload.h"
 
 #include "stb_image.h"
 

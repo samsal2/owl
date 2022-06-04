@@ -1,12 +1,12 @@
-#include "owl-vk-init.h"
+#include "owl_vk_init.h"
 
-#include "owl-internal.h"
-#include "owl-model.h"
-#include "owl-plataform.h"
-#include "owl-vk-misc.h"
-#include "owl-vk-pipeline.h"
-#include "owl-vk-renderer.h"
-#include "owl-vk-types.h"
+#include "owl_internal.h"
+#include "owl_model.h"
+#include "owl_plataform.h"
+#include "owl_vk_misc.h"
+#include "owl_vk_pipeline.h"
+#include "owl_vk_renderer.h"
+#include "owl_vk_types.h"
 
 #if defined(OWL_ENABLE_VALIDATION)
 
@@ -652,13 +652,15 @@ owl_vk_init_attachments(struct owl_vk_renderer *vk, uint32_t w, uint32_t h)
       owl_vk_find_memory_type(vk, memory_requirements.memoryTypeBits,
                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-  vk_result = vkAllocateMemory(vk->device, &memory_info, NULL, &vk->depth_mem);
+  vk_result = vkAllocateMemory(vk->device, &memory_info, NULL,
+                               &vk->depth_memory);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_destroy_depth_image;
   }
 
-  vk_result = vkBindImageMemory(vk->device, vk->depth_image, vk->depth_mem, 0);
+  vk_result = vkBindImageMemory(vk->device, vk->depth_image, vk->depth_memory,
+                                0);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_free_depth_memory;
@@ -690,7 +692,7 @@ owl_vk_init_attachments(struct owl_vk_renderer *vk, uint32_t w, uint32_t h)
   goto out;
 
 error_free_depth_memory:
-  vkFreeMemory(vk->device, vk->depth_mem, NULL);
+  vkFreeMemory(vk->device, vk->depth_memory, NULL);
 
 error_destroy_depth_image:
   vkDestroyImage(vk->device, vk->depth_image, NULL);
@@ -712,7 +714,7 @@ owl_public void
 owl_vk_deinit_attachments(struct owl_vk_renderer *vk)
 {
   vkDestroyImageView(vk->device, vk->depth_image_view, NULL);
-  vkFreeMemory(vk->device, vk->depth_mem, NULL);
+  vkFreeMemory(vk->device, vk->depth_memory, NULL);
   vkDestroyImage(vk->device, vk->depth_image, NULL);
   vkDestroyImageView(vk->device, vk->color_image_view, NULL);
   vkFreeMemory(vk->device, vk->color_memory, NULL);
@@ -1049,7 +1051,7 @@ owl_vk_init_pools(struct owl_vk_renderer *vk)
   command_pool_info.queueFamilyIndex = vk->graphics_queue_family;
 
   vk_result = vkCreateCommandPool(vk->device, &command_pool_info, NULL,
-                                  &vk->command_pool);
+                                  &vk->transient_command_pool);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto out;
@@ -1085,13 +1087,13 @@ owl_vk_init_pools(struct owl_vk_renderer *vk)
                                      &vk->descriptor_pool);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
-    goto error_destroy_command_pool;
+    goto error_destroy_transient_command_pool;
   }
 
   goto out;
 
-error_destroy_command_pool:
-  vkDestroyCommandPool(vk->device, vk->command_pool, NULL);
+error_destroy_transient_command_pool:
+  vkDestroyCommandPool(vk->device, vk->transient_command_pool, NULL);
 
 out:
   return code;
@@ -1101,7 +1103,7 @@ owl_public void
 owl_vk_deinit_pools(struct owl_vk_renderer *vk)
 {
   vkDestroyDescriptorPool(vk->device, vk->descriptor_pool, NULL);
-  vkDestroyCommandPool(vk->device, vk->command_pool, NULL);
+  vkDestroyCommandPool(vk->device, vk->transient_command_pool, NULL);
 }
 
 owl_public owl_code

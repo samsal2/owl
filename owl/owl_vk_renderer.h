@@ -1,10 +1,10 @@
 #ifndef OWL_VK_RENDERER_H_
 #define OWL_VK_RENDERER_H_
 
-#include "owl-definitions.h"
-#include "owl-vk-font.h"
-#include "owl-vk-pipeline.h"
-#include "owl-vk-texture.h"
+#include "owl_definitions.h"
+#include "owl_vk_font.h"
+#include "owl_vk_pipeline.h"
+#include "owl_vk_texture.h"
 
 #include <vulkan/vulkan.h>
 

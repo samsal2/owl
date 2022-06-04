@@ -1,6 +1,6 @@
 #include "owl.h"
 
-#include "owl-internal.h"
+#include "owl_internal.h"
 
 #include <math.h>
 

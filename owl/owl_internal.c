@@ -1,6 +1,6 @@
-#include "owl-internal.h"
+#include "owl_internal.h"
 
-#include "owl-definitions.h"
+#include "owl_definitions.h"
 
 #include <stdarg.h>
 #include <stdio.h>

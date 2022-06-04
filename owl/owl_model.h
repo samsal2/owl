@@ -1,9 +1,9 @@
 #ifndef OWL_MODEL_H_
 #define OWL_MODEL_H_
 
-#include "owl-definitions.h"
-#include "owl-vk-renderer.h"
-#include "owl-vk-texture.h"
+#include "owl_definitions.h"
+#include "owl_vk_renderer.h"
+#include "owl_vk_texture.h"
 
 #include <vulkan/vulkan.h>
 
