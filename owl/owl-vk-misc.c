@@ -35,7 +35,7 @@ owl_vk_begin_im_command_buffer(struct owl_vk_renderer *vk)
 
   command_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   command_buffer_info.pNext = NULL;
-  command_buffer_info.commandPool = vk->command_pool;
+  command_buffer_info.commandPool = vk->transient_command_pool;
   command_buffer_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   command_buffer_info.commandBufferCount = 1;
 
@@ -60,7 +60,7 @@ owl_vk_begin_im_command_buffer(struct owl_vk_renderer *vk)
   goto out;
 
 error_im_command_buffer_deinit:
-  vkFreeCommandBuffers(vk->device, vk->command_pool, 1,
+  vkFreeCommandBuffers(vk->device, vk->transient_command_pool, 1,
                        &vk->im_command_buffer);
 
 out:
@@ -108,7 +108,7 @@ owl_vk_end_im_command_buffer(struct owl_vk_renderer *vk)
   vk->im_command_buffer = VK_NULL_HANDLE;
 
 cleanup:
-  vkFreeCommandBuffers(vk->device, vk->command_pool, 1,
+  vkFreeCommandBuffers(vk->device, vk->transient_command_pool, 1,
                        &vk->im_command_buffer);
 
   return code;

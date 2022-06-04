@@ -32,13 +32,19 @@ typedef owl_v3 owl_m3[3];
 typedef owl_v4 owl_m4[4];
 
 typedef int owl_code;
-
+/** everything is ok */
 #define OWL_OK 0
+/** an internal fatal error ocurred */
 #define OWL_ERROR_FATAL -1
+/** couldn't obtain memory from the frame heap */
 #define OWL_ERROR_NO_FRAME_MEMORY -2
+/** couldn't obtain memory from the upload heap */
 #define OWL_ERROR_NO_UPLOAD_MEMORY -3
+/** malloc, calloc or realloc failed */
 #define OWL_ERROR_NO_MEMORY -4
+/** malloc, calloc or realloc failed */
 #define OWL_ERROR_NOT_FOUND -5
+/** a fixed size array ran out of space */
 #define OWL_ERROR_NO_SPACE -6
 
 #define OWL_NUM_IN_FLIGHT_FRAMES 3

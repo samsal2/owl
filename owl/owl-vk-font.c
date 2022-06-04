@@ -87,8 +87,8 @@ owl_vk_font_load(struct owl_vk_renderer *vk, uint64_t size, char const *path)
 
   stbtt_PackSetOversampling(&pack, 2, 2);
 
-  res = stbtt_PackFontRange(&pack, file, 0, size, OWL_FIRST_CHAR,
-                            OWL_NUM_CHARS,
+  res = stbtt_PackFontRange(&pack, file, 0, size, OWL_FONT_FIRST_CHAR,
+                            OWL_FONT_NUM_CHARS,
                             (stbtt_packedchar *)(&vk->font_chars[0]));
   if (!res) {
     code = OWL_ERROR_FATAL;
@@ -146,7 +146,8 @@ owl_vk_font_fill_glyph(struct owl_vk_renderer *vk, char c, owl_v2 offset,
 
   stbtt_GetPackedQuad((stbtt_packedchar *)(&vk->font_chars[0]),
                       OWL_VK_FONT_ATLAS_WIDTH, OWL_VK_FONT_ATLAS_HEIGHT,
-                      c - OWL_FIRST_CHAR, &offset[0], &offset[1], &quad, 1);
+                      c - OWL_FONT_FIRST_CHAR, &offset[0], &offset[1], &quad,
+                      1);
 
   owl_v3_set(glyph->positions[0], quad.x0, quad.y0, 0.0F);
   owl_v3_set(glyph->positions[1], quad.x1, quad.y0, 0.0F);

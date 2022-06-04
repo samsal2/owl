@@ -728,7 +728,7 @@ owl_vk_init_render_passes(struct owl_vk_renderer *vk)
   VkAttachmentDescription attachments[3];
   VkSubpassDescription subpass;
   VkSubpassDependency dependency;
-  VkRenderPassCreateInfo pass_info;
+  VkRenderPassCreateInfo render_pass_info;
 
   VkResult vk_result;
 
@@ -797,17 +797,17 @@ owl_vk_init_render_passes(struct owl_vk_renderer *vk)
                              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
   dependency.dependencyFlags = 0;
 
-  pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  pass_info.pNext = NULL;
-  pass_info.flags = 0;
-  pass_info.attachmentCount = owl_array_size(attachments);
-  pass_info.pAttachments = attachments;
-  pass_info.subpassCount = 1;
-  pass_info.pSubpasses = &subpass;
-  pass_info.dependencyCount = 1;
-  pass_info.pDependencies = &dependency;
+  render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+  render_pass_info.pNext = NULL;
+  render_pass_info.flags = 0;
+  render_pass_info.attachmentCount = owl_array_size(attachments);
+  render_pass_info.pAttachments = attachments;
+  render_pass_info.subpassCount = 1;
+  render_pass_info.pSubpasses = &subpass;
+  render_pass_info.dependencyCount = 1;
+  render_pass_info.pDependencies = &dependency;
 
-  vk_result = vkCreateRenderPass(vk->device, &pass_info, NULL,
+  vk_result = vkCreateRenderPass(vk->device, &render_pass_info, NULL,
                                  &vk->main_render_pass);
   if (vk_result)
     return OWL_ERROR_FATAL;
