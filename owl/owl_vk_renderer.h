@@ -121,7 +121,7 @@ struct owl_vk_renderer {
   VkCommandPool frame_command_pools[OWL_NUM_IN_FLIGHT_FRAMES];
   VkCommandBuffer frame_command_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
   VkFence frame_in_flight_fences[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkSemaphore frame_image_available_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkSemaphore frame_acquire_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
   VkSemaphore frame_render_done_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
 
   VkDeviceSize frame_heap_size;

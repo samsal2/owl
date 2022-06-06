@@ -2918,7 +2918,7 @@ owl_vk_renderer_init_frames(struct owl_vk_renderer *vk)
     semaphore_info.flags = 0;
 
     vk_result = vkCreateSemaphore(vk->device, &semaphore_info, NULL,
-                                  &vk->frame_image_available_semaphores[i]);
+                                  &vk->frame_acquire_semaphores[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image_available_semaphores;
@@ -2950,8 +2950,7 @@ error_destroy_render_done_semaphores:
 
 error_destroy_image_available_semaphores:
   for (i = i - 1; i >= 0; --i)
-    vkDestroySemaphore(vk->device, vk->frame_image_available_semaphores[i],
-                       NULL);
+    vkDestroySemaphore(vk->device, vk->frame_acquire_semaphores[i], NULL);
 
   i = vk->num_frames;
 
@@ -3004,8 +3003,7 @@ owl_vk_renderer_deinit_frames(struct owl_vk_renderer *vk)
     vkDestroySemaphore(vk->device, vk->frame_render_done_semaphores[i], NULL);
 
   for (i = 0; i < vk->num_frames; ++i)
-    vkDestroySemaphore(vk->device, vk->frame_image_available_semaphores[i],
-                       NULL);
+    vkDestroySemaphore(vk->device, vk->frame_acquire_semaphores[i], NULL);
 
   for (i = 0; i < vk->num_frames; ++i)
     vkDestroyFence(vk->device, vk->frame_in_flight_fences[i], NULL);
@@ -3334,6 +3332,9 @@ owl_public owl_code
 owl_vk_renderer_bind_pipeline(struct owl_vk_renderer *vk,
                               enum owl_vk_pipeline id)
 {
+  VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  VkCommandBuffer command_buffer = vk->frame_command_buffers[vk->frame];
+
   if (vk->pipeline == id)
     return OWL_OK;
 
@@ -3345,8 +3346,7 @@ owl_vk_renderer_bind_pipeline(struct owl_vk_renderer *vk,
   if (0 > id || OWL_VK_NUM_PIPELINES < id)
     return OWL_ERROR_NOT_FOUND;
 
-  vkCmdBindPipeline(vk->frame_command_buffers[vk->frame],
-                    VK_PIPELINE_BIND_POINT_GRAPHICS, vk->pipelines[id]);
+  vkCmdBindPipeline(command_buffer, bind_point, vk->pipelines[id]);
 
   return OWL_OK;
 }
