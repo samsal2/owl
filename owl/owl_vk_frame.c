@@ -32,7 +32,7 @@ owl_vk_push_frame_garbage(struct owl_vk_renderer *vk)
 {
   uint32_t i;
 
-  for (i = 0; i < vk->num_swapchain_images; ++i) {
+  for (i = 0; i < vk->num_frames; ++i) {
     if (vk->num_frame_garbage_buffers[i] + 1 > OWL_MAX_GARBAGE_ITEMS)
       return OWL_ERROR_NO_SPACE;
 
@@ -43,7 +43,7 @@ owl_vk_push_frame_garbage(struct owl_vk_renderer *vk)
       return OWL_ERROR_NO_SPACE;
   }
 
-  for (i = 0; i < vk->num_swapchain_images; ++i) {
+  for (i = 0; i < vk->num_frames; ++i) {
     uint32_t pos;
 
     pos = vk->num_frame_garbage_buffers[i]++;
@@ -79,7 +79,7 @@ owl_vk_pop_frame_garbage(struct owl_vk_renderer *vk)
 {
   uint32_t i;
 
-  for (i = 0; i < vk->num_swapchain_images; ++i) {
+  for (i = 0; i < vk->num_frames; ++i) {
     uint32_t pos;
 
     pos = --vk->num_frame_garbage_buffers[i];
@@ -307,7 +307,7 @@ owl_vk_frame_end(struct owl_vk_renderer *vk)
     }
   }
 
-  if (vk->num_swapchain_images == ++vk->frame)
+  if (vk->num_frames == ++vk->frame)
     vk->frame = 0;
 
   vk->frame_heap_offset = 0;

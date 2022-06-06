@@ -10,6 +10,7 @@
 OWL_BEGIN_DECLS
 
 #define OWL_MAX_SWAPCHAIN_IMAGES 8
+#define OWL_NUM_IN_FLIGHT_FRAMES 3
 #define OWL_MAX_GARBAGE_ITEMS 8
 #define OWL_FONT_FIRST_CHAR ((int32_t)(' '))
 #define OWL_FONT_NUM_CHARS ((int32_t)('~' - ' '))
@@ -96,50 +97,54 @@ struct owl_vk_renderer {
   VkPipeline pipelines[OWL_VK_NUM_PIPELINES];
   VkPipelineLayout pipeline_layouts[OWL_VK_NUM_PIPELINES];
 
+  int upload_heap_in_use;
   void *upload_heap_data;
   VkDeviceSize upload_heap_size;
   VkBuffer upload_heap_buffer;
   VkDeviceMemory upload_heap_memory;
-  int32_t upload_heap_in_use;
 
   VkSampler linear_sampler;
 
-  int32_t skybox_loaded;
+  int skybox_loaded;
   VkImage skybox_image;
   VkDeviceMemory skybox_memory;
   VkImageView skybox_image_view;
   VkDescriptorSet skybox_descriptor_set;
 
-  int32_t font_loaded;
+  int font_loaded;
   struct owl_vk_texture font_atlas;
   struct owl_vk_packed_char font_chars[OWL_FONT_NUM_CHARS];
 
-  VkCommandPool frame_command_pools[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkCommandBuffer frame_command_buffers[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkFence frame_in_flight_fences[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkSemaphore frame_image_available_semaphores[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkSemaphore frame_render_done_semaphores[OWL_MAX_SWAPCHAIN_IMAGES];
-
+  uint32_t num_frames;
   uint32_t frame;
+
+  VkCommandPool frame_command_pools[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkCommandBuffer frame_command_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkFence frame_in_flight_fences[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkSemaphore frame_image_available_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkSemaphore frame_render_done_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
+
   VkDeviceSize frame_heap_size;
   VkDeviceSize frame_heap_offset;
   VkDeviceSize frame_heap_alignment;
 
-  void *frame_heap_data[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkBuffer frame_heap_buffers[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkDeviceMemory frame_heap_memories[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkDescriptorSet frame_heap_pvm_descriptor_sets[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkDescriptorSet frame_heap_model1_descriptor_sets[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkDescriptorSet frame_heap_model2_descriptor_sets[OWL_MAX_SWAPCHAIN_IMAGES];
+  void *frame_heap_data[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkBuffer frame_heap_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDeviceMemory frame_heap_memories[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDescriptorSet frame_heap_pvm_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDescriptorSet frame_heap_model1_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDescriptorSet frame_heap_model2_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
 
-  uint32_t num_frame_garbage_buffers[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkBuffer frame_garbage_buffers[OWL_MAX_SWAPCHAIN_IMAGES]
+  uint32_t num_frame_garbage_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkBuffer frame_garbage_buffers[OWL_NUM_IN_FLIGHT_FRAMES]
                                 [OWL_MAX_GARBAGE_ITEMS];
-  uint32_t num_frame_garbage_memories[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkDeviceMemory frame_garbage_memories[OWL_MAX_SWAPCHAIN_IMAGES]
+
+  uint32_t num_frame_garbage_memories[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDeviceMemory frame_garbage_memories[OWL_NUM_IN_FLIGHT_FRAMES]
                                        [OWL_MAX_GARBAGE_ITEMS];
-  uint32_t num_frame_garbage_descriptor_sets[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkDescriptorSet frame_garbage_descriptor_sets[OWL_MAX_SWAPCHAIN_IMAGES]
+
+  uint32_t num_frame_garbage_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDescriptorSet frame_garbage_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES]
                                                [OWL_MAX_GARBAGE_ITEMS];
 
   PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;

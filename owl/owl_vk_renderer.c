@@ -924,7 +924,7 @@ owl_vk_renderer_init_swapchain(struct owl_vk_renderer *vk)
   swapchain_info.pNext = NULL;
   swapchain_info.flags = 0;
   swapchain_info.surface = vk->surface;
-  swapchain_info.minImageCount = OWL_NUM_IN_FLIGHT_FRAMES;
+  swapchain_info.minImageCount = vk->num_frames;
   swapchain_info.imageFormat = vk->surface_format.format;
   swapchain_info.imageColorSpace = vk->surface_format.colorSpace;
   swapchain_info.imageExtent.width = vk->width;
@@ -2604,7 +2604,7 @@ owl_vk_renderer_deinit_upload_heap(struct owl_vk_renderer *vk)
 owl_public owl_code
 owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
 {
-  int32_t i;
+  int i;
 
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
@@ -2613,7 +2613,7 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
   vk->frame_heap_offset = 0;
   vk->frame_heap_alignment = 0;
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int)vk->num_frames; ++i) {
     VkBufferCreateInfo buffer_info;
 
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -2635,7 +2635,7 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     }
   }
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int)vk->num_frames; ++i) {
     VkMemoryRequirements memory_requirements;
     VkMemoryAllocateInfo memory_info;
 
@@ -2674,7 +2674,7 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     }
   }
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int)vk->num_frames; ++i) {
     VkDescriptorSetAllocateInfo descriptor_set_info;
 
     descriptor_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -2692,7 +2692,7 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     }
   }
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int)vk->num_frames; ++i) {
     VkDescriptorSetAllocateInfo descriptor_set_info;
 
     descriptor_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -2710,7 +2710,7 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     }
   }
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int)vk->num_frames; ++i) {
     VkDescriptorSetAllocateInfo descriptor_set_info;
 
     descriptor_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -2728,7 +2728,7 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     }
   }
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int)vk->num_frames; ++i) {
 
     VkDescriptorBufferInfo descriptors[3];
     VkWriteDescriptorSet writes[3];
@@ -2789,27 +2789,27 @@ error_free_model2_descriptor_sets:
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
                          &vk->frame_heap_model2_descriptor_sets[i]);
 
-  i = vk->num_swapchain_images;
+  i = vk->num_frames;
 
 error_free_model1_descriptor_sets:
   for (i = i - 1; i >= 0; --i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
                          &vk->frame_heap_model1_descriptor_sets[i]);
 
-  i = vk->num_swapchain_images;
+  i = vk->num_frames;
 
 error_free_pvm_descriptor_sets:
   for (i = i - 1; i >= 0; --i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
                          &vk->frame_heap_pvm_descriptor_sets[i]);
 
-  i = vk->num_swapchain_images;
+  i = vk->num_frames;
 
 error_free_memories:
   for (i = i - 1; i >= 0; --i)
     vkFreeMemory(vk->device, vk->frame_heap_memories[i], NULL);
 
-  i = vk->num_swapchain_images;
+  i = vk->num_frames;
 
 error_destroy_buffers:
   for (i = i - 1; i >= 0; --i)
@@ -2824,45 +2824,45 @@ owl_vk_renderer_deinit_frame_heap(struct owl_vk_renderer *vk)
 {
   uint32_t i;
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
+  for (i = 0; i < vk->num_frames; ++i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
                          &vk->frame_heap_model2_descriptor_sets[i]);
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
+  for (i = 0; i < vk->num_frames; ++i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
                          &vk->frame_heap_model1_descriptor_sets[i]);
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
+  for (i = 0; i < vk->num_frames; ++i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
                          &vk->frame_heap_pvm_descriptor_sets[i]);
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
+  for (i = 0; i < vk->num_frames; ++i)
     vkFreeMemory(vk->device, vk->frame_heap_memories[i], NULL);
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
+  for (i = 0; i < vk->num_frames; ++i)
     vkDestroyBuffer(vk->device, vk->frame_heap_buffers[i], NULL);
 }
 
 owl_private owl_code
 owl_vk_renderer_init_frames(struct owl_vk_renderer *vk)
 {
-  int32_t i;
+  int i;
 
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
   vk->frame = 0;
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i)
+  for (i = 0; i < (int)vk->num_frames; ++i)
     vk->num_frame_garbage_buffers[i] = 0;
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i)
+  for (i = 0; i < (int)vk->num_frames; ++i)
     vk->num_frame_garbage_memories[i] = 0;
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i)
+  for (i = 0; i < (int)vk->num_frames; ++i)
     vk->num_frame_garbage_descriptor_sets[i] = 0;
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int)vk->num_frames; ++i) {
     VkCommandPoolCreateInfo command_pool_info;
 
     command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -2878,7 +2878,7 @@ owl_vk_renderer_init_frames(struct owl_vk_renderer *vk)
     }
   }
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int32_t)vk->num_frames; ++i) {
     VkCommandBufferAllocateInfo command_buffer_info;
 
     command_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -2895,7 +2895,7 @@ owl_vk_renderer_init_frames(struct owl_vk_renderer *vk)
     }
   }
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int32_t)vk->num_frames; ++i) {
     VkFenceCreateInfo fence_info;
 
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -2910,7 +2910,7 @@ owl_vk_renderer_init_frames(struct owl_vk_renderer *vk)
     }
   }
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int32_t)vk->num_frames; ++i) {
     VkSemaphoreCreateInfo semaphore_info;
 
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -2925,7 +2925,7 @@ owl_vk_renderer_init_frames(struct owl_vk_renderer *vk)
     }
   }
 
-  for (i = 0; i < (int32_t)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int32_t)vk->num_frames; ++i) {
     VkSemaphoreCreateInfo semaphore_info;
 
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -2946,23 +2946,27 @@ error_destroy_render_done_semaphores:
   for (i = i - 1; i >= 0; --i)
     vkDestroySemaphore(vk->device, vk->frame_render_done_semaphores[i], NULL);
 
+  i = vk->num_frames;
+
 error_destroy_image_available_semaphores:
   for (i = i - 1; i >= 0; --i)
     vkDestroySemaphore(vk->device, vk->frame_image_available_semaphores[i],
                        NULL);
 
+  i = vk->num_frames;
+
 error_destroy_in_flight_fences:
   for (i = i - 1; i >= 0; --i)
     vkDestroyFence(vk->device, vk->frame_in_flight_fences[i], NULL);
 
-  i = vk->num_swapchain_images;
+  i = vk->num_frames;
 
 error_destroy_command_buffers:
   for (i = i - 1; i >= 0; --i)
     vkFreeCommandBuffers(vk->device, vk->frame_command_pools[i], 1,
                          &vk->frame_command_buffers[i]);
 
-  i = vk->num_swapchain_images;
+  i = vk->num_frames;
 
 error_destroy_command_pools:
   for (i = i - 1; i >= 0; --i)
@@ -2977,40 +2981,40 @@ owl_vk_renderer_deinit_frames(struct owl_vk_renderer *vk)
 {
   uint32_t i;
 
-  for (i = 0; i < vk->num_swapchain_images; ++i) {
+  for (i = 0; i < vk->num_frames; ++i) {
     uint32_t j;
     for (j = 0; j < vk->num_frame_garbage_descriptor_sets[i]; ++j)
       vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
                            &vk->frame_garbage_descriptor_sets[i][j]);
   }
 
-  for (i = 0; i < vk->num_swapchain_images; ++i) {
+  for (i = 0; i < vk->num_frames; ++i) {
     uint32_t j;
     for (j = 0; j < vk->num_frame_garbage_descriptor_sets[i]; ++j)
       vkFreeMemory(vk->device, vk->frame_garbage_memories[i][j], NULL);
   }
 
-  for (i = 0; i < vk->num_swapchain_images; ++i) {
+  for (i = 0; i < vk->num_frames; ++i) {
     uint32_t j;
     for (j = 0; j < vk->num_frame_garbage_descriptor_sets[i]; ++j)
       vkDestroyBuffer(vk->device, vk->frame_garbage_buffers[i][j], NULL);
   }
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
+  for (i = 0; i < vk->num_frames; ++i)
     vkDestroySemaphore(vk->device, vk->frame_render_done_semaphores[i], NULL);
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
+  for (i = 0; i < vk->num_frames; ++i)
     vkDestroySemaphore(vk->device, vk->frame_image_available_semaphores[i],
                        NULL);
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
+  for (i = 0; i < vk->num_frames; ++i)
     vkDestroyFence(vk->device, vk->frame_in_flight_fences[i], NULL);
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
+  for (i = 0; i < vk->num_frames; ++i)
     vkFreeCommandBuffers(vk->device, vk->frame_command_pools[i], 1,
                          &vk->frame_command_buffers[i]);
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
+  for (i = 0; i < vk->num_frames; ++i)
     vkDestroyCommandPool(vk->device, vk->frame_command_pools[i], NULL);
 }
 
@@ -3075,6 +3079,7 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
   vk->skybox_loaded = 0;
   vk->font_loaded = 0;
   vk->pipeline = OWL_VK_PIPELINE_NONE;
+  vk->num_frames = OWL_NUM_IN_FLIGHT_FRAMES;
 
   vk->clear_values[0].color.float32[0] = 0.0F;
   vk->clear_values[0].color.float32[1] = 0.0F;

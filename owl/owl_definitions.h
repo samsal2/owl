@@ -47,9 +47,6 @@ typedef int owl_code;
 /** a fixed size array ran out of space */
 #define OWL_ERROR_NO_SPACE -6
 
-#define OWL_NUM_IN_FLIGHT_FRAMES 3
-#define OWL_MAX_SWAPCHAIN_IMAGES 8
-
 OWL_END_DECLS
 
 #endif
