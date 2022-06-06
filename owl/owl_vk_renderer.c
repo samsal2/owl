@@ -2521,7 +2521,7 @@ owl_vk_renderer_deinit_pipelines(struct owl_vk_renderer *vk)
 }
 
 owl_public owl_code
-owl_vk_renderer_init_upload_heap(struct owl_vk_renderer *vk, uint64_t size)
+owl_vk_renderer_init_upload_buffer(struct owl_vk_renderer *vk, uint64_t size)
 {
   VkBufferCreateInfo buffer_info;
   VkMemoryRequirements memory_requirements;
@@ -2530,9 +2530,9 @@ owl_vk_renderer_init_upload_heap(struct owl_vk_renderer *vk, uint64_t size)
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
-  vk->upload_heap_in_use = 0;
-  vk->upload_heap_data = NULL;
-  vk->upload_heap_size = size;
+  vk->upload_buffer_in_use = 0;
+  vk->upload_buffer_data = NULL;
+  vk->upload_buffer_size = size;
 
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.pNext = NULL;
@@ -2544,13 +2544,13 @@ owl_vk_renderer_init_upload_heap(struct owl_vk_renderer *vk, uint64_t size)
   buffer_info.pQueueFamilyIndices = NULL;
 
   vk_result = vkCreateBuffer(vk->device, &buffer_info, NULL,
-                             &vk->upload_heap_buffer);
+                             &vk->upload_buffer);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto out;
   }
 
-  vkGetBufferMemoryRequirements(vk->device, vk->upload_heap_buffer,
+  vkGetBufferMemoryRequirements(vk->device, vk->upload_buffer,
                                 &memory_requirements);
 
   memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -2562,21 +2562,21 @@ owl_vk_renderer_init_upload_heap(struct owl_vk_renderer *vk, uint64_t size)
                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
   vk_result = vkAllocateMemory(vk->device, &memory_info, NULL,
-                               &vk->upload_heap_memory);
+                               &vk->upload_buffer_memory);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_destroy_buffer;
   }
 
-  vk_result = vkBindBufferMemory(vk->device, vk->upload_heap_buffer,
-                                 vk->upload_heap_memory, 0);
+  vk_result = vkBindBufferMemory(vk->device, vk->upload_buffer,
+                                 vk->upload_buffer_memory, 0);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_free_memory;
   }
 
-  vk_result = vkMapMemory(vk->device, vk->upload_heap_memory, 0,
-                          vk->upload_heap_size, 0, &vk->upload_heap_data);
+  vk_result = vkMapMemory(vk->device, vk->upload_buffer_memory, 0,
+                          vk->upload_buffer_size, 0, &vk->upload_buffer_data);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_free_memory;
@@ -2585,33 +2585,34 @@ owl_vk_renderer_init_upload_heap(struct owl_vk_renderer *vk, uint64_t size)
   goto out;
 
 error_free_memory:
-  vkFreeMemory(vk->device, vk->upload_heap_memory, NULL);
+  vkFreeMemory(vk->device, vk->upload_buffer_memory, NULL);
 
 error_destroy_buffer:
-  vkDestroyBuffer(vk->device, vk->upload_heap_buffer, NULL);
+  vkDestroyBuffer(vk->device, vk->upload_buffer, NULL);
 
 out:
   return code;
 }
 
 owl_public void
-owl_vk_renderer_deinit_upload_heap(struct owl_vk_renderer *vk)
+owl_vk_renderer_deinit_upload_buffer(struct owl_vk_renderer *vk)
 {
-  vkFreeMemory(vk->device, vk->upload_heap_memory, NULL);
-  vkDestroyBuffer(vk->device, vk->upload_heap_buffer, NULL);
+  vkFreeMemory(vk->device, vk->upload_buffer_memory, NULL);
+  vkDestroyBuffer(vk->device, vk->upload_buffer, NULL);
 }
 
 owl_public owl_code
-owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
+owl_vk_renderer_init_frame_render_buffer(struct owl_vk_renderer *vk,
+                                         uint64_t size)
 {
   int i;
 
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
-  vk->frame_heap_size = size;
-  vk->frame_heap_offset = 0;
-  vk->frame_heap_alignment = 0;
+  vk->frame_render_buffer_size = size;
+  vk->frame_render_buffer_offset = 0;
+  vk->frame_render_buffer_alignment = 0;
 
   for (i = 0; i < (int)vk->num_frames; ++i) {
     VkBufferCreateInfo buffer_info;
@@ -2628,7 +2629,7 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     buffer_info.pQueueFamilyIndices = NULL;
 
     vk_result = vkCreateBuffer(vk->device, &buffer_info, NULL,
-                               &vk->frame_heap_buffers[i]);
+                               &vk->frame_render_buffer_buffers[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_buffers;
@@ -2639,10 +2640,10 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     VkMemoryRequirements memory_requirements;
     VkMemoryAllocateInfo memory_info;
 
-    vkGetBufferMemoryRequirements(vk->device, vk->frame_heap_buffers[0],
-                                  &memory_requirements);
+    vkGetBufferMemoryRequirements(
+        vk->device, vk->frame_render_buffer_buffers[0], &memory_requirements);
 
-    vk->frame_heap_alignment = memory_requirements.alignment;
+    vk->frame_render_buffer_alignment = memory_requirements.alignment;
 
     memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memory_info.pNext = NULL;
@@ -2653,21 +2654,23 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
     vk_result = vkAllocateMemory(vk->device, &memory_info, NULL,
-                                 &vk->frame_heap_memories[i]);
+                                 &vk->frame_render_buffer_memories[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_memories;
     }
 
-    vk_result = vkBindBufferMemory(vk->device, vk->frame_heap_buffers[i],
-                                   vk->frame_heap_memories[i], 0);
+    vk_result = vkBindBufferMemory(vk->device,
+                                   vk->frame_render_buffer_buffers[i],
+                                   vk->frame_render_buffer_memories[i], 0);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_memories;
     }
 
-    vk_result = vkMapMemory(vk->device, vk->frame_heap_memories[i], 0,
-                            vk->frame_heap_size, 0, &vk->frame_heap_data[i]);
+    vk_result = vkMapMemory(vk->device, vk->frame_render_buffer_memories[i], 0,
+                            vk->frame_render_buffer_size, 0,
+                            &vk->frame_render_buffer_data[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_memories;
@@ -2683,9 +2686,9 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     descriptor_set_info.descriptorSetCount = 1;
     descriptor_set_info.pSetLayouts = &vk->ubo_vertex_descriptor_set_layout;
 
-    vk_result =
-        vkAllocateDescriptorSets(vk->device, &descriptor_set_info,
-                                 &vk->frame_heap_pvm_descriptor_sets[i]);
+    vk_result = vkAllocateDescriptorSets(
+        vk->device, &descriptor_set_info,
+        &vk->frame_render_buffer_pvm_descriptor_sets[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_pvm_descriptor_sets;
@@ -2701,9 +2704,9 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     descriptor_set_info.descriptorSetCount = 1;
     descriptor_set_info.pSetLayouts = &vk->ubo_both_descriptor_set_layout;
 
-    vk_result =
-        vkAllocateDescriptorSets(vk->device, &descriptor_set_info,
-                                 &vk->frame_heap_model1_descriptor_sets[i]);
+    vk_result = vkAllocateDescriptorSets(
+        vk->device, &descriptor_set_info,
+        &vk->frame_render_buffer_model1_descriptor_sets[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_model1_descriptor_sets;
@@ -2719,9 +2722,9 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     descriptor_set_info.descriptorSetCount = 1;
     descriptor_set_info.pSetLayouts = &vk->ubo_fragment_descriptor_set_layout;
 
-    vk_result =
-        vkAllocateDescriptorSets(vk->device, &descriptor_set_info,
-                                 &vk->frame_heap_model2_descriptor_sets[i]);
+    vk_result = vkAllocateDescriptorSets(
+        vk->device, &descriptor_set_info,
+        &vk->frame_render_buffer_model2_descriptor_sets[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_model2_descriptor_sets;
@@ -2733,13 +2736,13 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     VkDescriptorBufferInfo descriptors[3];
     VkWriteDescriptorSet writes[3];
 
-    descriptors[0].buffer = vk->frame_heap_buffers[i];
+    descriptors[0].buffer = vk->frame_render_buffer_buffers[i];
     descriptors[0].offset = 0;
     descriptors[0].range = sizeof(struct owl_pvm_ubo);
 
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[0].pNext = NULL;
-    writes[0].dstSet = vk->frame_heap_pvm_descriptor_sets[i];
+    writes[0].dstSet = vk->frame_render_buffer_pvm_descriptor_sets[i];
     writes[0].dstBinding = 0;
     writes[0].dstArrayElement = 0;
     writes[0].descriptorCount = 1;
@@ -2748,13 +2751,13 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     writes[0].pBufferInfo = &descriptors[0];
     writes[0].pTexelBufferView = NULL;
 
-    descriptors[1].buffer = vk->frame_heap_buffers[i];
+    descriptors[1].buffer = vk->frame_render_buffer_buffers[i];
     descriptors[1].offset = 0;
     descriptors[1].range = sizeof(struct owl_model_ubo1);
 
     writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[1].pNext = NULL;
-    writes[1].dstSet = vk->frame_heap_model1_descriptor_sets[i];
+    writes[1].dstSet = vk->frame_render_buffer_model1_descriptor_sets[i];
     writes[1].dstBinding = 0;
     writes[1].dstArrayElement = 0;
     writes[1].descriptorCount = 1;
@@ -2763,13 +2766,13 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
     writes[1].pBufferInfo = &descriptors[1];
     writes[1].pTexelBufferView = NULL;
 
-    descriptors[2].buffer = vk->frame_heap_buffers[i];
+    descriptors[2].buffer = vk->frame_render_buffer_buffers[i];
     descriptors[2].offset = 0;
     descriptors[2].range = sizeof(struct owl_model_ubo2);
 
     writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[2].pNext = NULL;
-    writes[2].dstSet = vk->frame_heap_model2_descriptor_sets[i];
+    writes[2].dstSet = vk->frame_render_buffer_model2_descriptor_sets[i];
     writes[2].dstBinding = 0;
     writes[2].dstArrayElement = 0;
     writes[2].descriptorCount = 1;
@@ -2787,60 +2790,60 @@ owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size)
 error_free_model2_descriptor_sets:
   for (i = i - 1; i >= 0; --i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
-                         &vk->frame_heap_model2_descriptor_sets[i]);
+                         &vk->frame_render_buffer_model2_descriptor_sets[i]);
 
   i = vk->num_frames;
 
 error_free_model1_descriptor_sets:
   for (i = i - 1; i >= 0; --i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
-                         &vk->frame_heap_model1_descriptor_sets[i]);
+                         &vk->frame_render_buffer_model1_descriptor_sets[i]);
 
   i = vk->num_frames;
 
 error_free_pvm_descriptor_sets:
   for (i = i - 1; i >= 0; --i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
-                         &vk->frame_heap_pvm_descriptor_sets[i]);
+                         &vk->frame_render_buffer_pvm_descriptor_sets[i]);
 
   i = vk->num_frames;
 
 error_free_memories:
   for (i = i - 1; i >= 0; --i)
-    vkFreeMemory(vk->device, vk->frame_heap_memories[i], NULL);
+    vkFreeMemory(vk->device, vk->frame_render_buffer_memories[i], NULL);
 
   i = vk->num_frames;
 
 error_destroy_buffers:
   for (i = i - 1; i >= 0; --i)
-    vkDestroyBuffer(vk->device, vk->frame_heap_buffers[i], NULL);
+    vkDestroyBuffer(vk->device, vk->frame_render_buffer_buffers[i], NULL);
 
 out:
   return code;
 }
 
 owl_public void
-owl_vk_renderer_deinit_frame_heap(struct owl_vk_renderer *vk)
+owl_vk_renderer_deinit_frame_render_buffer(struct owl_vk_renderer *vk)
 {
   uint32_t i;
 
   for (i = 0; i < vk->num_frames; ++i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
-                         &vk->frame_heap_model2_descriptor_sets[i]);
+                         &vk->frame_render_buffer_model2_descriptor_sets[i]);
 
   for (i = 0; i < vk->num_frames; ++i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
-                         &vk->frame_heap_model1_descriptor_sets[i]);
+                         &vk->frame_render_buffer_model1_descriptor_sets[i]);
 
   for (i = 0; i < vk->num_frames; ++i)
     vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
-                         &vk->frame_heap_pvm_descriptor_sets[i]);
+                         &vk->frame_render_buffer_pvm_descriptor_sets[i]);
 
   for (i = 0; i < vk->num_frames; ++i)
-    vkFreeMemory(vk->device, vk->frame_heap_memories[i], NULL);
+    vkFreeMemory(vk->device, vk->frame_render_buffer_memories[i], NULL);
 
   for (i = 0; i < vk->num_frames; ++i)
-    vkDestroyBuffer(vk->device, vk->frame_heap_buffers[i], NULL);
+    vkDestroyBuffer(vk->device, vk->frame_render_buffer_buffers[i], NULL);
 }
 
 owl_private owl_code
@@ -3165,7 +3168,7 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
     goto error_deinit_layouts;
   }
 
-  code = owl_vk_renderer_init_upload_heap(vk, OWL_VK_DEFAULT_HEAP_SIZE);
+  code = owl_vk_renderer_init_upload_buffer(vk, OWL_VK_DEFAULT_HEAP_SIZE);
   if (code) {
     OWL_DEBUG_LOG("Failed to initialize upload heap!\n");
     goto error_deinit_pipelines;
@@ -3174,7 +3177,7 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
   code = owl_vk_renderer_init_samplers(vk);
   if (code) {
     OWL_DEBUG_LOG("Failed to initialize samplers!\n");
-    goto error_deinit_upload_heap;
+    goto error_deinit_upload_buffer;
   }
 
   code = owl_vk_renderer_init_frames(vk);
@@ -3183,7 +3186,8 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
     goto error_deinit_samplers;
   }
 
-  code = owl_vk_renderer_init_frame_heap(vk, OWL_VK_DEFAULT_HEAP_SIZE);
+  code = owl_vk_renderer_init_frame_render_buffer(vk,
+                                                  OWL_VK_DEFAULT_HEAP_SIZE);
   if (code) {
     OWL_DEBUG_LOG("Failed to initialize frame heap!\n");
     goto error_deinit_frames;
@@ -3197,8 +3201,8 @@ error_deinit_frames:
 error_deinit_samplers:
   owl_vk_renderer_deinit_samplers(vk);
 
-error_deinit_upload_heap:
-  owl_vk_renderer_deinit_upload_heap(vk);
+error_deinit_upload_buffer:
+  owl_vk_renderer_deinit_upload_buffer(vk);
 
 error_deinit_pipelines:
   owl_vk_renderer_deinit_pipelines(vk);
@@ -3245,10 +3249,10 @@ owl_vk_renderer_deinit(struct owl_vk_renderer *vk)
   if (vk->skybox_loaded)
     owl_vk_skybox_unload(vk);
 
-  owl_vk_renderer_deinit_frame_heap(vk);
+  owl_vk_renderer_deinit_frame_render_buffer(vk);
   owl_vk_renderer_deinit_frames(vk);
   owl_vk_renderer_deinit_samplers(vk);
-  owl_vk_renderer_deinit_upload_heap(vk);
+  owl_vk_renderer_deinit_upload_buffer(vk);
   owl_vk_renderer_deinit_pipelines(vk);
   owl_vk_renderer_deinit_layouts(vk);
   owl_vk_renderer_deinit_shaders(vk);

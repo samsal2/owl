@@ -47,31 +47,31 @@ owl_vk_push_frame_garbage(struct owl_vk_renderer *vk)
     uint32_t pos;
 
     pos = vk->num_frame_garbage_buffers[i]++;
-    vk->frame_garbage_buffers[i][pos] = vk->frame_heap_buffers[i];
+    vk->frame_garbage_buffers[i][pos] = vk->frame_render_buffer_buffers[i];
     vk->frame_command_buffers[i] = VK_NULL_HANDLE;
 
 #if 0
-    vkUnmapMemory(vk->device, vk->frame_heap_memories[i]);
+    vkUnmapMemory(vk->device, vk->frame_render_buffer_memories[i]);
 #endif
 
     pos = vk->num_frame_garbage_memories[i]++;
-    vk->frame_garbage_memories[i][pos] = vk->frame_heap_memories[i];
-    vk->frame_heap_memories[i] = VK_NULL_HANDLE;
+    vk->frame_garbage_memories[i][pos] = vk->frame_render_buffer_memories[i];
+    vk->frame_render_buffer_memories[i] = VK_NULL_HANDLE;
 
     pos = vk->num_frame_garbage_descriptor_sets[i]++;
     vk->frame_garbage_descriptor_sets[i][pos] =
-        vk->frame_heap_pvm_descriptor_sets[i];
-    vk->frame_heap_pvm_descriptor_sets[i] = VK_NULL_HANDLE;
+        vk->frame_render_buffer_pvm_descriptor_sets[i];
+    vk->frame_render_buffer_pvm_descriptor_sets[i] = VK_NULL_HANDLE;
 
     pos = vk->num_frame_garbage_descriptor_sets[i]++;
     vk->frame_garbage_descriptor_sets[i][pos] =
-        vk->frame_heap_model1_descriptor_sets[i];
-    vk->frame_heap_model1_descriptor_sets[i] = VK_NULL_HANDLE;
+        vk->frame_render_buffer_model1_descriptor_sets[i];
+    vk->frame_render_buffer_model1_descriptor_sets[i] = VK_NULL_HANDLE;
 
     pos = vk->num_frame_garbage_descriptor_sets[vk->frame]++;
     vk->frame_garbage_descriptor_sets[i][pos] =
-        vk->frame_heap_model2_descriptor_sets[i];
-    vk->frame_heap_model2_descriptor_sets[i] = VK_NULL_HANDLE;
+        vk->frame_render_buffer_model2_descriptor_sets[i];
+    vk->frame_render_buffer_model2_descriptor_sets[i] = VK_NULL_HANDLE;
   }
 
   return OWL_OK;
@@ -86,21 +86,21 @@ owl_vk_pop_frame_garbage(struct owl_vk_renderer *vk)
     uint32_t pos;
 
     pos = --vk->num_frame_garbage_buffers[i];
-    vk->frame_heap_buffers[i] = vk->frame_garbage_buffers[i][pos];
+    vk->frame_render_buffer_buffers[i] = vk->frame_garbage_buffers[i][pos];
 
     pos = --vk->num_frame_garbage_memories[i];
-    vk->frame_heap_memories[i] = vk->frame_garbage_memories[i][pos];
+    vk->frame_render_buffer_memories[i] = vk->frame_garbage_memories[i][pos];
 
     pos = --vk->num_frame_garbage_descriptor_sets[i];
-    vk->frame_heap_pvm_descriptor_sets[i] =
+    vk->frame_render_buffer_pvm_descriptor_sets[i] =
         vk->frame_garbage_descriptor_sets[i][pos];
 
     pos = --vk->num_frame_garbage_descriptor_sets[i];
-    vk->frame_heap_model1_descriptor_sets[i] =
+    vk->frame_render_buffer_model1_descriptor_sets[i] =
         vk->frame_garbage_descriptor_sets[i][pos];
 
     pos = --vk->num_frame_garbage_descriptor_sets[i];
-    vk->frame_heap_model2_descriptor_sets[i] =
+    vk->frame_render_buffer_model2_descriptor_sets[i] =
         vk->frame_garbage_descriptor_sets[i][pos];
   }
 
@@ -110,7 +110,7 @@ owl_vk_pop_frame_garbage(struct owl_vk_renderer *vk)
 owl_public owl_code
 owl_vk_frame_reserve(struct owl_vk_renderer *vk, uint64_t size)
 {
-  if (vk->frame_heap_size < (size + vk->frame_heap_offset)) {
+  if (vk->frame_render_buffer_size < (size + vk->frame_render_buffer_offset)) {
     uint64_t nsize;
     owl_code code;
 
@@ -118,10 +118,10 @@ owl_vk_frame_reserve(struct owl_vk_renderer *vk, uint64_t size)
     if (code)
       return code;
 
-    nsize = (size + vk->frame_heap_offset) * 2;
-    nsize = owl_alignu2(nsize, vk->frame_heap_alignment);
+    nsize = (size + vk->frame_render_buffer_offset) * 2;
+    nsize = owl_alignu2(nsize, vk->frame_render_buffer_alignment);
 
-    code = owl_vk_renderer_init_frame_heap(vk, nsize);
+    code = owl_vk_renderer_init_frame_render_buffer(vk, nsize);
     if (code) {
       owl_vk_pop_frame_garbage(vk);
       return code;
@@ -143,21 +143,22 @@ owl_vk_frame_alloc(struct owl_vk_renderer *vk, uint64_t size,
   if (!code) {
     uint64_t offset;
 
-    offset = vk->frame_heap_offset;
+    offset = vk->frame_render_buffer_offset;
 
-    vk->frame_heap_offset = owl_alignu2(offset + size,
-                                        vk->frame_heap_alignment);
+    vk->frame_render_buffer_offset =
+        owl_alignu2(offset + size, vk->frame_render_buffer_alignment);
 
-    data = &((uint8_t *)vk->frame_heap_data[vk->frame])[offset];
+    data = &((uint8_t *)vk->frame_render_buffer_data[vk->frame])[offset];
 
     alloc->offset32 = (uint32_t)offset;
     alloc->offset = offset;
-    alloc->buffer = vk->frame_heap_buffers[vk->frame];
-    alloc->pvm_descriptor_set = vk->frame_heap_pvm_descriptor_sets[vk->frame];
+    alloc->buffer = vk->frame_render_buffer_buffers[vk->frame];
+    alloc->pvm_descriptor_set =
+        vk->frame_render_buffer_pvm_descriptor_sets[vk->frame];
     alloc->model1_descriptor_set =
-        vk->frame_heap_model1_descriptor_sets[vk->frame];
+        vk->frame_render_buffer_model1_descriptor_sets[vk->frame];
     alloc->model2_descriptor_set =
-        vk->frame_heap_model2_descriptor_sets[vk->frame];
+        vk->frame_render_buffer_model2_descriptor_sets[vk->frame];
   }
 
   return data;
@@ -300,7 +301,7 @@ owl_vk_frame_end(struct owl_vk_renderer *vk)
   if (vk->num_frames == ++vk->frame)
     vk->frame = 0;
 
-  vk->frame_heap_offset = 0;
+  vk->frame_render_buffer_offset = 0;
 
   return OWL_OK;
 }

@@ -97,11 +97,11 @@ struct owl_vk_renderer {
   VkPipeline pipelines[OWL_VK_NUM_PIPELINES];
   VkPipelineLayout pipeline_layouts[OWL_VK_NUM_PIPELINES];
 
-  int upload_heap_in_use;
-  void *upload_heap_data;
-  VkDeviceSize upload_heap_size;
-  VkBuffer upload_heap_buffer;
-  VkDeviceMemory upload_heap_memory;
+  int upload_buffer_in_use;
+  void *upload_buffer_data;
+  VkDeviceSize upload_buffer_size;
+  VkBuffer upload_buffer;
+  VkDeviceMemory upload_buffer_memory;
 
   VkSampler linear_sampler;
 
@@ -124,16 +124,19 @@ struct owl_vk_renderer {
   VkSemaphore frame_acquire_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
   VkSemaphore frame_render_done_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
 
-  VkDeviceSize frame_heap_size;
-  VkDeviceSize frame_heap_offset;
-  VkDeviceSize frame_heap_alignment;
+  VkDeviceSize frame_render_buffer_size;
+  VkDeviceSize frame_render_buffer_offset;
+  VkDeviceSize frame_render_buffer_alignment;
 
-  void *frame_heap_data[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkBuffer frame_heap_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDeviceMemory frame_heap_memories[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDescriptorSet frame_heap_pvm_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDescriptorSet frame_heap_model1_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDescriptorSet frame_heap_model2_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  void *frame_render_buffer_data[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkBuffer frame_render_buffer_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDeviceMemory frame_render_buffer_memories[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDescriptorSet
+      frame_render_buffer_pvm_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDescriptorSet
+      frame_render_buffer_model1_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDescriptorSet
+      frame_render_buffer_model2_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
 
   uint32_t num_frame_garbage_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
   VkBuffer frame_garbage_buffers[OWL_NUM_IN_FLIGHT_FRAMES]
@@ -172,16 +175,17 @@ owl_public void
 owl_vk_renderer_deinit(struct owl_vk_renderer *vk);
 
 owl_public owl_code
-owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size);
+owl_vk_renderer_init_frame_render_buffer(struct owl_vk_renderer *vk,
+                                         uint64_t size);
 
 owl_public void
-owl_vk_renderer_deinit_frame_heap(struct owl_vk_renderer *vk);
+owl_vk_renderer_deinit_frame_render_buffer(struct owl_vk_renderer *vk);
 
 owl_public owl_code
-owl_vk_renderer_init_upload_heap(struct owl_vk_renderer *vk, uint64_t size);
+owl_vk_renderer_init_upload_buffer(struct owl_vk_renderer *vk, uint64_t size);
 
 owl_public void
-owl_vk_renderer_deinit_upload_heap(struct owl_vk_renderer *vk);
+owl_vk_renderer_deinit_upload_buffer(struct owl_vk_renderer *vk);
 
 owl_public owl_code
 owl_vk_renderer_resize_swapchain(struct owl_vk_renderer *vk);
