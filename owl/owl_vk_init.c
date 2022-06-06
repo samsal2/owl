@@ -92,21 +92,27 @@ owl_vk_init_instance(struct owl_vk_renderer *vk,
   instance_info.ppEnabledExtensionNames = extensions;
 
   vk_result = vkCreateInstance(&instance_info, NULL, &vk->instance);
-  if (vk_result)
-    return OWL_ERROR_FATAL;
+  if (vk_result) {
+    code = OWL_ERROR_FATAL;
+    goto out;
+  }
 
 #if defined(OWL_ENABLE_VALIDATION)
   vk->vk_create_debug_utils_messenger_ext =
       (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
           vk->instance, "vkCreateDebugUtilsMessengerEXT");
-  if (!vk->vk_create_debug_utils_messenger_ext)
+  if (!vk->vk_create_debug_utils_messenger_ext) {
+    code = OWL_ERROR_FATAL;
     goto error_destroy_instance;
+  }
 
   vk->vk_destroy_debug_utils_messenger_ext =
       (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
           vk->instance, "vkDestroyDebugUtilsMessengerEXT");
-  if (!vk->vk_destroy_debug_utils_messenger_ext)
+  if (!vk->vk_destroy_debug_utils_messenger_ext) {
+    code = OWL_ERROR_FATAL;
     goto error_destroy_instance;
+  }
 
   debug_messenger_info.sType =
       VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -129,14 +135,15 @@ owl_vk_init_instance(struct owl_vk_renderer *vk,
     goto error_destroy_instance;
 #endif
 
-  return OWL_OK;
+  goto out;
 
 #if defined(OWL_ENABLE_VALIDATION)
 error_destroy_instance:
   vkDestroyInstance(vk->instance, NULL);
-
-  return OWL_ERROR_FATAL;
 #endif
+
+out:
+  return code;
 }
 
 owl_public void

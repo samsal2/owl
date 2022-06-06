@@ -4,12 +4,18 @@
 #include "owl_plataform.h"
 #include "owl_vk_init.h"
 #include "owl_vk_renderer.h"
+#include "owl_vector_math.h"
 
 owl_public owl_code
 owl_vk_swapchain_resize(struct owl_vk_renderer *vk)
 {
   uint32_t width;
   uint32_t height;
+
+  float ratio;
+  float const fov = owl_deg2rad(45.0F);
+  float const near = 0.01;
+  float const far = 10.0F;
 
   VkResult vk_result;
   owl_code code;
@@ -23,6 +29,9 @@ owl_vk_swapchain_resize(struct owl_vk_renderer *vk)
   owl_plataform_get_framebuffer_dimensions(vk->plataform, &width, &height);
   vk->width = width;
   vk->height = height;
+
+  ratio = (float)width / (float)height;
+  owl_m4_perspective(fov, ratio, near, far, vk->projection);
 
   owl_vk_deinit_pipelines(vk);
   owl_vk_deinit_swapchain(vk);

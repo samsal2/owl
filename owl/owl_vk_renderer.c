@@ -21,16 +21,10 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
   owl_v3 up;
   owl_code code;
 
+  float ratio;
   float const fov = owl_deg2rad(45.0F);
   float const near = 0.01;
   float const far = 10.0F;
-
-  owl_v3_set(eye, 0.0F, 0.0F, 5.0F);
-  owl_v4_set(direction, 0.0F, 0.0F, 1.0F, 1.0F);
-  owl_v3_set(up, 0.0F, 1.0F, 0.0F);
-
-  owl_m4_perspective(fov, 1.0F, near, far, vk->projection);
-  owl_m4_look(eye, direction, up, vk->view);
 
   vk->plataform = plataform;
   vk->im_command_buffer = VK_NULL_HANDLE;
@@ -48,6 +42,16 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
   owl_plataform_get_framebuffer_dimensions(plataform, &width, &height);
   vk->width = width;
   vk->height = height;
+
+  ratio = (float)width / (float)height; 
+
+  owl_v3_set(eye, 0.0F, 0.0F, 5.0F);
+  owl_v4_set(direction, 0.0F, 0.0F, 1.0F, 1.0F);
+  owl_v3_set(up, 0.0F, 1.0F, 0.0F);
+
+  owl_m4_perspective(fov, ratio, near, far, vk->projection);
+  owl_m4_look(eye, direction, up, vk->view);
+
 
   code = owl_vk_init_instance(vk, plataform);
   if (code) {
