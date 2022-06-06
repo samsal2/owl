@@ -2,10 +2,7 @@
 
 #include "owl_definitions.h"
 #include "owl_internal.h"
-#include "owl_vk_init.h"
-#include "owl_vk_pipeline.h"
 #include "owl_vk_renderer.h"
-#include "owl_vk_swapchain.h"
 #include "owl_vk_types.h"
 
 owl_private void
@@ -124,7 +121,7 @@ owl_vk_frame_reserve(struct owl_vk_renderer *vk, uint64_t size)
     nsize = (size + vk->frame_heap_offset) * 2;
     nsize = owl_alignu2(nsize, vk->frame_heap_alignment);
 
-    code = owl_vk_init_frame_heaps(vk, nsize);
+    code = owl_vk_renderer_init_frame_heap(vk, nsize);
     if (code) {
       owl_vk_pop_frame_garbage(vk);
       return code;
@@ -174,7 +171,7 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk)
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
-  owl_vk_bind_pipeline(vk, OWL_VK_PIPELINE_NONE);
+  owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_NONE);
 
   image_available_semaphore = vk->frame_image_available_semaphores[vk->frame];
   vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, (uint64_t)-1,
@@ -221,11 +218,11 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk)
             render_pass_info.framebuffer = swapchain_framebuffer;
             render_pass_info.renderArea.offset.x = 0;
             render_pass_info.renderArea.offset.y = 0;
-            render_pass_info.renderArea.extent.width = vk->swapchain_width;
-            render_pass_info.renderArea.extent.height = vk->swapchain_height;
+            render_pass_info.renderArea.extent.width = vk->width;
+            render_pass_info.renderArea.extent.height = vk->height;
             render_pass_info.clearValueCount =
-                owl_array_size(vk->swapchain_clear_values);
-            render_pass_info.pClearValues = vk->swapchain_clear_values;
+                owl_array_size(vk->clear_values);
+            render_pass_info.pClearValues = vk->clear_values;
 
             vkCmdBeginRenderPass(command_buffer, &render_pass_info,
                                  VK_SUBPASS_CONTENTS_INLINE);
@@ -243,7 +240,7 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk)
              VK_SUBOPTIMAL_KHR == vk_result ||
              VK_ERROR_SURFACE_LOST_KHR == vk_result) {
 
-    code = owl_vk_swapchain_resize(vk);
+    code = owl_vk_renderer_resize_swapchain(vk);
 
     if (!code)
       code = owl_vk_frame_begin(vk);
@@ -305,7 +302,7 @@ owl_vk_frame_end(struct owl_vk_renderer *vk)
       if (VK_ERROR_OUT_OF_DATE_KHR == vk_result ||
           VK_SUBOPTIMAL_KHR == vk_result ||
           VK_ERROR_SURFACE_LOST_KHR == vk_result) {
-        code = owl_vk_swapchain_resize(vk);
+        code = owl_vk_renderer_resize_swapchain(vk);
       }
     }
   }

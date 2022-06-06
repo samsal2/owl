@@ -3,7 +3,6 @@
 
 #include "owl_definitions.h"
 #include "owl_vk_font.h"
-#include "owl_vk_pipeline.h"
 #include "owl_vk_texture.h"
 
 #include <vulkan/vulkan.h>
@@ -15,23 +14,28 @@ OWL_BEGIN_DECLS
 #define OWL_FONT_FIRST_CHAR ((int32_t)(' '))
 #define OWL_FONT_NUM_CHARS ((int32_t)('~' - ' '))
 
-#define OWL_DEF_FRAME_GARBAGE_ARRAY(type, name)                               \
-  type name[OWL_MAX_SWAPCHAIN_IMAGES][OWL_MAX_GARBAGE_ITEMS]
+enum owl_vk_pipeline {
+  OWL_VK_PIPELINE_BASIC,
+  OWL_VK_PIPELINE_WIRES,
+  OWL_VK_PIPELINE_TEXT,
+  OWL_VK_PIPELINE_MODEL,
+  OWL_VK_PIPELINE_SKYBOX,
+  OWL_VK_PIPELINE_NONE
+};
+#define OWL_VK_NUM_PIPELINES OWL_VK_PIPELINE_NONE
 
 struct owl_plataform;
 
-/**
- * @brief global vulkan structure with everything required for renderering
- *
- */
 struct owl_vk_renderer {
   struct owl_plataform *plataform;
 
   owl_m4 projection;
   owl_m4 view;
 
-  int32_t width;
-  int32_t height;
+  uint32_t width;
+  uint32_t height;
+
+  VkClearValue clear_values[2];
 
   VkInstance instance;
   VkDebugUtilsMessengerEXT debug_messenger;
@@ -63,14 +67,11 @@ struct owl_vk_renderer {
   VkPresentModeKHR present_mode;
 
   VkSwapchainKHR swapchain;
-  uint32_t swapchain_width;
-  uint32_t swapchain_height;
   uint32_t swapchain_image;
   uint32_t num_swapchain_images;
   VkImage swapchain_images[OWL_MAX_SWAPCHAIN_IMAGES];
   VkImageView swapchain_image_views[OWL_MAX_SWAPCHAIN_IMAGES];
   VkFramebuffer swapchain_framebuffers[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkClearValue swapchain_clear_values[2];
 
   VkCommandPool transient_command_pool;
   VkDescriptorPool descriptor_pool;
@@ -132,11 +133,14 @@ struct owl_vk_renderer {
   VkDescriptorSet frame_heap_model2_descriptor_sets[OWL_MAX_SWAPCHAIN_IMAGES];
 
   uint32_t num_frame_garbage_buffers[OWL_MAX_SWAPCHAIN_IMAGES];
-  OWL_DEF_FRAME_GARBAGE_ARRAY(VkBuffer, frame_garbage_buffers);
+  VkBuffer frame_garbage_buffers[OWL_MAX_SWAPCHAIN_IMAGES]
+                                [OWL_MAX_GARBAGE_ITEMS];
   uint32_t num_frame_garbage_memories[OWL_MAX_SWAPCHAIN_IMAGES];
-  OWL_DEF_FRAME_GARBAGE_ARRAY(VkDeviceMemory, frame_garbage_memories);
+  VkDeviceMemory frame_garbage_memories[OWL_MAX_SWAPCHAIN_IMAGES]
+                                       [OWL_MAX_GARBAGE_ITEMS];
   uint32_t num_frame_garbage_descriptor_sets[OWL_MAX_SWAPCHAIN_IMAGES];
-  OWL_DEF_FRAME_GARBAGE_ARRAY(VkDescriptorSet, frame_garbage_descriptor_sets);
+  VkDescriptorSet frame_garbage_descriptor_sets[OWL_MAX_SWAPCHAIN_IMAGES]
+                                               [OWL_MAX_GARBAGE_ITEMS];
 
   PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;
   PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;
@@ -161,6 +165,25 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
  */
 owl_public void
 owl_vk_renderer_deinit(struct owl_vk_renderer *vk);
+
+owl_public owl_code
+owl_vk_renderer_init_frame_heap(struct owl_vk_renderer *vk, uint64_t size);
+
+owl_public void
+owl_vk_renderer_deinit_frame_heap(struct owl_vk_renderer *vk);
+
+owl_public owl_code
+owl_vk_renderer_init_upload_heap(struct owl_vk_renderer *vk, uint64_t size);
+
+owl_public void
+owl_vk_renderer_deinit_upload_heap(struct owl_vk_renderer *vk);
+
+owl_public owl_code
+owl_vk_renderer_resize_swapchain(struct owl_vk_renderer *vk);
+
+owl_public owl_code
+owl_vk_renderer_bind_pipeline(struct owl_vk_renderer *vk,
+                              enum owl_vk_pipeline id);
 
 OWL_END_DECLS
 

@@ -1,7 +1,6 @@
 
 #include "owl_vk_upload.h"
 
-#include "owl_vk_init.h"
 #include "owl_vk_renderer.h"
 
 #include "owl_internal.h"
@@ -16,9 +15,9 @@ owl_vk_upload_reserve(struct owl_vk_renderer *vk, uint64_t size)
     owl_code code;
 
     /* FIXME (samuel): init first */
-    owl_vk_deinit_upload_heap(vk);
+    owl_vk_renderer_deinit_upload_heap(vk);
 
-    code = owl_vk_init_upload_heap(vk, size * 2);
+    code = owl_vk_renderer_init_upload_heap(vk, size * 2);
     if (code)
       return code;
   }

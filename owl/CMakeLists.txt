@@ -14,18 +14,12 @@ target_sources(${PROJECT_NAME} PRIVATE
  owl_vk_font.h
  owl_vk_frame.c
  owl_vk_frame.h
- owl_vk_init.c
- owl_vk_init.h
  owl_vk_misc.c
  owl_vk_misc.h
- owl_vk_pipeline.c
- owl_vk_pipeline.h
  owl_vk_renderer.c
  owl_vk_renderer.h
  owl_vk_skybox.c
  owl_vk_skybox.h
- owl_vk_swapchain.c
- owl_vk_swapchain.h
  owl_vk_texture.c
  owl_vk_texture.h
  owl_vk_types.h

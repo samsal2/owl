@@ -143,7 +143,7 @@ owl_vk_draw_text(struct owl_vk_renderer *vk, char const *text,
 
   owl_code code;
 
-  owl_vk_bind_pipeline(vk, OWL_VK_PIPELINE_TEXT);
+  owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_TEXT);
 
   offset[0] = position[0] * (float)vk->width;
   offset[1] = position[1] * (float)vk->height;
@@ -346,7 +346,7 @@ owl_vk_draw_model(struct owl_vk_renderer *vk, struct owl_model const *model,
   uint64_t offset = 0;
   owl_code code = OWL_OK;
 
-  code = owl_vk_bind_pipeline(vk, OWL_VK_PIPELINE_MODEL);
+  code = owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_MODEL);
   if (OWL_OK != code)
     return code;
 
@@ -406,7 +406,7 @@ owl_vk_draw_skybox(struct owl_vk_renderer *vk)
       3, 2, 6, 6, 7, 3,  /* face 4 */
       4, 0, 1, 1, 5, 4}; /* face 5 */
 
-  owl_vk_bind_pipeline(vk, OWL_VK_PIPELINE_SKYBOX);
+  owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_SKYBOX);
 
   command_buffer = vk->frame_command_buffers[vk->frame];
 
