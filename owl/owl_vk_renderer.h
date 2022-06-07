@@ -29,28 +29,35 @@ enum owl_vk_pipeline {
 struct owl_plataform;
 
 struct owl_vk_renderer {
+  /** plataform resource */
   struct owl_plataform *plataform;
 
+  /** camera info */
   owl_m4 projection;
   owl_m4 view;
 
+  /** dimensions */
   uint32_t width;
   uint32_t height;
 
+  /** present clear values */
   VkClearValue clear_values[2];
 
+  /** vulkan intance */
   VkInstance instance;
   VkDebugUtilsMessengerEXT debug_messenger;
 
+  /** vulkan surface */
   VkSurfaceKHR surface;
   VkSurfaceFormatKHR surface_format;
 
-  VkPhysicalDevice physical_device;
-  VkDevice device;
-  uint32_t graphics_queue_family;
-  uint32_t present_queue_family;
-  VkQueue graphics_queue;
-  VkQueue present_queue;
+  /** vulkan device */
+  VkPhysicalDevice physical_device; /** physical_device */
+  VkDevice device;                  /** logical device */
+  uint32_t graphics_queue_family;   /** graphics queue family index */
+  uint32_t present_queue_family;    /**  present queue family_index */
+  VkQueue graphics_queue;           /** present queue */
+  VkQueue present_queue;            /** graphics_queue */
 
   VkSampleCountFlagBits msaa;
 
@@ -167,21 +174,60 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
 owl_public void
 owl_vk_renderer_deinit(struct owl_vk_renderer *vk);
 
+/**
+ * @brief
+ *
+ * @param vk
+ * @param size
+ * @return owl_code
+ */
 owl_public owl_code
 owl_vk_renderer_init_render_buffers(struct owl_vk_renderer *vk, uint64_t size);
 
+/**
+ * @brief
+ *
+ * @param vk
+ * @return void
+ */
 owl_public void
 owl_vk_renderer_deinit_render_buffers(struct owl_vk_renderer *vk);
 
+/**
+ * @brief
+ *
+ * @param vk
+ * @param size
+ * @return owl_code
+ */
 owl_public owl_code
 owl_vk_renderer_init_upload_buffer(struct owl_vk_renderer *vk, uint64_t size);
 
+/**
+ * @brief
+ *
+ * @param vk
+ * @return void
+ */
 owl_public void
 owl_vk_renderer_deinit_upload_buffer(struct owl_vk_renderer *vk);
 
+/**
+ * @brief
+ *
+ * @param vk
+ * @return owl_code
+ */
 owl_public owl_code
 owl_vk_renderer_resize_swapchain(struct owl_vk_renderer *vk);
 
+/**
+ * @brief
+ *
+ * @param vk
+ * @param id
+ * @return owl_code
+ */
 owl_public owl_code
 owl_vk_renderer_bind_pipeline(struct owl_vk_renderer *vk,
                               enum owl_vk_pipeline id);
