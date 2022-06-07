@@ -217,6 +217,9 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk) {
     vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, (uint64_t)-1,
                                       acquire_semaphore, VK_NULL_HANDLE,
                                       &vk->swapchain_image);
+    if (vk_result)
+      return OWL_ERROR_FATAL;
+
   } else if (vk_result) {
     return OWL_ERROR_FATAL;
   }
@@ -272,6 +275,7 @@ owl_vk_frame_end(struct owl_vk_renderer *vk) {
   VkPipelineStageFlagBits stage;
   VkSemaphore acquire_semaphore;
   VkSemaphore render_done_semaphore;
+  VkFence in_flight_fence;
   VkSubmitInfo submit_info;
   VkPresentInfoKHR present_info;
   VkResult vk_result;
@@ -279,15 +283,14 @@ owl_vk_frame_end(struct owl_vk_renderer *vk) {
   command_buffer = vk->frame_command_buffers[vk->frame];
 
   vkCmdEndRenderPass(command_buffer);
-
   vk_result = vkEndCommandBuffer(command_buffer);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
   stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
   acquire_semaphore = vk->frame_acquire_semaphores[vk->frame];
   render_done_semaphore = vk->frame_render_done_semaphores[vk->frame];
+  in_flight_fence = vk->frame_in_flight_fences[vk->frame];
 
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.pNext = NULL;
@@ -299,8 +302,8 @@ owl_vk_frame_end(struct owl_vk_renderer *vk) {
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &command_buffer;
 
-  vk_result = vkQueueSubmit(vk->graphics_queue, 1, &submit_info,
-                            vk->frame_in_flight_fences[vk->frame]);
+  vk_result =
+      vkQueueSubmit(vk->graphics_queue, 1, &submit_info, in_flight_fence);
   if (vk_result)
     return OWL_ERROR_FATAL;
 

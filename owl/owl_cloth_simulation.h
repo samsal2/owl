@@ -2,6 +2,7 @@
 #define OWL_CLOTH_SIMULATION_H_
 
 #include "owl_definitions.h"
+#include "owl_vector.h"
 #include "owl_vk_types.h"
 
 OWL_BEGIN_DECLS
@@ -17,29 +18,23 @@ struct owl_cloth_point {
 };
 
 struct owl_cloth {
-  uint32_t width;
-  uint32_t height;
+  int width;
+  int height
 
-  uint32_t num_points;
+      int num_points;
   struct owl_cloth_point *points;
-
-  uint32_t num_draw_indices;
-  uint32_t *draw_indices;
-
-  uint32_t num_draw_vertices;
-  struct owl_pcu_vertex *draw_vertices;
 };
 
-OWL_PUBLIC owl_code
-owl_cloth_init(struct owl_cloth *cloth, uint32_t w, uint32_t h);
+owl_public owl_code
+owl_cloth_init(struct owl_cloth *cloth, int w, int h);
 
-OWL_PUBLIC void
+owl_public void
 owl_cloth_deinit(struct owl_cloth *cloth);
 
-OWL_PUBLIC owl_code
+owl_public owl_code
 owl_draw_cloth(struct owl_cloth *cloth);
 
-OWL_PUBLIC owl_code
+owl_public owl_code
 owl_cloth_update(struct owl_cloth *cloth, float dt);
 
 OWL_END_DECLS
