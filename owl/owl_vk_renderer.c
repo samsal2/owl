@@ -50,8 +50,7 @@ owl_private char const *const debug_validation_layers[] = {
 #endif
 
 owl_private owl_code
-owl_vk_renderer_init_instance(struct owl_vk_renderer *vk,
-                              struct owl_plataform *plataform) {
+owl_vk_renderer_init_instance(struct owl_vk_renderer *vk) {
   VkApplicationInfo application_info;
   VkInstanceCreateInfo instance_info;
 
@@ -65,14 +64,14 @@ owl_vk_renderer_init_instance(struct owl_vk_renderer *vk,
   VkResult vk_result;
   owl_code code;
 
-  code = owl_plataform_get_vulkan_extensions(plataform, &num_extensions,
-                                             &extensions);
+  code = owl_plataform_get_required_vk_instance_extensions(
+      vk->plataform, &num_extensions, &extensions);
   if (code)
     return code;
 
   application_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   application_info.pNext = NULL;
-  application_info.pApplicationName = owl_plataform_get_title(plataform);
+  application_info.pApplicationName = owl_plataform_get_title(vk->plataform);
   application_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   application_info.pEngineName = "No Engine";
   application_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -158,9 +157,8 @@ owl_vk_renderer_deinit_instance(struct owl_vk_renderer *vk) {
 }
 
 owl_private owl_code
-owl_vk_renderer_init_surface(struct owl_vk_renderer *vk,
-                             struct owl_plataform *plataform) {
-  return owl_plataform_create_vulkan_surface(plataform, vk);
+owl_vk_renderer_init_surface(struct owl_vk_renderer *vk) {
+  return owl_plataform_create_vulkan_surface(vk->plataform, vk);
 }
 
 owl_private void
@@ -3091,13 +3089,13 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
   owl_m4_perspective(fov, ratio, near, far, vk->projection);
   owl_m4_look(eye, direction, up, vk->view);
 
-  code = owl_vk_renderer_init_instance(vk, plataform);
+  code = owl_vk_renderer_init_instance(vk);
   if (code) {
     OWL_DEBUG_LOG("Failed to initialize instance!\n");
     goto out;
   }
 
-  code = owl_vk_renderer_init_surface(vk, plataform);
+  code = owl_vk_renderer_init_surface(vk);
   if (code) {
     OWL_DEBUG_LOG("Failed to initialize surface!\n");
     goto error_deinit_instance;

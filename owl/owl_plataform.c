@@ -46,9 +46,9 @@ owl_plataform_deinit(struct owl_plataform *plataform) {
 #define OWL_MAX_INSTANCE_EXTENSIONS 64
 
 owl_public owl_code
-owl_plataform_get_vulkan_extensions(struct owl_plataform *plataform,
-                                    uint32_t *num_extensions,
-                                    char const *const **extensions) {
+owl_plataform_get_required_vk_instance_extensions(
+    struct owl_plataform *plataform, uint32_t *num_extensions,
+    char const *const **extensions) {
 #if defined(OWL_ENABLE_VALIDATION)
   char const *const *tmp;
   owl_local_persist char const *names[OWL_MAX_INSTANCE_EXTENSIONS];
