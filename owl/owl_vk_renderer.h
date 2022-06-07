@@ -13,8 +13,8 @@ OWL_BEGIN_DECLS
 #define OWL_MAX_SWAPCHAIN_IMAGES 8
 #define OWL_NUM_IN_FLIGHT_FRAMES 3
 #define OWL_MAX_GARBAGE_ITEMS 8
-#define OWL_FONT_FIRST_CHAR ((int32_t)(' '))
-#define OWL_FONT_NUM_CHARS ((int32_t)('~' - ' '))
+#define OWL_FONT_FIRST_CHAR ((int)(' '))
+#define OWL_FONT_NUM_CHARS ((int)('~' - ' '))
 
 enum owl_vk_pipeline {
   OWL_VK_PIPELINE_BASIC,

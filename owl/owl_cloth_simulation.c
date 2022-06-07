@@ -5,8 +5,7 @@
 #include "owl_vk_renderer.h"
 
 OWL_PUBLIC owl_code
-owl_cloth_init(struct owl_cloth *cloth, uint32_t w, uint32_t h)
-{
+owl_cloth_init(struct owl_cloth *cloth, uint32_t w, uint32_t h) {
   cloth->num_points = w * h;
 
   cloth->points = owl_malloc(cloth->num_points * sizeof(*cloth->points));

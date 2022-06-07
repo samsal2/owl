@@ -11,8 +11,7 @@
 
 owl_public owl_code
 owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,
-                 owl_m4 const matrix)
-{
+                 owl_m4 const matrix) {
   uint8_t *data;
   VkDescriptorSet sets[2];
   VkCommandBuffer command_buffer;
@@ -100,8 +99,7 @@ owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,
 
 owl_private owl_code
 owl_vk_draw_glyph(struct owl_vk_renderer *vk, struct owl_vk_glyph *glyph,
-                  owl_v3 const color)
-{
+                  owl_v3 const color) {
   owl_m4 matrix;
   owl_v3 scale;
   struct owl_quad quad;
@@ -136,8 +134,7 @@ owl_vk_draw_glyph(struct owl_vk_renderer *vk, struct owl_vk_glyph *glyph,
 
 owl_public owl_code
 owl_vk_draw_text(struct owl_vk_renderer *vk, char const *text,
-                 owl_v3 const position, owl_v3 const color)
-{
+                 owl_v3 const position, owl_v3 const color) {
   char const *c;
   owl_v2 offset;
 
@@ -165,9 +162,8 @@ owl_vk_draw_text(struct owl_vk_renderer *vk, char const *text,
 
 owl_private owl_code
 owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
-                       struct owl_model const *model, owl_m4 const matrix)
-{
-  int32_t i;
+                       struct owl_model const *model, owl_m4 const matrix) {
+  int i;
   uint8_t *data;
   owl_model_node_id parent;
   struct owl_model_node const *node;
@@ -339,9 +335,8 @@ owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
 
 owl_public owl_code
 owl_vk_draw_model(struct owl_vk_renderer *vk, struct owl_model const *model,
-                  owl_m4 const matrix)
-{
-  int32_t i;
+                  owl_m4 const matrix) {
+  int i;
 
   uint64_t offset = 0;
   owl_code code = OWL_OK;
@@ -367,8 +362,7 @@ owl_vk_draw_model(struct owl_vk_renderer *vk, struct owl_model const *model,
 }
 
 owl_public owl_code
-owl_vk_draw_skybox(struct owl_vk_renderer *vk)
-{
+owl_vk_draw_skybox(struct owl_vk_renderer *vk) {
   uint8_t *data;
   struct owl_vk_frame_allocation valloc;
   struct owl_vk_frame_allocation ialloc;

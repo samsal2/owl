@@ -7,7 +7,7 @@
 OWL_BEGIN_DECLS
 
 struct owl_cloth_point {
-  int32_t movable;
+  int movable;
   owl_v3 position;
   owl_v3 velocity;
   owl_v3 acceleration;

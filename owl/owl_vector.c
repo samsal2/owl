@@ -16,8 +16,7 @@
   (&((uint8_t *)(&(head)->aligned.data[0]))[head->esize * (i)])
 
 owl_public owl_code
-owl_vector_init_(void **v, uint64_t cap, uint64_t size, uint64_t esize)
-{
+owl_vector_init_(void **v, uint64_t cap, uint64_t size, uint64_t esize) {
   struct owl_vector *head;
 
   owl_code code = OWL_OK;
@@ -40,20 +39,17 @@ owl_vector_init_(void **v, uint64_t cap, uint64_t size, uint64_t esize)
   return code;
 }
 owl_public uint64_t
-owl_vector_size_(void *vec)
-{
+owl_vector_size_(void *vec) {
   return owl_vector_head(vec)->size;
 }
 
 owl_public void
-owl_vector_clear_(void *vec)
-{
+owl_vector_clear_(void *vec) {
   owl_vector_head(vec)->size = 0;
 }
 
 owl_public owl_code
-owl_vector_push_back_(void **vec, void *value, uint64_t esize)
-{
+owl_vector_push_back_(void **vec, void *value, uint64_t esize) {
   struct owl_vector *head = owl_vector_head(*vec);
 
   if (esize != head->esize)
@@ -85,8 +81,7 @@ owl_vector_push_back_(void **vec, void *value, uint64_t esize)
 }
 
 owl_public void
-owl_vector_pop_(void *vec)
-{
+owl_vector_pop_(void *vec) {
   struct owl_vector *head = owl_vector_head(vec);
 
   if (head->size)
@@ -94,7 +89,6 @@ owl_vector_pop_(void *vec)
 }
 
 owl_public void
-owl_vector_deinit_(void *v)
-{
+owl_vector_deinit_(void *v) {
   owl_free(owl_vector_head(v));
 }

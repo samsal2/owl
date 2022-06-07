@@ -7,8 +7,7 @@ layout(location = 3) in vec2 inUV1;
 layout(location = 4) in vec4 inJoint0;
 layout(location = 5) in vec4 inWeight0;
 
-layout(set = 0, binding = 0) uniform UBO
-{
+layout(set = 0, binding = 0) uniform UBO {
   mat4 projection;
   mat4 model;
   mat4 view;
@@ -18,8 +17,7 @@ ubo;
 
 #define MAX_NUM_JOINTS 128
 
-layout(set = 2, binding = 0) uniform UBONode
-{
+layout(set = 2, binding = 0) uniform UBONode {
   mat4 matrix;
   mat4 jointMatrix[MAX_NUM_JOINTS];
   float jointCount;
@@ -34,8 +32,7 @@ layout(location = 3) out vec2 outUV1;
 out gl_PerVertex { vec4 gl_Position; };
 
 void
-main()
-{
+main() {
   vec4 locPos;
   if (node.jointCount > 0.0) {
     // Mesh is skinned

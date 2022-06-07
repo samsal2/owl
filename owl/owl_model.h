@@ -18,16 +18,16 @@ OWL_BEGIN_DECLS
 #define OWL_MODEL_MAX_NAME_LENGTH 128
 #define OWL_MODEL_MAX_JOINTS 128
 
-typedef int32_t owl_model_node_id;
-typedef int32_t owl_model_mesh_id;
-typedef int32_t owl_model_texture_id;
-typedef int32_t owl_model_material_id;
-typedef int32_t owl_model_primitive_id;
-typedef int32_t owl_model_image_id;
-typedef int32_t owl_model_skin_id;
-typedef int32_t owl_model_anim_sampler_id;
-typedef int32_t owl_model_anim_chan_id;
-typedef int32_t owl_model_anim_id;
+typedef int owl_model_node_id;
+typedef int owl_model_mesh_id;
+typedef int owl_model_texture_id;
+typedef int owl_model_material_id;
+typedef int owl_model_primitive_id;
+typedef int owl_model_image_id;
+typedef int owl_model_skin_id;
+typedef int owl_model_anim_sampler_id;
+typedef int owl_model_anim_chan_id;
+typedef int owl_model_anim_id;
 
 struct owl_model_material_push_constant {
   owl_v4 base_color_factor;
@@ -35,11 +35,11 @@ struct owl_model_material_push_constant {
   owl_v4 diffuse_factor;
   owl_v4 specular_factor;
   float workflow;
-  int32_t base_color_uv_set;
-  int32_t physical_desc_uv_set;
-  int32_t normal_uv_set;
-  int32_t occlusion_uv_set;
-  int32_t emissive_uv_set;
+  int base_color_uv_set;
+  int physical_desc_uv_set;
+  int normal_uv_set;
+  int occlusion_uv_set;
+  int emissive_uv_set;
   float metallic_factor;
   float roughness_factor;
   float alpha_mask;
@@ -54,7 +54,7 @@ struct owl_model_ubo1 {
 };
 
 struct owl_model_mesh {
-  int32_t primitive_count;
+  int primitive_count;
   owl_model_primitive_id primitives[OWL_MODEL_MAX_ITEMS];
 };
 
@@ -80,7 +80,7 @@ struct owl_model_node {
   owl_model_mesh_id mesh;
   owl_model_skin_id skin;
 
-  int32_t child_count;
+  int child_count;
   owl_model_node_id children[OWL_MODEL_MAX_ITEMS];
 };
 
@@ -101,7 +101,7 @@ enum owl_model_alpha_mode {
 struct owl_model_material {
   enum owl_model_alpha_mode alpha_mode;
   float alpha_cutoff;
-  int32_t double_sided;
+  int double_sided;
   owl_model_texture_id base_color_texture;
   owl_model_texture_id normal_texture;
   owl_model_texture_id physical_desc_texture;
@@ -113,7 +113,7 @@ struct owl_model_material {
 struct owl_model_skin_ssbo {
   owl_m4 matrix;
   owl_m4 joint_matices[OWL_MODEL_MAX_JOINTS];
-  int32_t joint_matrix_count;
+  int joint_matrix_count;
 };
 
 struct owl_model_skin {
@@ -125,7 +125,7 @@ struct owl_model_skin {
 
   owl_m4 inverse_bind_matrices[OWL_MODEL_MAX_JOINTS];
 
-  int32_t joint_count;
+  int joint_count;
   owl_model_node_id joints[OWL_MODEL_MAX_JOINTS];
 
   VkDeviceMemory ssbo_memory;
@@ -139,17 +139,17 @@ struct owl_model_skin {
 };
 
 struct owl_model_anim_sampler {
-  int32_t interpolation;
+  int interpolation;
 
-  int32_t input_count;
+  int input_count;
   float inputs[OWL_MODEL_MAX_ITEMS];
 
-  int32_t output_count;
+  int output_count;
   owl_v4 outputs[OWL_MODEL_MAX_ITEMS];
 };
 
 struct owl_model_anim_chan {
-  int32_t path;
+  int path;
 
   owl_model_node_id node;
   owl_model_anim_sampler_id anim_sampler;
@@ -162,10 +162,10 @@ struct owl_model_anim {
   float begin;
   float end;
 
-  int32_t sampler_count;
+  int sampler_count;
   owl_model_anim_sampler_id samplers[OWL_MODEL_MAX_ITEMS];
 
-  int32_t chan_count;
+  int chan_count;
   owl_model_anim_chan_id chans[OWL_MODEL_MAX_ITEMS];
 };
 
@@ -178,37 +178,37 @@ struct owl_model {
 
   owl_model_anim_id active_anim;
 
-  int32_t root_count;
+  int root_count;
   owl_model_node_id roots[OWL_MODEL_MAX_ITEMS];
 
-  int32_t node_count;
+  int node_count;
   struct owl_model_node nodes[OWL_MODEL_MAX_ITEMS];
 
-  int32_t image_count;
+  int image_count;
   struct owl_model_image images[OWL_MODEL_MAX_ITEMS];
 
-  int32_t texture_count;
+  int texture_count;
   struct owl_model_texture textures[OWL_MODEL_MAX_ITEMS];
 
-  int32_t material_count;
+  int material_count;
   struct owl_model_material materials[OWL_MODEL_MAX_ITEMS];
 
-  int32_t mesh_count;
+  int mesh_count;
   struct owl_model_mesh meshes[OWL_MODEL_MAX_ITEMS];
 
-  int32_t primitive_count;
+  int primitive_count;
   struct owl_model_primitive primitives[OWL_MODEL_MAX_ITEMS];
 
-  int32_t skin_count;
+  int skin_count;
   struct owl_model_skin skins[OWL_MODEL_MAX_ITEMS];
 
-  int32_t anim_sampler_count;
+  int anim_sampler_count;
   struct owl_model_anim_sampler anim_samplers[OWL_MODEL_MAX_ITEMS];
 
-  int32_t anim_chan_count;
+  int anim_chan_count;
   struct owl_model_anim_chan anim_chans[OWL_MODEL_MAX_ITEMS];
 
-  int32_t anim_count;
+  int anim_count;
   struct owl_model_anim anims[OWL_MODEL_MAX_ITEMS];
 };
 
@@ -220,7 +220,7 @@ owl_public void
 owl_model_deinit(struct owl_model *model, struct owl_vk_renderer *vk);
 
 owl_public owl_code
-owl_model_anim_update(struct owl_model *model, int32_t frame, float dt,
+owl_model_anim_update(struct owl_model *model, int frame, float dt,
                       owl_model_anim_id id);
 
 OWL_END_DECLS

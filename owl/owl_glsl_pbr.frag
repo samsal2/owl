@@ -11,8 +11,7 @@ layout(location = 3) in vec2 inUV1;
 
 // Scene bindings
 
-layout(set = 0, binding = 0) uniform UBO
-{
+layout(set = 0, binding = 0) uniform UBO {
   mat4 projection;
   mat4 model;
   mat4 view;
@@ -20,8 +19,7 @@ layout(set = 0, binding = 0) uniform UBO
 }
 ubo;
 
-layout(set = 0, binding = 1) uniform UBOParams
-{
+layout(set = 0, binding = 1) uniform UBOParams {
   vec4 lightDir;
   float exposure;
   float gamma;
@@ -44,8 +42,7 @@ layout(set = 1, binding = 2) uniform sampler2D normalMap;
 layout(set = 1, binding = 3) uniform sampler2D aoMap;
 layout(set = 1, binding = 4) uniform sampler2D emissiveMap;
 
-layout(push_constant) uniform Material
-{
+layout(push_constant) uniform Material {
   vec4 baseColorFactor;
   vec4 emissiveFactor;
   vec4 diffuseFactor;
@@ -95,8 +92,7 @@ const float PBR_WORKFLOW_SPECULAR_GLOSINESS = 1.0f;
 #define MANUAL_SRGB 1
 
 vec3
-Uncharted2Tonemap(vec3 color)
-{
+Uncharted2Tonemap(vec3 color) {
   float A = 0.15;
   float B = 0.50;
   float C = 0.10;
@@ -110,24 +106,22 @@ Uncharted2Tonemap(vec3 color)
 }
 
 vec4
-tonemap(vec4 color)
-{
+tonemap(vec4 color) {
   vec3 outcol = Uncharted2Tonemap(color.rgb * uboParams.exposure);
   outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
   return vec4(pow(outcol, vec3(1.0f / uboParams.gamma)), color.a);
 }
 
 vec4
-SRGBtoLINEAR(vec4 srgbIn)
-{
+SRGBtoLINEAR(vec4 srgbIn) {
 #ifdef MANUAL_SRGB
 #ifdef SRGB_FAST_APPROXIMATION
   vec3 linOut = pow(srgbIn.xyz, vec3(2.2));
 #else  // SRGB_FAST_APPROXIMATION
   vec3 bLess = step(vec3(0.04045), srgbIn.xyz);
-  vec3 linOut = mix(srgbIn.xyz / vec3(12.92),
-                    pow((srgbIn.xyz + vec3(0.055)) / vec3(1.055), vec3(2.4)),
-                    bLess);
+  vec3 linOut =
+      mix(srgbIn.xyz / vec3(12.92),
+          pow((srgbIn.xyz + vec3(0.055)) / vec3(1.055), vec3(2.4)), bLess);
 #endif // SRGB_FAST_APPROXIMATION
   return vec4(linOut, srgbIn.w);
   ;
@@ -139,8 +133,7 @@ SRGBtoLINEAR(vec4 srgbIn)
 // Find the normal for this fragment, pulling either from a predefined normal
 // map or from the interpolated mesh normal and tangent attributes.
 vec3
-getNormal()
-{
+getNormal() {
   // Perturb normal, see http://www.thetenthplanet.de/archives/1180
   vec3 tangentNormal =
       texture(normalMap, material.normalTextureSet == 0 ? inUV0 : inUV1).xyz *
@@ -165,8 +158,7 @@ getNormal()
 // computed as outlined in [1]. See our README.md on Environment Maps [3] for
 // additional discussion.
 vec3
-getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
-{
+getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection) {
   float lod =
       (pbrInputs.perceptualRoughness * uboParams.prefilteredCubeMipLevels);
   // retrieve a scale and bias to F0. See [1], Figure 3
@@ -195,16 +187,14 @@ getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
 // https://archive.org/details/lambertsphotome00lambgoog See also [1], Equation
 // 1
 vec3
-diffuse(PBRInfo pbrInputs)
-{
+diffuse(PBRInfo pbrInputs) {
   return pbrInputs.diffuseColor / M_PI;
 }
 
 // The following equation models the Fresnel reflectance term of the spec
 // equation (aka F()) Implementation of fresnel from [4], Equation 15
 vec3
-specularReflection(PBRInfo pbrInputs)
-{
+specularReflection(PBRInfo pbrInputs) {
   return pbrInputs.reflectance0 +
          (pbrInputs.reflectance90 - pbrInputs.reflectance0) *
              pow(clamp(1.0 - pbrInputs.VdotH, 0.0, 1.0), 5.0);
@@ -215,16 +205,15 @@ specularReflection(PBRInfo pbrInputs)
 // This implementation is based on [1] Equation 4, and we adopt their
 // modifications to alphaRoughness as input as originally proposed in [2].
 float
-geometricOcclusion(PBRInfo pbrInputs)
-{
+geometricOcclusion(PBRInfo pbrInputs) {
   float NdotL = pbrInputs.NdotL;
   float NdotV = pbrInputs.NdotV;
   float r = pbrInputs.alphaRoughness;
 
-  float attenuationL = 2.0 * NdotL /
-                       (NdotL + sqrt(r * r + (1.0 - r * r) * (NdotL * NdotL)));
-  float attenuationV = 2.0 * NdotV /
-                       (NdotV + sqrt(r * r + (1.0 - r * r) * (NdotV * NdotV)));
+  float attenuationL =
+      2.0 * NdotL / (NdotL + sqrt(r * r + (1.0 - r * r) * (NdotL * NdotL)));
+  float attenuationV =
+      2.0 * NdotV / (NdotV + sqrt(r * r + (1.0 - r * r) * (NdotV * NdotV)));
   return attenuationL * attenuationV;
 }
 
@@ -234,25 +223,23 @@ geometricOcclusion(PBRInfo pbrInputs)
 // S. Trowbridge, and K. P. Reitz Follows the distribution function recommended
 // in the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
 float
-microfacetDistribution(PBRInfo pbrInputs)
-{
+microfacetDistribution(PBRInfo pbrInputs) {
   float roughnessSq = pbrInputs.alphaRoughness * pbrInputs.alphaRoughness;
-  float f = (pbrInputs.NdotH * roughnessSq - pbrInputs.NdotH) *
-                pbrInputs.NdotH +
-            1.0;
+  float f =
+      (pbrInputs.NdotH * roughnessSq - pbrInputs.NdotH) * pbrInputs.NdotH +
+      1.0;
   return roughnessSq / (M_PI * f * f);
 }
 
 // Gets metallic factor from specular glossiness workflow inputs
 float
-convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular)
-{
-  float perceivedDiffuse = sqrt(0.299 * diffuse.r * diffuse.r +
-                                0.587 * diffuse.g * diffuse.g +
-                                0.114 * diffuse.b * diffuse.b);
-  float perceivedSpecular = sqrt(0.299 * specular.r * specular.r +
-                                 0.587 * specular.g * specular.g +
-                                 0.114 * specular.b * specular.b);
+convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular) {
+  float perceivedDiffuse =
+      sqrt(0.299 * diffuse.r * diffuse.r + 0.587 * diffuse.g * diffuse.g +
+           0.114 * diffuse.b * diffuse.b);
+  float perceivedSpecular =
+      sqrt(0.299 * specular.r * specular.r + 0.587 * specular.g * specular.g +
+           0.114 * specular.b * specular.b);
   if (perceivedSpecular < c_MinRoughness) {
     return 0.0;
   }
@@ -265,8 +252,7 @@ convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular)
 }
 
 void
-main()
-{
+main() {
   float perceptualRoughness;
   float metallic;
   vec3 diffuseColor;
@@ -349,10 +335,10 @@ main()
                                 ((1.0 - maxSpecular) / (1 - c_MinRoughness) /
                                  max(1 - metallic, epsilon)) *
                                 material.diffuseFactor.rgb;
-    vec3 baseColorSpecularPart = specular -
-                                 (vec3(c_MinRoughness) * (1 - metallic) *
-                                  (1 / max(metallic, epsilon))) *
-                                     material.specularFactor.rgb;
+    vec3 baseColorSpecularPart =
+        specular - (vec3(c_MinRoughness) * (1 - metallic) *
+                    (1 / max(metallic, epsilon))) *
+                       material.specularFactor.rgb;
     baseColor = vec4(
         mix(baseColorDiffusePart, baseColorSpecularPart, metallic * metallic),
         diffuse.a);
@@ -366,8 +352,8 @@ main()
   vec3 specularColor = mix(f0, baseColor.rgb, metallic);
 
   // Compute reflectance.
-  float reflectance = max(max(specularColor.r, specularColor.g),
-                          specularColor.b);
+  float reflectance =
+      max(max(specularColor.r, specularColor.g), specularColor.b);
 
   // For typical incident reflectance range (between 4% to 100%) set the
   // grazing reflectance to 100% for typical fresnel effect. For very low
@@ -377,13 +363,13 @@ main()
   vec3 specularEnvironmentR0 = specularColor.rgb;
   vec3 specularEnvironmentR90 = vec3(1.0, 1.0, 1.0) * reflectance90;
 
-  vec3 n = (material.normalTextureSet > -1) ? getNormal()
-                                            : normalize(inNormal);
-  vec3 v = normalize(ubo.camPos -
-                     inWorldPos); // Vector from surface point to camera
-  vec3 l =
-      normalize(uboParams.lightDir.xyz); // Vector from surface point to light
-  vec3 h = normalize(l + v);             // Half vector between both l and v
+  vec3 n =
+      (material.normalTextureSet > -1) ? getNormal() : normalize(inNormal);
+  vec3 v = normalize(ubo.camPos - inWorldPos); // Vector from surface point to
+                                               // camera
+  vec3 l = normalize(uboParams.lightDir.xyz);  // Vector from surface point to
+                                               // light
+  vec3 h = normalize(l + v); // Half vector between both l and v
   vec3 reflection = -normalize(reflect(v, n));
   reflection.y *= -1.0f;
 
@@ -393,10 +379,10 @@ main()
   float LdotH = clamp(dot(l, h), 0.0, 1.0);
   float VdotH = clamp(dot(v, h), 0.0, 1.0);
 
-  PBRInfo pbrInputs = PBRInfo(NdotL, NdotV, NdotH, LdotH, VdotH,
-                              perceptualRoughness, metallic,
-                              specularEnvironmentR0, specularEnvironmentR90,
-                              alphaRoughness, diffuseColor, specularColor);
+  PBRInfo pbrInputs =
+      PBRInfo(NdotL, NdotV, NdotH, LdotH, VdotH, perceptualRoughness, metallic,
+              specularEnvironmentR0, specularEnvironmentR90, alphaRoughness,
+              diffuseColor, specularColor);
 
   // Calculate the shading terms for the microfacet specular shading model
   vec3 F = specularReflection(pbrInputs);
@@ -440,27 +426,27 @@ main()
     int index = int(uboParams.debugViewInputs);
     switch (index) {
     case 1:
-      outColor.rgba = material.baseColorTextureSet > -1
-                          ? texture(colorMap, material.baseColorTextureSet == 0
-                                                  ? inUV0
-                                                  : inUV1)
-                          : vec4(1.0f);
+      outColor.rgba =
+          material.baseColorTextureSet > -1
+              ? texture(colorMap,
+                        material.baseColorTextureSet == 0 ? inUV0 : inUV1)
+              : vec4(1.0f);
       break;
     case 2:
-      outColor.rgb = (material.normalTextureSet > -1)
-                         ? texture(normalMap, material.normalTextureSet == 0
-                                                  ? inUV0
-                                                  : inUV1)
-                               .rgb
-                         : normalize(inNormal);
+      outColor.rgb =
+          (material.normalTextureSet > -1)
+              ? texture(normalMap,
+                        material.normalTextureSet == 0 ? inUV0 : inUV1)
+                    .rgb
+              : normalize(inNormal);
       break;
     case 3:
-      outColor.rgb = (material.occlusionTextureSet > -1)
-                         ? texture(aoMap, material.occlusionTextureSet == 0
-                                              ? inUV0
-                                              : inUV1)
-                               .rrr
-                         : vec3(0.0f);
+      outColor.rgb =
+          (material.occlusionTextureSet > -1)
+              ? texture(aoMap,
+                        material.occlusionTextureSet == 0 ? inUV0 : inUV1)
+                    .rrr
+              : vec3(0.0f);
       break;
     case 4:
       outColor.rgb =

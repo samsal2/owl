@@ -8,13 +8,13 @@
 
 #include <stdio.h>
 
-owl_static_assert(
-    sizeof(struct owl_vk_packed_char) == sizeof(stbtt_packedchar),
-    "owl_packed_char and stbtt_packedchar must represent the same struct");
+owl_static_assert(sizeof(struct owl_vk_packed_char) ==
+                      sizeof(stbtt_packedchar),
+                  "owl_packed_char and stbtt_packedchar must represent the "
+                  "same struct");
 
 owl_private owl_code
-owl_vk_load_file(char const *path, uint8_t **file)
-{
+owl_vk_load_file(char const *path, uint8_t **file) {
   FILE *fp;
 
   owl_code code = OWL_OK;
@@ -43,8 +43,7 @@ owl_vk_load_file(char const *path, uint8_t **file)
 }
 
 owl_private void
-owl_vk_unload_file(uint8_t *data)
-{
+owl_vk_unload_file(uint8_t *data) {
   owl_free(data);
 }
 
@@ -54,8 +53,7 @@ owl_vk_unload_file(uint8_t *data)
   (OWL_VK_FONT_ATLAS_HEIGHT * OWL_VK_FONT_ATLAS_WIDTH)
 
 owl_public owl_code
-owl_vk_font_load(struct owl_vk_renderer *vk, uint64_t size, char const *path)
-{
+owl_vk_font_load(struct owl_vk_renderer *vk, uint64_t size, char const *path) {
   int res;
   uint8_t *file;
   uint8_t *bitmap;
@@ -131,16 +129,14 @@ out:
 }
 
 owl_public void
-owl_vk_font_unload(struct owl_vk_renderer *vk)
-{
+owl_vk_font_unload(struct owl_vk_renderer *vk) {
   owl_vk_texture_deinit(&vk->font_atlas, vk);
   vk->font_loaded = 0;
 }
 
 owl_public owl_code
 owl_vk_font_fill_glyph(struct owl_vk_renderer *vk, char c, owl_v2 offset,
-                       struct owl_vk_glyph *glyph)
-{
+                       struct owl_vk_glyph *glyph) {
   stbtt_aligned_quad quad;
   owl_code code = OWL_OK;
 

@@ -13,8 +13,8 @@ struct owl_plataform {
 };
 
 owl_public owl_code
-owl_plataform_init(struct owl_plataform *plataform, int32_t width,
-                   int32_t height, char const *title);
+owl_plataform_init(struct owl_plataform *plataform, int width, int height,
+                   char const *title);
 
 owl_public void
 owl_plataform_deinit(struct owl_plataform *plataform);
@@ -39,7 +39,7 @@ owl_public owl_code
 owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
                                     struct owl_vk_renderer *vk);
 
-owl_public int32_t
+owl_public int
 owl_plataform_should_close(struct owl_plataform *plataform);
 
 owl_public void

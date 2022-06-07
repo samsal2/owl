@@ -12,8 +12,7 @@
 
 owl_private void
 owl_vk_skybox_transition(struct owl_vk_renderer *vk, VkImageLayout src_layout,
-                         VkImageLayout dst_layout)
-{
+                         VkImageLayout dst_layout) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst_stage = VK_PIPELINE_STAGE_NONE_KHR;
@@ -73,12 +72,11 @@ owl_vk_skybox_transition(struct owl_vk_renderer *vk, VkImageLayout src_layout,
 }
 
 owl_public owl_code
-owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
-{
-  int32_t i;
-  int32_t width;
-  int32_t height;
-  int32_t chans;
+owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
+  int i;
+  int width;
+  int height;
+  int chans;
   uint64_t image_size;
   uint8_t *data = NULL;
 
@@ -156,15 +154,15 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
   mem_info.memoryTypeIndex = owl_vk_find_memory_type(
       vk, mem_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-  vk_result = vkAllocateMemory(vk->device, &mem_info, NULL,
-                               &vk->skybox_memory);
+  vk_result =
+      vkAllocateMemory(vk->device, &mem_info, NULL, &vk->skybox_memory);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_destroy_image;
   }
 
-  vk_result = vkBindImageMemory(vk->device, vk->skybox_image,
-                                vk->skybox_memory, 0);
+  vk_result =
+      vkBindImageMemory(vk->device, vk->skybox_image, vk->skybox_memory, 0);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_free_memory;
@@ -214,7 +212,7 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
     goto error_free_set;
   }
 
-  for (i = 0; i < (int32_t)owl_array_size(names); ++i) {
+  for (i = 0; i < (int)owl_array_size(names); ++i) {
     if (0 < i) {
       ret = snprintf(file, OWL_VK_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path,
                      names[i]);
@@ -323,8 +321,7 @@ out:
 }
 
 owl_public void
-owl_vk_skybox_unload(struct owl_vk_renderer *vk)
-{
+owl_vk_skybox_unload(struct owl_vk_renderer *vk) {
   vk->skybox_loaded = 0;
   vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1, &vk->skybox_set);
   vkDestroyImageView(vk->device, vk->skybox_image_view, NULL);

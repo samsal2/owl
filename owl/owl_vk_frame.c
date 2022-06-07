@@ -6,8 +6,7 @@
 #include "owl_vk_types.h"
 
 owl_private void
-owl_vk_frame_collect_garbage(struct owl_vk_renderer *vk)
-{
+owl_vk_frame_collect_garbage(struct owl_vk_renderer *vk) {
   uint32_t i;
 
   owl_vector(VkBuffer) buffers = vk->garbage_buffers[vk->frame];
@@ -31,8 +30,7 @@ owl_vk_frame_collect_garbage(struct owl_vk_renderer *vk)
 }
 
 owl_private owl_code
-owl_vk_frame_push_garbage(struct owl_vk_renderer *vk)
-{
+owl_vk_frame_push_garbage(struct owl_vk_renderer *vk) {
   owl_code code;
   int i;
 
@@ -116,8 +114,7 @@ out:
 }
 
 owl_private owl_code
-owl_vk_frame_pop_garbage(struct owl_vk_renderer *vk)
-{
+owl_vk_frame_pop_garbage(struct owl_vk_renderer *vk) {
   uint32_t i;
 
   for (i = 0; i < vk->num_frames; ++i)
@@ -139,8 +136,7 @@ owl_vk_frame_pop_garbage(struct owl_vk_renderer *vk)
 }
 
 owl_public owl_code
-owl_vk_frame_reserve(struct owl_vk_renderer *vk, uint64_t size)
-{
+owl_vk_frame_reserve(struct owl_vk_renderer *vk, uint64_t size) {
   if (vk->render_buffer_size < (size + vk->render_buffer_offset)) {
     uint64_t nsize;
     owl_code code;
@@ -164,8 +160,7 @@ owl_vk_frame_reserve(struct owl_vk_renderer *vk, uint64_t size)
 
 owl_public void *
 owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
-                      struct owl_vk_frame_allocation *alloc)
-{
+                      struct owl_vk_frame_allocation *alloc) {
   owl_code code;
 
   uint8_t *data = NULL;
@@ -174,8 +169,8 @@ owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
   if (!code) {
     uint64_t offset = vk->render_buffer_offset;
 
-    vk->render_buffer_offset = owl_alignu2(offset + size,
-                                           vk->render_buffer_alignment);
+    vk->render_buffer_offset =
+        owl_alignu2(offset + size, vk->render_buffer_alignment);
 
     data = &((uint8_t *)vk->render_buffer_data[vk->frame])[offset];
 
@@ -196,8 +191,7 @@ owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
    VK_ERROR_SURFACE_LOST_KHR == (vk_result))
 
 owl_public owl_code
-owl_vk_frame_begin(struct owl_vk_renderer *vk)
-{
+owl_vk_frame_begin(struct owl_vk_renderer *vk) {
   VkSemaphore acquire_semaphore;
   VkFence in_flight_fence;
   VkCommandPool command_pool;
@@ -228,8 +222,8 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk)
   }
 
   in_flight_fence = vk->frame_in_flight_fences[vk->frame];
-  vk_result = vkWaitForFences(vk->device, 1, &in_flight_fence, VK_TRUE,
-                              (uint64_t)-1);
+  vk_result =
+      vkWaitForFences(vk->device, 1, &in_flight_fence, VK_TRUE, (uint64_t)-1);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
@@ -273,8 +267,7 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk)
 }
 
 owl_public owl_code
-owl_vk_frame_end(struct owl_vk_renderer *vk)
-{
+owl_vk_frame_end(struct owl_vk_renderer *vk) {
   VkCommandBuffer command_buffer;
   VkPipelineStageFlagBits stage;
   VkSemaphore acquire_semaphore;

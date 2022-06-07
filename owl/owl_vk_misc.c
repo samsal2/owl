@@ -5,8 +5,7 @@
 
 owl_public uint32_t
 owl_vk_find_memory_type(struct owl_vk_renderer *vk, uint32_t filter,
-                        uint32_t prop)
-{
+                        uint32_t prop) {
   uint32_t ty;
   VkPhysicalDeviceMemoryProperties memprops;
 
@@ -23,8 +22,7 @@ owl_vk_find_memory_type(struct owl_vk_renderer *vk, uint32_t filter,
 }
 
 owl_public owl_code
-owl_vk_begin_im_command_buffer(struct owl_vk_renderer *vk)
-{
+owl_vk_begin_im_command_buffer(struct owl_vk_renderer *vk) {
   VkCommandBufferAllocateInfo command_buffer_info;
   VkCommandBufferBeginInfo begin_info;
 
@@ -68,8 +66,7 @@ out:
 }
 
 owl_public owl_code
-owl_vk_end_im_command_buffer(struct owl_vk_renderer *vk)
-{
+owl_vk_end_im_command_buffer(struct owl_vk_renderer *vk) {
   VkSubmitInfo submit_info;
 
   VkResult vk_result = VK_SUCCESS;

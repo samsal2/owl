@@ -7,8 +7,7 @@ layout(location = 3) in vec2 in_uv1;
 layout(location = 4) in vec4 in_joints0;
 layout(location = 5) in vec4 in_weights0;
 
-layout(set = 0, binding = 0) uniform UBO
-{
+layout(set = 0, binding = 0) uniform UBO {
   mat4 projection;
   mat4 view;
   mat4 model;
@@ -18,8 +17,7 @@ ubo;
 
 #define OWL_MODEL_SKIN_MAX_JOINT_COUNT 128
 
-layout(std430, set = 4, binding = 0) readonly buffer SSBO
-{
+layout(std430, set = 4, binding = 0) readonly buffer SSBO {
   mat4 matrix;
   mat4 joint_matrices[OWL_MODEL_SKIN_MAX_JOINT_COUNT];
   int joint_matrice_count;
@@ -34,8 +32,7 @@ layout(location = 4) out vec3 out_view;
 layout(location = 5) out vec3 out_light;
 
 void
-main()
-{
+main() {
   out_normal = in_normal;
   out_uv0 = in_uv0;
   out_uv1 = in_uv1;
@@ -49,12 +46,12 @@ main()
                        in_weights0.z * node.joint_matrices[int(in_joints0.z)] +
                        in_weights0.w * node.joint_matrices[int(in_joints0.w)];
 
-    local_position = ubo.model * node.matrix * skin_matrix *
-                     vec4(in_position, 1.0);
-    out_normal = normalize(
-        transpose(
-            inverse(mat3(ubo.view * ubo.model * node.matrix * skin_matrix))) *
-        in_normal);
+    local_position =
+        ubo.model * node.matrix * skin_matrix * vec4(in_position, 1.0);
+    out_normal =
+        normalize(transpose(inverse(mat3(ubo.view * ubo.model * node.matrix *
+                                         skin_matrix))) *
+                  in_normal);
   } else {
     local_position = ubo.model * node.matrix * vec4(in_position, 1.0);
     out_normal = normalize(

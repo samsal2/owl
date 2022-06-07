@@ -11,9 +11,8 @@
 /* clang-format on */
 
 owl_public owl_code
-owl_plataform_init(struct owl_plataform *plataform, int32_t w, int32_t h,
-                   char const *title)
-{
+owl_plataform_init(struct owl_plataform *plataform, int w, int h,
+                   char const *title) {
   int res;
   owl_code code = OWL_OK;
 
@@ -39,8 +38,7 @@ owl_plataform_init(struct owl_plataform *plataform, int32_t w, int32_t h,
 }
 
 owl_public void
-owl_plataform_deinit(struct owl_plataform *plataform)
-{
+owl_plataform_deinit(struct owl_plataform *plataform) {
   glfwDestroyWindow(plataform->opaque);
   glfwTerminate();
 }
@@ -50,8 +48,7 @@ owl_plataform_deinit(struct owl_plataform *plataform)
 owl_public owl_code
 owl_plataform_get_vulkan_extensions(struct owl_plataform *plataform,
                                     uint32_t *num_extensions,
-                                    char const *const **extensions)
-{
+                                    char const *const **extensions) {
 #if defined(OWL_ENABLE_VALIDATION)
   char const *const *tmp;
   owl_local_persist char const *names[OWL_MAX_INSTANCE_EXTENSIONS];
@@ -80,15 +77,13 @@ owl_plataform_get_vulkan_extensions(struct owl_plataform *plataform,
 #endif
 }
 
-owl_public int32_t
-owl_plataform_should_close(struct owl_plataform *plataform)
-{
+owl_public int
+owl_plataform_should_close(struct owl_plataform *plataform) {
   return glfwWindowShouldClose(plataform->opaque);
 }
 
 owl_public void
-owl_plataform_poll_events(struct owl_plataform *plataform)
-{
+owl_plataform_poll_events(struct owl_plataform *plataform) {
   owl_unused(plataform);
 
   glfwPollEvents();
@@ -96,8 +91,7 @@ owl_plataform_poll_events(struct owl_plataform *plataform)
 
 owl_public owl_code
 owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
-                                    struct owl_vk_renderer *vk)
-{
+                                    struct owl_vk_renderer *vk) {
   VkResult vk_result;
 
   vk_result = glfwCreateWindowSurface(vk->instance, plataform->opaque, NULL,
@@ -111,8 +105,7 @@ owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
 
 owl_public void
 owl_plataform_get_window_dimensions(struct owl_plataform const *plataform,
-                                    uint32_t *width, uint32_t *height)
-{
+                                    uint32_t *width, uint32_t *height) {
   int internal_width;
   int internal_height;
 
@@ -124,8 +117,7 @@ owl_plataform_get_window_dimensions(struct owl_plataform const *plataform,
 
 owl_public void
 owl_plataform_get_framebuffer_dimensions(struct owl_plataform const *plataform,
-                                         uint32_t *width, uint32_t *height)
-{
+                                         uint32_t *width, uint32_t *height) {
   int internal_width;
   int internal_height;
 
@@ -136,15 +128,13 @@ owl_plataform_get_framebuffer_dimensions(struct owl_plataform const *plataform,
 }
 
 owl_public double
-owl_plataform_get_time(struct owl_plataform *plataform)
-{
+owl_plataform_get_time(struct owl_plataform *plataform) {
   owl_unused(plataform);
 
   return glfwGetTime();
 }
 
 owl_public char const *
-owl_plataform_get_title(struct owl_plataform const *plataform)
-{
+owl_plataform_get_title(struct owl_plataform const *plataform) {
   return plataform->title;
 }

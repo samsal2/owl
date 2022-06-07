@@ -14,10 +14,7 @@ enum owl_pixel_format {
   OWL_PIXEL_FORMAT_R8G8B8A8_SRGB
 };
 
-enum owl_texture_src {
-  OWL_TEXTURE_SRC_FILE,
-  OWL_TEXTURE_SRC_DATA
-};
+enum owl_texture_src { OWL_TEXTURE_SRC_FILE, OWL_TEXTURE_SRC_DATA };
 
 struct owl_vk_texture_desc {
   enum owl_texture_src src;
@@ -57,7 +54,7 @@ owl_public uint64_t
 owl_vk_pixel_format_size(enum owl_pixel_format format);
 
 owl_public uint32_t
-owl_vk_texture_calc_mips(int32_t w, int32_t h);
+owl_vk_texture_calc_mips(int w, int h);
 
 OWL_END_DECLS
 

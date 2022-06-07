@@ -9,8 +9,7 @@
 #include <math.h>
 
 owl_public VkFormat
-owl_vk_pixel_format_as_vk_format(enum owl_pixel_format format)
-{
+owl_vk_pixel_format_as_vk_format(enum owl_pixel_format format) {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
     return VK_FORMAT_R8_UNORM;
@@ -21,8 +20,7 @@ owl_vk_pixel_format_as_vk_format(enum owl_pixel_format format)
 }
 
 owl_public uint64_t
-owl_vk_pixel_format_size(enum owl_pixel_format format)
-{
+owl_vk_pixel_format_size(enum owl_pixel_format format) {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
     return 1 * sizeof(uint8_t);
@@ -33,15 +31,13 @@ owl_vk_pixel_format_size(enum owl_pixel_format format)
 }
 
 owl_public uint32_t
-owl_vk_texture_calc_mips(int32_t w, int32_t h)
-{
+owl_vk_texture_calc_mips(int w, int h) {
   return (uint32_t)(floor(log2(owl_max(w, h))) + 1);
 }
 
 owl_private void
 owl_vk_texture_transition(struct owl_vk_texture *texture,
-                          struct owl_vk_renderer *vk, VkImageLayout dst)
-{
+                          struct owl_vk_renderer *vk, VkImageLayout dst) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst_Stage = VK_PIPELINE_STAGE_NONE_KHR;
@@ -104,11 +100,10 @@ owl_vk_texture_transition(struct owl_vk_texture *texture,
 
 owl_private void
 owl_vk_texture_gen_mipmaps(struct owl_vk_texture *texture,
-                           struct owl_vk_renderer *vk)
-{
-  int32_t i;
-  int32_t width;
-  int32_t height;
+                           struct owl_vk_renderer *vk) {
+  int i;
+  int width;
+  int height;
   VkImageMemoryBarrier barrier;
 
   if (1 == texture->mips || 0 == texture->mips)
@@ -131,7 +126,7 @@ owl_vk_texture_gen_mipmaps(struct owl_vk_texture *texture,
   barrier.subresourceRange.layerCount = 1;
   barrier.subresourceRange.levelCount = 1;
 
-  for (i = 0; i < (int32_t)(texture->mips - 1); ++i) {
+  for (i = 0; i < (int)(texture->mips - 1); ++i) {
     VkImageBlit blit;
 
     barrier.subresourceRange.baseMipLevel = i;
@@ -195,10 +190,9 @@ owl_vk_texture_gen_mipmaps(struct owl_vk_texture *texture,
 
 owl_public owl_code
 owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
-                    struct owl_vk_texture_desc *desc)
-{
-  int32_t width;
-  int32_t height;
+                    struct owl_vk_texture_desc *desc) {
+  int width;
+  int height;
   uint32_t mips;
   enum owl_pixel_format pixel_format;
 
@@ -238,7 +232,7 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
   } break;
   case OWL_TEXTURE_SRC_FILE: {
     uint8_t *data;
-    int32_t channels;
+    int channels;
     uint64_t size;
 
     data = stbi_load(desc->src_file_path, &width, &height, &channels,
@@ -307,15 +301,15 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
       owl_vk_find_memory_type(vk, memory_requirements.memoryTypeBits,
                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-  vk_result = vkAllocateMemory(vk->device, &memory_info, NULL,
-                               &texture->memory);
+  vk_result =
+      vkAllocateMemory(vk->device, &memory_info, NULL, &texture->memory);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_destroy_image;
   }
 
-  vk_result = vkBindImageMemory(vk->device, texture->image, texture->memory,
-                                0);
+  vk_result =
+      vkBindImageMemory(vk->device, texture->image, texture->memory, 0);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_free_memory;
@@ -443,8 +437,7 @@ out:
 
 owl_public void
 owl_vk_texture_deinit(struct owl_vk_texture *texture,
-                      struct owl_vk_renderer *vk)
-{
+                      struct owl_vk_renderer *vk) {
   vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1, &texture->set);
   vkDestroyImageView(vk->device, texture->image_view, NULL);
   vkFreeMemory(vk->device, texture->memory, NULL);
