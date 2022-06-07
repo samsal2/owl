@@ -38,7 +38,7 @@ struct owl_vk_texture {
   VkImage image;
   VkDeviceMemory memory;
   VkImageView image_view;
-  VkDescriptorSet descriptor_set;
+  VkDescriptorSet set;
   VkImageLayout layout;
 };
 

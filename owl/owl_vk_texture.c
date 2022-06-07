@@ -209,7 +209,7 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
   VkMemoryRequirements memory_requirements;
   VkMemoryAllocateInfo memory_info;
   VkImageViewCreateInfo image_view_info;
-  VkDescriptorSetAllocateInfo descriptor_set_info;
+  VkDescriptorSetAllocateInfo set_info;
   VkDescriptorImageInfo descriptors[2];
   VkWriteDescriptorSet writes[2];
   VkBufferImageCopy copy;
@@ -344,14 +344,13 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
     goto error_free_memory;
   }
 
-  descriptor_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  descriptor_set_info.pNext = NULL;
-  descriptor_set_info.descriptorPool = vk->descriptor_pool;
-  descriptor_set_info.descriptorSetCount = 1;
-  descriptor_set_info.pSetLayouts = &vk->image_fragment_descriptor_set_layout;
+  set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  set_info.pNext = NULL;
+  set_info.descriptorPool = vk->descriptor_pool;
+  set_info.descriptorSetCount = 1;
+  set_info.pSetLayouts = &vk->image_fragment_set_layout;
 
-  vk_result = vkAllocateDescriptorSets(vk->device, &descriptor_set_info,
-                                       &texture->descriptor_set);
+  vk_result = vkAllocateDescriptorSets(vk->device, &set_info, &texture->set);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_destroy_image_view;
@@ -359,7 +358,7 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
 
   code = owl_vk_begin_im_command_buffer(vk);
   if (code)
-    goto error_free_descriptor_sets;
+    goto error_free_sets;
 
   owl_vk_texture_transition(texture, vk, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -385,7 +384,7 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
 
   code = owl_vk_end_im_command_buffer(vk);
   if (code)
-    goto error_free_descriptor_sets;
+    goto error_free_sets;
 
   descriptors[0].sampler = vk->linear_sampler;
   descriptors[0].imageView = NULL;
@@ -397,7 +396,7 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
 
   writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   writes[0].pNext = NULL;
-  writes[0].dstSet = texture->descriptor_set;
+  writes[0].dstSet = texture->set;
   writes[0].dstBinding = 0;
   writes[0].dstArrayElement = 0;
   writes[0].descriptorCount = 1;
@@ -408,7 +407,7 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
 
   writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   writes[1].pNext = NULL;
-  writes[1].dstSet = texture->descriptor_set;
+  writes[1].dstSet = texture->set;
   writes[1].dstBinding = 1;
   writes[1].dstArrayElement = 0;
   writes[1].descriptorCount = 1;
@@ -423,9 +422,8 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
 
   goto out;
 
-error_free_descriptor_sets:
-  vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
-                       &texture->descriptor_set);
+error_free_sets:
+  vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1, &texture->set);
 
 error_destroy_image_view:
   vkDestroyImageView(vk->device, texture->image_view, NULL);
@@ -447,8 +445,7 @@ owl_public void
 owl_vk_texture_deinit(struct owl_vk_texture *texture,
                       struct owl_vk_renderer *vk)
 {
-  vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
-                       &texture->descriptor_set);
+  vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1, &texture->set);
   vkDestroyImageView(vk->device, texture->image_view, NULL);
   vkFreeMemory(vk->device, texture->memory, NULL);
   vkDestroyImage(vk->device, texture->image, NULL);

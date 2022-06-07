@@ -8,6 +8,8 @@ target_sources(${PROJECT_NAME} PRIVATE
  owl_plataform.h
  owl_vector_math.c
  owl_vector_math.h
+ owl_vector.c
+ owl_vector.h
  owl_vk_draw.c
  owl_vk_draw.h
  owl_vk_font.c

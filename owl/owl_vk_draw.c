@@ -66,23 +66,23 @@ owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,
   owl_m4_copy(vk->view, ubo.view);
   owl_m4_copy(matrix, ubo.model);
 
-  data = owl_vk_frame_alloc(vk, sizeof(vertices), &valloc);
+  data = owl_vk_frame_allocate(vk, sizeof(vertices), &valloc);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy(data, vertices, sizeof(vertices));
 
-  data = owl_vk_frame_alloc(vk, sizeof(indices), &ialloc);
+  data = owl_vk_frame_allocate(vk, sizeof(indices), &ialloc);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy(data, indices, sizeof(indices));
 
-  data = owl_vk_frame_alloc(vk, sizeof(ubo), &ualloc);
+  data = owl_vk_frame_allocate(vk, sizeof(ubo), &ualloc);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy(data, &ubo, sizeof(ubo));
 
-  sets[0] = ualloc.pvm_descriptor_set;
-  sets[1] = quad->texture->descriptor_set;
+  sets[0] = ualloc.pvm_set;
+  sets[1] = quad->texture->set;
 
   vkCmdBindVertexBuffers(command_buffer, 0, 1, &valloc.buffer, &valloc.offset);
 
@@ -208,25 +208,25 @@ owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
   owl_v4_zero(ubo1.light);
   owl_v4_zero(ubo2.light_direction);
 
-  data = owl_vk_frame_alloc(vk, sizeof(ubo1), &u1alloc);
+  data = owl_vk_frame_allocate(vk, sizeof(ubo1), &u1alloc);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy(data, &ubo1, sizeof(ubo1));
 
-  vkCmdBindDescriptorSets(
-      vk->frame_command_buffers[vk->frame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-      vk->pipeline_layouts[vk->pipeline], 0, 1, &u1alloc.model1_descriptor_set,
-      1, &u1alloc.offset32);
+  vkCmdBindDescriptorSets(vk->frame_command_buffers[vk->frame],
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          vk->pipeline_layouts[vk->pipeline], 0, 1,
+                          &u1alloc.model1_set, 1, &u1alloc.offset32);
 
-  data = owl_vk_frame_alloc(vk, sizeof(ubo2), &u2alloc);
+  data = owl_vk_frame_allocate(vk, sizeof(ubo2), &u2alloc);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy(data, &ubo2, sizeof(ubo2));
 
-  vkCmdBindDescriptorSets(
-      vk->frame_command_buffers[vk->frame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-      vk->pipeline_layouts[vk->pipeline], 5, 1, &u1alloc.model2_descriptor_set,
-      1, &u2alloc.offset32);
+  vkCmdBindDescriptorSets(vk->frame_command_buffers[vk->frame],
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          vk->pipeline_layouts[vk->pipeline], 5, 1,
+                          &u1alloc.model2_set, 1, &u2alloc.offset32);
 
   for (i = 0; i < mesh->primitive_count; ++i) {
     VkDescriptorSet sets[4];
@@ -256,9 +256,9 @@ owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
     normal_image = &model->images[normal_texture->image];
     physical_desc_image = &model->images[physical_desc_texture->image];
 
-    sets[0] = base_color_image->image.descriptor_set;
-    sets[1] = normal_image->image.descriptor_set;
-    sets[2] = physical_desc_image->image.descriptor_set;
+    sets[0] = base_color_image->image.set;
+    sets[1] = normal_image->image.set;
+    sets[2] = physical_desc_image->image.set;
     sets[3] = skin->ssbo_sets[vk->frame];
 
     vkCmdBindDescriptorSets(vk->frame_command_buffers[vk->frame],
@@ -410,12 +410,12 @@ owl_vk_draw_skybox(struct owl_vk_renderer *vk)
 
   command_buffer = vk->frame_command_buffers[vk->frame];
 
-  data = owl_vk_frame_alloc(vk, sizeof(vertices), &valloc);
+  data = owl_vk_frame_allocate(vk, sizeof(vertices), &valloc);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy(data, vertices, sizeof(vertices));
 
-  data = owl_vk_frame_alloc(vk, sizeof(indices), &ialloc);
+  data = owl_vk_frame_allocate(vk, sizeof(indices), &ialloc);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy(data, indices, sizeof(indices));
@@ -425,13 +425,13 @@ owl_vk_draw_skybox(struct owl_vk_renderer *vk)
   owl_m3_copy(vk->view, ubo.view);
   owl_m4_identity(ubo.model);
 
-  data = owl_vk_frame_alloc(vk, sizeof(ubo), &ualloc);
+  data = owl_vk_frame_allocate(vk, sizeof(ubo), &ualloc);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   owl_memcpy(data, &ubo, sizeof(ubo));
 
-  sets[0] = ualloc.pvm_descriptor_set;
-  sets[1] = vk->skybox_descriptor_set;
+  sets[0] = ualloc.pvm_set;
+  sets[1] = vk->skybox_set;
 
   vkCmdBindVertexBuffers(command_buffer, 0, 1, &valloc.buffer, &valloc.offset);
 

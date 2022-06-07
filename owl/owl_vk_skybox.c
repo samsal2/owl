@@ -89,7 +89,7 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
   VkMemoryRequirements mem_req;
   VkMemoryAllocateInfo mem_info;
   VkImageViewCreateInfo image_view_info;
-  VkDescriptorSetAllocateInfo descriptor_set_info;
+  VkDescriptorSetAllocateInfo set_info;
   VkDescriptorImageInfo descriptors[2];
   VkWriteDescriptorSet writes[2];
 
@@ -193,14 +193,13 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
     goto error_free_memory;
   }
 
-  descriptor_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  descriptor_set_info.pNext = NULL;
-  descriptor_set_info.descriptorPool = vk->descriptor_pool;
-  descriptor_set_info.descriptorSetCount = 1;
-  descriptor_set_info.pSetLayouts = &vk->image_fragment_descriptor_set_layout;
+  set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  set_info.pNext = NULL;
+  set_info.descriptorPool = vk->descriptor_pool;
+  set_info.descriptorSetCount = 1;
+  set_info.pSetLayouts = &vk->image_fragment_set_layout;
 
-  vk_result = vkAllocateDescriptorSets(vk->device, &descriptor_set_info,
-                                       &vk->skybox_descriptor_set);
+  vk_result = vkAllocateDescriptorSets(vk->device, &set_info, &vk->skybox_set);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_destroy_image_view;
@@ -212,7 +211,7 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
   upload_data = owl_vk_upload_alloc(vk, upload_size, &upload_alloc);
   if (!upload_data) {
     code = OWL_ERROR_NO_UPLOAD_MEMORY;
-    goto error_free_descriptor_set;
+    goto error_free_set;
   }
 
   for (i = 0; i < (int32_t)owl_array_size(names); ++i) {
@@ -273,7 +272,7 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
 
   writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   writes[0].pNext = NULL;
-  writes[0].dstSet = vk->skybox_descriptor_set;
+  writes[0].dstSet = vk->skybox_set;
   writes[0].dstBinding = 0;
   writes[0].dstArrayElement = 0;
   writes[0].descriptorCount = 1;
@@ -284,7 +283,7 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
 
   writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   writes[1].pNext = NULL;
-  writes[1].dstSet = vk->skybox_descriptor_set;
+  writes[1].dstSet = vk->skybox_set;
   writes[1].dstBinding = 1;
   writes[1].dstArrayElement = 0;
   writes[1].descriptorCount = 1;
@@ -304,9 +303,8 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path)
 error_free_upload:
   owl_vk_upload_free(vk, upload_data);
 
-error_free_descriptor_set:
-  vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
-                       &vk->skybox_descriptor_set);
+error_free_set:
+  vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1, &vk->skybox_set);
 
 error_destroy_image_view:
   vkDestroyImageView(vk->device, vk->skybox_image_view, NULL);
@@ -328,8 +326,7 @@ owl_public void
 owl_vk_skybox_unload(struct owl_vk_renderer *vk)
 {
   vk->skybox_loaded = 0;
-  vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1,
-                       &vk->skybox_descriptor_set);
+  vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1, &vk->skybox_set);
   vkDestroyImageView(vk->device, vk->skybox_image_view, NULL);
   vkFreeMemory(vk->device, vk->skybox_memory, NULL);
   vkDestroyImage(vk->device, vk->skybox_image, NULL);

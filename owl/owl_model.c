@@ -793,7 +793,7 @@ owl_model_skins_load(struct owl_model *model, struct owl_vk_renderer *vk,
       VkDescriptorSetAllocateInfo info;
 
       for (j = 0; j < (int32_t)vk->num_frames; ++j)
-        layouts[j] = vk->ssbo_vertex_descriptor_set_layout;
+        layouts[j] = vk->ssbo_vertex_set_layout;
 
       info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
       info.pNext = NULL;

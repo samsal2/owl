@@ -2,6 +2,7 @@
 #define OWL_VK_RENDERER_H_
 
 #include "owl_definitions.h"
+#include "owl_vector.h"
 #include "owl_vk_font.h"
 #include "owl_vk_texture.h"
 
@@ -74,8 +75,11 @@ struct owl_vk_renderer {
   VkImageView swapchain_image_views[OWL_MAX_SWAPCHAIN_IMAGES];
   VkFramebuffer swapchain_framebuffers[OWL_MAX_SWAPCHAIN_IMAGES];
 
-  VkCommandPool transient_command_pool;
+  VkCommandPool command_pool;
   VkDescriptorPool descriptor_pool;
+
+  VkDescriptorSetLayout set_layout;
+  VkPipelineLayout pipeline_layout;
 
   VkShaderModule basic_vertex_shader;
   VkShaderModule basic_fragment_shader;
@@ -85,11 +89,11 @@ struct owl_vk_renderer {
   VkShaderModule skybox_vertex_shader;
   VkShaderModule skybox_fragment_shader;
 
-  VkDescriptorSetLayout ubo_vertex_descriptor_set_layout;
-  VkDescriptorSetLayout ubo_fragment_descriptor_set_layout;
-  VkDescriptorSetLayout ubo_both_descriptor_set_layout;
-  VkDescriptorSetLayout ssbo_vertex_descriptor_set_layout;
-  VkDescriptorSetLayout image_fragment_descriptor_set_layout;
+  VkDescriptorSetLayout ubo_vertex_set_layout;
+  VkDescriptorSetLayout ubo_fragment_set_layout;
+  VkDescriptorSetLayout ubo_both_set_layout;
+  VkDescriptorSetLayout ssbo_vertex_set_layout;
+  VkDescriptorSetLayout image_fragment_set_layout;
   VkPipelineLayout common_pipeline_layout;
   VkPipelineLayout model_pipeline_layout;
 
@@ -109,14 +113,14 @@ struct owl_vk_renderer {
   VkImage skybox_image;
   VkDeviceMemory skybox_memory;
   VkImageView skybox_image_view;
-  VkDescriptorSet skybox_descriptor_set;
+  VkDescriptorSet skybox_set;
 
   int font_loaded;
   struct owl_vk_texture font_atlas;
   struct owl_vk_packed_char font_chars[OWL_FONT_NUM_CHARS];
 
-  uint32_t num_frames;
   uint32_t frame;
+  uint32_t num_frames;
 
   VkCommandPool frame_command_pools[OWL_NUM_IN_FLIGHT_FRAMES];
   VkCommandBuffer frame_command_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
@@ -124,31 +128,20 @@ struct owl_vk_renderer {
   VkSemaphore frame_acquire_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
   VkSemaphore frame_render_done_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
 
-  VkDeviceSize frame_render_buffer_size;
-  VkDeviceSize frame_render_buffer_offset;
-  VkDeviceSize frame_render_buffer_alignment;
+  VkDeviceSize render_buffer_size;
+  VkDeviceSize render_buffer_alignment;
+  VkDeviceSize render_buffer_offset;
 
-  void *frame_render_buffer_data[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkBuffer frame_render_buffer_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDeviceMemory frame_render_buffer_memories[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDescriptorSet
-      frame_render_buffer_pvm_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDescriptorSet
-      frame_render_buffer_model1_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDescriptorSet
-      frame_render_buffer_model2_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  void *render_buffer_data[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkBuffer render_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDeviceMemory render_buffer_memories[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDescriptorSet render_buffer_pvm_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDescriptorSet render_buffer_model1_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDescriptorSet render_buffer_model2_sets[OWL_NUM_IN_FLIGHT_FRAMES];
 
-  uint32_t num_frame_garbage_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkBuffer frame_garbage_buffers[OWL_NUM_IN_FLIGHT_FRAMES]
-                                [OWL_MAX_GARBAGE_ITEMS];
-
-  uint32_t num_frame_garbage_memories[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDeviceMemory frame_garbage_memories[OWL_NUM_IN_FLIGHT_FRAMES]
-                                       [OWL_MAX_GARBAGE_ITEMS];
-
-  uint32_t num_frame_garbage_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDescriptorSet frame_garbage_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES]
-                                               [OWL_MAX_GARBAGE_ITEMS];
+  owl_vector(VkBuffer) garbage_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
+  owl_vector(VkDeviceMemory) garbage_memories[OWL_NUM_IN_FLIGHT_FRAMES];
+  owl_vector(VkDescriptorSet) garbage_sets[OWL_NUM_IN_FLIGHT_FRAMES];
 
   PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;
   PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;
@@ -175,11 +168,10 @@ owl_public void
 owl_vk_renderer_deinit(struct owl_vk_renderer *vk);
 
 owl_public owl_code
-owl_vk_renderer_init_frame_render_buffer(struct owl_vk_renderer *vk,
-                                         uint64_t size);
+owl_vk_renderer_init_render_buffers(struct owl_vk_renderer *vk, uint64_t size);
 
 owl_public void
-owl_vk_renderer_deinit_frame_render_buffer(struct owl_vk_renderer *vk);
+owl_vk_renderer_deinit_render_buffers(struct owl_vk_renderer *vk);
 
 owl_public owl_code
 owl_vk_renderer_init_upload_buffer(struct owl_vk_renderer *vk, uint64_t size);
