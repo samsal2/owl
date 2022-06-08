@@ -193,52 +193,65 @@ owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
    VK_ERROR_SURFACE_LOST_KHR == (vk_result))
 
 owl_public owl_code
+owl_vk_frame_acquire_image(struct owl_vk_renderer *vk) {
+  owl_code code = OWL_OK;
+  VkResult vk_result = VK_SUCCESS;
+
+  uint64_t const timeout = (uint64_t)-1;
+  uint32_t *const image = &vk->image;
+  uint32_t const frame = vk->frame;
+  VkSemaphore acquire_semaphore = vk->frame_acquire_semaphores[frame];
+
+  /** try to acquire the next swapchain image */
+  vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, timeout,
+                                    acquire_semaphore, VK_NULL_HANDLE, image);
+  /** if it's not outdated or there are no errors return ok */
+  if (!owl_vk_is_swapchain_out_of_date(vk_result) || !vk_result)
+    return OWL_OK;
+
+  /** recreate the swapchain */
+  code = owl_vk_renderer_resize_swapchain(vk);
+  if (code)
+    return code;
+
+  /** try to acquire the next swapchain image, again */
+  vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, timeout,
+                                    acquire_semaphore, VK_NULL_HANDLE, image);
+  /** if it fails the second time, something went really bad */
+  if (vk_result)
+    return OWL_ERROR_FATAL;
+
+  return OWL_OK;
+}
+
+owl_public owl_code
 owl_vk_frame_begin(struct owl_vk_renderer *vk) {
   VkCommandBufferBeginInfo command_buffer_info;
-  VkFramebuffer framebuffer;
   VkRenderPassBeginInfo pass_info;
 
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
-  uint32_t *image = &vk->image;
+  uint64_t const timeout = (uint64_t)-1;
   uint32_t const frame = vk->frame;
-  VkSemaphore acquire_semaphore = vk->frame_acquire_semaphores[frame];
-  VkFence in_flight_fence = vk->frame_in_flight_fences[frame];
+  VkFence in_flight = vk->frame_in_flight_fences[frame];
   VkCommandPool command_pool = vk->frame_command_pools[frame];
   VkCommandBuffer command_buffer = vk->frame_command_buffers[frame];
 
   owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_NONE);
 
-  acquire_semaphore = vk->frame_acquire_semaphores[vk->frame];
-  vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, (uint64_t)-1,
-                                    acquire_semaphore, VK_NULL_HANDLE, image);
-  if (owl_vk_is_swapchain_out_of_date(vk_result)) {
-    code = owl_vk_renderer_resize_swapchain(vk);
-    if (code)
-      return code;
+  code = owl_vk_frame_acquire_image(vk);
+  if (code)
+    return code;
 
-    vk_result =
-        vkAcquireNextImageKHR(vk->device, vk->swapchain, (uint64_t)-1,
-                              acquire_semaphore, VK_NULL_HANDLE, image);
-    if (vk_result)
-      return OWL_ERROR_FATAL;
-
-  } else if (vk_result) {
-    return OWL_ERROR_FATAL;
-  }
-
-  in_flight_fence = vk->frame_in_flight_fences[vk->frame];
-  vk_result =
-      vkWaitForFences(vk->device, 1, &in_flight_fence, VK_TRUE, (uint64_t)-1);
+  vk_result = vkWaitForFences(vk->device, 1, &in_flight, VK_TRUE, timeout);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
-  vk_result = vkResetFences(vk->device, 1, &in_flight_fence);
+  vk_result = vkResetFences(vk->device, 1, &in_flight);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
-  command_pool = vk->frame_command_pools[vk->frame];
   vk_result = vkResetCommandPool(vk->device, command_pool, 0);
   if (vk_result)
     return OWL_ERROR_FATAL;
@@ -250,17 +263,14 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk) {
   command_buffer_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   command_buffer_info.pInheritanceInfo = NULL;
 
-  command_buffer = vk->frame_command_buffers[vk->frame];
   vk_result = vkBeginCommandBuffer(command_buffer, &command_buffer_info);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
-  framebuffer = vk->framebuffers[vk->image];
-
   pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   pass_info.pNext = NULL;
   pass_info.renderPass = vk->main_render_pass;
-  pass_info.framebuffer = framebuffer;
+  pass_info.framebuffer = vk->framebuffers[vk->image];
   pass_info.renderArea.offset.x = 0;
   pass_info.renderArea.offset.y = 0;
   pass_info.renderArea.extent.width = vk->width;
@@ -275,17 +285,18 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk) {
 
 owl_public owl_code
 owl_vk_frame_end(struct owl_vk_renderer *vk) {
-  VkCommandBuffer command_buffer;
+
   VkPipelineStageFlagBits stage;
-  VkSemaphore acquire_semaphore;
-  VkSemaphore render_done_semaphore;
-  VkFence in_flight_fence;
   VkSubmitInfo submit_info;
   VkPresentInfoKHR present_info;
 
-  VkResult vk_result;
+  uint32_t const frame = vk->frame;
+  VkCommandBuffer command_buffer = vk->frame_command_buffers[frame];
+  VkFence in_flight = vk->frame_in_flight_fences[frame];
+  VkSemaphore acquire_semaphore = vk->frame_acquire_semaphores[frame];
+  VkSemaphore render_done_semaphore = vk->frame_render_done_semaphores[frame];
 
-  command_buffer = vk->frame_command_buffers[vk->frame];
+  VkResult vk_result;
 
   vkCmdEndRenderPass(command_buffer);
   vk_result = vkEndCommandBuffer(command_buffer);
@@ -293,10 +304,6 @@ owl_vk_frame_end(struct owl_vk_renderer *vk) {
     return OWL_ERROR_FATAL;
 
   stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  acquire_semaphore = vk->frame_acquire_semaphores[vk->frame];
-  render_done_semaphore = vk->frame_render_done_semaphores[vk->frame];
-  in_flight_fence = vk->frame_in_flight_fences[vk->frame];
-
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.pNext = NULL;
   submit_info.waitSemaphoreCount = 1;
@@ -307,8 +314,7 @@ owl_vk_frame_end(struct owl_vk_renderer *vk) {
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &command_buffer;
 
-  vk_result =
-      vkQueueSubmit(vk->graphics_queue, 1, &submit_info, in_flight_fence);
+  vk_result = vkQueueSubmit(vk->graphics_queue, 1, &submit_info, in_flight);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
