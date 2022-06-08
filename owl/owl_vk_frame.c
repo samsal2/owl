@@ -138,40 +138,38 @@ owl_vk_frame_pop_garbage(struct owl_vk_renderer *vk) {
 owl_public void *
 owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
                       struct owl_vk_frame_allocation *alloc) {
-  owl_code code = OWL_OK;
-  uint8_t *data = NULL;
   uint64_t const alignment = vk->render_buffer_alignment;
-  uint64_t const required = size + vk->render_buffer_offset;
+  uint64_t required = size + vk->render_buffer_offset;
 
   if (vk->render_buffer_size < required) {
+    owl_code code;
+    uint64_t new_size;
+
     code = owl_vk_frame_push_garbage(vk);
-    if (!code) {
-      uint64_t const new_size = owl_alignu2(required * 2, alignment);
+    if (code) 
+      return NULL;
 
-      code = owl_vk_renderer_init_render_buffers(vk, new_size);
-      if (code)
-        owl_vk_frame_pop_garbage(vk);
+    new_size = owl_alignu2(required * 2, alignment);
+
+    code = owl_vk_renderer_init_render_buffers(vk, new_size);
+    if (code) {
+      owl_vk_frame_pop_garbage(vk);
+      return NULL;
     }
+
+    required = size + vk->render_buffer_offset;
   }
 
-  if (!code) {
-    uint32_t const frame = vk->frame;
-    uint64_t const offset = vk->render_buffer_offset;
-    uint64_t const new_offset = owl_alignu2(required, alignment);
+  alloc->offset32 = (uint32_t)vk->render_buffer_offset;
+  alloc->offset = vk->render_buffer_offset;
+  alloc->buffer = vk->render_buffers[vk->frame];
+  alloc->pvm_set = vk->render_buffer_pvm_sets[vk->frame];
+  alloc->model1_set = vk->render_buffer_model1_sets[vk->frame];
+  alloc->model2_set = vk->render_buffer_model2_sets[vk->frame];
 
-    vk->render_buffer_offset = new_offset;
+  vk->render_buffer_offset = owl_alignu2(required, alignment);
 
-    data = &((uint8_t *)(vk->render_buffer_data[vk->frame]))[offset];
-
-    alloc->offset32 = (uint32_t)offset;
-    alloc->offset = offset;
-    alloc->buffer = vk->render_buffers[frame];
-    alloc->pvm_set = vk->render_buffer_pvm_sets[frame];
-    alloc->model1_set = vk->render_buffer_model1_sets[frame];
-    alloc->model2_set = vk->render_buffer_model2_sets[frame];
-  }
-
-  return data;
+  return &((uint8_t *)(vk->render_buffer_data[vk->frame]))[alloc->offset];
 }
 
 #define owl_vk_is_swapchain_out_of_date(vk_result)                            \
