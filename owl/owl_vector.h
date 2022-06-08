@@ -20,8 +20,9 @@ struct owl_vector {
 
 #define owl_vector(type) type *
 
-#define owl_vector_init(vec, cap, size, type)                                 \
-  owl_vector_init_((void **)(vec), cap, size, sizeof(type))
+#define owl_vector_init(vec, cap, size)                                       \
+  owl_vector_init_((void **)(vec), cap, size, sizeof(**(vec)))
+
 owl_public owl_code
 owl_vector_init_(void **vec, uint64_t cap, uint64_t size, uint64_t esize);
 

@@ -29,35 +29,28 @@ enum owl_vk_pipeline {
 struct owl_plataform;
 
 struct owl_vk_renderer {
-  /** plataform resource */
   struct owl_plataform *plataform;
 
-  /** camera info */
   owl_m4 projection;
   owl_m4 view;
 
-  /** dimensions */
   uint32_t width;
   uint32_t height;
 
-  /** present clear values */
   VkClearValue clear_values[2];
 
-  /** vulkan intance */
   VkInstance instance;
   VkDebugUtilsMessengerEXT debug_messenger;
 
-  /** vulkan surface */
   VkSurfaceKHR surface;
   VkSurfaceFormatKHR surface_format;
 
-  /** vulkan device */
-  VkPhysicalDevice physical_device; /** physical_device */
-  VkDevice device;                  /** logical device */
-  uint32_t graphics_queue_family;   /** graphics queue family index */
-  uint32_t present_queue_family;    /**  present queue family_index */
-  VkQueue graphics_queue;           /** present queue */
-  VkQueue present_queue;            /** graphics_queue */
+  VkPhysicalDevice physical_device;
+  VkDevice device;
+  uint32_t graphics_queue_family;
+  uint32_t present_queue_family;
+  VkQueue graphics_queue;
+  VkQueue present_queue;
 
   VkSampleCountFlagBits msaa;
 
@@ -76,11 +69,11 @@ struct owl_vk_renderer {
   VkPresentModeKHR present_mode;
 
   VkSwapchainKHR swapchain;
-  uint32_t swapchain_image;
-  uint32_t num_swapchain_images;
-  VkImage swapchain_images[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkImageView swapchain_image_views[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkFramebuffer swapchain_framebuffers[OWL_MAX_SWAPCHAIN_IMAGES];
+  uint32_t image;
+  uint32_t num_images;
+  VkImage images[OWL_MAX_SWAPCHAIN_IMAGES];
+  VkImageView image_views[OWL_MAX_SWAPCHAIN_IMAGES];
+  VkFramebuffer framebuffers[OWL_MAX_SWAPCHAIN_IMAGES];
 
   VkCommandPool command_pool;
   VkDescriptorPool descriptor_pool;

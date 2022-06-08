@@ -881,16 +881,14 @@ owl_vk_renderer_init_swapchain(struct owl_vk_renderer *vk) {
   VkResult vk_result;
   owl_code code = OWL_OK;
 
-  vk->swapchain_image = 0;
+  vk->image = 0;
 
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->physical_device, vk->surface,
                                             &capabilities);
 
   code = owl_vk_renderer_ensure_present_mode(vk, VK_PRESENT_MODE_FIFO_KHR);
-  if (code) {
-    code = OWL_ERROR_FATAL;
+  if (code)
     goto out;
-  }
 
   swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
   swapchain_info.pNext = NULL;
@@ -930,27 +928,26 @@ owl_vk_renderer_init_swapchain(struct owl_vk_renderer *vk) {
   }
 
   vk_result = vkGetSwapchainImagesKHR(vk->device, vk->swapchain,
-                                      &vk->num_swapchain_images, NULL);
-  if (vk_result || OWL_MAX_SWAPCHAIN_IMAGES <= vk->num_swapchain_images) {
+                                      &vk->num_images, NULL);
+  if (vk_result || OWL_MAX_SWAPCHAIN_IMAGES <= vk->num_images) {
     code = OWL_ERROR_FATAL;
     goto error_destroy_swapchain;
   }
 
-  vk_result =
-      vkGetSwapchainImagesKHR(vk->device, vk->swapchain,
-                              &vk->num_swapchain_images, vk->swapchain_images);
+  vk_result = vkGetSwapchainImagesKHR(vk->device, vk->swapchain,
+                                      &vk->num_images, vk->images);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_destroy_swapchain;
   }
 
-  for (i = 0; i < (int)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int)vk->num_images; ++i) {
     VkImageViewCreateInfo image_info;
 
     image_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     image_info.pNext = NULL;
     image_info.flags = 0;
-    image_info.image = vk->swapchain_images[i];
+    image_info.image = vk->images[i];
     image_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
     image_info.format = vk->surface_format.format;
     image_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -964,20 +961,20 @@ owl_vk_renderer_init_swapchain(struct owl_vk_renderer *vk) {
     image_info.subresourceRange.layerCount = 1;
 
     vk_result = vkCreateImageView(vk->device, &image_info, NULL,
-                                  &vk->swapchain_image_views[i]); /**/
+                                  &vk->image_views[i]); /**/
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image_views;
     }
   }
 
-  for (i = 0; i < (int)vk->num_swapchain_images; ++i) {
+  for (i = 0; i < (int)vk->num_images; ++i) {
     VkImageView attachments[3];
     VkFramebufferCreateInfo framebuffer_info;
 
     attachments[0] = vk->color_image_view;
     attachments[1] = vk->depth_image_view;
-    attachments[2] = vk->swapchain_image_views[i];
+    attachments[2] = vk->image_views[i];
 
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_info.pNext = NULL;
@@ -990,7 +987,7 @@ owl_vk_renderer_init_swapchain(struct owl_vk_renderer *vk) {
     framebuffer_info.layers = 1;
 
     vk_result = vkCreateFramebuffer(vk->device, &framebuffer_info, NULL,
-                                    &vk->swapchain_framebuffers[i]);
+                                    &vk->framebuffers[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_framebuffers;
@@ -1001,13 +998,13 @@ owl_vk_renderer_init_swapchain(struct owl_vk_renderer *vk) {
 
 error_destroy_framebuffers:
   for (i = i - 1; i >= 0; --i)
-    vkDestroyFramebuffer(vk->device, vk->swapchain_framebuffers[i], NULL);
+    vkDestroyFramebuffer(vk->device, vk->framebuffers[i], NULL);
 
-  i = vk->num_swapchain_images;
+  i = vk->num_images;
 
 error_destroy_image_views:
   for (i = i - 1; i >= 0; --i)
-    vkDestroyImageView(vk->device, vk->swapchain_image_views[i], NULL);
+    vkDestroyImageView(vk->device, vk->image_views[i], NULL);
 
 error_destroy_swapchain:
   vkDestroySwapchainKHR(vk->device, vk->swapchain, NULL);
@@ -1020,11 +1017,11 @@ owl_private void
 owl_vk_renderer_deinit_swapchain(struct owl_vk_renderer *vk) {
   uint32_t i;
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
-    vkDestroyFramebuffer(vk->device, vk->swapchain_framebuffers[i], NULL);
+  for (i = 0; i < vk->num_images; ++i)
+    vkDestroyFramebuffer(vk->device, vk->framebuffers[i], NULL);
 
-  for (i = 0; i < vk->num_swapchain_images; ++i)
-    vkDestroyImageView(vk->device, vk->swapchain_image_views[i], NULL);
+  for (i = 0; i < vk->num_images; ++i)
+    vkDestroyImageView(vk->device, vk->image_views[i], NULL);
 
   vkDestroySwapchainKHR(vk->device, vk->swapchain, NULL);
 }
@@ -1080,12 +1077,12 @@ owl_vk_renderer_init_pools(struct owl_vk_renderer *vk) {
                                      &vk->descriptor_pool);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
-    goto error_destroy_transient_command_pool;
+    goto error_destroy_command_pool;
   }
 
   goto out;
 
-error_destroy_transient_command_pool:
+error_destroy_command_pool:
   vkDestroyCommandPool(vk->device, vk->command_pool, NULL);
 
 out:
@@ -1104,20 +1101,20 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
   owl_code code = OWL_OK;
 
   {
-    VkShaderModuleCreateInfo info;
+    VkShaderModuleCreateInfo shader_info;
 
     /* TODO(samuel): Properly load code at runtime */
     owl_local_persist uint32_t const spv[] = {
 #include "owl_glsl_basic.vert.spv.u32"
     };
 
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
+    shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_info.pNext = NULL;
+    shader_info.flags = 0;
+    shader_info.codeSize = sizeof(spv);
+    shader_info.pCode = spv;
 
-    vk_result = vkCreateShaderModule(vk->device, &info, NULL,
+    vk_result = vkCreateShaderModule(vk->device, &shader_info, NULL,
                                      &vk->basic_vertex_shader);
 
     if (vk_result) {
@@ -1127,19 +1124,19 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
   }
 
   {
-    VkShaderModuleCreateInfo info;
+    VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
 #include "owl_glsl_basic.frag.spv.u32"
     };
 
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
+    shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_info.pNext = NULL;
+    shader_info.flags = 0;
+    shader_info.codeSize = sizeof(spv);
+    shader_info.pCode = spv;
 
-    vk_result = vkCreateShaderModule(vk->device, &info, NULL,
+    vk_result = vkCreateShaderModule(vk->device, &shader_info, NULL,
                                      &vk->basic_fragment_shader);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
@@ -1148,19 +1145,19 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
   }
 
   {
-    VkShaderModuleCreateInfo info;
+    VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
 #include "owl_glsl_font.frag.spv.u32"
     };
 
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
+    shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_info.pNext = NULL;
+    shader_info.flags = 0;
+    shader_info.codeSize = sizeof(spv);
+    shader_info.pCode = spv;
 
-    vk_result = vkCreateShaderModule(vk->device, &info, NULL,
+    vk_result = vkCreateShaderModule(vk->device, &shader_info, NULL,
                                      &vk->text_fragment_shader);
 
     if (vk_result) {
@@ -1170,19 +1167,19 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
   }
 
   {
-    VkShaderModuleCreateInfo info;
+    VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
 #include "owl_glsl_model.vert.spv.u32"
     };
 
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
+    shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_info.pNext = NULL;
+    shader_info.flags = 0;
+    shader_info.codeSize = sizeof(spv);
+    shader_info.pCode = spv;
 
-    vk_result = vkCreateShaderModule(vk->device, &info, NULL,
+    vk_result = vkCreateShaderModule(vk->device, &shader_info, NULL,
                                      &vk->model_vertex_shader);
 
     if (VK_SUCCESS != vk_result) {
@@ -1192,19 +1189,19 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
   }
 
   {
-    VkShaderModuleCreateInfo info;
+    VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
 #include "owl_glsl_model.frag.spv.u32"
     };
 
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
+    shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_info.pNext = NULL;
+    shader_info.flags = 0;
+    shader_info.codeSize = sizeof(spv);
+    shader_info.pCode = spv;
 
-    vk_result = vkCreateShaderModule(vk->device, &info, NULL,
+    vk_result = vkCreateShaderModule(vk->device, &shader_info, NULL,
                                      &vk->model_fragment_shader);
 
     if (vk_result) {
@@ -1214,19 +1211,19 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
   }
 
   {
-    VkShaderModuleCreateInfo info;
+    VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
 #include "owl_glsl_skybox.vert.spv.u32"
     };
 
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
+    shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_info.pNext = NULL;
+    shader_info.flags = 0;
+    shader_info.codeSize = sizeof(spv);
+    shader_info.pCode = spv;
 
-    vk_result = vkCreateShaderModule(vk->device, &info, NULL,
+    vk_result = vkCreateShaderModule(vk->device, &shader_info, NULL,
                                      &vk->skybox_vertex_shader);
 
     if (vk_result) {
@@ -1236,19 +1233,19 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
   }
 
   {
-    VkShaderModuleCreateInfo info;
+    VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
 #include "owl_glsl_skybox.frag.spv.u32"
     };
 
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
+    shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_info.pNext = NULL;
+    shader_info.flags = 0;
+    shader_info.codeSize = sizeof(spv);
+    shader_info.pCode = spv;
 
-    vk_result = vkCreateShaderModule(vk->device, &info, NULL,
+    vk_result = vkCreateShaderModule(vk->device, &shader_info, NULL,
                                      &vk->skybox_fragment_shader);
 
     if (vk_result) {
@@ -2935,19 +2932,19 @@ owl_vk_renderer_init_garbage(struct owl_vk_renderer *vk) {
   owl_code code;
 
   for (i = 0; i < (int)vk->num_frames; ++i) {
-    code = owl_vector_init(&vk->garbage_buffers[i], 8, 0, VkBuffer);
+    code = owl_vector_init(&vk->garbage_buffers[i], 8, 0);
     if (code)
       goto error_buffers_deinit;
   }
 
   for (i = 0; i < (int)vk->num_frames; ++i) {
-    code = owl_vector_init(&vk->garbage_memories[i], 8, 0, VkDeviceMemory);
+    code = owl_vector_init(&vk->garbage_memories[i], 8, 0);
     if (code)
       goto error_memories_deinit;
   }
 
   for (i = 0; i < (int)vk->num_frames; ++i) {
-    code = owl_vector_init(&vk->garbage_sets[i], 8, 0, VkDescriptorSet);
+    code = owl_vector_init(&vk->garbage_sets[i], 8, 0);
     if (code)
       goto error_sets_deinit;
   }

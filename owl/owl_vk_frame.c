@@ -167,19 +167,21 @@ owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
 
   code = owl_vk_frame_reserve(vk, size);
   if (!code) {
-    uint64_t offset = vk->render_buffer_offset;
+    uint32_t const frame = vk->frame;
+    uint64_t const alignment = vk->render_buffer_alignment;
+    uint64_t const offset = vk->render_buffer_offset;
+    uint64_t const new_offset = owl_alignu2(offset + size, alignment);
 
-    vk->render_buffer_offset =
-        owl_alignu2(offset + size, vk->render_buffer_alignment);
+    vk->render_buffer_offset = new_offset;
 
-    data = &((uint8_t *)vk->render_buffer_data[vk->frame])[offset];
+    data = &((uint8_t *)(vk->render_buffer_data[vk->frame]))[offset];
 
     alloc->offset32 = (uint32_t)offset;
     alloc->offset = offset;
-    alloc->buffer = vk->render_buffers[vk->frame];
-    alloc->pvm_set = vk->render_buffer_pvm_sets[vk->frame];
-    alloc->model1_set = vk->render_buffer_model1_sets[vk->frame];
-    alloc->model2_set = vk->render_buffer_model2_sets[vk->frame];
+    alloc->buffer = vk->render_buffers[frame];
+    alloc->pvm_set = vk->render_buffer_pvm_sets[frame];
+    alloc->model1_set = vk->render_buffer_model1_sets[frame];
+    alloc->model2_set = vk->render_buffer_model2_sets[frame];
   }
 
   return data;
@@ -192,10 +194,6 @@ owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
 
 owl_public owl_code
 owl_vk_frame_begin(struct owl_vk_renderer *vk) {
-  VkSemaphore acquire_semaphore;
-  VkFence in_flight_fence;
-  VkCommandPool command_pool;
-  VkCommandBuffer command_buffer;
   VkCommandBufferBeginInfo command_buffer_info;
   VkFramebuffer framebuffer;
   VkRenderPassBeginInfo pass_info;
@@ -203,20 +201,26 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk) {
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
+  uint32_t *image = &vk->image;
+  uint32_t const frame = vk->frame;
+  VkSemaphore acquire_semaphore = vk->frame_acquire_semaphores[frame];
+  VkFence in_flight_fence = vk->frame_in_flight_fences[frame];
+  VkCommandPool command_pool = vk->frame_command_pools[frame];
+  VkCommandBuffer command_buffer = vk->frame_command_buffers[frame];
+
   owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_NONE);
 
   acquire_semaphore = vk->frame_acquire_semaphores[vk->frame];
   vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, (uint64_t)-1,
-                                    acquire_semaphore, VK_NULL_HANDLE,
-                                    &vk->swapchain_image);
+                                    acquire_semaphore, VK_NULL_HANDLE, image);
   if (owl_vk_is_swapchain_out_of_date(vk_result)) {
     code = owl_vk_renderer_resize_swapchain(vk);
     if (code)
       return code;
 
-    vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, (uint64_t)-1,
-                                      acquire_semaphore, VK_NULL_HANDLE,
-                                      &vk->swapchain_image);
+    vk_result =
+        vkAcquireNextImageKHR(vk->device, vk->swapchain, (uint64_t)-1,
+                              acquire_semaphore, VK_NULL_HANDLE, image);
     if (vk_result)
       return OWL_ERROR_FATAL;
 
@@ -251,7 +255,7 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk) {
   if (vk_result)
     return OWL_ERROR_FATAL;
 
-  framebuffer = vk->swapchain_framebuffers[vk->swapchain_image];
+  framebuffer = vk->framebuffers[vk->image];
 
   pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   pass_info.pNext = NULL;
@@ -278,6 +282,7 @@ owl_vk_frame_end(struct owl_vk_renderer *vk) {
   VkFence in_flight_fence;
   VkSubmitInfo submit_info;
   VkPresentInfoKHR present_info;
+
   VkResult vk_result;
 
   command_buffer = vk->frame_command_buffers[vk->frame];
@@ -313,7 +318,7 @@ owl_vk_frame_end(struct owl_vk_renderer *vk) {
   present_info.pWaitSemaphores = &render_done_semaphore;
   present_info.swapchainCount = 1;
   present_info.pSwapchains = &vk->swapchain;
-  present_info.pImageIndices = &vk->swapchain_image;
+  present_info.pImageIndices = &vk->image;
   present_info.pResults = NULL;
 
   vk_result = vkQueuePresentKHR(vk->present_queue, &present_info);
