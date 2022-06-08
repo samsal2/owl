@@ -14,54 +14,64 @@
 owl_public owl_code
 owl_vk_font_load(struct owl_vk_renderer *vk, uint64_t size, char const *path) {
   owl_code code;
+  uint8_t *bitmap;
+  stbtt_pack_context pack;
   struct owl_plataform_file file;
+  struct owl_vk_texture_desc texture_desc;
+  
+  int stb_result;
+  int const width = OWL_FONT_ATLAS_WIDTH;
+  int const height = OWL_FONT_ATLAS_HEIGHT;
+  int const first = OWL_FONT_FIRST_CHAR;
+  int const num = OWL_FONT_NUM_CHARS;
 
   if (vk->font_loaded)
     owl_vk_font_unload(vk);
 
   code = owl_plataform_load_file(path, &file);
-  if (!code) {
-    uint8_t *bitmap = owl_calloc(OWL_FONT_ATLAS_SIZE, sizeof(uint8_t));
-    if (bitmap) {
-      int result;
-      stbtt_pack_context pack;
-      int const width = OWL_FONT_ATLAS_WIDTH;
-      int const height = OWL_FONT_ATLAS_HEIGHT;
+  if (code)
+    return code;
 
-      result = stbtt_PackBegin(&pack, bitmap, width, height, 0, 1, NULL);
-      if (result) {
-        char const first = OWL_FONT_FIRST_CHAR;
-        char const num = OWL_FONT_NUM_CHARS;
 
-        stbtt_PackSetOversampling(&pack, 2, 2);
-        result = stbtt_PackFontRange(&pack, file.data, 0, size, first, num,
-                                     (stbtt_packedchar *)(&vk->font_chars[0]));
-        if (result) {
-          struct owl_vk_texture_desc desc;
-
-          desc.src = OWL_TEXTURE_SRC_DATA;
-          desc.src_data = bitmap;
-          desc.src_data_width = OWL_FONT_ATLAS_WIDTH;
-          desc.src_data_height = OWL_FONT_ATLAS_HEIGHT;
-          desc.src_data_pixel_format = OWL_PIXEL_FORMAT_R8_UNORM;
-
-          code = owl_vk_texture_init(&vk->font_atlas, vk, &desc);
-          if (!code)
-            vk->font_loaded = 1;
-        }
-
-        stbtt_PackEnd(&pack);
-      } else {
-        code = OWL_ERROR_FATAL;
-      }
-
-      owl_free(bitmap);
-    } else {
-      code = OWL_ERROR_NO_MEMORY;
-    }
-
-    owl_plataform_unload_file(&file);
+  bitmap = owl_calloc(OWL_FONT_ATLAS_SIZE, sizeof(uint8_t));
+  if (!bitmap) {
+    code = OWL_ERROR_NO_MEMORY;
+    goto error_unload_file;
   }
+
+  stb_result = stbtt_PackBegin(&pack, bitmap, width, height, 0, 1, NULL);
+  if (!stb_result) {
+    code = OWL_ERROR_FATAL;
+    goto error_free_bitmap;
+  }
+
+  stbtt_PackSetOversampling(&pack, 2, 2);
+
+  stb_result = stbtt_PackFontRange(&pack, file.data, 0, size, first, num,
+                                   (stbtt_packedchar *)(&vk->font_chars[0]));
+  if (!stb_result) {
+    code = OWL_ERROR_FATAL;
+    goto error_pack_end;
+  }
+
+  texture_desc.src = OWL_TEXTURE_SRC_DATA;
+  texture_desc.src_data = bitmap;
+  texture_desc.src_data_width = OWL_FONT_ATLAS_WIDTH;
+  texture_desc.src_data_height = OWL_FONT_ATLAS_HEIGHT;
+  texture_desc.src_data_pixel_format = OWL_PIXEL_FORMAT_R8_UNORM;
+
+  code = owl_vk_texture_init(&vk->font_atlas, vk, &texture_desc);
+  if (!code)
+    vk->font_loaded = 1;
+  
+error_pack_end:
+  stbtt_PackEnd(&pack);
+
+error_free_bitmap:
+  owl_free(bitmap);
+
+error_unload_file:
+  owl_plataform_unload_file(&file);
 
   return code;
 }

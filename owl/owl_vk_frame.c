@@ -189,22 +189,17 @@ owl_vk_frame_acquire_image(struct owl_vk_renderer *vk) {
   uint32_t const frame = vk->frame;
   VkSemaphore acquire_semaphore = vk->frame_acquire_semaphores[frame];
 
-  /** try to acquire the next swapchain image */
   vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, timeout,
                                     acquire_semaphore, VK_NULL_HANDLE, image);
-  /** if it's not outdated or there are no errors return ok */
   if (!owl_vk_is_swapchain_out_of_date(vk_result) || !vk_result)
     return OWL_OK;
 
-  /** recreate the swapchain */
   code = owl_vk_renderer_resize_swapchain(vk);
   if (code)
     return code;
 
-  /** try to acquire the next swapchain image, again */
   vk_result = vkAcquireNextImageKHR(vk->device, vk->swapchain, timeout,
                                     acquire_semaphore, VK_NULL_HANDLE, image);
-  /** if it fails the second time, something went really bad */
   if (vk_result)
     return OWL_ERROR_FATAL;
 

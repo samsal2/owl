@@ -216,8 +216,7 @@ owl_vk_renderer_ensure_queue_families(struct owl_vk_renderer *vk) {
   }
 
 cleanup:
-  if (properties)
-    owl_free(properties);
+  owl_free(properties);
 
   return owl_vk_renderer_validate_queue_families(vk);
 }
@@ -243,11 +242,11 @@ owl_vk_renderer_validate_device_extensions(struct owl_vk_renderer *vk) {
   vk_result = vkEnumerateDeviceExtensionProperties(
       vk->physical_device, NULL, &num_properties, properties);
   if (vk_result)
-    goto cleanup;
+    goto error_free_properties;
 
   state = owl_malloc(owl_array_size(device_extensions) * sizeof(*state));
   if (!state)
-    goto cleanup;
+    goto error_free_state;
 
   for (i = 0; i < owl_array_size(device_extensions); ++i)
     state[i] = 0;
@@ -255,10 +254,11 @@ owl_vk_renderer_validate_device_extensions(struct owl_vk_renderer *vk) {
   for (i = 0; i < num_properties; ++i) {
     uint32_t j;
     for (j = 0; j < owl_array_size(device_extensions); ++j) {
+      size_t const max_extension_length = VK_MAX_EXTENSION_NAME_SIZE;
       char const *l = device_extensions[j];
       char const *r = properties[j].extensionName;
 
-      uint32_t minlen = owl_min(VK_MAX_EXTENSION_NAME_SIZE, owl_strlen(l));
+      uint32_t minlen = owl_min(max_extension_length, owl_strlen(l));
 
       state[j] = !owl_strncmp(l, r, minlen);
     }
@@ -269,12 +269,11 @@ owl_vk_renderer_validate_device_extensions(struct owl_vk_renderer *vk) {
     if (!state[i])
       found = 0;
 
-cleanup:
-  if (state)
-    owl_free(state);
+error_free_state:
+  owl_free(state);
 
-  if (properties)
-    owl_free(properties);
+error_free_properties:
+  owl_free(properties);
 
   return found;
 }
@@ -303,7 +302,7 @@ owl_vk_renderer_ensure_surface_format(struct owl_vk_renderer *vk,
       vk->physical_device, vk->surface, &num_formats, formats);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
-    goto cleanup;
+    goto error_free_formats;
   }
 
   for (i = 0; i < num_formats && OWL_ERROR_NOT_FOUND == code; ++i)
@@ -315,9 +314,8 @@ owl_vk_renderer_ensure_surface_format(struct owl_vk_renderer *vk,
     vk->surface_format.colorSpace = color_space;
   }
 
-cleanup:
-  if (formats)
-    owl_free(formats);
+error_free_formats:
+  owl_free(formats);
 
   return code;
 }
@@ -403,7 +401,7 @@ owl_vk_renderer_ensure_physical_device(struct owl_vk_renderer *vk) {
   vk_result = vkEnumeratePhysicalDevices(vk->instance, &num_devices, devices);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
-    goto cleanup;
+    goto error_free_devices;
   }
 
   for (i = 0; i < num_devices; ++i) {
@@ -415,12 +413,11 @@ owl_vk_renderer_ensure_physical_device(struct owl_vk_renderer *vk) {
 
   if (!owl_vk_renderer_validate_queue_families(vk)) {
     code = OWL_ERROR_FATAL;
-    goto cleanup;
+    goto error_free_devices;
   }
 
-cleanup:
-  if (devices)
-    owl_free(devices);
+error_free_devices:
+  owl_free(devices);
 
   return code;
 }
@@ -497,13 +494,13 @@ owl_private owl_code
 owl_vk_renderer_ensure_depth_format(struct owl_vk_renderer *vk,
                                     VkFormat format) {
   VkFormatProperties props;
+  VkFormatFeatureFlagBits req = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
   owl_code code = OWL_ERROR_NOT_FOUND;
 
   vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &props);
 
-  if (props.optimalTilingFeatures &
-      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+  if (props.optimalTilingFeatures & req) {
     vk->depth_format = format;
     code = OWL_OK;
   }
