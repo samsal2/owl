@@ -440,5 +440,3 @@ owl_vk_draw_skybox(struct owl_vk_renderer *vk) {
 
   return OWL_OK;
 }
-
-

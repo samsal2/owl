@@ -10,6 +10,8 @@
 #include <GLFW/glfw3.h>
 /* clang-format on */
 
+#include <stdio.h>
+
 owl_public owl_code
 owl_plataform_init(struct owl_plataform *plataform, int w, int h,
                    char const *title) {
@@ -137,4 +139,36 @@ owl_plataform_get_time(struct owl_plataform *plataform) {
 owl_public char const *
 owl_plataform_get_title(struct owl_plataform const *plataform) {
   return plataform->title;
+}
+
+owl_public owl_code
+owl_plataform_load_file(char const *path, struct owl_plataform_file *file) {
+  FILE *fp = NULL;
+  owl_code code = OWL_OK;
+
+  fp = fopen(path, "rb");
+  if (fp) {
+    fseek(fp, 0, SEEK_END);
+    file->size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    file->data = owl_malloc(file->size * sizeof(char));
+    if (file->data)
+      fread(file->data, file->size, 1, fp);
+    else
+      code = OWL_ERROR_NO_MEMORY;
+
+    fclose(fp);
+  } else {
+    code = OWL_ERROR_NOT_FOUND;
+  }
+
+  file->path = path;
+
+  return code;
+}
+
+owl_public void
+owl_plataform_unload_file(struct owl_plataform_file *file) {
+  owl_free(file->data);
 }

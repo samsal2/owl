@@ -281,9 +281,9 @@ main() {
     perceptualRoughness = material.roughnessFactor;
     metallic = material.metallicFactor;
     if (material.physicalDescriptorTextureSet > -1) {
-      // Roughness is stored in the 'g' channel, metallic is stored in the
-      // 'b' channel. This layout intentionally reserves the 'r' channel
-      // for (optional) occlusion map data
+      // Roughness is stored in the 'g' channel, metallic is stored in
+      // the 'b' channel. This layout intentionally reserves the 'r'
+      // channel for (optional) occlusion map data
       vec4 mrSample =
           texture(physicalDescriptorMap,
                   material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1);
@@ -365,8 +365,8 @@ main() {
 
   vec3 n =
       (material.normalTextureSet > -1) ? getNormal() : normalize(inNormal);
-  vec3 v = normalize(ubo.camPos - inWorldPos); // Vector from surface point to
-                                               // camera
+  vec3 v = normalize(ubo.camPos - inWorldPos); // Vector from surface point
+                                               // to camera
   vec3 l = normalize(uboParams.lightDir.xyz);  // Vector from surface point to
                                                // light
   vec3 h = normalize(l + v); // Half vector between both l and v

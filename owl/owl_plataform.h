@@ -12,6 +12,12 @@ struct owl_plataform {
   void *opaque;
 };
 
+struct owl_plataform_file {
+  char const *path;
+  uint64_t size;
+  uint8_t *data;
+};
+
 owl_public owl_code
 owl_plataform_init(struct owl_plataform *plataform, int width, int height,
                    char const *title);
@@ -47,6 +53,12 @@ owl_plataform_poll_events(struct owl_plataform *plataform);
 
 owl_public double
 owl_plataform_get_time(struct owl_plataform *plataform);
+
+owl_public owl_code
+owl_plataform_load_file(char const *path, struct owl_plataform_file *file);
+
+owl_public void
+owl_plataform_unload_file(struct owl_plataform_file *file);
 
 OWL_END_DECLS
 
