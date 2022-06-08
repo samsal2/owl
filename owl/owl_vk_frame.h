@@ -24,9 +24,6 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk);
 owl_public owl_code
 owl_vk_frame_end(struct owl_vk_renderer *vk);
 
-owl_public owl_code
-owl_vk_frame_reserve(struct owl_vk_renderer *vk, uint64_t size);
-
 owl_public void *
 owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
                       struct owl_vk_frame_allocation *alloc);

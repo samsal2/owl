@@ -135,15 +135,17 @@ owl_vk_frame_pop_garbage(struct owl_vk_renderer *vk) {
   return OWL_OK;
 }
 
-owl_public owl_code
-owl_vk_frame_reserve(struct owl_vk_renderer *vk, uint64_t size) {
+owl_public void *
+owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
+                      struct owl_vk_frame_allocation *alloc) {
   owl_code code = OWL_OK;
+  uint8_t *data = NULL;
+  uint64_t const alignment = vk->render_buffer_alignment;
   uint64_t const required = size + vk->render_buffer_offset;
 
   if (vk->render_buffer_size < required) {
     code = owl_vk_frame_push_garbage(vk);
     if (!code) {
-      uint64_t const alignment = vk->render_buffer_alignment;
       uint64_t const new_size = owl_alignu2(required * 2, alignment);
 
       code = owl_vk_renderer_init_render_buffers(vk, new_size);
@@ -152,22 +154,10 @@ owl_vk_frame_reserve(struct owl_vk_renderer *vk, uint64_t size) {
     }
   }
 
-  return code;
-}
-
-owl_public void *
-owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
-                      struct owl_vk_frame_allocation *alloc) {
-  owl_code code;
-
-  uint8_t *data = NULL;
-
-  code = owl_vk_frame_reserve(vk, size);
   if (!code) {
     uint32_t const frame = vk->frame;
-    uint64_t const alignment = vk->render_buffer_alignment;
     uint64_t const offset = vk->render_buffer_offset;
-    uint64_t const new_offset = owl_alignu2(offset + size, alignment);
+    uint64_t const new_offset = owl_alignu2(required, alignment);
 
     vk->render_buffer_offset = new_offset;
 
