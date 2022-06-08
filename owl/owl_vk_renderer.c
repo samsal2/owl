@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 static VKAPI_ATTR VKAPI_CALL VkBool32
-owl_vk_renderer_debug_messenger_callback(
+owl_vk_renderer_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT type,
     VkDebugUtilsMessengerCallbackDataEXT const *data, void *user) {
@@ -55,7 +55,7 @@ owl_vk_renderer_init_instance(struct owl_vk_renderer *vk) {
   VkInstanceCreateInfo instance_info;
 
 #if defined(OWL_ENABLE_VALIDATION)
-  VkDebugUtilsMessengerCreateInfoEXT debug_messenger_info;
+  VkDebugUtilsMessengerCreateInfoEXT debug_info;
 #endif
 
   uint32_t num_extensions;
@@ -114,24 +114,21 @@ owl_vk_renderer_init_instance(struct owl_vk_renderer *vk) {
     goto error_destroy_instance;
   }
 
-  debug_messenger_info.sType =
-      VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-  debug_messenger_info.pNext = NULL;
-  debug_messenger_info.flags = 0;
-  debug_messenger_info.messageSeverity =
+  debug_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+  debug_info.pNext = NULL;
+  debug_info.flags = 0;
+  debug_info.messageSeverity =
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
       VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-  debug_messenger_info.messageType =
-      VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-  debug_messenger_info.pfnUserCallback =
-      owl_vk_renderer_debug_messenger_callback;
-  debug_messenger_info.pUserData = vk;
+  debug_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+  debug_info.pfnUserCallback = owl_vk_renderer_debug_callback;
+  debug_info.pUserData = vk;
 
   vk_result = vk->vk_create_debug_utils_messenger_ext(
-      vk->instance, &debug_messenger_info, NULL, &vk->debug_messenger);
+      vk->instance, &debug_info, NULL, &vk->debug);
   if (vk_result)
     goto error_destroy_instance;
 #endif
@@ -150,8 +147,7 @@ out:
 owl_private void
 owl_vk_renderer_deinit_instance(struct owl_vk_renderer *vk) {
 #if defined(OWL_ENABLE_VALIDATION)
-  vk->vk_destroy_debug_utils_messenger_ext(vk->instance, vk->debug_messenger,
-                                           NULL);
+  vk->vk_destroy_debug_utils_messenger_ext(vk->instance, vk->debug, NULL);
 #endif
   vkDestroyInstance(vk->instance, NULL);
 }

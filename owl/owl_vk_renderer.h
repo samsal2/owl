@@ -40,7 +40,7 @@ struct owl_vk_renderer {
   VkClearValue clear_values[2];
 
   VkInstance instance;
-  VkDebugUtilsMessengerEXT debug_messenger;
+  VkDebugUtilsMessengerEXT debug;
 
   VkSurfaceKHR surface;
   VkSurfaceFormatKHR surface_format;
