@@ -65,6 +65,8 @@ struct owl_vk_renderer {
   struct owl_vk_attachment depth_attachment;
 
   VkRenderPass main_render_pass;
+  VkRenderPass offscreen_render_pass;
+
   VkCommandBuffer im_command_buffer;
 
   VkPresentModeKHR present_mode;

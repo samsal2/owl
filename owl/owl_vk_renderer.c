@@ -534,6 +534,7 @@ owl_vk_renderer_clamp_dimensions(struct owl_vk_renderer *vk) {
 #if 1
 owl_private owl_code
 owl_vk_renderer_init_attachment(struct owl_vk_renderer *vk, VkFormat format,
+                                uint32_t width, uint32_t height,
                                 VkImageUsageFlagBits usage,
                                 struct owl_vk_attachment *attachment) {
   VkImageAspectFlagBits aspect;
@@ -557,8 +558,8 @@ owl_vk_renderer_init_attachment(struct owl_vk_renderer *vk, VkFormat format,
   image_info.flags = 0;
   image_info.imageType = VK_IMAGE_TYPE_2D;
   image_info.format = format;
-  image_info.extent.width = vk->width;
-  image_info.extent.height = vk->height;
+  image_info.extent.width = width;
+  image_info.extent.height = height;
   image_info.extent.depth = 1;
   image_info.mipLevels = 1;
   image_info.arrayLayers = 1;
@@ -661,12 +662,14 @@ owl_vk_renderer_init_attachments(struct owl_vk_renderer *vk) {
 
   color_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   code = owl_vk_renderer_init_attachment(vk, vk->surface_format.format,
-                                         color_usage, &vk->color_attachment);
+                                         vk->width, vk->height, color_usage,
+                                         &vk->color_attachment);
   if (code)
     goto out;
 
   depth_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
   code = owl_vk_renderer_init_attachment(vk, vk->depth_format, depth_usage,
+                                         vk->width, vk->height,
                                          &vk->depth_attachment);
   if (code)
     goto error_deinit_color_attachment;
