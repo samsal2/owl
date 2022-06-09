@@ -2,12 +2,14 @@
 
 #include "owl_internal.h"
 #include "owl_model.h"
+#include "owl_plataform.h"
 #include "owl_vector_math.h"
-#include "owl_vk_font.h"
 #include "owl_vk_frame.h"
 #include "owl_vk_renderer.h"
 #include "owl_vk_texture.h"
 #include "owl_vk_types.h"
+
+#include <stdio.h>
 
 owl_public owl_code
 owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,
@@ -88,8 +90,8 @@ owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,
                        VK_INDEX_TYPE_UINT32);
 
   vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          vk->pipeline_layouts[vk->pipeline], 0,
-                          owl_array_size(sets), sets, 1, &ualloc.offset32);
+                          vk->common_pipeline_layout, 0, owl_array_size(sets),
+                          sets, 1, &ualloc.offset32);
 
   vkCmdDrawIndexed(command_buffer, owl_array_size(indices), 1, 0, 0, 0);
 
@@ -138,7 +140,8 @@ owl_vk_draw_text(struct owl_vk_renderer *vk, char const *text,
   owl_v2 offset;
   owl_code code;
 
-  owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_TEXT);
+  vkCmdBindPipeline(vk->frame_command_buffers[vk->frame],
+                    VK_PIPELINE_BIND_POINT_GRAPHICS, vk->text_pipeline);
 
   offset[0] = position[0] * (float)vk->width;
   offset[1] = position[1] * (float)vk->height;
@@ -208,8 +211,8 @@ owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
 
   vkCmdBindDescriptorSets(vk->frame_command_buffers[vk->frame],
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          vk->pipeline_layouts[vk->pipeline], 0, 1,
-                          &u1alloc.model1_set, 1, &u1alloc.offset32);
+                          vk->model_pipeline_layout, 0, 1, &u1alloc.model1_set,
+                          1, &u1alloc.offset32);
 
   data = owl_vk_frame_allocate(vk, sizeof(ubo2), &u2alloc);
   if (!data)
@@ -218,8 +221,8 @@ owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
 
   vkCmdBindDescriptorSets(vk->frame_command_buffers[vk->frame],
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          vk->pipeline_layouts[vk->pipeline], 5, 1,
-                          &u1alloc.model2_set, 1, &u2alloc.offset32);
+                          vk->model_pipeline_layout, 5, 1, &u1alloc.model2_set,
+                          1, &u2alloc.offset32);
 
   for (i = 0; i < mesh->primitive_count; ++i) {
     VkDescriptorSet sets[4];
@@ -254,10 +257,9 @@ owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
     sets[2] = physical_desc_image->image.set;
     sets[3] = skin->ssbo_sets[vk->frame];
 
-    vkCmdBindDescriptorSets(vk->frame_command_buffers[vk->frame],
-                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            vk->pipeline_layouts[vk->pipeline], 1,
-                            owl_array_size(sets), sets, 0, NULL);
+    vkCmdBindDescriptorSets(
+        vk->frame_command_buffers[vk->frame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+        vk->model_pipeline_layout, 1, owl_array_size(sets), sets, 0, NULL);
 
     push_constant.base_color_factor[0] = material->base_color_factor[0];
     push_constant.base_color_factor[1] = material->base_color_factor[1];
@@ -319,9 +321,8 @@ owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
     push_constant.alpha_mask_cutoff = material->alpha_cutoff;
 
     vkCmdPushConstants(vk->frame_command_buffers[vk->frame],
-                       vk->pipeline_layouts[vk->pipeline],
-                       VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push_constant),
-                       &push_constant);
+                       vk->model_pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT,
+                       0, sizeof(push_constant), &push_constant);
 
     vkCmdDrawIndexed(vk->frame_command_buffers[vk->frame], primitive->count, 1,
                      primitive->first, 0, 0);
@@ -338,9 +339,8 @@ owl_vk_draw_model(struct owl_vk_renderer *vk, struct owl_model const *model,
   uint64_t offset = 0;
   owl_code code = OWL_OK;
 
-  code = owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_MODEL);
-  if (OWL_OK != code)
-    return code;
+  vkCmdBindPipeline(vk->frame_command_buffers[vk->frame],
+                    VK_PIPELINE_BIND_POINT_GRAPHICS, vk->model_pipeline);
 
   vkCmdBindVertexBuffers(vk->frame_command_buffers[vk->frame], 0, 1,
                          &model->vk_vertex_buffer, &offset);
@@ -393,9 +393,10 @@ owl_vk_draw_skybox(struct owl_vk_renderer *vk) {
       3, 2, 6, 6, 7, 3,  /* face 4 */
       4, 0, 1, 1, 5, 4}; /* face 5 */
 
-  owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_SKYBOX);
-
   command_buffer = vk->frame_command_buffers[vk->frame];
+
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    vk->skybox_pipeline);
 
   data = owl_vk_frame_allocate(vk, sizeof(vertices), &valloc);
   if (!data)
@@ -426,10 +427,37 @@ owl_vk_draw_skybox(struct owl_vk_renderer *vk) {
                        VK_INDEX_TYPE_UINT32);
 
   vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          vk->pipeline_layouts[vk->pipeline], 0,
-                          owl_array_size(sets), sets, 1, &ualloc.offset32);
+                          vk->common_pipeline_layout, 0, owl_array_size(sets),
+                          sets, 1, &ualloc.offset32);
 
   vkCmdDrawIndexed(command_buffer, owl_array_size(indices), 1, 0, 0, 0);
+
+  return OWL_OK;
+}
+
+owl_public owl_code
+owl_vk_draw_renderer_state(struct owl_vk_renderer *vk) {
+  char buffer[256];
+  owl_v3 position = {-0.8F, -0.8F, 0.0F};
+  owl_v3 color = {1.0F, 1.0F, 1.0F};
+  owl_local_persist double previous_time = 0.0;
+  owl_local_persist double current_time = 0.0;
+  double fps = 0.0;
+
+  previous_time = current_time;
+  current_time = owl_plataform_get_time(vk->plataform);
+  fps = 1.0 / (current_time - previous_time);
+
+  snprintf(buffer, sizeof(buffer), "fps: %.2f", fps);
+
+  owl_vk_draw_text(vk, buffer, position, color);
+
+  position[1] += 0.05F;
+
+  snprintf(buffer, sizeof(buffer), "vk->render_buffer_size: %llu",
+           vk->render_buffer_size);
+
+  owl_vk_draw_text(vk, buffer, position, color);
 
   return OWL_OK;
 }

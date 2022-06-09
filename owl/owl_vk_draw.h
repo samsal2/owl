@@ -75,6 +75,9 @@ owl_public owl_code
 owl_vk_draw_model(struct owl_vk_renderer *vk, struct owl_model const *model,
                   owl_m4 const matrix);
 
+owl_public owl_code
+owl_vk_draw_renderer_state(struct owl_vk_renderer *vk);
+
 OWL_END_DECLS
 
 #endif

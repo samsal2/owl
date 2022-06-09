@@ -45,8 +45,6 @@ main(void) {
 
   while (!owl_plataform_should_close(window)) {
     owl_v3 axis = {1.0F, 0.0F, 0.0F};
-    owl_v3 position = {-0.8F, -0.8F, 0.0F};
-    owl_v3 color = {1.0F, 1.0F, 1.0F};
 
     prev_time_stamp = time_stamp;
     time_stamp = owl_plataform_get_time(window);
@@ -64,7 +62,7 @@ main(void) {
                           0);
 
     owl_vk_draw_model(renderer, model, matrix);
-    owl_vk_draw_text(renderer, "hihihi", position, color);
+    owl_vk_draw_renderer_state(renderer);
 
     CHECK(owl_vk_frame_end(renderer));
 

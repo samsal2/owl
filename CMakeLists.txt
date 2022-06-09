@@ -25,6 +25,7 @@ add_subdirectory(deps/cgltf)
 
 # add sources
 add_subdirectory(${PROJECT_NAME})
+add_subdirectory(shaders)
 
 # link libraries
 target_link_libraries(${PROJECT_NAME} 
@@ -50,9 +51,9 @@ target_compile_options(${PROJECT_NAME} PUBLIC
 		-Walloca 
 		-Wvla 
     -fdiagnostics-color=always
-    -Wno-long-long
-    -Wno-variadic-macros
-    -Wno-comment
+    -Wno-long-long       # required C99 extension
+    -Wno-variadic-macros # required C99 extension (for debug logging)
+    -Wno-comment         # glslangValidator geenrates // comments
   ">"
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
 		-O0

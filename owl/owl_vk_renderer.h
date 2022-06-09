@@ -28,6 +28,12 @@ enum owl_vk_pipeline {
 
 struct owl_plataform;
 
+struct owl_vk_attachment {
+  VkImage image;
+  VkDeviceMemory memory;
+  VkImageView image_view;
+};
+
 struct owl_vk_renderer {
   struct owl_plataform *plataform;
 
@@ -53,15 +59,10 @@ struct owl_vk_renderer {
   VkQueue present_queue;
 
   VkSampleCountFlagBits msaa;
-
-  VkImage color_image;
-  VkDeviceMemory color_memory;
-  VkImageView color_image_view;
-
   VkFormat depth_format;
-  VkImage depth_image;
-  VkDeviceMemory depth_memory;
-  VkImageView depth_image_view;
+
+  struct owl_vk_attachment color_attachment;
+  struct owl_vk_attachment depth_attachment;
 
   VkRenderPass main_render_pass;
   VkCommandBuffer im_command_buffer;
@@ -78,9 +79,6 @@ struct owl_vk_renderer {
   VkCommandPool command_pool;
   VkDescriptorPool descriptor_pool;
 
-  VkDescriptorSetLayout set_layout;
-  VkPipelineLayout pipeline_layout;
-
   VkShaderModule basic_vertex_shader;
   VkShaderModule basic_fragment_shader;
   VkShaderModule text_fragment_shader;
@@ -94,12 +92,15 @@ struct owl_vk_renderer {
   VkDescriptorSetLayout ubo_both_set_layout;
   VkDescriptorSetLayout ssbo_vertex_set_layout;
   VkDescriptorSetLayout image_fragment_set_layout;
+
   VkPipelineLayout common_pipeline_layout;
   VkPipelineLayout model_pipeline_layout;
 
-  enum owl_vk_pipeline pipeline;
-  VkPipeline pipelines[OWL_VK_NUM_PIPELINES];
-  VkPipelineLayout pipeline_layouts[OWL_VK_NUM_PIPELINES];
+  VkPipeline basic_pipeline;
+  VkPipeline wires_pipeline;
+  VkPipeline text_pipeline;
+  VkPipeline model_pipeline;
+  VkPipeline skybox_pipeline;
 
   int upload_buffer_in_use;
   void *upload_buffer_data;
@@ -213,17 +214,6 @@ owl_vk_renderer_deinit_upload_buffer(struct owl_vk_renderer *vk);
  */
 owl_public owl_code
 owl_vk_renderer_resize_swapchain(struct owl_vk_renderer *vk);
-
-/**
- * @brief
- *
- * @param vk
- * @param id
- * @return owl_code
- */
-owl_public owl_code
-owl_vk_renderer_bind_pipeline(struct owl_vk_renderer *vk,
-                              enum owl_vk_pipeline id);
 
 OWL_END_DECLS
 

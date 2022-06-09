@@ -146,7 +146,7 @@ owl_vk_frame_allocate(struct owl_vk_renderer *vk, uint64_t size,
     uint64_t new_size;
 
     code = owl_vk_frame_push_garbage(vk);
-    if (code) 
+    if (code)
       return NULL;
 
     new_size = owl_alignu2(required * 2, alignment);
@@ -217,8 +217,6 @@ owl_vk_frame_begin(struct owl_vk_renderer *vk) {
   VkFence in_flight = vk->frame_in_flight_fences[frame];
   VkCommandPool command_pool = vk->frame_command_pools[frame];
   VkCommandBuffer command_buffer = vk->frame_command_buffers[frame];
-
-  owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_NONE);
 
   code = owl_vk_frame_acquire_image(vk);
   if (code)

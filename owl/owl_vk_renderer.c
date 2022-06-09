@@ -10,7 +10,7 @@
 #include "owl_vk_skybox.h"
 #include "owl_vk_types.h"
 
-#define OWL_DEFAULT_BUFFER_SIZE 512
+#define OWL_DEFAULT_BUFFER_SIZE (1 << 16)
 
 #if defined(OWL_ENABLE_VALIDATION)
 
@@ -531,29 +531,32 @@ owl_vk_renderer_clamp_dimensions(struct owl_vk_renderer *vk) {
   return OWL_OK;
 }
 
+#if 1
 owl_private owl_code
-owl_vk_renderer_init_attachments(struct owl_vk_renderer *vk) {
+owl_vk_renderer_init_attachment(struct owl_vk_renderer *vk, VkFormat format,
+                                VkImageUsageFlagBits usage,
+                                struct owl_vk_attachment *attachment) {
+  VkImageAspectFlagBits aspect;
   VkImageCreateInfo image_info;
   VkMemoryRequirements memory_requirements;
   VkMemoryAllocateInfo memory_info;
   VkImageViewCreateInfo image_view_info;
+
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
-  code = owl_vk_renderer_ensure_depth_format(vk, VK_FORMAT_D24_UNORM_S8_UINT);
-  if (code) {
-    code =
-        owl_vk_renderer_ensure_depth_format(vk, VK_FORMAT_D32_SFLOAT_S8_UINT);
-    if (code) {
-      goto out;
-    }
-  }
+  if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+    aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+  else if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+    aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+  else
+    return OWL_ERROR_FATAL;
 
   image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   image_info.pNext = NULL;
   image_info.flags = 0;
   image_info.imageType = VK_IMAGE_TYPE_2D;
-  image_info.format = vk->surface_format.format;
+  image_info.format = format;
   image_info.extent.width = vk->width;
   image_info.extent.height = vk->height;
   image_info.extent.depth = 1;
@@ -561,20 +564,19 @@ owl_vk_renderer_init_attachments(struct owl_vk_renderer *vk) {
   image_info.arrayLayers = 1;
   image_info.samples = vk->msaa;
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-  image_info.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+  image_info.usage = usage;
   image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   image_info.queueFamilyIndexCount = 0;
   image_info.pQueueFamilyIndices = NULL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-  vk_result = vkCreateImage(vk->device, &image_info, NULL, &vk->color_image);
+  vk_result = vkCreateImage(vk->device, &image_info, NULL, &attachment->image);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto out;
   }
 
-  vkGetImageMemoryRequirements(vk->device, vk->color_image,
+  vkGetImageMemoryRequirements(vk->device, attachment->image,
                                &memory_requirements);
 
   memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -585,129 +587,94 @@ owl_vk_renderer_init_attachments(struct owl_vk_renderer *vk) {
                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   vk_result =
-      vkAllocateMemory(vk->device, &memory_info, NULL, &vk->color_memory);
+      vkAllocateMemory(vk->device, &memory_info, NULL, &attachment->memory);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
-    goto error_destroy_color_image;
+    goto error_destroy_image;
   }
 
   vk_result =
-      vkBindImageMemory(vk->device, vk->color_image, vk->color_memory, 0);
+      vkBindImageMemory(vk->device, attachment->image, attachment->memory, 0);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
-    goto error_free_depth_memory;
+    goto error_free_memory;
   }
 
   image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   image_view_info.pNext = NULL;
   image_view_info.flags = 0;
-  image_view_info.image = vk->color_image;
+  image_view_info.image = attachment->image;
   image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  image_view_info.format = vk->surface_format.format;
+  image_view_info.format = format;
   image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
   image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
   image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
   image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  image_view_info.subresourceRange.aspectMask = aspect;
   image_view_info.subresourceRange.baseMipLevel = 0;
   image_view_info.subresourceRange.levelCount = 1;
   image_view_info.subresourceRange.baseArrayLayer = 0;
   image_view_info.subresourceRange.layerCount = 1;
 
   vk_result = vkCreateImageView(vk->device, &image_view_info, NULL,
-                                &vk->color_image_view);
+                                &attachment->image_view);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
-    goto error_free_color_memory;
-  }
-
-  image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  image_info.pNext = NULL;
-  image_info.flags = 0;
-  image_info.imageType = VK_IMAGE_TYPE_2D;
-  image_info.format = vk->depth_format;
-  image_info.extent.width = vk->width;
-  image_info.extent.height = vk->height;
-  image_info.extent.depth = 1;
-  image_info.mipLevels = 1;
-  image_info.arrayLayers = 1;
-  image_info.samples = vk->msaa;
-  image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-  image_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  image_info.queueFamilyIndexCount = 0;
-  image_info.pQueueFamilyIndices = NULL;
-  image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-  vk_result = vkCreateImage(vk->device, &image_info, NULL, &vk->depth_image);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_color_image_view;
-  }
-
-  vkGetImageMemoryRequirements(vk->device, vk->depth_image,
-                               &memory_requirements);
-
-  memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  memory_info.pNext = NULL;
-  memory_info.allocationSize = memory_requirements.size;
-  memory_info.memoryTypeIndex =
-      owl_vk_find_memory_type(vk, memory_requirements.memoryTypeBits,
-                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-  vk_result =
-      vkAllocateMemory(vk->device, &memory_info, NULL, &vk->depth_memory);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_depth_image;
-  }
-
-  vk_result =
-      vkBindImageMemory(vk->device, vk->depth_image, vk->depth_memory, 0);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_free_depth_memory;
-  }
-
-  image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  image_view_info.pNext = NULL;
-  image_view_info.flags = 0;
-  image_view_info.image = vk->depth_image;
-  image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  image_view_info.format = vk->depth_format;
-  image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-  image_view_info.subresourceRange.baseMipLevel = 0;
-  image_view_info.subresourceRange.levelCount = 1;
-  image_view_info.subresourceRange.baseArrayLayer = 0;
-  image_view_info.subresourceRange.layerCount = 1;
-
-  vk_result = vkCreateImageView(vk->device, &image_view_info, NULL,
-                                &vk->depth_image_view);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_free_depth_memory;
+    goto error_free_memory;
   }
 
   goto out;
 
-error_free_depth_memory:
-  vkFreeMemory(vk->device, vk->depth_memory, NULL);
+error_free_memory:
+  vkFreeMemory(vk->device, attachment->memory, NULL);
 
-error_destroy_depth_image:
-  vkDestroyImage(vk->device, vk->depth_image, NULL);
+error_destroy_image:
+  vkDestroyImage(vk->device, attachment->image, NULL);
 
-error_destroy_color_image_view:
-  vkDestroyImageView(vk->device, vk->color_image_view, NULL);
+out:
+  return code;
+}
 
-error_free_color_memory:
-  vkFreeMemory(vk->device, vk->color_memory, NULL);
+owl_private void
+owl_vk_renderer_deinit_attachment(struct owl_vk_renderer *vk,
+                                  struct owl_vk_attachment *attachment) {
+  vkDestroyImageView(vk->device, attachment->image_view, NULL);
+  vkFreeMemory(vk->device, attachment->memory, NULL);
+  vkDestroyImage(vk->device, attachment->image, NULL);
+}
 
-error_destroy_color_image:
-  vkDestroyImage(vk->device, vk->color_image, NULL);
+#endif
+
+owl_private owl_code
+owl_vk_renderer_init_attachments(struct owl_vk_renderer *vk) {
+  owl_code code = OWL_OK;
+
+  VkImageUsageFlagBits color_usage;
+  VkImageUsageFlagBits depth_usage;
+
+  /** try to ensure a depth format, if both fail early return */
+  if ((code = owl_vk_renderer_ensure_depth_format(
+           vk, VK_FORMAT_D24_UNORM_S8_UINT)) &&
+      (code = owl_vk_renderer_ensure_depth_format(
+           vk, VK_FORMAT_D32_SFLOAT_S8_UINT)))
+    goto out;
+
+  color_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+  code = owl_vk_renderer_init_attachment(vk, vk->surface_format.format,
+                                         color_usage, &vk->color_attachment);
+  if (code)
+    goto out;
+
+  depth_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+  code = owl_vk_renderer_init_attachment(vk, vk->depth_format, depth_usage,
+                                         &vk->depth_attachment);
+  if (code)
+    goto error_deinit_color_attachment;
+
+  goto out;
+
+error_deinit_color_attachment:
+  owl_vk_renderer_deinit_attachment(vk, &vk->color_attachment);
 
 out:
   return code;
@@ -715,12 +682,8 @@ out:
 
 owl_private void
 owl_vk_renderer_deinit_attachments(struct owl_vk_renderer *vk) {
-  vkDestroyImageView(vk->device, vk->depth_image_view, NULL);
-  vkFreeMemory(vk->device, vk->depth_memory, NULL);
-  vkDestroyImage(vk->device, vk->depth_image, NULL);
-  vkDestroyImageView(vk->device, vk->color_image_view, NULL);
-  vkFreeMemory(vk->device, vk->color_memory, NULL);
-  vkDestroyImage(vk->device, vk->color_image, NULL);
+  owl_vk_renderer_deinit_attachment(vk, &vk->depth_attachment);
+  owl_vk_renderer_deinit_attachment(vk, &vk->color_attachment);
 }
 
 owl_private owl_code
@@ -956,8 +919,8 @@ owl_vk_renderer_init_swapchain(struct owl_vk_renderer *vk) {
     VkImageView attachments[3];
     VkFramebufferCreateInfo framebuffer_info;
 
-    attachments[0] = vk->color_image_view;
-    attachments[1] = vk->depth_image_view;
+    attachments[0] = vk->color_attachment.image_view;
+    attachments[1] = vk->depth_attachment.image_view;
     attachments[2] = vk->image_views[i];
 
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -1656,8 +1619,6 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
-    vk->pipeline_layouts[OWL_VK_PIPELINE_BASIC] = vk->common_pipeline_layout;
-
     pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipeline_info.pNext = NULL;
     pipeline_info.flags = 0;
@@ -1672,15 +1633,15 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     pipeline_info.pDepthStencilState = &depth;
     pipeline_info.pColorBlendState = &color;
     pipeline_info.pDynamicState = NULL;
-    pipeline_info.layout = vk->pipeline_layouts[OWL_VK_PIPELINE_BASIC];
+    pipeline_info.layout = vk->common_pipeline_layout;
     pipeline_info.renderPass = vk->main_render_pass;
     pipeline_info.subpass = 0;
     pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
     pipeline_info.basePipelineIndex = -1;
 
-    vk_result = vkCreateGraphicsPipelines(
-        vk->device, VK_NULL_HANDLE, 1, &pipeline_info, NULL,
-        &vk->pipelines[OWL_VK_PIPELINE_BASIC]);
+    vk_result =
+        vkCreateGraphicsPipelines(vk->device, VK_NULL_HANDLE, 1,
+                                  &pipeline_info, NULL, &vk->basic_pipeline);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto out;
@@ -1838,8 +1799,6 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
-    vk->pipeline_layouts[OWL_VK_PIPELINE_WIRES] = vk->common_pipeline_layout;
-
     pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipeline_info.pNext = NULL;
     pipeline_info.flags = 0;
@@ -1854,16 +1813,16 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     pipeline_info.pDepthStencilState = &depth;
     pipeline_info.pColorBlendState = &color;
     pipeline_info.pDynamicState = NULL;
-    pipeline_info.layout = vk->pipeline_layouts[OWL_VK_PIPELINE_WIRES];
+    pipeline_info.layout = vk->common_pipeline_layout;
     pipeline_info.renderPass = vk->main_render_pass;
     pipeline_info.subpass = 0;
     pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
     pipeline_info.basePipelineIndex = -1;
 
     /* TODO(samuel): create all pipelines in a single batch */
-    vk_result = vkCreateGraphicsPipelines(
-        vk->device, VK_NULL_HANDLE, 1, &pipeline_info, NULL,
-        &vk->pipelines[OWL_VK_PIPELINE_WIRES]);
+    vk_result =
+        vkCreateGraphicsPipelines(vk->device, VK_NULL_HANDLE, 1,
+                                  &pipeline_info, NULL, &vk->wires_pipeline);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_basic_pipeline;
@@ -2021,8 +1980,6 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
-    vk->pipeline_layouts[OWL_VK_PIPELINE_TEXT] = vk->common_pipeline_layout;
-
     pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipeline_info.pNext = NULL;
     pipeline_info.flags = 0;
@@ -2037,16 +1994,16 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     pipeline_info.pDepthStencilState = &depth;
     pipeline_info.pColorBlendState = &color;
     pipeline_info.pDynamicState = NULL;
-    pipeline_info.layout = vk->pipeline_layouts[OWL_VK_PIPELINE_TEXT];
+    pipeline_info.layout = vk->common_pipeline_layout;
     pipeline_info.renderPass = vk->main_render_pass;
     pipeline_info.subpass = 0;
     pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
     pipeline_info.basePipelineIndex = -1;
 
     /* TODO(samuel): create all pipelines in a single batch */
-    vk_result = vkCreateGraphicsPipelines(
-        vk->device, VK_NULL_HANDLE, 1, &pipeline_info, NULL,
-        &vk->pipelines[OWL_VK_PIPELINE_TEXT]);
+    vk_result =
+        vkCreateGraphicsPipelines(vk->device, VK_NULL_HANDLE, 1,
+                                  &pipeline_info, NULL, &vk->text_pipeline);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_wires_pipeline;
@@ -2218,8 +2175,6 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
-    vk->pipeline_layouts[OWL_VK_PIPELINE_MODEL] = vk->model_pipeline_layout;
-
     pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipeline_info.pNext = NULL;
     pipeline_info.flags = 0;
@@ -2234,16 +2189,16 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     pipeline_info.pDepthStencilState = &depth;
     pipeline_info.pColorBlendState = &color;
     pipeline_info.pDynamicState = NULL;
-    pipeline_info.layout = vk->pipeline_layouts[OWL_VK_PIPELINE_MODEL];
+    pipeline_info.layout = vk->model_pipeline_layout;
     pipeline_info.renderPass = vk->main_render_pass;
     pipeline_info.subpass = 0;
     pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
     pipeline_info.basePipelineIndex = -1;
 
     /* TODO(samuel): create all pipelines in a single batch */
-    vk_result = vkCreateGraphicsPipelines(
-        vk->device, VK_NULL_HANDLE, 1, &pipeline_info, NULL,
-        &vk->pipelines[OWL_VK_PIPELINE_MODEL]);
+    vk_result =
+        vkCreateGraphicsPipelines(vk->device, VK_NULL_HANDLE, 1,
+                                  &pipeline_info, NULL, &vk->model_pipeline);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_text_pipeline;
@@ -2389,8 +2344,6 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     stages[1].pName = "main";
     stages[1].pSpecializationInfo = NULL;
 
-    vk->pipeline_layouts[OWL_VK_PIPELINE_SKYBOX] = vk->common_pipeline_layout;
-
     pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipeline_info.pNext = NULL;
     pipeline_info.flags = 0;
@@ -2405,16 +2358,16 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     pipeline_info.pDepthStencilState = &depth;
     pipeline_info.pColorBlendState = &color;
     pipeline_info.pDynamicState = NULL;
-    pipeline_info.layout = vk->pipeline_layouts[OWL_VK_PIPELINE_SKYBOX];
+    pipeline_info.layout = vk->common_pipeline_layout;
     pipeline_info.renderPass = vk->main_render_pass;
     pipeline_info.subpass = 0;
     pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
     pipeline_info.basePipelineIndex = -1;
 
     /* TODO(samuel): create all pipelines in a single batch */
-    vk_result = vkCreateGraphicsPipelines(
-        vk->device, VK_NULL_HANDLE, 1, &pipeline_info, NULL,
-        &vk->pipelines[OWL_VK_PIPELINE_SKYBOX]);
+    vk_result =
+        vkCreateGraphicsPipelines(vk->device, VK_NULL_HANDLE, 1,
+                                  &pipeline_info, NULL, &vk->skybox_pipeline);
 
     if (vk_result) {
       code = OWL_ERROR_FATAL;
@@ -2425,16 +2378,16 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
   goto out;
 
 error_destroy_model_pipeline:
-  vkDestroyPipeline(vk->device, vk->pipelines[OWL_VK_PIPELINE_MODEL], NULL);
+  vkDestroyPipeline(vk->device, vk->model_pipeline, NULL);
 
 error_destroy_text_pipeline:
-  vkDestroyPipeline(vk->device, vk->pipelines[OWL_VK_PIPELINE_TEXT], NULL);
+  vkDestroyPipeline(vk->device, vk->text_pipeline, NULL);
 
 error_destroy_wires_pipeline:
-  vkDestroyPipeline(vk->device, vk->pipelines[OWL_VK_PIPELINE_TEXT], NULL);
+  vkDestroyPipeline(vk->device, vk->wires_pipeline, NULL);
 
 error_destroy_basic_pipeline:
-  vkDestroyPipeline(vk->device, vk->pipelines[OWL_VK_PIPELINE_BASIC], NULL);
+  vkDestroyPipeline(vk->device, vk->basic_pipeline, NULL);
 
 out:
   return code;
@@ -2442,11 +2395,11 @@ out:
 
 owl_private void
 owl_vk_renderer_deinit_pipelines(struct owl_vk_renderer *vk) {
-  vkDestroyPipeline(vk->device, vk->pipelines[OWL_VK_PIPELINE_SKYBOX], NULL);
-  vkDestroyPipeline(vk->device, vk->pipelines[OWL_VK_PIPELINE_MODEL], NULL);
-  vkDestroyPipeline(vk->device, vk->pipelines[OWL_VK_PIPELINE_TEXT], NULL);
-  vkDestroyPipeline(vk->device, vk->pipelines[OWL_VK_PIPELINE_WIRES], NULL);
-  vkDestroyPipeline(vk->device, vk->pipelines[OWL_VK_PIPELINE_BASIC], NULL);
+  vkDestroyPipeline(vk->device, vk->skybox_pipeline, NULL);
+  vkDestroyPipeline(vk->device, vk->model_pipeline, NULL);
+  vkDestroyPipeline(vk->device, vk->text_pipeline, NULL);
+  vkDestroyPipeline(vk->device, vk->wires_pipeline, NULL);
+  vkDestroyPipeline(vk->device, vk->basic_pipeline, NULL);
 }
 
 owl_public owl_code
@@ -2554,7 +2507,6 @@ owl_vk_renderer_init_render_buffers(struct owl_vk_renderer *vk,
 
     vk_result =
         vkCreateBuffer(vk->device, &buffer_info, NULL, &vk->render_buffers[i]);
-    OWL_DEBUG_LOG("render_buffers[i]: %p\n", vk->render_buffers[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_buffers;
@@ -3041,7 +2993,6 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
   vk->im_command_buffer = VK_NULL_HANDLE;
   vk->skybox_loaded = 0;
   vk->font_loaded = 0;
-  vk->pipeline = OWL_VK_PIPELINE_NONE;
   vk->num_frames = OWL_NUM_IN_FLIGHT_FRAMES;
 
   vk->clear_values[0].color.float32[0] = 0.0F;
@@ -3297,26 +3248,4 @@ error_deinit_attachments:
 
 out:
   return code;
-}
-
-owl_public owl_code
-owl_vk_renderer_bind_pipeline(struct owl_vk_renderer *vk,
-                              enum owl_vk_pipeline id) {
-  VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  VkCommandBuffer command_buffer = vk->frame_command_buffers[vk->frame];
-
-  if (vk->pipeline == id)
-    return OWL_OK;
-
-  vk->pipeline = id;
-
-  if (OWL_VK_PIPELINE_NONE == id)
-    return OWL_OK;
-
-  if (0 > id || OWL_VK_NUM_PIPELINES < id)
-    return OWL_ERROR_NOT_FOUND;
-
-  vkCmdBindPipeline(command_buffer, bind_point, vk->pipelines[id]);
-
-  return OWL_OK;
 }
