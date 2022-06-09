@@ -21,8 +21,7 @@ static owl_m4 matrix;
   } while (0)
 
 int
-main(void)
-{
+main(void) {
   owl_v3 offset = {0.0F, 0.0F, -1.0F};
 
   window = malloc(sizeof(*window));
@@ -34,8 +33,7 @@ main(void)
   model = malloc(sizeof(*model));
   CHECK(owl_model_init(model, renderer, "../../assets/CesiumMan.gltf"));
 
-  CHECK(owl_vk_font_load(renderer, 64.0F,
-                         "../../assets/Inconsolata-Regular.ttf"));
+  CHECK(owl_vk_font_load(renderer, 64.0F, "../../assets/CascadiaMono.ttf"));
 
   CHECK(owl_vk_skybox_load(renderer, "../../assets/skybox"));
 

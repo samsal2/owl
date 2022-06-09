@@ -71,6 +71,8 @@ owl_plataform_get_required_vk_instance_extensions(
   return code;
 
 #else
+  owl_unused(plataform);
+
   *extensions = glfwGetRequiredInstanceExtensions(num_extensions);
   if (!*extensions)
     return OWL_ERROR_FATAL;

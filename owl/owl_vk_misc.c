@@ -25,7 +25,6 @@ owl_public owl_code
 owl_vk_begin_im_command_buffer(struct owl_vk_renderer *vk) {
   VkCommandBufferAllocateInfo command_buffer_info;
   VkCommandBufferBeginInfo begin_info;
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
@@ -68,7 +67,6 @@ out:
 owl_public owl_code
 owl_vk_end_im_command_buffer(struct owl_vk_renderer *vk) {
   VkSubmitInfo submit_info;
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 

@@ -44,7 +44,7 @@ owl_vk_upload_alloc(struct owl_vk_renderer *vk, uint64_t size,
 
 owl_public void
 owl_vk_upload_free(struct owl_vk_renderer *vk, void *ptr) {
-  owl_unused(vk);
+  owl_unused(ptr);
   owl_assert(ptr == vk->upload_buffer_data);
   vk->upload_buffer_in_use = 0;
 }

@@ -85,8 +85,8 @@ owl_vk_renderer_init_instance(struct owl_vk_renderer *vk) {
   instance_info.enabledLayerCount = owl_array_size(debug_validation_layers);
   instance_info.ppEnabledLayerNames = debug_validation_layers;
 #else  /* OWL_ENABLE_VALIDATION */
-  inst_info.enabledLayerCount = 0;
-  inst_info.ppEnabledLayerNames = NULL;
+  instance_info.enabledLayerCount = 0;
+  instance_info.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
   instance_info.enabledExtensionCount = num_extensions;
   instance_info.ppEnabledExtensionNames = extensions;
@@ -179,10 +179,9 @@ owl_vk_renderer_validate_queue_families(struct owl_vk_renderer *vk) {
 owl_private int
 owl_vk_renderer_ensure_queue_families(struct owl_vk_renderer *vk) {
   uint32_t i;
+  VkResult vk_result = VK_SUCCESS;
   uint32_t num_properties = 0;
   VkQueueFamilyProperties *properties = NULL;
-
-  VkResult vk_result;
 
   vk->graphics_queue_family = (uint32_t)-1;
   vk->present_queue_family = (uint32_t)-1;
@@ -285,7 +284,6 @@ owl_vk_renderer_ensure_surface_format(struct owl_vk_renderer *vk,
   uint32_t i;
   uint32_t num_formats = 0;
   VkSurfaceFormatKHR *formats = NULL;
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_ERROR_NOT_FOUND;
 
@@ -353,7 +351,6 @@ owl_vk_renderer_validate_physical_device(struct owl_vk_renderer *vk) {
   uint32_t has_formats;
   uint32_t has_modes;
   VkPhysicalDeviceFeatures feats;
-
   VkResult vk_result;
 
   vk_result = vkGetPhysicalDeviceSurfaceFormatsKHR(
@@ -428,7 +425,6 @@ owl_vk_renderer_init_device(struct owl_vk_renderer *vk) {
   VkDeviceCreateInfo device_info;
   VkDeviceQueueCreateInfo queue_infos[2];
   float const priority = 1.0F;
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
@@ -495,7 +491,6 @@ owl_vk_renderer_ensure_depth_format(struct owl_vk_renderer *vk,
                                     VkFormat format) {
   VkFormatProperties props;
   VkFormatFeatureFlagBits req = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
   owl_code code = OWL_ERROR_NOT_FOUND;
 
   vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &props);
@@ -542,7 +537,6 @@ owl_vk_renderer_init_attachments(struct owl_vk_renderer *vk) {
   VkMemoryRequirements memory_requirements;
   VkMemoryAllocateInfo memory_info;
   VkImageViewCreateInfo image_view_info;
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
@@ -738,7 +732,6 @@ owl_vk_renderer_init_render_passes(struct owl_vk_renderer *vk) {
   VkSubpassDescription subpass;
   VkSubpassDependency dependency;
   VkRenderPassCreateInfo render_pass_info;
-
   VkResult vk_result;
 
   color_reference.attachment = 0;
@@ -837,7 +830,6 @@ owl_vk_renderer_ensure_present_mode(struct owl_vk_renderer *vk,
   int i;
   uint32_t num_modes;
   VkPresentModeKHR modes[OWL_VK_MAX_PRESENT_MODES];
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_ERROR_NOT_FOUND;
 
@@ -870,7 +862,6 @@ owl_vk_renderer_init_swapchain(struct owl_vk_renderer *vk) {
   uint32_t families[2];
   VkSwapchainCreateInfoKHR swapchain_info;
   VkSurfaceCapabilitiesKHR capabilities;
-
   VkResult vk_result;
   owl_code code = OWL_OK;
 
@@ -1024,7 +1015,6 @@ owl_vk_renderer_init_pools(struct owl_vk_renderer *vk) {
   VkCommandPoolCreateInfo command_pool_info;
   VkDescriptorPoolSize sizes[6];
   VkDescriptorPoolCreateInfo descriptor_pool_info;
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
@@ -1705,7 +1695,7 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     VkViewport viewport;
     VkRect2D scissor;
     VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rast;
+    VkPipelineRasterizationStateCreateInfo rasterizer;
     VkPipelineMultisampleStateCreateInfo multisample;
     VkPipelineColorBlendAttachmentState color_attachment;
     VkPipelineColorBlendStateCreateInfo color;
@@ -1770,19 +1760,20 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     viewport_state.scissorCount = 1;
     viewport_state.pScissors = &scissor;
 
-    rast.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rast.pNext = NULL;
-    rast.flags = 0;
-    rast.depthClampEnable = VK_FALSE;
-    rast.rasterizerDiscardEnable = VK_FALSE;
-    rast.polygonMode = VK_POLYGON_MODE_LINE;
-    rast.cullMode = VK_CULL_MODE_BACK_BIT;
-    rast.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rast.depthBiasEnable = VK_FALSE;
-    rast.depthBiasConstantFactor = 0.0F;
-    rast.depthBiasClamp = 0.0F;
-    rast.depthBiasSlopeFactor = 0.0F;
-    rast.lineWidth = 1.0F;
+    rasterizer.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.pNext = NULL;
+    rasterizer.flags = 0;
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizer.depthBiasEnable = VK_FALSE;
+    rasterizer.depthBiasConstantFactor = 0.0F;
+    rasterizer.depthBiasClamp = 0.0F;
+    rasterizer.depthBiasSlopeFactor = 0.0F;
+    rasterizer.lineWidth = 1.0F;
 
     multisample.sType =
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -1858,7 +1849,7 @@ owl_vk_renderer_init_pipelines(struct owl_vk_renderer *vk) {
     pipeline_info.pInputAssemblyState = &input_assembly;
     pipeline_info.pTessellationState = NULL;
     pipeline_info.pViewportState = &viewport_state;
-    pipeline_info.pRasterizationState = &rast;
+    pipeline_info.pRasterizationState = &rasterizer;
     pipeline_info.pMultisampleState = &multisample;
     pipeline_info.pDepthStencilState = &depth;
     pipeline_info.pColorBlendState = &color;
@@ -2463,7 +2454,6 @@ owl_vk_renderer_init_upload_buffer(struct owl_vk_renderer *vk, uint64_t size) {
   VkBufferCreateInfo buffer_info;
   VkMemoryRequirements memory_requirements;
   VkMemoryAllocateInfo memory_info;
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
@@ -2541,9 +2531,7 @@ owl_public owl_code
 owl_vk_renderer_init_render_buffers(struct owl_vk_renderer *vk,
                                     uint64_t size) {
   int i;
-
   VkMemoryRequirements memory_requirements;
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
@@ -2779,7 +2767,6 @@ owl_vk_renderer_deinit_render_buffers(struct owl_vk_renderer *vk) {
 owl_private owl_code
 owl_vk_renderer_init_frames(struct owl_vk_renderer *vk) {
   int i;
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
@@ -3041,12 +3028,10 @@ owl_vk_renderer_init(struct owl_vk_renderer *vk,
                      struct owl_plataform *plataform) {
   uint32_t width;
   uint32_t height;
-
   owl_v3 eye;
   owl_v3 direction;
   owl_v3 up;
   owl_code code;
-
   float ratio;
   float const fov = owl_deg2rad(45.0F);
   float const near = 0.01;
@@ -3254,12 +3239,10 @@ owl_public owl_code
 owl_vk_renderer_resize_swapchain(struct owl_vk_renderer *vk) {
   uint32_t width;
   uint32_t height;
-
   float ratio;
   float const fov = owl_deg2rad(45.0F);
   float const near = 0.01;
   float const far = 10.0F;
-
   VkResult vk_result;
   owl_code code;
 

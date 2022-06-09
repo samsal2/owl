@@ -20,7 +20,6 @@ owl_vk_draw_quad(struct owl_vk_renderer *vk, struct owl_quad const *quad,
   struct owl_vk_frame_allocation valloc;
   struct owl_vk_frame_allocation ialloc;
   struct owl_vk_frame_allocation ualloc;
-
   owl_local_persist uint32_t const indices[] = {2, 3, 1, 1, 0, 2};
 
   command_buffer = vk->frame_command_buffers[vk->frame];
@@ -137,7 +136,6 @@ owl_vk_draw_text(struct owl_vk_renderer *vk, char const *text,
                  owl_v3 const position, owl_v3 const color) {
   char const *c;
   owl_v2 offset;
-
   owl_code code;
 
   owl_vk_renderer_bind_pipeline(vk, OWL_VK_PIPELINE_TEXT);
@@ -174,7 +172,6 @@ owl_vk_draw_model_node(struct owl_vk_renderer *vk, owl_model_node_id id,
   struct owl_model_ubo2 ubo2;
   struct owl_vk_frame_allocation u1alloc;
   struct owl_vk_frame_allocation u2alloc;
-
   owl_code code;
 
   node = &model->nodes[id];
@@ -367,12 +364,9 @@ owl_vk_draw_skybox(struct owl_vk_renderer *vk) {
   struct owl_vk_frame_allocation valloc;
   struct owl_vk_frame_allocation ialloc;
   struct owl_vk_frame_allocation ualloc;
-
   VkDescriptorSet sets[2];
   VkCommandBuffer command_buffer;
-
   struct owl_pvm_ubo ubo;
-
   /*
    *    4----5
    *  / |  / |
@@ -391,7 +385,6 @@ owl_vk_draw_skybox(struct owl_vk_renderer *vk) {
       {1.0F, -1.0F, 1.0F},   /* 5 */
       {-1.0F, 1.0F, 1.0F},   /* 6 */
       {1.0F, 1.0F, 1.0F}};   /* 7 */
-
   owl_local_persist uint32_t const indices[] = {
       2, 3, 1, 1, 0, 2,  /* face 0 ....*/
       3, 7, 5, 5, 1, 3,  /* face 1 */

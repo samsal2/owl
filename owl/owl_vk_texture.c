@@ -195,10 +195,8 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
   int height;
   uint32_t mips;
   enum owl_pixel_format pixel_format;
-
   uint8_t *upload_data;
   struct owl_vk_upload_allocation upload_alloc;
-
   VkImageCreateInfo image_info;
   VkMemoryRequirements memory_requirements;
   VkMemoryAllocateInfo memory_info;
@@ -207,7 +205,6 @@ owl_vk_texture_init(struct owl_vk_texture *texture, struct owl_vk_renderer *vk,
   VkDescriptorImageInfo descriptors[2];
   VkWriteDescriptorSet writes[2];
   VkBufferImageCopy copy;
-
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 

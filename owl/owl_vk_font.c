@@ -18,7 +18,6 @@ owl_vk_font_load(struct owl_vk_renderer *vk, uint64_t size, char const *path) {
   stbtt_pack_context pack;
   struct owl_plataform_file file;
   struct owl_vk_texture_desc texture_desc;
-  
   int stb_result;
   int const width = OWL_FONT_ATLAS_WIDTH;
   int const height = OWL_FONT_ATLAS_HEIGHT;
@@ -31,7 +30,6 @@ owl_vk_font_load(struct owl_vk_renderer *vk, uint64_t size, char const *path) {
   code = owl_plataform_load_file(path, &file);
   if (code)
     return code;
-
 
   bitmap = owl_calloc(OWL_FONT_ATLAS_SIZE, sizeof(uint8_t));
   if (!bitmap) {
@@ -63,7 +61,7 @@ owl_vk_font_load(struct owl_vk_renderer *vk, uint64_t size, char const *path) {
   code = owl_vk_texture_init(&vk->font_atlas, vk, &texture_desc);
   if (!code)
     vk->font_loaded = 1;
-  
+
 error_pack_end:
   stbtt_PackEnd(&pack);
 
