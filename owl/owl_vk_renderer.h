@@ -16,22 +16,15 @@ OWL_BEGIN_DECLS
 #define OWL_FONT_FIRST_CHAR ((int)(' '))
 #define OWL_FONT_NUM_CHARS ((int)('~' - ' '))
 
-enum owl_vk_pipeline {
-  OWL_VK_PIPELINE_BASIC,
-  OWL_VK_PIPELINE_WIRES,
-  OWL_VK_PIPELINE_TEXT,
-  OWL_VK_PIPELINE_MODEL,
-  OWL_VK_PIPELINE_SKYBOX,
-  OWL_VK_PIPELINE_NONE
-};
-#define OWL_VK_NUM_PIPELINES OWL_VK_PIPELINE_NONE
-
 struct owl_plataform;
 
 struct owl_vk_attachment {
   VkImage image;
   VkDeviceMemory memory;
   VkImageView image_view;
+#if 0
+  VkDescriptorSet set;
+#endif
 };
 
 struct owl_vk_renderer {

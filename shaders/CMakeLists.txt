@@ -1,13 +1,11 @@
 set(GLSL_SHADERS 
-  owl_glsl_basic.vert
-  owl_glsl_model.vert
-  owl_glsl_pbr.vert
-  owl_glsl_basic.frag
-  owl_glsl_font.frag
-  owl_glsl_model.frag
-  owl_glsl_pbr.frag
-  owl_glsl_skybox.vert
-  owl_glsl_skybox.frag)
+  owl_basic.vert
+  owl_basic.frag
+  owl_font.frag
+  owl_model.vert
+  owl_model.frag
+  owl_skybox.vert
+  owl_skybox.frag)
 
 if ("${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}" STREQUAL "")
   message(AUTHOR_WARNING "missing Vulkan_GLSLANG_VALIDATOR_EXECUTABLE"

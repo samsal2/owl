@@ -532,10 +532,17 @@ owl_vk_renderer_clamp_dimensions(struct owl_vk_renderer *vk) {
 }
 
 #if 1
+
+struct owl_vk_attachment_desc {
+  VkFormat format;
+  uint32_t width;
+  uint32_t height;
+  VkImageUsageFlagBits usage;
+};
+
 owl_private owl_code
-owl_vk_renderer_init_attachment(struct owl_vk_renderer *vk, VkFormat format,
-                                uint32_t width, uint32_t height,
-                                VkImageUsageFlagBits usage,
+owl_vk_renderer_init_attachment(struct owl_vk_renderer *vk,
+                                struct owl_vk_attachment_desc const *desc,
                                 struct owl_vk_attachment *attachment) {
   VkImageAspectFlagBits aspect;
   VkImageCreateInfo image_info;
@@ -546,9 +553,9 @@ owl_vk_renderer_init_attachment(struct owl_vk_renderer *vk, VkFormat format,
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
-  if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+  if (desc->usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
     aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-  else if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+  else if (desc->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
     aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
   else
     return OWL_ERROR_FATAL;
@@ -557,15 +564,15 @@ owl_vk_renderer_init_attachment(struct owl_vk_renderer *vk, VkFormat format,
   image_info.pNext = NULL;
   image_info.flags = 0;
   image_info.imageType = VK_IMAGE_TYPE_2D;
-  image_info.format = format;
-  image_info.extent.width = width;
-  image_info.extent.height = height;
+  image_info.format = desc->format;
+  image_info.extent.width = desc->width;
+  image_info.extent.height = desc->height;
   image_info.extent.depth = 1;
   image_info.mipLevels = 1;
   image_info.arrayLayers = 1;
   image_info.samples = vk->msaa;
   image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-  image_info.usage = usage;
+  image_info.usage = desc->usage;
   image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   image_info.queueFamilyIndexCount = 0;
   image_info.pQueueFamilyIndices = NULL;
@@ -606,7 +613,7 @@ owl_vk_renderer_init_attachment(struct owl_vk_renderer *vk, VkFormat format,
   image_view_info.flags = 0;
   image_view_info.image = attachment->image;
   image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  image_view_info.format = format;
+  image_view_info.format = desc->format;
   image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
   image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
   image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -624,7 +631,68 @@ owl_vk_renderer_init_attachment(struct owl_vk_renderer *vk, VkFormat format,
     goto error_free_memory;
   }
 
+#if 0
+  if (desc->usage & VK_IMAGE_USAGE_SAMPLED_BIT) {
+    VkDescriptorSetAllocateInfo set_info;
+    VkDescriptorImageInfo descriptors[2];
+    VkWriteDescriptorSet writes[2];
+
+    set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    set_info.pNext = NULL;
+    set_info.descriptorPool = vk->descriptor_pool;
+    set_info.descriptorSetCount = 1;
+    set_info.pSetLayouts = &vk->image_fragment_set_layout;
+
+    vk_result =
+        vkAllocateDescriptorSets(vk->device, &set_info, &attachment->set);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_image_view;
+    }
+
+    descriptors[0].sampler = vk->linear_sampler;
+    descriptors[0].imageView = NULL;
+    descriptors[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    descriptors[1].sampler = VK_NULL_HANDLE;
+    descriptors[1].imageView = attachment->image_view;
+    descriptors[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[0].pNext = NULL;
+    writes[0].dstSet = attachment->set;
+    writes[0].dstBinding = 0;
+    writes[0].dstArrayElement = 0;
+    writes[0].descriptorCount = 1;
+    writes[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+    writes[0].pImageInfo = &descriptors[0];
+    writes[0].pBufferInfo = NULL;
+    writes[0].pTexelBufferView = NULL;
+
+    writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[1].pNext = NULL;
+    writes[1].dstSet = attachment->set;
+    writes[1].dstBinding = 1;
+    writes[1].dstArrayElement = 0;
+    writes[1].descriptorCount = 1;
+    writes[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    writes[1].pImageInfo = &descriptors[1];
+    writes[1].pBufferInfo = NULL;
+    writes[1].pTexelBufferView = NULL;
+
+    vkUpdateDescriptorSets(vk->device, owl_array_size(writes), writes, 0,
+                           NULL);
+
+  } else {
+    attachment->set = VK_NULL_HANDLE;
+  }
+#endif
+
   goto out;
+#if 0
+error_destroy_image_view:
+  vkDestroyImageView(vk->device, attachment->image_view, NULL);
+#endif
 
 error_free_memory:
   vkFreeMemory(vk->device, attachment->memory, NULL);
@@ -639,6 +707,11 @@ out:
 owl_private void
 owl_vk_renderer_deinit_attachment(struct owl_vk_renderer *vk,
                                   struct owl_vk_attachment *attachment) {
+#if 0
+  if (attachment->set)
+    vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1, &attachment->set);
+#endif
+
   vkDestroyImageView(vk->device, attachment->image_view, NULL);
   vkFreeMemory(vk->device, attachment->memory, NULL);
   vkDestroyImage(vk->device, attachment->image, NULL);
@@ -650,8 +723,8 @@ owl_private owl_code
 owl_vk_renderer_init_attachments(struct owl_vk_renderer *vk) {
   owl_code code = OWL_OK;
 
-  VkImageUsageFlagBits color_usage;
-  VkImageUsageFlagBits depth_usage;
+  struct owl_vk_attachment_desc color_desc;
+  struct owl_vk_attachment_desc depth_desc;
 
   /** try to ensure a depth format, if both fail early return */
   if ((code = owl_vk_renderer_ensure_depth_format(
@@ -660,17 +733,23 @@ owl_vk_renderer_init_attachments(struct owl_vk_renderer *vk) {
            vk, VK_FORMAT_D32_SFLOAT_S8_UINT)))
     goto out;
 
-  color_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-  code = owl_vk_renderer_init_attachment(vk, vk->surface_format.format,
-                                         vk->width, vk->height, color_usage,
-                                         &vk->color_attachment);
+  color_desc.format = vk->surface_format.format;
+  color_desc.width = vk->width;
+  color_desc.height = vk->height;
+  color_desc.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+  code =
+      owl_vk_renderer_init_attachment(vk, &color_desc, &vk->color_attachment);
   if (code)
     goto out;
 
-  depth_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-  code = owl_vk_renderer_init_attachment(vk, vk->depth_format, depth_usage,
-                                         vk->width, vk->height,
-                                         &vk->depth_attachment);
+  depth_desc.format = vk->depth_format;
+  depth_desc.width = vk->width;
+  depth_desc.height = vk->height;
+  depth_desc.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+  code =
+      owl_vk_renderer_init_attachment(vk, &depth_desc, &vk->depth_attachment);
   if (code)
     goto error_deinit_color_attachment;
 
@@ -1054,7 +1133,7 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
 
     /* TODO(samuel): Properly load code at runtime */
     owl_local_persist uint32_t const spv[] = {
-#include "owl_glsl_basic.vert.spv.u32"
+#include "owl_basic.vert.spv.u32"
     };
 
     shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1076,7 +1155,7 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
     VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
-#include "owl_glsl_basic.frag.spv.u32"
+#include "owl_basic.frag.spv.u32"
     };
 
     shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1097,7 +1176,7 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
     VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
-#include "owl_glsl_font.frag.spv.u32"
+#include "owl_font.frag.spv.u32"
     };
 
     shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1119,7 +1198,7 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
     VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
-#include "owl_glsl_model.vert.spv.u32"
+#include "owl_model.vert.spv.u32"
     };
 
     shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1141,7 +1220,7 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
     VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
-#include "owl_glsl_model.frag.spv.u32"
+#include "owl_model.frag.spv.u32"
     };
 
     shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1163,7 +1242,7 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
     VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
-#include "owl_glsl_skybox.vert.spv.u32"
+#include "owl_skybox.vert.spv.u32"
     };
 
     shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1185,7 +1264,7 @@ owl_vk_renderer_init_shaders(struct owl_vk_renderer *vk) {
     VkShaderModuleCreateInfo shader_info;
 
     owl_local_persist uint32_t const spv[] = {
-#include "owl_glsl_skybox.frag.spv.u32"
+#include "owl_skybox.frag.spv.u32"
     };
 
     shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
