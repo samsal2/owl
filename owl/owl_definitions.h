@@ -31,6 +31,31 @@ typedef owl_v2 owl_m2[2];
 typedef owl_v3 owl_m3[3];
 typedef owl_v4 owl_m4[4];
 
+struct owl_p_vertex {
+  owl_v3 position;
+};
+
+struct owl_pcu_vertex {
+  owl_v3 position;
+  owl_v3 color;
+  owl_v2 uv;
+};
+
+struct owl_pnuujw_vertex {
+  owl_v3 position;
+  owl_v3 normal;
+  owl_v2 uv0;
+  owl_v2 uv1;
+  owl_v4 joints0;
+  owl_v4 weights0;
+};
+
+struct owl_pvm_ubo {
+  owl_m4 projection;
+  owl_m4 view;
+  owl_m4 model;
+};
+
 typedef int owl_code;
 /** everything is ok */
 #define OWL_OK 0

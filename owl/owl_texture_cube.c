@@ -1,18 +1,13 @@
-#include "owl_vk_skybox.h"
+#include "owl_texture_cube.h"
 
 #include "owl_internal.h"
-#include "owl_vk_misc.h"
-#include "owl_vk_renderer.h"
-#include "owl_vk_texture.h"
-#include "owl_vk_upload.h"
-
+#include "owl_renderer.h"
 #include "stb_image.h"
 
-#define OWL_VK_SKYBOX_MAX_PATH_LENGTH 256
-
 owl_private void
-owl_vk_skybox_transition(struct owl_vk_renderer *vk, VkImageLayout src_layout,
-                         VkImageLayout dst_layout) {
+owl_texture_cube_transition(struct owl_texture_cube *texture,
+                            struct owl_renderer *renderer,
+                            VkImageLayout dst_layout) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst_stage = VK_PIPELINE_STAGE_NONE_KHR;
@@ -21,31 +16,31 @@ owl_vk_skybox_transition(struct owl_vk_renderer *vk, VkImageLayout src_layout,
   barrier.pNext = NULL;
   /* image_memory_barrier.srcAccessMask = Defined later */
   /* image_memory_barrier.dstAccessMask = Defined later */
-  barrier.oldLayout = src_layout;
+  barrier.oldLayout = texture->layout;
   barrier.newLayout = dst_layout;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = vk->skybox_image;
+  barrier.image = texture->image;
   barrier.subresourceRange.baseMipLevel = 0;
   barrier.subresourceRange.levelCount = 1;
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount = 6;
 
-  if (VK_IMAGE_LAYOUT_UNDEFINED == src_layout &&
+  if (VK_IMAGE_LAYOUT_UNDEFINED == texture->layout &&
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == dst_layout) {
     barrier.srcAccessMask = VK_ACCESS_NONE_KHR;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
     src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == src_layout &&
+  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == texture->layout &&
              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == dst_layout) {
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
     src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     dst_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-  } else if (VK_IMAGE_LAYOUT_UNDEFINED == src_layout &&
+  } else if (VK_IMAGE_LAYOUT_UNDEFINED == texture->layout &&
              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == dst_layout) {
     barrier.srcAccessMask = VK_ACCESS_NONE_KHR;
     barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
@@ -54,7 +49,7 @@ owl_vk_skybox_transition(struct owl_vk_renderer *vk, VkImageLayout src_layout,
     src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     dst_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   } else {
-    owl_assert(0 && "Invalid arguments");
+    owl_assert(0 && "Invalid arguments1");
   }
 
   if (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == dst_layout) {
@@ -64,24 +59,25 @@ owl_vk_skybox_transition(struct owl_vk_renderer *vk, VkImageLayout src_layout,
   } else if (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == dst_layout) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   } else {
-    owl_assert(0 && "Invalid arguments");
+    owl_assert(0 && "Invalid arguments2");
   }
 
-  vkCmdPipelineBarrier(vk->im_command_buffer, src_stage, dst_stage, 0, 0, NULL,
-                       0, NULL, 1, &barrier);
+  vkCmdPipelineBarrier(renderer->im_command_buffer, src_stage, dst_stage, 0, 0,
+                       NULL, 0, NULL, 1, &barrier);
+
+  texture->layout = dst_layout;
 }
 
 owl_public owl_code
-owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
+owl_texture_cube_init(struct owl_texture_cube *texture,
+                      struct owl_renderer *renderer,
+                      struct owl_texture_cube_desc *desc) {
   int i;
   int width;
   int height;
   int chans;
   uint64_t image_size;
   uint8_t *data = NULL;
-
-  int ret;
-  char file[OWL_VK_SKYBOX_MAX_PATH_LENGTH];
 
   VkImageCreateInfo image_info;
   VkMemoryRequirements mem_req;
@@ -94,27 +90,16 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
   uint32_t upload_offset;
   uint8_t *upload_data;
   uint64_t upload_size;
-  struct owl_vk_upload_allocation upload_alloc;
+  struct owl_upload_allocation upload_alloc;
 
   VkBufferImageCopy copies[6];
 
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
-  owl_local_persist char const *names[6] = {"left.jpg",  "right.jpg",
-                                            "top.jpg",   "bottom.jpg",
-                                            "front.jpg", "back.jpg"};
+  texture->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-  if (vk->skybox_loaded)
-    owl_vk_skybox_unload(vk);
-
-  ret = snprintf(file, owl_array_size(file), "%s/%s", path, names[0]);
-  if (0 > ret) {
-    code = OWL_ERROR_FATAL;
-    goto out;
-  }
-
-  data = stbi_load(file, &width, &height, &chans, STBI_rgb_alpha);
+  data = stbi_load(desc->files[0], &width, &height, &chans, STBI_rgb_alpha);
   if (!data) {
     code = OWL_ERROR_NOT_FOUND;
     goto out;
@@ -140,29 +125,30 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
   image_info.pQueueFamilyIndices = NULL;
   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-  vk_result = vkCreateImage(vk->device, &image_info, NULL, &vk->skybox_image);
+  vk_result =
+      vkCreateImage(renderer->device, &image_info, NULL, &texture->image);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto out;
   }
 
-  vkGetImageMemoryRequirements(vk->device, vk->skybox_image, &mem_req);
+  vkGetImageMemoryRequirements(renderer->device, texture->image, &mem_req);
 
   mem_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   mem_info.pNext = NULL;
   mem_info.allocationSize = mem_req.size;
-  mem_info.memoryTypeIndex = owl_vk_find_memory_type(
-      vk, mem_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  mem_info.memoryTypeIndex = owl_renderer_find_memory_type(
+      renderer, mem_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   vk_result =
-      vkAllocateMemory(vk->device, &mem_info, NULL, &vk->skybox_memory);
+      vkAllocateMemory(renderer->device, &mem_info, NULL, &texture->memory);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_destroy_image;
   }
 
   vk_result =
-      vkBindImageMemory(vk->device, vk->skybox_image, vk->skybox_memory, 0);
+      vkBindImageMemory(renderer->device, texture->image, texture->memory, 0);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_free_memory;
@@ -171,7 +157,7 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
   image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   image_view_info.pNext = NULL;
   image_view_info.flags = 0;
-  image_view_info.image = vk->skybox_image;
+  image_view_info.image = texture->image;
   image_view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
   image_view_info.format = VK_FORMAT_R8G8B8A8_SRGB;
   image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -184,8 +170,8 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
   image_view_info.subresourceRange.baseArrayLayer = 0;
   image_view_info.subresourceRange.layerCount = 6;
 
-  vk_result = vkCreateImageView(vk->device, &image_view_info, NULL,
-                                &vk->skybox_image_view);
+  vk_result = vkCreateImageView(renderer->device, &image_view_info, NULL,
+                                &texture->image_view);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_free_memory;
@@ -193,11 +179,12 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
 
   set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   set_info.pNext = NULL;
-  set_info.descriptorPool = vk->descriptor_pool;
+  set_info.descriptorPool = renderer->descriptor_pool;
   set_info.descriptorSetCount = 1;
-  set_info.pSetLayouts = &vk->image_fragment_set_layout;
+  set_info.pSetLayouts = &renderer->image_fragment_set_layout;
 
-  vk_result = vkAllocateDescriptorSets(vk->device, &set_info, &vk->skybox_set);
+  vk_result =
+      vkAllocateDescriptorSets(renderer->device, &set_info, &texture->set);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
     goto error_destroy_image_view;
@@ -205,18 +192,18 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
 
   upload_offset = 0;
   image_size = width * height * 4;
-  upload_size = width * height * 4 * owl_array_size(names);
-  upload_data = owl_vk_upload_alloc(vk, upload_size, &upload_alloc);
+  upload_size = width * height * 4 * 6;
+  upload_data =
+      owl_renderer_upload_allocate(renderer, upload_size, &upload_alloc);
   if (!upload_data) {
     code = OWL_ERROR_NO_UPLOAD_MEMORY;
     goto error_free_set;
   }
 
-  for (i = 0; i < (int)owl_array_size(names); ++i) {
+  for (i = 0; i < 6; ++i) {
     if (0 < i) {
-      ret = snprintf(file, OWL_VK_SKYBOX_MAX_PATH_LENGTH, "%s/%s", path,
-                     names[i]);
-      data = stbi_load(file, &width, &height, &chans, STBI_rgb_alpha);
+      data =
+          stbi_load(desc->files[i], &width, &height, &chans, STBI_rgb_alpha);
       if (!data) {
         code = OWL_ERROR_NOT_FOUND;
         goto error_free_upload;
@@ -242,35 +229,35 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
     data = NULL;
   }
 
-  code = owl_vk_begin_im_command_buffer(vk);
+  code = owl_renderer_begin_im_command_buffer(renderer);
   if (code)
     goto error_free_upload;
 
-  owl_vk_skybox_transition(vk, VK_IMAGE_LAYOUT_UNDEFINED,
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  owl_texture_cube_transition(texture, renderer,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-  vkCmdCopyBufferToImage(vk->im_command_buffer, upload_alloc.buffer,
-                         vk->skybox_image,
-                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, copies);
+  vkCmdCopyBufferToImage(renderer->im_command_buffer, upload_alloc.buffer,
+                         texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                         6, copies);
 
-  owl_vk_skybox_transition(vk, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  owl_texture_cube_transition(texture, renderer,
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-  code = owl_vk_end_im_command_buffer(vk);
+  code = owl_renderer_end_im_command_buffer(renderer);
   if (code)
     goto error_free_upload;
 
-  descriptors[0].sampler = vk->linear_sampler;
+  descriptors[0].sampler = renderer->linear_sampler;
   descriptors[0].imageView = NULL;
   descriptors[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
   descriptors[1].sampler = VK_NULL_HANDLE;
-  descriptors[1].imageView = vk->skybox_image_view;
+  descriptors[1].imageView = texture->image_view;
   descriptors[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
   writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   writes[0].pNext = NULL;
-  writes[0].dstSet = vk->skybox_set;
+  writes[0].dstSet = texture->set;
   writes[0].dstBinding = 0;
   writes[0].dstArrayElement = 0;
   writes[0].descriptorCount = 1;
@@ -281,7 +268,7 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
 
   writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   writes[1].pNext = NULL;
-  writes[1].dstSet = vk->skybox_set;
+  writes[1].dstSet = texture->set;
   writes[1].dstBinding = 1;
   writes[1].dstArrayElement = 0;
   writes[1].descriptorCount = 1;
@@ -290,28 +277,28 @@ owl_vk_skybox_load(struct owl_vk_renderer *vk, char const *path) {
   writes[1].pBufferInfo = NULL;
   writes[1].pTexelBufferView = NULL;
 
-  vkUpdateDescriptorSets(vk->device, owl_array_size(writes), writes, 0, NULL);
+  vkUpdateDescriptorSets(renderer->device, owl_array_size(writes), writes, 0,
+                         NULL);
 
-  owl_vk_upload_free(vk, upload_data);
-
-  vk->skybox_loaded = 1;
+  owl_renderer_upload_free(renderer, upload_data);
 
   goto out;
 
 error_free_upload:
-  owl_vk_upload_free(vk, upload_data);
+  owl_renderer_upload_free(renderer, upload_data);
 
 error_free_set:
-  vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1, &vk->skybox_set);
+  vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
+                       &texture->set);
 
 error_destroy_image_view:
-  vkDestroyImageView(vk->device, vk->skybox_image_view, NULL);
+  vkDestroyImageView(renderer->device, texture->image_view, NULL);
 
 error_free_memory:
-  vkFreeMemory(vk->device, vk->skybox_memory, NULL);
+  vkFreeMemory(renderer->device, texture->memory, NULL);
 
 error_destroy_image:
-  vkDestroyImage(vk->device, vk->skybox_image, NULL);
+  vkDestroyImage(renderer->device, texture->image, NULL);
 
 out:
   if (data)
@@ -321,10 +308,11 @@ out:
 }
 
 owl_public void
-owl_vk_skybox_unload(struct owl_vk_renderer *vk) {
-  vk->skybox_loaded = 0;
-  vkFreeDescriptorSets(vk->device, vk->descriptor_pool, 1, &vk->skybox_set);
-  vkDestroyImageView(vk->device, vk->skybox_image_view, NULL);
-  vkFreeMemory(vk->device, vk->skybox_memory, NULL);
-  vkDestroyImage(vk->device, vk->skybox_image, NULL);
+owl_texture_cube_deinit(struct owl_texture_cube *texture,
+                        struct owl_renderer *renderer) {
+  vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
+                       &texture->set);
+  vkDestroyImageView(renderer->device, texture->image_view, NULL);
+  vkFreeMemory(renderer->device, texture->memory, NULL);
+  vkDestroyImage(renderer->device, texture->image, NULL);
 }

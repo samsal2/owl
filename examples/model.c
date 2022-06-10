@@ -7,7 +7,7 @@
 static double prev_time_stamp;
 static double time_stamp;
 static struct owl_plataform *window;
-static struct owl_vk_renderer *renderer;
+static struct owl_renderer *renderer;
 static struct owl_model *model;
 static owl_m4 matrix;
 
@@ -28,14 +28,15 @@ main(void) {
   CHECK(owl_plataform_init(window, 600, 600, "model"));
 
   renderer = malloc(sizeof(*renderer));
-  CHECK(owl_vk_renderer_init(renderer, window));
+  CHECK(owl_renderer_init(renderer, window));
 
   model = malloc(sizeof(*model));
   CHECK(owl_model_init(model, renderer, "../../assets/CesiumMan.gltf"));
 
-  CHECK(owl_vk_font_load(renderer, 64.0F, "../../assets/CascadiaMono.ttf"));
+  CHECK(owl_renderer_load_font(renderer, 64.0F,
+                               "../../assets/CascadiaMono.ttf"));
 
-  CHECK(owl_vk_skybox_load(renderer, "../../assets/skybox"));
+  CHECK(owl_renderer_load_skybox(renderer, "../../assets/skybox"));
 
   owl_m4_identity(matrix);
   owl_m4_translate(offset, matrix);
@@ -54,17 +55,17 @@ main(void) {
     (void)(axis);
 #endif
 
-    CHECK(owl_vk_frame_begin(renderer));
+    CHECK(owl_renderer_begin_frame(renderer));
 
-    owl_vk_draw_skybox(renderer);
+    owl_draw_skybox(renderer);
 
     owl_model_anim_update(model, renderer->frame, time_stamp - prev_time_stamp,
                           0);
 
-    owl_vk_draw_model(renderer, model, matrix);
-    owl_vk_draw_renderer_state(renderer);
+    owl_draw_model(renderer, model, matrix);
+    owl_draw_renderer_state(renderer);
 
-    CHECK(owl_vk_frame_end(renderer));
+    CHECK(owl_renderer_end_frame(renderer));
 
     owl_plataform_poll_events(window);
   }
@@ -72,7 +73,7 @@ main(void) {
   owl_model_deinit(model, renderer);
   free(model);
 
-  owl_vk_renderer_deinit(renderer);
+  owl_renderer_deinit(renderer);
   free(renderer);
 
   owl_plataform_deinit(window);

@@ -2,7 +2,7 @@
 
 #include "owl_internal.h"
 
-#include "owl_vk_renderer.h"
+#include "owl_renderer.h"
 
 /* clang-format off */
 #define GLFW_INCLUDE_NONE
@@ -48,7 +48,7 @@ owl_plataform_deinit(struct owl_plataform *plataform) {
 #define OWL_MAX_INSTANCE_EXTENSIONS 64
 
 owl_public owl_code
-owl_plataform_get_required_vk_instance_extensions(
+owl_plataform_get_required_instance_extensions(
     struct owl_plataform *plataform, uint32_t *num_extensions,
     char const *const **extensions) {
 #if defined(OWL_ENABLE_VALIDATION)
@@ -95,11 +95,11 @@ owl_plataform_poll_events(struct owl_plataform *plataform) {
 
 owl_public owl_code
 owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
-                                    struct owl_vk_renderer *vk) {
+                                    struct owl_renderer *renderer) {
   VkResult vk_result;
 
-  vk_result = glfwCreateWindowSurface(vk->instance, plataform->opaque, NULL,
-                                      &vk->surface);
+  vk_result = glfwCreateWindowSurface(renderer->instance, plataform->opaque,
+                                      NULL, &renderer->surface);
   OWL_DEBUG_LOG("vk_result: %i\n", vk_result);
   if (vk_result)
     return OWL_ERROR_FATAL;

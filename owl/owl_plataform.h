@@ -5,7 +5,7 @@
 
 OWL_BEGIN_DECLS
 
-struct owl_vk_renderer;
+struct owl_renderer;
 
 struct owl_plataform {
   char const *title;
@@ -26,9 +26,9 @@ owl_public void
 owl_plataform_deinit(struct owl_plataform *plataform);
 
 owl_public owl_code
-owl_plataform_get_required_vk_instance_extensions(
-    struct owl_plataform *plataform, uint32_t *num_extensions,
-    char const *const **extensions);
+owl_plataform_get_required_instance_extensions(struct owl_plataform *plataform,
+                                               uint32_t *num_extensions,
+                                               char const *const **extensions);
 
 owl_public char const *
 owl_plataform_get_title(struct owl_plataform const *plataform);
@@ -43,7 +43,7 @@ owl_plataform_get_framebuffer_dimensions(struct owl_plataform const *plataform,
 
 owl_public owl_code
 owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
-                                    struct owl_vk_renderer *vk);
+                                    struct owl_renderer *renderer);
 
 owl_public int
 owl_plataform_should_close(struct owl_plataform *plataform);

@@ -2,8 +2,8 @@
 #define OWL_MODEL_H_
 
 #include "owl_definitions.h"
-#include "owl_vk_renderer.h"
-#include "owl_vk_texture.h"
+#include "owl_renderer.h"
+#include "owl_texture_2d.h"
 
 #include <vulkan/vulkan.h>
 
@@ -85,7 +85,7 @@ struct owl_model_node {
 };
 
 struct owl_model_image {
-  struct owl_vk_texture image;
+  struct owl_texture_2d image;
 };
 
 struct owl_model_texture {
@@ -213,11 +213,11 @@ struct owl_model {
 };
 
 owl_public owl_code
-owl_model_init(struct owl_model *model, struct owl_vk_renderer *vk,
+owl_model_init(struct owl_model *model, struct owl_renderer *renderer,
                char const *path);
 
 owl_public void
-owl_model_deinit(struct owl_model *model, struct owl_vk_renderer *vk);
+owl_model_deinit(struct owl_model *model, struct owl_renderer *renderer);
 
 owl_public owl_code
 owl_model_anim_update(struct owl_model *model, int frame, float dt,

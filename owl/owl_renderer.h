@@ -2,9 +2,9 @@
 #define OWL_VK_RENDERER_H_
 
 #include "owl_definitions.h"
+#include "owl_texture_2d.h"
+#include "owl_texture_cube.h"
 #include "owl_vector.h"
-#include "owl_vk_font.h"
-#include "owl_vk_texture.h"
 
 #include <vulkan/vulkan.h>
 
@@ -18,7 +18,7 @@ OWL_BEGIN_DECLS
 
 struct owl_plataform;
 
-struct owl_vk_attachment {
+struct owl_attachment {
   VkImage image;
   VkDeviceMemory memory;
   VkImageView image_view;
@@ -27,7 +27,37 @@ struct owl_vk_attachment {
 #endif
 };
 
-struct owl_vk_renderer {
+struct owl_frame_allocation {
+  uint32_t offset32;
+  VkDeviceSize offset;
+  VkBuffer buffer;
+  VkDescriptorSet pvm_set;
+  VkDescriptorSet model1_set;
+  VkDescriptorSet model2_set;
+};
+
+struct owl_upload_allocation {
+  VkBuffer buffer;
+};
+
+struct owl_packed_char {
+  uint16_t x0;
+  uint16_t y0;
+  uint16_t x1;
+  uint16_t y1;
+  float x_offset;
+  float y_offset;
+  float x_advance;
+  float x_offset2;
+  float y_offset2;
+};
+
+struct owl_glyph {
+  owl_v3 positions[4];
+  owl_v2 uvs[4];
+};
+
+struct owl_renderer {
   struct owl_plataform *plataform;
 
   owl_m4 projection;
@@ -54,8 +84,8 @@ struct owl_vk_renderer {
   VkSampleCountFlagBits msaa;
   VkFormat depth_format;
 
-  struct owl_vk_attachment color_attachment;
-  struct owl_vk_attachment depth_attachment;
+  struct owl_attachment color_attachment;
+  struct owl_attachment depth_attachment;
 
   VkRenderPass main_render_pass;
   VkRenderPass offscreen_render_pass;
@@ -106,14 +136,11 @@ struct owl_vk_renderer {
   VkSampler linear_sampler;
 
   int skybox_loaded;
-  VkImage skybox_image;
-  VkDeviceMemory skybox_memory;
-  VkImageView skybox_image_view;
-  VkDescriptorSet skybox_set;
+  struct owl_texture_cube skybox;
 
   int font_loaded;
-  struct owl_vk_texture font_atlas;
-  struct owl_vk_packed_char font_chars[OWL_FONT_NUM_CHARS];
+  struct owl_texture_2d font_atlas;
+  struct owl_packed_char font_chars[OWL_FONT_NUM_CHARS];
 
   uint32_t frame;
   uint32_t num_frames;
@@ -143,72 +170,71 @@ struct owl_vk_renderer {
   PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;
 };
 
-/**
- * @brief init a renderer instance
- *
- * @param vk
- * @param plataform
- * @return owl_code
- */
 owl_public owl_code
-owl_vk_renderer_init(struct owl_vk_renderer *vk,
-                     struct owl_plataform *plataform);
+owl_renderer_init(struct owl_renderer *renderer,
+                  struct owl_plataform *plataform);
 
-/**
- * @brief deinit a renderer instance
- *
- * @param vk
- * @return void
- */
 owl_public void
-owl_vk_renderer_deinit(struct owl_vk_renderer *vk);
+owl_renderer_deinit(struct owl_renderer *renderer);
 
-/**
- * @brief
- *
- * @param vk
- * @param size
- * @return owl_code
- */
 owl_public owl_code
-owl_vk_renderer_init_render_buffers(struct owl_vk_renderer *vk, uint64_t size);
+owl_renderer_init_render_buffers(struct owl_renderer *renderer, uint64_t size);
 
-/**
- * @brief
- *
- * @param vk
- * @return void
- */
 owl_public void
-owl_vk_renderer_deinit_render_buffers(struct owl_vk_renderer *vk);
+owl_renderer_deinit_render_buffers(struct owl_renderer *renderer);
 
-/**
- * @brief
- *
- * @param vk
- * @param size
- * @return owl_code
- */
 owl_public owl_code
-owl_vk_renderer_init_upload_buffer(struct owl_vk_renderer *vk, uint64_t size);
+owl_renderer_init_upload_buffer(struct owl_renderer *renderer, uint64_t size);
 
-/**
- * @brief
- *
- * @param vk
- * @return void
- */
 owl_public void
-owl_vk_renderer_deinit_upload_buffer(struct owl_vk_renderer *vk);
+owl_renderer_deinit_upload_buffer(struct owl_renderer *renderer);
 
-/**
- * @brief
- *
- * @param vk
- * @return owl_code
- */
 owl_public owl_code
-owl_vk_renderer_resize_swapchain(struct owl_vk_renderer *vk);
+owl_renderer_resize_swapchain(struct owl_renderer *renderer);
+
+owl_public owl_code
+owl_renderer_begin_frame(struct owl_renderer *renderer);
+
+owl_public owl_code
+owl_renderer_end_frame(struct owl_renderer *renderer);
+
+owl_public void *
+owl_renderer_frame_allocate(struct owl_renderer *renderer, uint64_t size,
+                            struct owl_frame_allocation *alloc);
+
+owl_public void *
+owl_renderer_upload_allocate(struct owl_renderer *renderer, uint64_t size,
+                             struct owl_upload_allocation *alloc);
+
+owl_public void
+owl_renderer_upload_free(struct owl_renderer *renderer, void *ptr);
+
+owl_public owl_code
+owl_renderer_load_font(struct owl_renderer *renderer, uint32_t size,
+                       char const *path);
+
+owl_public void
+owl_renderer_unload_font(struct owl_renderer *renderer);
+
+owl_public owl_code
+owl_renderer_load_skybox(struct owl_renderer *renderer, char const *path);
+
+owl_public void
+owl_renderer_unload_skybox(struct owl_renderer *renderer);
+
+owl_public uint32_t
+owl_renderer_find_memory_type(struct owl_renderer *renderer, uint32_t filter,
+                              uint32_t properties);
+
+owl_public owl_code
+owl_renderer_begin_im_command_buffer(struct owl_renderer *renderer);
+
+owl_public owl_code
+owl_renderer_end_im_command_buffer(struct owl_renderer *renderer);
+
+owl_public owl_code
+owl_renderer_fill_glyph(struct owl_renderer *renderer, char c, owl_v2 offset,
+                        struct owl_glyph *glyph);
 
 OWL_END_DECLS
 
