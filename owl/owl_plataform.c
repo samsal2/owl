@@ -45,24 +45,24 @@ owl_plataform_deinit(struct owl_plataform *plataform) {
   glfwTerminate();
 }
 
-#define OWL_MAX_INSTANCE_EXTENSIONS 64
+#define OWL_MAX_INSTANCE_EXTENSION_COUNT 64
 
 owl_public owl_code
 owl_plataform_get_required_instance_extensions(
-    struct owl_plataform *plataform, uint32_t *num_extensions,
+    struct owl_plataform *plataform, uint32_t *extension_count,
     char const *const **extensions) {
 #if defined(OWL_ENABLE_VALIDATION)
   char const *const *tmp;
-  owl_local_persist char const *names[OWL_MAX_INSTANCE_EXTENSIONS];
+  owl_local_persist char const *names[OWL_MAX_INSTANCE_EXTENSION_COUNT];
 
   owl_code code = OWL_OK;
 
   owl_unused(plataform);
 
-  tmp = glfwGetRequiredInstanceExtensions(num_extensions);
-  if (tmp && OWL_MAX_INSTANCE_EXTENSIONS > (*num_extensions + 1)) {
-    owl_memcpy(names, tmp, *num_extensions * sizeof(*tmp));
-    names[(*num_extensions)++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+  tmp = glfwGetRequiredInstanceExtensions(extension_count);
+  if (tmp && OWL_MAX_INSTANCE_EXTENSION_COUNT > (*extension_count + 1)) {
+    owl_memcpy(names, tmp, *extension_count * sizeof(*tmp));
+    names[(*extension_count)++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
     *extensions = names;
   } else {
     code = OWL_ERROR_NO_SPACE;
@@ -73,7 +73,7 @@ owl_plataform_get_required_instance_extensions(
 #else
   owl_unused(plataform);
 
-  *extensions = glfwGetRequiredInstanceExtensions(num_extensions);
+  *extensions = glfwGetRequiredInstanceExtensions(extension_count);
   if (!*extensions)
     return OWL_ERROR_FATAL;
 

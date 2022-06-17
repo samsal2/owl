@@ -737,7 +737,7 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       info.queueFamilyIndexCount = 0;
       info.pQueueFamilyIndices = NULL;
 
-      for (j = 0; j < OWL_NUM_IN_FLIGHT_FRAMES; ++j) {
+      for (j = 0; j < OWL_IN_FLIGHT_FRAME_COUNT; ++j) {
         OWL_CHECK(vkCreateBuffer(renderer->device, &info, NULL,
                                  &skin->ssbo_buffers[j]));
       }
@@ -757,7 +757,7 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
       info.pNext = NULL;
       info.allocationSize =
-          skin->ssbo_buffer_aligned_size * OWL_NUM_IN_FLIGHT_FRAMES;
+          skin->ssbo_buffer_aligned_size * OWL_IN_FLIGHT_FRAME_COUNT;
       info.memoryTypeIndex = owl_renderer_find_memory_type(
           renderer, requirements.memoryTypeBits,
           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -766,7 +766,7 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       OWL_CHECK(
           vkAllocateMemory(renderer->device, &info, NULL, &skin->ssbo_memory));
 
-      for (j = 0; j < OWL_NUM_IN_FLIGHT_FRAMES; ++j) {
+      for (j = 0; j < OWL_IN_FLIGHT_FRAME_COUNT; ++j) {
         OWL_CHECK(vkBindBufferMemory(
             renderer->device, skin->ssbo_buffers[j], skin->ssbo_memory,
             (uint64_t)j * skin->ssbo_buffer_aligned_size));
@@ -777,13 +777,13 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       VkDescriptorSetLayout layouts[OWL_MODEL_MAX_ITEMS];
       VkDescriptorSetAllocateInfo info;
 
-      for (j = 0; j < (int)renderer->num_frames; ++j)
+      for (j = 0; j < (int)renderer->frame_count; ++j)
         layouts[j] = renderer->ssbo_vertex_set_layout;
 
       info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
       info.pNext = NULL;
       info.descriptorPool = renderer->descriptor_pool;
-      info.descriptorSetCount = renderer->num_frames;
+      info.descriptorSetCount = renderer->frame_count;
       info.pSetLayouts = layouts;
 
       OWL_CHECK(
@@ -791,7 +791,7 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
     }
 
     {
-      for (j = 0; j < (int)renderer->num_frames; ++j) {
+      for (j = 0; j < (int)renderer->frame_count; ++j) {
         VkDescriptorBufferInfo info;
         VkWriteDescriptorSet write;
 
@@ -821,13 +821,13 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       vkMapMemory(renderer->device, skin->ssbo_memory, 0, VK_WHOLE_SIZE, 0,
                   &data);
 
-      for (j = 0; j < (int)renderer->num_frames; ++j) {
+      for (j = 0; j < (int)renderer->frame_count; ++j) {
         uint64_t offset = (uint64_t)j * skin->ssbo_buffer_aligned_size;
         uint8_t *ssbo = &((uint8_t *)data)[offset];
         skin->ssbos[j] = (struct owl_model_skin_ssbo *)ssbo;
       }
 
-      for (j = 0; j < (int)renderer->num_frames; ++j) {
+      for (j = 0; j < (int)renderer->frame_count; ++j) {
         struct owl_model_skin_ssbo *ssbo = skin->ssbos[j];
 
         owl_m4_identity(ssbo->matrix);
@@ -1092,11 +1092,11 @@ owl_model_deinit(struct owl_model *model, struct owl_renderer *renderer) {
     int j;
 
     vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool,
-                         renderer->num_frames, model->skins[i].ssbo_sets);
+                         renderer->frame_count, model->skins[i].ssbo_sets);
 
     vkFreeMemory(renderer->device, model->skins[i].ssbo_memory, NULL);
 
-    for (j = 0; j < (int)renderer->num_frames; ++j) {
+    for (j = 0; j < (int)renderer->frame_count; ++j) {
       vkDestroyBuffer(renderer->device, model->skins[i].ssbo_buffers[j], NULL);
     }
   }

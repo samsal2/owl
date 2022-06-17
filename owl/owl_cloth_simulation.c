@@ -26,9 +26,9 @@ owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
   sim->width = width;
   sim->height = height;
-  sim->num_partices = width * height;
+  sim->particle_count = width * height;
 
-  sim->particles = owl_malloc(sim->num_partices * sizeof(*sim->particles));
+  sim->particles = owl_malloc(sim->particle_count * sizeof(*sim->particles));
   if (!sim->particles) {
     code = OWL_ERROR_NO_MEMORY;
     goto error_deinit_material;
@@ -125,7 +125,7 @@ owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
 owl_public void
 owl_cloth_simulation_update(struct owl_cloth_simulation *sim, float dt) {
   int32_t i;
-  for (i = 0; i < sim->num_partices; ++i) {
+  for (i = 0; i < sim->particle_count; ++i) {
     struct owl_cloth_particle *particle = &sim->particles[i];
     if (particle->movable) {
       int32_t j;
@@ -164,12 +164,22 @@ owl_cloth_simulation_update(struct owl_cloth_simulation *sim, float dt) {
             owl_v3 delta;
             owl_v3 correction;
 
+            /* get the distance between the newly calculated position and the
+             * link position */
             owl_v3_sub(link->position, particle->position, delta);
+
+            /* calculate the contraints factor */
             factor = 1 - (particle->distances[side] / owl_v3_magnitude(delta));
+
+            /* find the correction value */
             owl_v3_scale(delta, factor, correction);
+
+            /* half the correction value and apply it to the particle */
             owl_v3_scale(correction, 0.5F, correction);
             owl_v3_add(particle->position, correction, particle->position);
 
+            /* if the link is movable, apply the other half of the correction
+             */
             if (link->movable)
               owl_v3_sub(link->position, correction, link->position);
           }

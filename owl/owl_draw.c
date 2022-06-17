@@ -472,11 +472,11 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
   int32_t i;
   int32_t j;
 
-  uint32_t num_indices;
+  uint32_t index_count;
   uint32_t *indices;
   struct owl_frame_allocation ialloc;
 
-  uint64_t num_vertices;
+  uint64_t vertex_count;
   struct owl_pcu_vertex *vertices;
   struct owl_frame_allocation valloc;
 
@@ -484,9 +484,9 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
   struct owl_pvm_ubo *ubo;
   struct owl_frame_allocation ualloc;
 
-  num_indices = (sim->width - 1) * (sim->height - 1) * 6;
+  index_count = (sim->width - 1) * (sim->height - 1) * 6;
   indices = owl_renderer_frame_allocate(
-      renderer, num_indices * sizeof(*indices), &ialloc);
+      renderer, index_count * sizeof(*indices), &ialloc);
   if (!indices)
     return OWL_ERROR_NO_FRAME_MEMORY;
 
@@ -504,9 +504,9 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
     }
   }
 
-  num_vertices = sim->width * sim->height;
+  vertex_count = sim->width * sim->height;
   vertices = owl_renderer_frame_allocate(
-      renderer, num_vertices * sizeof(*vertices), &valloc);
+      renderer, vertex_count * sizeof(*vertices), &valloc);
   if (!vertices)
     return OWL_ERROR_NO_FRAME_MEMORY;
 
@@ -549,7 +549,7 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
                           renderer->common_pipeline_layout, 0,
                           owl_array_size(sets), sets, 1, &ualloc.offset32);
 
-  vkCmdDrawIndexed(command_buffer, num_indices, 1, 0, 0, 0);
+  vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
 
   return OWL_OK;
 }

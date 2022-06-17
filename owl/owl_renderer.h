@@ -10,11 +10,11 @@
 
 OWL_BEGIN_DECLS
 
-#define OWL_MAX_SWAPCHAIN_IMAGES 8
-#define OWL_NUM_IN_FLIGHT_FRAMES 3
-#define OWL_MAX_GARBAGE_ITEMS 8
+#define OWL_MAX_SWAPCHAIN_IMAGE_COUNT 8
+#define OWL_IN_FLIGHT_FRAME_COUNT 3
+#define OWL_MAX_GARBAGE_COUNT 8
 #define OWL_FONT_FIRST_CHAR ((int)(' '))
-#define OWL_FONT_NUM_CHARS ((int)('~' - ' '))
+#define OWL_FONT_CHAR_COUNT ((int)('~' - ' '))
 
 struct owl_plataform;
 
@@ -92,10 +92,10 @@ struct owl_renderer {
 
   VkSwapchainKHR swapchain;
   uint32_t image;
-  uint32_t num_images;
-  VkImage images[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkImageView image_views[OWL_MAX_SWAPCHAIN_IMAGES];
-  VkFramebuffer framebuffers[OWL_MAX_SWAPCHAIN_IMAGES];
+  uint32_t image_count;
+  VkImage images[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
+  VkImageView image_views[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
+  VkFramebuffer framebuffers[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
 
   VkCommandPool command_pool;
   VkDescriptorPool descriptor_pool;
@@ -123,7 +123,7 @@ struct owl_renderer {
   VkPipeline model_pipeline;
   VkPipeline skybox_pipeline;
 
-  int upload_buffer_in_use;
+  int32_t upload_buffer_in_use;
   void *upload_buffer_data;
   VkDeviceSize upload_buffer_size;
   VkBuffer upload_buffer;
@@ -131,36 +131,36 @@ struct owl_renderer {
 
   VkSampler linear_sampler;
 
-  int skybox_loaded;
+  int32_t skybox_loaded;
   struct owl_texture_cube skybox;
 
-  int font_loaded;
+  int32_t font_loaded;
   struct owl_texture_2d font_atlas;
-  struct owl_packed_char font_chars[OWL_FONT_NUM_CHARS];
+  struct owl_packed_char font_chars[OWL_FONT_CHAR_COUNT];
 
   uint32_t frame;
-  uint32_t num_frames;
+  uint32_t frame_count;
 
-  VkCommandPool frame_command_pools[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkCommandBuffer frame_command_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkFence frame_in_flight_fences[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkSemaphore frame_acquire_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkSemaphore frame_render_done_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkCommandPool frame_command_pools[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkCommandBuffer frame_command_buffers[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkFence frame_in_flight_fences[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkSemaphore frame_acquire_semaphores[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkSemaphore frame_render_done_semaphores[OWL_IN_FLIGHT_FRAME_COUNT];
 
   VkDeviceSize render_buffer_size;
   VkDeviceSize render_buffer_alignment;
   VkDeviceSize render_buffer_offset;
 
-  void *render_buffer_data[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkBuffer render_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDeviceMemory render_buffer_memories[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDescriptorSet render_buffer_pvm_sets[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDescriptorSet render_buffer_model1_sets[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDescriptorSet render_buffer_model2_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  void *render_buffer_data[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkBuffer render_buffers[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkDeviceMemory render_buffer_memories[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkDescriptorSet render_buffer_pvm_sets[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkDescriptorSet render_buffer_model1_sets[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkDescriptorSet render_buffer_model2_sets[OWL_IN_FLIGHT_FRAME_COUNT];
 
-  owl_vector(VkBuffer) garbage_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
-  owl_vector(VkDeviceMemory) garbage_memories[OWL_NUM_IN_FLIGHT_FRAMES];
-  owl_vector(VkDescriptorSet) garbage_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  owl_vector(VkBuffer) garbage_buffers[OWL_IN_FLIGHT_FRAME_COUNT];
+  owl_vector(VkDeviceMemory) garbage_memories[OWL_IN_FLIGHT_FRAME_COUNT];
+  owl_vector(VkDescriptorSet) garbage_sets[OWL_IN_FLIGHT_FRAME_COUNT];
 
   PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;
   PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;
