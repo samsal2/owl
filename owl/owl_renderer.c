@@ -3371,11 +3371,11 @@ out:
 owl_private void
 owl_renderer_collect_garbage(struct owl_renderer *renderer) {
   uint32_t i;
+  uint32_t const frame = renderer->frame;
 
-  owl_vector(VkBuffer) buffers = renderer->garbage_buffers[renderer->frame];
-  owl_vector(VkDeviceMemory) memories =
-      renderer->garbage_memories[renderer->frame];
-  owl_vector(VkDescriptorSet) sets = renderer->garbage_sets[renderer->frame];
+  owl_vector(VkBuffer) buffers = renderer->garbage_buffers[frame];
+  owl_vector(VkDeviceMemory) memories = renderer->garbage_memories[frame];
+  owl_vector(VkDescriptorSet) sets = renderer->garbage_sets[frame];
 
   for (i = 0; i < owl_vector_size(sets); ++i)
     vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
@@ -3829,12 +3829,13 @@ owl_public uint32_t
 owl_renderer_find_memory_type(struct owl_renderer *renderer, uint32_t filter,
                               uint32_t props) {
   uint32_t ty;
-  VkPhysicalDeviceMemoryProperties memprops;
+  VkPhysicalDeviceMemoryProperties memory_properties;
 
-  vkGetPhysicalDeviceMemoryProperties(renderer->physical_device, &memprops);
+  vkGetPhysicalDeviceMemoryProperties(renderer->physical_device,
+                                      &memory_properties);
 
-  for (ty = 0; ty < memprops.memoryTypeCount; ++ty) {
-    uint32_t cur = memprops.memoryTypes[ty].propertyFlags;
+  for (ty = 0; ty < memory_properties.memoryTypeCount; ++ty) {
+    uint32_t cur = memory_properties.memoryTypes[ty].propertyFlags;
 
     if ((cur & props) && (filter & (1U << ty)))
       return ty;
