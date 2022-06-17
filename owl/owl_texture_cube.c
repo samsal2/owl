@@ -62,8 +62,8 @@ owl_texture_cube_transition(struct owl_texture_cube *texture,
     owl_assert(0 && "Invalid arguments2");
   }
 
-  vkCmdPipelineBarrier(renderer->im_command_buffer, src_stage, dst_stage, 0, 0,
-                       NULL, 0, NULL, 1, &barrier);
+  vkCmdPipelineBarrier(renderer->immediate_command_buffer, src_stage,
+                       dst_stage, 0, 0, NULL, 0, NULL, 1, &barrier);
 
   texture->layout = dst_layout;
 }
@@ -241,21 +241,21 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     }
   }
 
-  code = owl_renderer_begin_im_command_buffer(renderer);
+  code = owl_renderer_begin_immediate_command_buffer(renderer);
   if (code)
     goto error_free_upload;
 
   owl_texture_cube_transition(texture, renderer,
                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-  vkCmdCopyBufferToImage(renderer->im_command_buffer, upload_alloc.buffer,
-                         texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                         6, copies);
+  vkCmdCopyBufferToImage(renderer->immediate_command_buffer,
+                         upload_alloc.buffer, texture->image,
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, copies);
 
   owl_texture_cube_transition(texture, renderer,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-  code = owl_renderer_end_im_command_buffer(renderer);
+  code = owl_renderer_end_immediate_command_buffer(renderer);
   if (code)
     goto error_free_upload;
 

@@ -90,8 +90,8 @@ owl_texture_2d_transition(struct owl_texture_2d *texture,
     owl_assert(0 && "Invalid arguments");
   }
 
-  vkCmdPipelineBarrier(renderer->im_command_buffer, src_stage, dst_Stage, 0, 0,
-                       NULL, 0, NULL, 1, &barrier);
+  vkCmdPipelineBarrier(renderer->immediate_command_buffer, src_stage,
+                       dst_Stage, 0, 0, NULL, 0, NULL, 1, &barrier);
 
   texture->layout = dst;
 }
@@ -134,7 +134,7 @@ owl_texture_2d_generate_mips(struct owl_texture_2d *texture,
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
     vkCmdPipelineBarrier(
-        renderer->im_command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        renderer->immediate_command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
 
     blit.srcOffsets[0].x = 0;
@@ -158,7 +158,7 @@ owl_texture_2d_generate_mips(struct owl_texture_2d *texture,
     blit.dstSubresource.baseArrayLayer = 0;
     blit.dstSubresource.layerCount = 1;
 
-    vkCmdBlitImage(renderer->im_command_buffer, texture->image,
+    vkCmdBlitImage(renderer->immediate_command_buffer, texture->image,
                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->image,
                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
                    VK_FILTER_LINEAR);
@@ -168,7 +168,7 @@ owl_texture_2d_generate_mips(struct owl_texture_2d *texture,
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    vkCmdPipelineBarrier(renderer->im_command_buffer,
+    vkCmdPipelineBarrier(renderer->immediate_command_buffer,
                          VK_PIPELINE_STAGE_TRANSFER_BIT,
                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0,
                          NULL, 1, &barrier);
@@ -181,7 +181,7 @@ owl_texture_2d_generate_mips(struct owl_texture_2d *texture,
   barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
   vkCmdPipelineBarrier(
-      renderer->im_command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+      renderer->immediate_command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
 
   texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -356,7 +356,7 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
     }
   }
 
-  code = owl_renderer_begin_im_command_buffer(renderer);
+  code = owl_renderer_begin_immediate_command_buffer(renderer);
   if (code)
     goto error_free_sets;
   {
@@ -380,14 +380,14 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
       copy.imageExtent.height = (uint32_t)texture->height;
       copy.imageExtent.depth = 1;
 
-      vkCmdCopyBufferToImage(renderer->im_command_buffer, upload_alloc.buffer,
-                             texture->image,
+      vkCmdCopyBufferToImage(renderer->immediate_command_buffer,
+                             upload_alloc.buffer, texture->image,
                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
     }
 
     owl_texture_2d_generate_mips(texture, renderer);
   }
-  code = owl_renderer_end_im_command_buffer(renderer);
+  code = owl_renderer_end_immediate_command_buffer(renderer);
   if (code)
     goto error_free_sets;
 

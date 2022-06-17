@@ -50,7 +50,7 @@ struct owl_pnuujw_vertex {
   owl_v4 weights0;
 };
 
-struct owl_pvm_ubo {
+struct owl_pvm_uniform {
   owl_m4 projection;
   owl_m4 view;
   owl_m4 model;

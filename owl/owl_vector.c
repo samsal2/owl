@@ -13,23 +13,24 @@
   owl_container_of(vec, aligned.data, struct owl_vector)
 
 #define owl_vector_at(head, i)                                                \
-  (&((uint8_t *)(&(head)->aligned.data[0]))[head->esize * (i)])
+  (&((uint8_t *)(&(head)->aligned.data[0]))[head->element_size * (i)])
 
 owl_public owl_code
-owl_vector_init_(void **v, uint64_t cap, uint64_t size, uint64_t esize) {
+owl_vector_init_(void **v, uint64_t capacity, uint64_t size,
+                 uint64_t element_size) {
   struct owl_vector *head;
 
   owl_code code = OWL_OK;
 
-  if (cap < size)
+  if (capacity < size)
     return OWL_ERROR_FATAL; /* not really fatal */
 
   /** FIXME(samuel): calculate the exact size instead */
-  head = owl_malloc(cap * esize + sizeof(struct owl_vector));
+  head = owl_malloc(capacity * element_size + sizeof(struct owl_vector));
   if (head) {
     head->size = size;
-    head->cap = cap;
-    head->esize = esize;
+    head->capacity = capacity;
+    head->element_size = element_size;
 
     *v = owl_vector_data(head);
   } else {
@@ -49,18 +50,18 @@ owl_vector_clear_(void *vec) {
 }
 
 owl_public owl_code
-owl_vector_push_back_(void **vec, void *value, uint64_t esize) {
+owl_vector_push_back_(void **vec, void *value, uint64_t element_size) {
   struct owl_vector *head = owl_vector_head(*vec);
 
-  if (esize != head->esize)
+  if (element_size != head->element_size)
     return OWL_ERROR_FATAL; /* not really fatal, just dumb */
 
-  if (head->cap <= head->size + 1) {
+  if (head->capacity <= head->size + 1) {
     uint64_t size;
     struct owl_vector *new_head;
 
     /** FIXME(samuel): calculate the exact size instead */
-    size = head->esize * head->cap * 2 + sizeof(struct owl_vector);
+    size = head->element_size * head->capacity * 2 + sizeof(struct owl_vector);
 
     new_head = owl_realloc(head, size);
     if (!new_head)
@@ -68,12 +69,12 @@ owl_vector_push_back_(void **vec, void *value, uint64_t esize) {
 
     head = new_head;
 
-    head->cap = head->cap * 2;
+    head->capacity = head->capacity * 2;
 
     *vec = owl_vector_data(head);
   }
 
-  owl_memcpy(owl_vector_at(head, head->size), value, head->esize);
+  owl_memcpy(owl_vector_at(head, head->size), value, head->element_size);
 
   ++head->size;
 

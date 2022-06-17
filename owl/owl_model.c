@@ -525,7 +525,7 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
     goto out;
   }
 
-  code = owl_renderer_begin_im_command_buffer(renderer);
+  code = owl_renderer_begin_immediate_command_buffer(renderer);
   if (code)
     goto out;
 
@@ -540,10 +540,10 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
   copy.dstOffset = 0;
   copy.size = size;
 
-  vkCmdCopyBuffer(renderer->im_command_buffer, allocation.buffer,
+  vkCmdCopyBuffer(renderer->immediate_command_buffer, allocation.buffer,
                   model->vk_vertex_buffer, 1, &copy);
 
-  code = owl_renderer_end_im_command_buffer(renderer);
+  code = owl_renderer_end_immediate_command_buffer(renderer);
   if (code)
     goto out;
 
@@ -592,7 +592,7 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
     goto out;
   }
 
-  code = owl_renderer_begin_im_command_buffer(renderer);
+  code = owl_renderer_begin_immediate_command_buffer(renderer);
   if (code)
     goto out;
 
@@ -607,10 +607,10 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
   copy.dstOffset = 0;
   copy.size = size;
 
-  vkCmdCopyBuffer(renderer->im_command_buffer, allocation.buffer,
+  vkCmdCopyBuffer(renderer->immediate_command_buffer, allocation.buffer,
                   model->vk_index_buffer, 1, &copy);
 
-  code = owl_renderer_end_im_command_buffer(renderer);
+  code = owl_renderer_end_immediate_command_buffer(renderer);
   if (code)
     goto out;
 

@@ -86,7 +86,7 @@ struct owl_renderer {
   VkRenderPass main_render_pass;
   VkRenderPass offscreen_render_pass;
 
-  VkCommandBuffer im_command_buffer;
+  VkCommandBuffer immediate_command_buffer;
 
   VkPresentModeKHR present_mode;
 
@@ -196,11 +196,11 @@ owl_renderer_end_frame(struct owl_renderer *renderer);
 
 owl_public void *
 owl_renderer_frame_allocate(struct owl_renderer *renderer, uint64_t size,
-                            struct owl_frame_allocation *alloc);
+                            struct owl_frame_allocation *allocation);
 
 owl_public void *
 owl_renderer_upload_allocate(struct owl_renderer *renderer, uint64_t size,
-                             struct owl_upload_allocation *alloc);
+                             struct owl_upload_allocation *allocation);
 
 owl_public void
 owl_renderer_upload_free(struct owl_renderer *renderer, void *ptr);
@@ -223,10 +223,10 @@ owl_renderer_find_memory_type(struct owl_renderer *renderer, uint32_t filter,
                               uint32_t properties);
 
 owl_public owl_code
-owl_renderer_begin_im_command_buffer(struct owl_renderer *renderer);
+owl_renderer_begin_immediate_command_buffer(struct owl_renderer *renderer);
 
 owl_public owl_code
-owl_renderer_end_im_command_buffer(struct owl_renderer *renderer);
+owl_renderer_end_immediate_command_buffer(struct owl_renderer *renderer);
 
 owl_public owl_code
 owl_renderer_fill_glyph(struct owl_renderer *renderer, char c, owl_v2 offset,

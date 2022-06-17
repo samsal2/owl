@@ -347,8 +347,8 @@ owl_renderer_ensure_msaa(struct owl_renderer *renderer,
 
 owl_private int
 owl_renderer_validate_physical_device(struct owl_renderer *renderer) {
-  int has_fams;
-  int has_ext_props;
+  int has_families;
+  int has_extensions;
   uint32_t has_formats;
   uint32_t has_modes;
   VkPhysicalDeviceFeatures feats;
@@ -364,12 +364,12 @@ owl_renderer_validate_physical_device(struct owl_renderer *renderer) {
   if (vk_result || !has_modes)
     return 0;
 
-  has_fams = owl_renderer_ensure_queue_families(renderer);
-  if (!has_fams)
+  has_families = owl_renderer_ensure_queue_families(renderer);
+  if (!has_families)
     return 0;
 
-  has_ext_props = owl_renderer_validate_device_extensions(renderer);
-  if (!has_ext_props)
+  has_extensions = owl_renderer_validate_device_extensions(renderer);
+  if (!has_extensions)
     return 0;
 
   vkGetPhysicalDeviceFeatures(renderer->physical_device, &feats);
@@ -1563,7 +1563,7 @@ owl_renderer_deinit_layouts(struct owl_renderer *renderer) {
                                renderer->ubo_vertex_set_layout, NULL);
 }
 
-static owl_code
+owl_private owl_code
 owl_renderer_init_pipelines(struct owl_renderer *renderer) {
   VkResult vk_result;
   owl_code code = OWL_OK;
@@ -2715,7 +2715,7 @@ owl_renderer_init_render_buffers(struct owl_renderer *renderer,
 
     descriptors[0].buffer = renderer->render_buffers[i];
     descriptors[0].offset = 0;
-    descriptors[0].range = sizeof(struct owl_pvm_ubo);
+    descriptors[0].range = sizeof(struct owl_pvm_uniform);
 
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[0].pNext = NULL;
@@ -3106,7 +3106,7 @@ owl_renderer_init(struct owl_renderer *renderer,
   float const far = 10.0F;
 
   renderer->plataform = plataform;
-  renderer->im_command_buffer = VK_NULL_HANDLE;
+  renderer->immediate_command_buffer = VK_NULL_HANDLE;
   renderer->skybox_loaded = 0;
   renderer->font_loaded = 0;
   renderer->upload_buffer_in_use = 0;
@@ -3502,9 +3502,10 @@ owl_renderer_pop_garbage(struct owl_renderer *renderer) {
 
 owl_public void *
 owl_renderer_frame_allocate(struct owl_renderer *renderer, uint64_t size,
-                            struct owl_frame_allocation *alloc) {
-  uint32_t const frame = renderer->frame;
+                            struct owl_frame_allocation *allocation) {
+  uint8_t *data;
   uint64_t const alignment = renderer->render_buffer_alignment;
+  uint32_t frame = renderer->frame;
   uint64_t required = size + renderer->render_buffer_offset;
 
   if (renderer->render_buffer_size < required) {
@@ -3524,18 +3525,20 @@ owl_renderer_frame_allocate(struct owl_renderer *renderer, uint64_t size,
     }
 
     required = size + renderer->render_buffer_offset;
+    frame = renderer->frame;
   }
 
-  alloc->offset32 = (uint32_t)renderer->render_buffer_offset;
-  alloc->offset = renderer->render_buffer_offset;
-  alloc->buffer = renderer->render_buffers[renderer->frame];
-  alloc->pvm_set = renderer->render_buffer_pvm_sets[renderer->frame];
-  alloc->model1_set = renderer->render_buffer_model1_sets[renderer->frame];
-  alloc->model2_set = renderer->render_buffer_model2_sets[renderer->frame];
+  allocation->offset32 = (uint32_t)renderer->render_buffer_offset;
+  allocation->offset = renderer->render_buffer_offset;
+  allocation->buffer = renderer->render_buffers[frame];
+  allocation->pvm_set = renderer->render_buffer_pvm_sets[frame];
+  allocation->model1_set = renderer->render_buffer_model1_sets[frame];
+  allocation->model2_set = renderer->render_buffer_model2_sets[frame];
+  data = renderer->render_buffer_data[frame];
 
   renderer->render_buffer_offset = owl_alignu2(required, alignment);
 
-  return &((uint8_t *)(renderer->render_buffer_data[frame]))[alloc->offset];
+  return &((uint8_t *)(data))[allocation->offset];
 }
 
 #define owl_is_swapchain_out_of_date(vk_result)                               \
@@ -3690,7 +3693,7 @@ owl_renderer_end_frame(struct owl_renderer *renderer) {
 
 owl_public void *
 owl_renderer_upload_allocate(struct owl_renderer *renderer, uint64_t size,
-                             struct owl_upload_allocation *alloc) {
+                             struct owl_upload_allocation *allocation) {
   if (renderer->upload_buffer_in_use)
     return NULL;
 
@@ -3704,7 +3707,7 @@ owl_renderer_upload_allocate(struct owl_renderer *renderer, uint64_t size,
       return NULL;
   }
 
-  alloc->buffer = renderer->upload_buffer;
+  allocation->buffer = renderer->upload_buffer;
   renderer->upload_buffer_in_use = 1;
 
   return renderer->upload_buffer_data;
@@ -3841,13 +3844,13 @@ owl_renderer_find_memory_type(struct owl_renderer *renderer, uint32_t filter,
 }
 
 owl_public owl_code
-owl_renderer_begin_im_command_buffer(struct owl_renderer *renderer) {
+owl_renderer_begin_immediate_command_buffer(struct owl_renderer *renderer) {
   VkCommandBufferAllocateInfo command_buffer_info;
   VkCommandBufferBeginInfo begin_info;
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
-  owl_assert(!renderer->im_command_buffer);
+  owl_assert(!renderer->immediate_command_buffer);
 
   command_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   command_buffer_info.pNext = NULL;
@@ -3856,7 +3859,7 @@ owl_renderer_begin_im_command_buffer(struct owl_renderer *renderer) {
   command_buffer_info.commandBufferCount = 1;
 
   vk_result = vkAllocateCommandBuffers(renderer->device, &command_buffer_info,
-                                       &renderer->im_command_buffer);
+                                       &renderer->immediate_command_buffer);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_FATAL;
     goto out;
@@ -3867,31 +3870,32 @@ owl_renderer_begin_im_command_buffer(struct owl_renderer *renderer) {
   begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   begin_info.pInheritanceInfo = NULL;
 
-  vk_result = vkBeginCommandBuffer(renderer->im_command_buffer, &begin_info);
+  vk_result =
+      vkBeginCommandBuffer(renderer->immediate_command_buffer, &begin_info);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_FATAL;
-    goto error_im_command_buffer_deinit;
+    goto error_immediate_command_buffer_deinit;
   }
 
   goto out;
 
-error_im_command_buffer_deinit:
+error_immediate_command_buffer_deinit:
   vkFreeCommandBuffers(renderer->device, renderer->command_pool, 1,
-                       &renderer->im_command_buffer);
+                       &renderer->immediate_command_buffer);
 
 out:
   return code;
 }
 
 owl_public owl_code
-owl_renderer_end_im_command_buffer(struct owl_renderer *renderer) {
+owl_renderer_end_immediate_command_buffer(struct owl_renderer *renderer) {
   VkSubmitInfo submit_info;
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
-  owl_assert(renderer->im_command_buffer);
+  owl_assert(renderer->immediate_command_buffer);
 
-  vk_result = vkEndCommandBuffer(renderer->im_command_buffer);
+  vk_result = vkEndCommandBuffer(renderer->immediate_command_buffer);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_FATAL;
     goto cleanup;
@@ -3903,7 +3907,7 @@ owl_renderer_end_im_command_buffer(struct owl_renderer *renderer) {
   submit_info.pWaitSemaphores = NULL;
   submit_info.pWaitDstStageMask = NULL;
   submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &renderer->im_command_buffer;
+  submit_info.pCommandBuffers = &renderer->immediate_command_buffer;
   submit_info.signalSemaphoreCount = 0;
   submit_info.pSignalSemaphores = NULL;
 
@@ -3919,11 +3923,11 @@ owl_renderer_end_im_command_buffer(struct owl_renderer *renderer) {
     goto cleanup;
   }
 
-  renderer->im_command_buffer = VK_NULL_HANDLE;
+  renderer->immediate_command_buffer = VK_NULL_HANDLE;
 
 cleanup:
   vkFreeCommandBuffers(renderer->device, renderer->command_pool, 1,
-                       &renderer->im_command_buffer);
+                       &renderer->immediate_command_buffer);
 
   return code;
 }
