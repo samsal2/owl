@@ -610,9 +610,6 @@ owl_renderer_init_attachments(struct owl_renderer *renderer) {
   {
     VkFormatProperties d24_unorm_s8_uint_properties;
     VkFormatProperties d32_sfloat_s8_uint_properties;
-    VkFormatFeatureFlagBits required_features;
-
-    required_features = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
     vkGetPhysicalDeviceFormatProperties(renderer->physical_device,
                                         VK_FORMAT_D24_UNORM_S8_UINT,
@@ -622,10 +619,10 @@ owl_renderer_init_attachments(struct owl_renderer *renderer) {
                                         VK_FORMAT_D32_SFLOAT_S8_UINT,
                                         &d32_sfloat_s8_uint_properties);
 
-    if (required_features &
+    if (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT &
         d24_unorm_s8_uint_properties.optimalTilingFeatures) {
       renderer->depth_format = VK_FORMAT_D24_UNORM_S8_UINT;
-    } else if (required_features &
+    } else if (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT &
                d32_sfloat_s8_uint_properties.optimalTilingFeatures) {
       renderer->depth_format = VK_FORMAT_D32_SFLOAT_S8_UINT;
     } else {
@@ -1576,7 +1573,7 @@ owl_renderer_init_pipelines(struct owl_renderer *renderer) {
     VkViewport viewport;
     VkRect2D scissor;
     VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rast;
+    VkPipelineRasterizationStateCreateInfo rasterization;
     VkPipelineMultisampleStateCreateInfo multisample;
     VkPipelineColorBlendAttachmentState color_attachment;
     VkPipelineColorBlendStateCreateInfo color;
@@ -1641,19 +1638,20 @@ owl_renderer_init_pipelines(struct owl_renderer *renderer) {
     viewport_state.scissorCount = 1;
     viewport_state.pScissors = &scissor;
 
-    rast.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rast.pNext = NULL;
-    rast.flags = 0;
-    rast.depthClampEnable = VK_FALSE;
-    rast.rasterizerDiscardEnable = VK_FALSE;
-    rast.polygonMode = VK_POLYGON_MODE_FILL;
-    rast.cullMode = VK_CULL_MODE_BACK_BIT;
-    rast.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rast.depthBiasEnable = VK_FALSE;
-    rast.depthBiasConstantFactor = 0.0F;
-    rast.depthBiasClamp = 0.0F;
-    rast.depthBiasSlopeFactor = 0.0F;
-    rast.lineWidth = 1.0F;
+    rasterization.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterization.pNext = NULL;
+    rasterization.flags = 0;
+    rasterization.depthClampEnable = VK_FALSE;
+    rasterization.rasterizerDiscardEnable = VK_FALSE;
+    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterization.depthBiasEnable = VK_FALSE;
+    rasterization.depthBiasConstantFactor = 0.0F;
+    rasterization.depthBiasClamp = 0.0F;
+    rasterization.depthBiasSlopeFactor = 0.0F;
+    rasterization.lineWidth = 1.0F;
 
     multisample.sType =
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -1727,7 +1725,7 @@ owl_renderer_init_pipelines(struct owl_renderer *renderer) {
     pipeline_info.pInputAssemblyState = &input_assembly;
     pipeline_info.pTessellationState = NULL;
     pipeline_info.pViewportState = &viewport_state;
-    pipeline_info.pRasterizationState = &rast;
+    pipeline_info.pRasterizationState = &rasterization;
     pipeline_info.pMultisampleState = &multisample;
     pipeline_info.pDepthStencilState = &depth;
     pipeline_info.pColorBlendState = &color;
@@ -2117,7 +2115,7 @@ owl_renderer_init_pipelines(struct owl_renderer *renderer) {
     VkViewport viewport;
     VkRect2D scissor;
     VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rast;
+    VkPipelineRasterizationStateCreateInfo rasterization;
     VkPipelineMultisampleStateCreateInfo multisample;
     VkPipelineColorBlendAttachmentState color_attachment;
     VkPipelineColorBlendStateCreateInfo color;
@@ -2197,19 +2195,20 @@ owl_renderer_init_pipelines(struct owl_renderer *renderer) {
     viewport_state.scissorCount = 1;
     viewport_state.pScissors = &scissor;
 
-    rast.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rast.pNext = NULL;
-    rast.flags = 0;
-    rast.depthClampEnable = VK_FALSE;
-    rast.rasterizerDiscardEnable = VK_FALSE;
-    rast.polygonMode = VK_POLYGON_MODE_FILL;
-    rast.cullMode = VK_CULL_MODE_BACK_BIT;
-    rast.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rast.depthBiasEnable = VK_FALSE;
-    rast.depthBiasConstantFactor = 0.0F;
-    rast.depthBiasClamp = 0.0F;
-    rast.depthBiasSlopeFactor = 0.0F;
-    rast.lineWidth = 1.0F;
+    rasterization.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterization.pNext = NULL;
+    rasterization.flags = 0;
+    rasterization.depthClampEnable = VK_FALSE;
+    rasterization.rasterizerDiscardEnable = VK_FALSE;
+    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterization.depthBiasEnable = VK_FALSE;
+    rasterization.depthBiasConstantFactor = 0.0F;
+    rasterization.depthBiasClamp = 0.0F;
+    rasterization.depthBiasSlopeFactor = 0.0F;
+    rasterization.lineWidth = 1.0F;
 
     multisample.sType =
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -2283,7 +2282,7 @@ owl_renderer_init_pipelines(struct owl_renderer *renderer) {
     pipeline_info.pInputAssemblyState = &input_assembly;
     pipeline_info.pTessellationState = NULL;
     pipeline_info.pViewportState = &viewport_state;
-    pipeline_info.pRasterizationState = &rast;
+    pipeline_info.pRasterizationState = &rasterization;
     pipeline_info.pMultisampleState = &multisample;
     pipeline_info.pDepthStencilState = &depth;
     pipeline_info.pColorBlendState = &color;
@@ -2312,7 +2311,7 @@ owl_renderer_init_pipelines(struct owl_renderer *renderer) {
     VkViewport viewport;
     VkRect2D scissor;
     VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rast;
+    VkPipelineRasterizationStateCreateInfo rasterization;
     VkPipelineMultisampleStateCreateInfo multisample;
     VkPipelineColorBlendAttachmentState color_attachment;
     VkPipelineColorBlendStateCreateInfo color;
@@ -2366,19 +2365,20 @@ owl_renderer_init_pipelines(struct owl_renderer *renderer) {
     viewport_state.scissorCount = 1;
     viewport_state.pScissors = &scissor;
 
-    rast.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rast.pNext = NULL;
-    rast.flags = 0;
-    rast.depthClampEnable = VK_FALSE;
-    rast.rasterizerDiscardEnable = VK_FALSE;
-    rast.polygonMode = VK_POLYGON_MODE_FILL;
-    rast.cullMode = VK_CULL_MODE_BACK_BIT;
-    rast.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rast.depthBiasEnable = VK_FALSE;
-    rast.depthBiasConstantFactor = 0.0F;
-    rast.depthBiasClamp = 0.0F;
-    rast.depthBiasSlopeFactor = 0.0F;
-    rast.lineWidth = 1.0F;
+    rasterization.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterization.pNext = NULL;
+    rasterization.flags = 0;
+    rasterization.depthClampEnable = VK_FALSE;
+    rasterization.rasterizerDiscardEnable = VK_FALSE;
+    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterization.depthBiasEnable = VK_FALSE;
+    rasterization.depthBiasConstantFactor = 0.0F;
+    rasterization.depthBiasClamp = 0.0F;
+    rasterization.depthBiasSlopeFactor = 0.0F;
+    rasterization.lineWidth = 1.0F;
 
     multisample.sType =
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -2452,7 +2452,7 @@ owl_renderer_init_pipelines(struct owl_renderer *renderer) {
     pipeline_info.pInputAssemblyState = &input_assembly;
     pipeline_info.pTessellationState = NULL;
     pipeline_info.pViewportState = &viewport_state;
-    pipeline_info.pRasterizationState = &rast;
+    pipeline_info.pRasterizationState = &rasterization;
     pipeline_info.pMultisampleState = &multisample;
     pipeline_info.pDepthStencilState = &depth;
     pipeline_info.pColorBlendState = &color;
