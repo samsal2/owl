@@ -126,66 +126,64 @@ owl_public void
 owl_cloth_simulation_update(struct owl_cloth_simulation *sim, float dt) {
   int32_t i;
   for (i = 0; i < sim->particle_count; ++i) {
-    int32_t j;
-    owl_v3 delta_position;
     struct owl_cloth_particle *particle = &sim->particles[i];
+    if (particle->movable) {
+      int32_t j;
+      owl_v3 delta_position;
 
-    if (!particle->movable)
-      continue;
+      particle->acceleration[1] += OWL_GRAVITY;
 
-    particle->acceleration[1] += OWL_GRAVITY;
+      /* velocity = position - previous_position */
+      owl_v3_sub(particle->position, particle->previous_position,
+                 particle->velocity);
 
-    /* velocity = position - previous_position */
-    owl_v3_sub(particle->position, particle->previous_position,
-               particle->velocity);
+      /* velocity *= 1.0F - OWL_DAMPING */
+      owl_v3_scale(particle->velocity, 1.0F - OWL_DAMPING, particle->velocity);
 
-    /* velocity *= 1.0F - OWL_DAMPING */
-    owl_v3_scale(particle->velocity, 1.0F - OWL_DAMPING, particle->velocity);
+      /* delta_position = velocity + acceleration * dt */
+      owl_v3_scale(particle->acceleration, dt, delta_position);
+      owl_v3_add(delta_position, particle->velocity, delta_position);
 
-    /* delta_position = velocity + acceleration * dt */
-    owl_v3_scale(particle->acceleration, dt, delta_position);
-    owl_v3_add(delta_position, particle->velocity, delta_position);
+      /* new previous position */
+      owl_v3_copy(particle->position, particle->previous_position);
 
-    /* new previous position */
-    owl_v3_copy(particle->position, particle->previous_position);
+      /* position = previous_position + delta_position */
+      owl_v3_add(particle->previous_position, delta_position,
+                 particle->position);
 
-    /* position = previous_position + delta_position */
-    owl_v3_add(particle->previous_position, delta_position,
-               particle->position);
+      /* reset acceleration */
+      owl_v3_zero(particle->acceleration);
 
-    /* reset acceleration */
-    owl_v3_zero(particle->acceleration);
+      /* contraint the particle links */
+      for (j = 0; j < OWL_STEPS; ++j) {
+        int32_t side;
+        for (side = 0; side < 4; ++side) {
+          struct owl_cloth_particle *link = particle->links[side];
+          if (link) {
+            float factor;
+            owl_v3 delta;
+            owl_v3 correction;
 
-    /* contraint the particle links */
-    for (j = 0; j < OWL_STEPS; ++j) {
-      int32_t side;
-      for (side = 0; side < 4; ++side) {
-        float factor;
-        owl_v3 delta;
-        owl_v3 correction;
-        struct owl_cloth_particle *link = particle->links[side];
+            /* get the distance between the newly calculated position and the
+             * link position */
+            owl_v3_sub(link->position, particle->position, delta);
 
-        if (!link)
-          continue;
+            /* calculate the contraints factor */
+            factor = 1 - (particle->distances[side] / owl_v3_magnitude(delta));
 
-        /* get the distance between the newly calculated position and the
-         * link position */
-        owl_v3_sub(link->position, particle->position, delta);
+            /* find the correction value */
+            owl_v3_scale(delta, factor, correction);
 
-        /* calculate the contraints factor */
-        factor = 1 - (particle->distances[side] / owl_v3_magnitude(delta));
+            /* half the correction value and apply it to the particle */
+            owl_v3_scale(correction, 0.5F, correction);
+            owl_v3_add(particle->position, correction, particle->position);
 
-        /* find the correction value */
-        owl_v3_scale(delta, factor, correction);
-
-        /* half the correction value and apply it to the particle */
-        owl_v3_scale(correction, 0.5F, correction);
-        owl_v3_add(particle->position, correction, particle->position);
-
-        /* if the link is movable, apply the other half of the correction
-         */
-        if (link->movable)
-          owl_v3_sub(link->position, correction, link->position);
+            /* if the link is movable, apply the other half of the correction
+             */
+            if (link->movable)
+              owl_v3_sub(link->position, correction, link->position);
+          }
+        }
       }
     }
   }
