@@ -3853,29 +3853,38 @@ owl_renderer_begin_immediate_command_buffer(struct owl_renderer *renderer) {
 
   owl_assert(!renderer->immediate_command_buffer);
 
-  command_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  command_buffer_info.pNext = NULL;
-  command_buffer_info.commandPool = renderer->command_pool;
-  command_buffer_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  command_buffer_info.commandBufferCount = 1;
+  {
+    VkCommandBufferAllocateInfo command_buffer_info;
 
-  vk_result = vkAllocateCommandBuffers(renderer->device, &command_buffer_info,
-                                       &renderer->immediate_command_buffer);
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto out;
+    command_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    command_buffer_info.pNext = NULL;
+    command_buffer_info.commandPool = renderer->command_pool;
+    command_buffer_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    command_buffer_info.commandBufferCount = 1;
+
+    vk_result =
+        vkAllocateCommandBuffers(renderer->device, &command_buffer_info,
+                                 &renderer->immediate_command_buffer);
+    if (VK_SUCCESS != vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto out;
+    }
   }
 
-  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  begin_info.pNext = NULL;
-  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  begin_info.pInheritanceInfo = NULL;
+  {
+    VkCommandBufferBeginInfo begin_info;
 
-  vk_result =
-      vkBeginCommandBuffer(renderer->immediate_command_buffer, &begin_info);
-  if (VK_SUCCESS != vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_immediate_command_buffer_deinit;
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.pNext = NULL;
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    begin_info.pInheritanceInfo = NULL;
+
+    vk_result =
+        vkBeginCommandBuffer(renderer->immediate_command_buffer, &begin_info);
+    if (VK_SUCCESS != vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_immediate_command_buffer_deinit;
+    }
   }
 
   goto out;
