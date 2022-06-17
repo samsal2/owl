@@ -1,5 +1,5 @@
-#ifndef OWL_VK_DRAW_H_
-#define OWL_VK_DRAW_H_
+#ifndef OWL_DRAW_H_
+#define OWL_DRAW_H_
 
 #include "owl_definitions.h"
 

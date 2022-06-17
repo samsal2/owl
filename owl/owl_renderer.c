@@ -487,24 +487,6 @@ owl_renderer_init_device(struct owl_renderer *renderer) {
   return code;
 }
 
-owl_private owl_code
-owl_renderer_ensure_depth_format(struct owl_renderer *renderer,
-                                 VkFormat format) {
-  VkFormatProperties props;
-  VkFormatFeatureFlagBits req = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
-  owl_code code = OWL_ERROR_NOT_FOUND;
-
-  vkGetPhysicalDeviceFormatProperties(renderer->physical_device, format,
-                                      &props);
-
-  if (props.optimalTilingFeatures & req) {
-    renderer->depth_format = format;
-    code = OWL_OK;
-  }
-
-  return code;
-}
-
 owl_private void
 owl_renderer_deinit_device(struct owl_renderer *renderer) {
   vkDestroyDevice(renderer->device, NULL);
@@ -533,167 +515,224 @@ owl_renderer_clamp_dimensions(struct owl_renderer *renderer) {
   return OWL_OK;
 }
 
-#if 1
-
-struct owl_attachment_desc {
-  VkFormat format;
-  uint32_t width;
-  uint32_t height;
-  VkImageUsageFlagBits usage;
-};
-
-owl_private owl_code
-owl_renderer_init_attachment(struct owl_renderer *renderer,
-                             struct owl_attachment_desc const *desc,
-                             struct owl_attachment *attachment) {
-  VkImageAspectFlagBits aspect;
-  VkImageCreateInfo image_info;
-  VkMemoryRequirements memory_requirements;
-  VkMemoryAllocateInfo memory_info;
-  VkImageViewCreateInfo image_view_info;
-
-  VkResult vk_result = VK_SUCCESS;
-  owl_code code = OWL_OK;
-
-  if (desc->usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-    aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-  else if (desc->usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-    aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-  else
-    return OWL_ERROR_FATAL;
-
-  image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  image_info.pNext = NULL;
-  image_info.flags = 0;
-  image_info.imageType = VK_IMAGE_TYPE_2D;
-  image_info.format = desc->format;
-  image_info.extent.width = desc->width;
-  image_info.extent.height = desc->height;
-  image_info.extent.depth = 1;
-  image_info.mipLevels = 1;
-  image_info.arrayLayers = 1;
-  image_info.samples = renderer->msaa;
-  image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-  image_info.usage = desc->usage;
-  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  image_info.queueFamilyIndexCount = 0;
-  image_info.pQueueFamilyIndices = NULL;
-  image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-  vk_result =
-      vkCreateImage(renderer->device, &image_info, NULL, &attachment->image);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto out;
-  }
-
-  vkGetImageMemoryRequirements(renderer->device, attachment->image,
-                               &memory_requirements);
-
-  memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  memory_info.pNext = NULL;
-  memory_info.allocationSize = memory_requirements.size;
-  memory_info.memoryTypeIndex = owl_renderer_find_memory_type(
-      renderer, memory_requirements.memoryTypeBits,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-  vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
-                               &attachment->memory);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_image;
-  }
-
-  vk_result = vkBindImageMemory(renderer->device, attachment->image,
-                                attachment->memory, 0);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_free_memory;
-  }
-
-  image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  image_view_info.pNext = NULL;
-  image_view_info.flags = 0;
-  image_view_info.image = attachment->image;
-  image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  image_view_info.format = desc->format;
-  image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.subresourceRange.aspectMask = aspect;
-  image_view_info.subresourceRange.baseMipLevel = 0;
-  image_view_info.subresourceRange.levelCount = 1;
-  image_view_info.subresourceRange.baseArrayLayer = 0;
-  image_view_info.subresourceRange.layerCount = 1;
-
-  vk_result = vkCreateImageView(renderer->device, &image_view_info, NULL,
-                                &attachment->image_view);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_free_memory;
-  }
-
-  goto out;
-
-error_free_memory:
-  vkFreeMemory(renderer->device, attachment->memory, NULL);
-
-error_destroy_image:
-  vkDestroyImage(renderer->device, attachment->image, NULL);
-
-out:
-  return code;
-}
-
-owl_private void
-owl_renderer_deinit_attachment(struct owl_renderer *renderer,
-                               struct owl_attachment *attachment) {
-  vkDestroyImageView(renderer->device, attachment->image_view, NULL);
-  vkFreeMemory(renderer->device, attachment->memory, NULL);
-  vkDestroyImage(renderer->device, attachment->image, NULL);
-}
-
-#endif
-
 owl_private owl_code
 owl_renderer_init_attachments(struct owl_renderer *renderer) {
   owl_code code = OWL_OK;
+  VkResult vk_result = VK_SUCCESS;
 
-  struct owl_attachment_desc color_desc;
-  struct owl_attachment_desc depth_desc;
+  {
+    VkImageCreateInfo image_info;
 
-  /** try to ensure a depth format, if both fail early return */
-  if ((code = owl_renderer_ensure_depth_format(renderer,
-                                               VK_FORMAT_D24_UNORM_S8_UINT)) &&
-      (code = owl_renderer_ensure_depth_format(renderer,
-                                               VK_FORMAT_D32_SFLOAT_S8_UINT)))
-    goto out;
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.pNext = NULL;
+    image_info.flags = 0;
+    image_info.imageType = VK_IMAGE_TYPE_2D;
+    image_info.format = renderer->surface_format.format;
+    image_info.extent.width = renderer->width;
+    image_info.extent.height = renderer->height;
+    image_info.extent.depth = 1;
+    image_info.mipLevels = 1;
+    image_info.arrayLayers = 1;
+    image_info.samples = renderer->msaa;
+    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image_info.queueFamilyIndexCount = 0;
+    image_info.pQueueFamilyIndices = NULL;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-  color_desc.format = renderer->surface_format.format;
-  color_desc.width = renderer->width;
-  color_desc.height = renderer->height;
-  color_desc.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    vk_result = vkCreateImage(renderer->device, &image_info, NULL,
+                              &renderer->color_image);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto out;
+    }
+  }
 
-  code = owl_renderer_init_attachment(renderer, &color_desc,
-                                      &renderer->color_attachment);
-  if (code)
-    goto out;
+  {
+    VkMemoryRequirements memory_requirements;
+    VkMemoryAllocateInfo memory_info;
 
-  depth_desc.format = renderer->depth_format;
-  depth_desc.width = renderer->width;
-  depth_desc.height = renderer->height;
-  depth_desc.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    vkGetImageMemoryRequirements(renderer->device, renderer->color_image,
+                                 &memory_requirements);
 
-  code = owl_renderer_init_attachment(renderer, &depth_desc,
-                                      &renderer->depth_attachment);
-  if (code)
-    goto error_deinit_color_attachment;
+    memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory_info.pNext = NULL;
+    memory_info.allocationSize = memory_requirements.size;
+    memory_info.memoryTypeIndex = owl_renderer_find_memory_type(
+        renderer, memory_requirements.memoryTypeBits,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
+                                 &renderer->color_memory);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_color_image;
+    }
+
+    vk_result = vkBindImageMemory(renderer->device, renderer->color_image,
+                                  renderer->color_memory, 0);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_free_color_memory;
+    }
+  }
+
+  {
+    VkImageViewCreateInfo image_view_info;
+
+    image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    image_view_info.pNext = NULL;
+    image_view_info.flags = 0;
+    image_view_info.image = renderer->color_image;
+    image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    image_view_info.format = renderer->surface_format.format;
+    image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    image_view_info.subresourceRange.baseMipLevel = 0;
+    image_view_info.subresourceRange.levelCount = 1;
+    image_view_info.subresourceRange.baseArrayLayer = 0;
+    image_view_info.subresourceRange.layerCount = 1;
+
+    vk_result = vkCreateImageView(renderer->device, &image_view_info, NULL,
+                                  &renderer->color_image_view);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_free_color_memory;
+    }
+  }
+
+  {
+    VkFormatProperties d24_unorm_s8_uint_properties;
+    VkFormatProperties d32_sfloat_s8_uint_properties;
+    VkFormatFeatureFlagBits required_features;
+
+    required_features = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+    vkGetPhysicalDeviceFormatProperties(renderer->physical_device,
+                                        VK_FORMAT_D24_UNORM_S8_UINT,
+                                        &d24_unorm_s8_uint_properties);
+
+    vkGetPhysicalDeviceFormatProperties(renderer->physical_device,
+                                        VK_FORMAT_D32_SFLOAT_S8_UINT,
+                                        &d32_sfloat_s8_uint_properties);
+
+    if (required_features &
+        d24_unorm_s8_uint_properties.optimalTilingFeatures) {
+      renderer->depth_format = VK_FORMAT_D24_UNORM_S8_UINT;
+    } else if (required_features &
+               d32_sfloat_s8_uint_properties.optimalTilingFeatures) {
+      renderer->depth_format = VK_FORMAT_D32_SFLOAT_S8_UINT;
+    } else {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_color_image_view;
+    }
+  }
+
+  {
+
+    VkImageCreateInfo image_info;
+
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.pNext = NULL;
+    image_info.flags = 0;
+    image_info.imageType = VK_IMAGE_TYPE_2D;
+    image_info.format = renderer->depth_format;
+    image_info.extent.width = renderer->width;
+    image_info.extent.height = renderer->height;
+    image_info.extent.depth = 1;
+    image_info.mipLevels = 1;
+    image_info.arrayLayers = 1;
+    image_info.samples = renderer->msaa;
+    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image_info.queueFamilyIndexCount = 0;
+    image_info.pQueueFamilyIndices = NULL;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    vk_result = vkCreateImage(renderer->device, &image_info, NULL,
+                              &renderer->depth_image);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_color_image_view;
+    }
+  }
+
+  {
+    VkMemoryRequirements memory_requirements;
+    VkMemoryAllocateInfo memory_info;
+
+    vkGetImageMemoryRequirements(renderer->device, renderer->depth_image,
+                                 &memory_requirements);
+
+    memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory_info.pNext = NULL;
+    memory_info.allocationSize = memory_requirements.size;
+    memory_info.memoryTypeIndex = owl_renderer_find_memory_type(
+        renderer, memory_requirements.memoryTypeBits,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
+                                 &renderer->depth_memory);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_depth_image;
+    }
+
+    vk_result = vkBindImageMemory(renderer->device, renderer->depth_image,
+                                  renderer->depth_memory, 0);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_free_depth_memory;
+    }
+  }
+  {
+    VkImageViewCreateInfo image_view_info;
+
+    image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    image_view_info.pNext = NULL;
+    image_view_info.flags = 0;
+    image_view_info.image = renderer->depth_image;
+    image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    image_view_info.format = renderer->depth_format;
+    image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    image_view_info.subresourceRange.baseMipLevel = 0;
+    image_view_info.subresourceRange.levelCount = 1;
+    image_view_info.subresourceRange.baseArrayLayer = 0;
+    image_view_info.subresourceRange.layerCount = 1;
+
+    vk_result = vkCreateImageView(renderer->device, &image_view_info, NULL,
+                                  &renderer->depth_image_view);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_free_depth_memory;
+    }
+  }
 
   goto out;
 
-error_deinit_color_attachment:
-  owl_renderer_deinit_attachment(renderer, &renderer->color_attachment);
+error_free_depth_memory:
+  vkFreeMemory(renderer->device, renderer->depth_memory, NULL);
+
+error_destroy_depth_image:
+  vkDestroyImage(renderer->device, renderer->depth_image, NULL);
+
+error_destroy_color_image_view:
+  vkDestroyImageView(renderer->device, renderer->color_image_view, NULL);
+
+error_free_color_memory:
+  vkFreeMemory(renderer->device, renderer->color_memory, NULL);
+
+error_destroy_color_image:
+  vkDestroyImage(renderer->device, renderer->color_image, NULL);
 
 out:
   return code;
@@ -701,8 +740,12 @@ out:
 
 owl_private void
 owl_renderer_deinit_attachments(struct owl_renderer *renderer) {
-  owl_renderer_deinit_attachment(renderer, &renderer->depth_attachment);
-  owl_renderer_deinit_attachment(renderer, &renderer->color_attachment);
+  vkDestroyImageView(renderer->device, renderer->depth_image_view, NULL);
+  vkFreeMemory(renderer->device, renderer->depth_memory, NULL);
+  vkDestroyImage(renderer->device, renderer->depth_image, NULL);
+  vkDestroyImageView(renderer->device, renderer->color_image_view, NULL);
+  vkFreeMemory(renderer->device, renderer->color_memory, NULL);
+  vkDestroyImage(renderer->device, renderer->color_image, NULL);
 }
 
 owl_private owl_code
@@ -774,9 +817,9 @@ owl_renderer_init_render_passes(struct owl_renderer *renderer) {
   dependency.dstSubpass = 0;
   dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.srcAccessMask = 0;
   dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.srcAccessMask = 0;
   dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
   dependency.dependencyFlags = 0;
@@ -804,20 +847,20 @@ owl_renderer_deinit_render_passes(struct owl_renderer *renderer) {
   vkDestroyRenderPass(renderer->device, renderer->main_render_pass, NULL);
 }
 
-#define OWL_VK_MAX_PRESENT_MODES 16
+#define OWL_MAX_PRESENT_MODES 16
 
 owl_private owl_code
 owl_renderer_ensure_present_mode(struct owl_renderer *renderer,
                                  VkPresentModeKHR mode) {
   int i;
   uint32_t num_modes;
-  VkPresentModeKHR modes[OWL_VK_MAX_PRESENT_MODES];
+  VkPresentModeKHR modes[OWL_MAX_PRESENT_MODES];
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_ERROR_NOT_FOUND;
 
   vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR(
       renderer->physical_device, renderer->surface, &num_modes, NULL);
-  if (vk_result || OWL_VK_MAX_PRESENT_MODES <= num_modes)
+  if (vk_result || OWL_MAX_PRESENT_MODES <= num_modes)
     return OWL_ERROR_FATAL;
 
   vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR(
@@ -938,8 +981,8 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
     VkImageView attachments[3];
     VkFramebufferCreateInfo framebuffer_info;
 
-    attachments[0] = renderer->color_attachment.image_view;
-    attachments[1] = renderer->depth_attachment.image_view;
+    attachments[0] = renderer->color_image_view;
+    attachments[1] = renderer->depth_image_view;
     attachments[2] = renderer->image_views[i];
 
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -3443,6 +3486,7 @@ owl_renderer_pop_garbage(struct owl_renderer *renderer) {
 owl_public void *
 owl_renderer_frame_allocate(struct owl_renderer *renderer, uint64_t size,
                             struct owl_frame_allocation *alloc) {
+  uint32_t const frame = renderer->frame;
   uint64_t const alignment = renderer->render_buffer_alignment;
   uint64_t required = size + renderer->render_buffer_offset;
 
@@ -3474,9 +3518,7 @@ owl_renderer_frame_allocate(struct owl_renderer *renderer, uint64_t size,
 
   renderer->render_buffer_offset = owl_alignu2(required, alignment);
 
-  return &(
-      (uint8_t *)(renderer
-                      ->render_buffer_data[renderer->frame]))[alloc->offset];
+  return &((uint8_t *)(renderer->render_buffer_data[frame]))[alloc->offset];
 }
 
 #define owl_is_swapchain_out_of_date(vk_result)                               \

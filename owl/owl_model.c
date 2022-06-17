@@ -10,17 +10,17 @@
 
 #if !defined(NDEBUG)
 
-#define OWL_VK_CHECK(e)                                                       \
+#define OWL_CHECK(e)                                                          \
   do {                                                                        \
     VkResult const result_ = e;                                               \
     if (VK_SUCCESS != result_)                                                \
-      OWL_DEBUG_LOG("OWL_VK_CHECK(%s) result = %i\n", #e, result_);           \
+      OWL_DEBUG_LOG("OWL_CHECK(%s) result = %i\n", #e, result_);              \
     owl_assert(VK_SUCCESS == result_);                                        \
   } while (0)
 
 #else /* NDEBUG */
 
-#define OWL_VK_CHECK(e) e
+#define OWL_CHECK(e) e
 
 #endif /* NDEBUG */
 
@@ -738,8 +738,8 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       info.pQueueFamilyIndices = NULL;
 
       for (j = 0; j < OWL_NUM_IN_FLIGHT_FRAMES; ++j) {
-        OWL_VK_CHECK(vkCreateBuffer(renderer->device, &info, NULL,
-                                    &skin->ssbo_buffers[j]));
+        OWL_CHECK(vkCreateBuffer(renderer->device, &info, NULL,
+                                 &skin->ssbo_buffers[j]));
       }
     }
 
@@ -763,11 +763,11 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-      OWL_VK_CHECK(
+      OWL_CHECK(
           vkAllocateMemory(renderer->device, &info, NULL, &skin->ssbo_memory));
 
       for (j = 0; j < OWL_NUM_IN_FLIGHT_FRAMES; ++j) {
-        OWL_VK_CHECK(vkBindBufferMemory(
+        OWL_CHECK(vkBindBufferMemory(
             renderer->device, skin->ssbo_buffers[j], skin->ssbo_memory,
             (uint64_t)j * skin->ssbo_buffer_aligned_size));
       }
@@ -786,7 +786,7 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       info.descriptorSetCount = renderer->num_frames;
       info.pSetLayouts = layouts;
 
-      OWL_VK_CHECK(
+      OWL_CHECK(
           vkAllocateDescriptorSets(renderer->device, &info, skin->ssbo_sets));
     }
 

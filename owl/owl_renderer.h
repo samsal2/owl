@@ -1,5 +1,5 @@
-#ifndef OWL_VK_RENDERER_H_
-#define OWL_VK_RENDERER_H_
+#ifndef OWL_RENDERER_H_
+#define OWL_RENDERER_H_
 
 #include "owl_definitions.h"
 #include "owl_texture_2d.h"
@@ -17,15 +17,6 @@ OWL_BEGIN_DECLS
 #define OWL_FONT_NUM_CHARS ((int)('~' - ' '))
 
 struct owl_plataform;
-
-struct owl_attachment {
-  VkImage image;
-  VkDeviceMemory memory;
-  VkImageView image_view;
-#if 0
-  VkDescriptorSet set;
-#endif
-};
 
 struct owl_frame_allocation {
   uint32_t offset32;
@@ -84,8 +75,13 @@ struct owl_renderer {
   VkSampleCountFlagBits msaa;
   VkFormat depth_format;
 
-  struct owl_attachment color_attachment;
-  struct owl_attachment depth_attachment;
+  VkImage color_image;
+  VkDeviceMemory color_memory;
+  VkImageView color_image_view;
+
+  VkImage depth_image;
+  VkDeviceMemory depth_memory;
+  VkImageView depth_image_view;
 
   VkRenderPass main_render_pass;
   VkRenderPass offscreen_render_pass;
