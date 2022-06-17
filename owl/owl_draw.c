@@ -1,5 +1,6 @@
 #include "owl_draw.h"
 
+#include "owl_cloth_simulation.h"
 #include "owl_internal.h"
 #include "owl_model.h"
 #include "owl_plataform.h"
@@ -459,6 +460,96 @@ owl_draw_renderer_state(struct owl_renderer *renderer) {
            renderer->render_buffer_size);
 
   owl_draw_text(renderer, buffer, position, color);
+
+  return OWL_OK;
+}
+
+owl_public owl_code
+owl_draw_cloth_simulation(struct owl_renderer *renderer,
+                          struct owl_cloth_simulation *sim) {
+  VkCommandBuffer command_buffer;
+
+  int32_t i;
+  int32_t j;
+
+  uint32_t num_indices;
+  uint32_t *indices;
+  struct owl_frame_allocation ialloc;
+
+  uint64_t num_vertices;
+  struct owl_pcu_vertex *vertices;
+  struct owl_frame_allocation valloc;
+
+  VkDescriptorSet sets[2];
+  struct owl_pvm_ubo *ubo;
+  struct owl_frame_allocation ualloc;
+
+  num_indices = (sim->width - 1) * (sim->height - 1) * 6;
+  indices = owl_renderer_frame_allocate(
+      renderer, num_indices * sizeof(*indices), &ialloc);
+  if (!indices)
+    return OWL_ERROR_NO_FRAME_MEMORY;
+
+  for (i = 0; i < (sim->height - 1); ++i) {
+    for (j = 0; j < (sim->width - 1); ++j) {
+      int32_t const k = i * sim->width + j;
+      int32_t const fixed_k = (i * (sim->width - 1) + j) * 6;
+
+      indices[fixed_k + 0] = k + sim->width;
+      indices[fixed_k + 1] = k + sim->width + 1;
+      indices[fixed_k + 2] = k + 1;
+      indices[fixed_k + 3] = k + 1;
+      indices[fixed_k + 4] = k;
+      indices[fixed_k + 5] = k + sim->width;
+    }
+  }
+
+  num_vertices = sim->width * sim->height;
+  vertices = owl_renderer_frame_allocate(
+      renderer, num_vertices * sizeof(*vertices), &valloc);
+  if (!vertices)
+    return OWL_ERROR_NO_FRAME_MEMORY;
+
+  for (i = 0; i < sim->height; ++i) {
+    for (j = 0; j < sim->width; ++j) {
+      int32_t k = i * sim->width + j;
+
+      struct owl_cloth_particle *particle = &sim->particles[k];
+      struct owl_pcu_vertex *vertex = &vertices[k];
+
+      owl_v3_copy(particle->position, vertex->position);
+      owl_v3_set(vertex->color, 1.0F, 1.0F, 1.0F);
+      vertex->uv[0] = (float)j / (float)sim->width;
+      vertex->uv[1] = (float)i / (float)sim->height;
+    }
+  }
+
+  ubo = owl_renderer_frame_allocate(renderer, sizeof(*ubo), &ualloc);
+  if (!ubo)
+    return OWL_ERROR_NO_FRAME_MEMORY;
+
+  owl_m4_copy(renderer->projection, ubo->projection);
+  owl_m4_copy(renderer->view, ubo->view);
+  owl_m4_copy(sim->model, ubo->model);
+
+  sets[0] = ualloc.pvm_set;
+  sets[1] = sim->material.set;
+
+  command_buffer = renderer->frame_command_buffers[renderer->frame];
+
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    renderer->basic_pipeline);
+
+  vkCmdBindVertexBuffers(command_buffer, 0, 1, &valloc.buffer, &valloc.offset);
+
+  vkCmdBindIndexBuffer(command_buffer, ialloc.buffer, ialloc.offset,
+                       VK_INDEX_TYPE_UINT32);
+
+  vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          renderer->common_pipeline_layout, 0,
+                          owl_array_size(sets), sets, 1, &ualloc.offset32);
+
+  vkCmdDrawIndexed(command_buffer, num_indices, 1, 0, 0, 0);
 
   return OWL_OK;
 }

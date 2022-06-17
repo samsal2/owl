@@ -8,6 +8,7 @@ OWL_BEGIN_DECLS
 struct owl_renderer;
 struct owl_model;
 struct owl_texture_2d;
+struct owl_cloth_simulation;
 
 struct owl_quad {
   /*
@@ -75,8 +76,25 @@ owl_public owl_code
 owl_draw_model(struct owl_renderer *renderer, struct owl_model const *model,
                owl_m4 const matrix);
 
+/**
+ * @brief draws the renderer debug state
+ *
+ * @param renderer
+ * @return owl_code
+ */
 owl_public owl_code
 owl_draw_renderer_state(struct owl_renderer *renderer);
+
+/**
+ * @brief draws the cloth simulation
+ *
+ * @param renderer
+ * @param sim
+ * @return owl_public
+ */
+owl_public owl_code
+owl_draw_cloth_simulation(struct owl_renderer *renderer,
+                          struct owl_cloth_simulation *sim);
 
 OWL_END_DECLS
 

@@ -48,87 +48,89 @@ owl_private char const *const debug_validation_layers[] = {
 
 owl_private owl_code
 owl_renderer_init_instance(struct owl_renderer *renderer) {
-  VkApplicationInfo application_info;
-  VkInstanceCreateInfo instance_info;
+  owl_code code = OWL_OK;
+  VkResult vk_result = VK_SUCCESS;
 
+  {
+    uint32_t num_extensions;
+    char const *const *extensions;
+
+    VkApplicationInfo application_info;
+    VkInstanceCreateInfo instance_info;
+
+    code = owl_plataform_get_required_instance_extensions(
+        renderer->plataform, &num_extensions, &extensions);
+    if (code)
+      return code;
+
+    application_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    application_info.pNext = NULL;
+    application_info.pApplicationName =
+        owl_plataform_get_title(renderer->plataform);
+    application_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    application_info.pEngineName = "No Engine";
+    application_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    application_info.apiVersion = VK_MAKE_VERSION(1, 0, 0);
+
+    instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    instance_info.pNext = NULL;
+    instance_info.flags = 0;
+    instance_info.pApplicationInfo = &application_info;
 #if defined(OWL_ENABLE_VALIDATION)
-  VkDebugUtilsMessengerCreateInfoEXT debug_info;
-#endif
-
-  uint32_t num_extensions;
-  char const *const *extensions;
-
-  VkResult vk_result;
-  owl_code code;
-
-  code = owl_plataform_get_required_instance_extensions(
-      renderer->plataform, &num_extensions, &extensions);
-  if (code)
-    return code;
-
-  application_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  application_info.pNext = NULL;
-  application_info.pApplicationName =
-      owl_plataform_get_title(renderer->plataform);
-  application_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  application_info.pEngineName = "No Engine";
-  application_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  application_info.apiVersion = VK_MAKE_VERSION(1, 0, 0);
-
-  instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-  instance_info.pNext = NULL;
-  instance_info.flags = 0;
-  instance_info.pApplicationInfo = &application_info;
-#if defined(OWL_ENABLE_VALIDATION)
-  instance_info.enabledLayerCount = owl_array_size(debug_validation_layers);
-  instance_info.ppEnabledLayerNames = debug_validation_layers;
+    instance_info.enabledLayerCount = owl_array_size(debug_validation_layers);
+    instance_info.ppEnabledLayerNames = debug_validation_layers;
 #else  /* OWL_ENABLE_VALIDATION */
-  instance_info.enabledLayerCount = 0;
-  instance_info.ppEnabledLayerNames = NULL;
+    instance_info.enabledLayerCount = 0;
+    instance_info.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
-  instance_info.enabledExtensionCount = num_extensions;
-  instance_info.ppEnabledExtensionNames = extensions;
+    instance_info.enabledExtensionCount = num_extensions;
+    instance_info.ppEnabledExtensionNames = extensions;
 
-  vk_result = vkCreateInstance(&instance_info, NULL, &renderer->instance);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto out;
+    vk_result = vkCreateInstance(&instance_info, NULL, &renderer->instance);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto out;
+    }
   }
 
 #if defined(OWL_ENABLE_VALIDATION)
-  renderer->vk_create_debug_utils_messenger_ext =
-      (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-          renderer->instance, "vkCreateDebugUtilsMessengerEXT");
-  if (!renderer->vk_create_debug_utils_messenger_ext) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_instance;
+  {
+    VkDebugUtilsMessengerCreateInfoEXT debug_info;
+
+    renderer->vk_create_debug_utils_messenger_ext =
+        (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+            renderer->instance, "vkCreateDebugUtilsMessengerEXT");
+    if (!renderer->vk_create_debug_utils_messenger_ext) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_instance;
+    }
+
+    renderer->vk_destroy_debug_utils_messenger_ext =
+        (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+            renderer->instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (!renderer->vk_destroy_debug_utils_messenger_ext) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_instance;
+    }
+
+    debug_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debug_info.pNext = NULL;
+    debug_info.flags = 0;
+    debug_info.messageSeverity =
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    debug_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    debug_info.pfnUserCallback = owl_renderer_debug_callback;
+    debug_info.pUserData = renderer;
+
+    vk_result = renderer->vk_create_debug_utils_messenger_ext(
+        renderer->instance, &debug_info, NULL, &renderer->debug);
+    if (vk_result)
+      goto error_destroy_instance;
   }
-
-  renderer->vk_destroy_debug_utils_messenger_ext =
-      (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-          renderer->instance, "vkDestroyDebugUtilsMessengerEXT");
-  if (!renderer->vk_destroy_debug_utils_messenger_ext) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_instance;
-  }
-
-  debug_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-  debug_info.pNext = NULL;
-  debug_info.flags = 0;
-  debug_info.messageSeverity =
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-  debug_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-  debug_info.pfnUserCallback = owl_renderer_debug_callback;
-  debug_info.pUserData = renderer;
-
-  vk_result = renderer->vk_create_debug_utils_messenger_ext(
-      renderer->instance, &debug_info, NULL, &renderer->debug);
-  if (vk_result)
-    goto error_destroy_instance;
 #endif
 
   goto out;
@@ -884,70 +886,74 @@ owl_renderer_ensure_present_mode(struct owl_renderer *renderer,
 owl_private owl_code
 owl_renderer_init_swapchain(struct owl_renderer *renderer) {
   int i;
-  uint32_t families[2];
-  VkSwapchainCreateInfoKHR swapchain_info;
-  VkSurfaceCapabilitiesKHR capabilities;
   VkResult vk_result;
   owl_code code = OWL_OK;
 
   renderer->image = 0;
 
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(renderer->physical_device,
-                                            renderer->surface, &capabilities);
-
   code = owl_renderer_ensure_present_mode(renderer, VK_PRESENT_MODE_FIFO_KHR);
   if (code)
     goto out;
 
-  swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-  swapchain_info.pNext = NULL;
-  swapchain_info.flags = 0;
-  swapchain_info.surface = renderer->surface;
-  swapchain_info.minImageCount = renderer->num_frames;
-  swapchain_info.imageFormat = renderer->surface_format.format;
-  swapchain_info.imageColorSpace = renderer->surface_format.colorSpace;
-  swapchain_info.imageExtent.width = renderer->width;
-  swapchain_info.imageExtent.height = renderer->height;
-  swapchain_info.imageArrayLayers = 1;
-  swapchain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-  swapchain_info.preTransform = capabilities.currentTransform;
-  swapchain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-  swapchain_info.presentMode = renderer->present_mode;
-  swapchain_info.clipped = VK_TRUE;
-  swapchain_info.oldSwapchain = VK_NULL_HANDLE;
+  {
+    uint32_t families[2];
+    VkSwapchainCreateInfoKHR swapchain_info;
+    VkSurfaceCapabilitiesKHR capabilities;
 
-  families[0] = renderer->graphics_queue_family;
-  families[1] = renderer->present_queue_family;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        renderer->physical_device, renderer->surface, &capabilities);
 
-  if (renderer->graphics_queue_family == renderer->present_queue_family) {
-    swapchain_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    swapchain_info.queueFamilyIndexCount = 0;
-    swapchain_info.pQueueFamilyIndices = NULL;
-  } else {
-    swapchain_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-    swapchain_info.queueFamilyIndexCount = 2;
-    swapchain_info.pQueueFamilyIndices = families;
-  }
+    swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapchain_info.pNext = NULL;
+    swapchain_info.flags = 0;
+    swapchain_info.surface = renderer->surface;
+    swapchain_info.minImageCount = renderer->num_frames;
+    swapchain_info.imageFormat = renderer->surface_format.format;
+    swapchain_info.imageColorSpace = renderer->surface_format.colorSpace;
+    swapchain_info.imageExtent.width = renderer->width;
+    swapchain_info.imageExtent.height = renderer->height;
+    swapchain_info.imageArrayLayers = 1;
+    swapchain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    swapchain_info.preTransform = capabilities.currentTransform;
+    swapchain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    swapchain_info.presentMode = renderer->present_mode;
+    swapchain_info.clipped = VK_TRUE;
+    swapchain_info.oldSwapchain = VK_NULL_HANDLE;
 
-  vk_result = vkCreateSwapchainKHR(renderer->device, &swapchain_info, NULL,
-                                   &renderer->swapchain);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto out;
-  }
+    families[0] = renderer->graphics_queue_family;
+    families[1] = renderer->present_queue_family;
 
-  vk_result = vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
-                                      &renderer->num_images, NULL);
-  if (vk_result || OWL_MAX_SWAPCHAIN_IMAGES <= renderer->num_images) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_swapchain;
-  }
+    if (renderer->graphics_queue_family == renderer->present_queue_family) {
+      swapchain_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      swapchain_info.queueFamilyIndexCount = 0;
+      swapchain_info.pQueueFamilyIndices = NULL;
+    } else {
+      swapchain_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+      swapchain_info.queueFamilyIndexCount = 2;
+      swapchain_info.pQueueFamilyIndices = families;
+    }
 
-  vk_result = vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
-                                      &renderer->num_images, renderer->images);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_swapchain;
+    vk_result = vkCreateSwapchainKHR(renderer->device, &swapchain_info, NULL,
+                                     &renderer->swapchain);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto out;
+    }
+
+    vk_result = vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
+                                        &renderer->num_images, NULL);
+    if (vk_result || OWL_MAX_SWAPCHAIN_IMAGES <= renderer->num_images) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_swapchain;
+    }
+
+    vk_result =
+        vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
+                                &renderer->num_images, renderer->images);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_swapchain;
+    }
   }
 
   for (i = 0; i < (int)renderer->num_images; ++i) {
@@ -1037,55 +1043,60 @@ owl_renderer_deinit_swapchain(struct owl_renderer *renderer) {
 
 owl_private owl_code
 owl_renderer_init_pools(struct owl_renderer *renderer) {
-  VkCommandPoolCreateInfo command_pool_info;
-  VkDescriptorPoolSize sizes[6];
-  VkDescriptorPoolCreateInfo descriptor_pool_info;
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
-  command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  command_pool_info.pNext = NULL;
-  command_pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-  command_pool_info.queueFamilyIndex = renderer->graphics_queue_family;
+  {
+    VkCommandPoolCreateInfo command_pool_info;
 
-  vk_result = vkCreateCommandPool(renderer->device, &command_pool_info, NULL,
-                                  &renderer->command_pool);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto out;
+    command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    command_pool_info.pNext = NULL;
+    command_pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    command_pool_info.queueFamilyIndex = renderer->graphics_queue_family;
+
+    vk_result = vkCreateCommandPool(renderer->device, &command_pool_info, NULL,
+                                    &renderer->command_pool);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto out;
+    }
   }
 
-  sizes[0].descriptorCount = 256;
-  sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+  {
+    VkDescriptorPoolSize sizes[6];
+    VkDescriptorPoolCreateInfo descriptor_pool_info;
+    sizes[0].descriptorCount = 256;
+    sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
-  sizes[1].descriptorCount = 256;
-  sizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+    sizes[1].descriptorCount = 256;
+    sizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
 
-  sizes[2].descriptorCount = 256;
-  sizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    sizes[2].descriptorCount = 256;
+    sizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 
-  sizes[3].descriptorCount = 256;
-  sizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    sizes[3].descriptorCount = 256;
+    sizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
-  sizes[4].descriptorCount = 256;
-  sizes[4].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    sizes[4].descriptorCount = 256;
+    sizes[4].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-  sizes[5].descriptorCount = 256;
-  sizes[5].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    sizes[5].descriptorCount = 256;
+    sizes[5].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
-  descriptor_pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  descriptor_pool_info.pNext = NULL;
-  descriptor_pool_info.flags =
-      VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-  descriptor_pool_info.maxSets = 256 * owl_array_size(sizes);
-  descriptor_pool_info.poolSizeCount = owl_array_size(sizes);
-  descriptor_pool_info.pPoolSizes = sizes;
+    descriptor_pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptor_pool_info.pNext = NULL;
+    descriptor_pool_info.flags =
+        VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    descriptor_pool_info.maxSets = 256 * owl_array_size(sizes);
+    descriptor_pool_info.poolSizeCount = owl_array_size(sizes);
+    descriptor_pool_info.pPoolSizes = sizes;
 
-  vk_result = vkCreateDescriptorPool(renderer->device, &descriptor_pool_info,
-                                     NULL, &renderer->descriptor_pool);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_command_pool;
+    vk_result = vkCreateDescriptorPool(renderer->device, &descriptor_pool_info,
+                                       NULL, &renderer->descriptor_pool);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_command_pool;
+    }
   }
 
   goto out;
@@ -2492,62 +2503,67 @@ owl_renderer_deinit_pipelines(struct owl_renderer *renderer) {
 
 owl_public owl_code
 owl_renderer_init_upload_buffer(struct owl_renderer *renderer, uint64_t size) {
-  VkBufferCreateInfo buffer_info;
-  VkMemoryRequirements memory_requirements;
-  VkMemoryAllocateInfo memory_info;
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
   renderer->upload_buffer_data = NULL;
   renderer->upload_buffer_size = size;
 
-  buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  buffer_info.pNext = NULL;
-  buffer_info.flags = 0;
-  buffer_info.size = size;
-  buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  buffer_info.queueFamilyIndexCount = 0;
-  buffer_info.pQueueFamilyIndices = NULL;
+  {
+    VkBufferCreateInfo buffer_info;
+    buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_info.pNext = NULL;
+    buffer_info.flags = 0;
+    buffer_info.size = size;
+    buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    buffer_info.queueFamilyIndexCount = 0;
+    buffer_info.pQueueFamilyIndices = NULL;
 
-  vk_result = vkCreateBuffer(renderer->device, &buffer_info, NULL,
-                             &renderer->upload_buffer);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto out;
+    vk_result = vkCreateBuffer(renderer->device, &buffer_info, NULL,
+                               &renderer->upload_buffer);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto out;
+    }
   }
 
-  vkGetBufferMemoryRequirements(renderer->device, renderer->upload_buffer,
-                                &memory_requirements);
+  {
+    VkMemoryRequirements memory_requirements;
+    VkMemoryAllocateInfo memory_info;
 
-  memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  memory_info.pNext = NULL;
-  memory_info.allocationSize = memory_requirements.size;
-  memory_info.memoryTypeIndex = owl_renderer_find_memory_type(
-      renderer, memory_requirements.memoryTypeBits,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    vkGetBufferMemoryRequirements(renderer->device, renderer->upload_buffer,
+                                  &memory_requirements);
 
-  vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
-                               &renderer->upload_buffer_memory);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_buffer;
-  }
+    memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory_info.pNext = NULL;
+    memory_info.allocationSize = memory_requirements.size;
+    memory_info.memoryTypeIndex = owl_renderer_find_memory_type(
+        renderer, memory_requirements.memoryTypeBits,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-  vk_result = vkBindBufferMemory(renderer->device, renderer->upload_buffer,
-                                 renderer->upload_buffer_memory, 0);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_free_memory;
-  }
+    vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
+                                 &renderer->upload_buffer_memory);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_buffer;
+    }
 
-  vk_result = vkMapMemory(renderer->device, renderer->upload_buffer_memory, 0,
-                          renderer->upload_buffer_size, 0,
-                          &renderer->upload_buffer_data);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_free_memory;
+    vk_result = vkBindBufferMemory(renderer->device, renderer->upload_buffer,
+                                   renderer->upload_buffer_memory, 0);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_free_memory;
+    }
+
+    vk_result = vkMapMemory(renderer->device, renderer->upload_buffer_memory,
+                            0, renderer->upload_buffer_size, 0,
+                            &renderer->upload_buffer_data);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_free_memory;
+    }
   }
 
   goto out;
@@ -2572,7 +2588,6 @@ owl_public owl_code
 owl_renderer_init_render_buffers(struct owl_renderer *renderer,
                                  uint64_t size) {
   int i;
-  VkMemoryRequirements memory_requirements;
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
@@ -2601,13 +2616,15 @@ owl_renderer_init_render_buffers(struct owl_renderer *renderer,
     }
   }
 
-  vkGetBufferMemoryRequirements(renderer->device, renderer->render_buffers[0],
-                                &memory_requirements);
-
-  renderer->render_buffer_alignment = memory_requirements.alignment;
-
   for (i = 0; i < (int)renderer->num_frames; ++i) {
     VkMemoryAllocateInfo memory_info;
+    VkMemoryRequirements memory_requirements;
+
+    vkGetBufferMemoryRequirements(
+        renderer->device, renderer->render_buffers[0], &memory_requirements);
+
+    /* NOTE(samuel): I don't care, take the last one */
+    renderer->render_buffer_alignment = memory_requirements.alignment;
 
     memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memory_info.pNext = NULL;

@@ -4,5 +4,5 @@ macro(add_example name)
   target_compile_options(owl PRIVATE -Wall -Wextra -Werror -pedantic -pedantic -Ofast)
 endmacro()
 
-# add_example(cloth_simulation)
+add_example(cloth_simulation)
 add_example(model)

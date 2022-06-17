@@ -191,22 +191,14 @@ owl_public owl_code
 owl_texture_2d_init(struct owl_texture_2d *texture,
                     struct owl_renderer *renderer,
                     struct owl_texture_2d_desc *desc) {
-  int width;
-  int height;
-  uint32_t mips;
-  enum owl_pixel_format pixel_format;
   uint8_t *upload_data;
+  enum owl_pixel_format pixel_format;
   struct owl_upload_allocation upload_alloc;
-  VkImageCreateInfo image_info;
-  VkMemoryRequirements memory_requirements;
-  VkMemoryAllocateInfo memory_info;
-  VkImageViewCreateInfo image_view_info;
-  VkDescriptorSetAllocateInfo set_info;
-  VkDescriptorImageInfo descriptors[2];
-  VkWriteDescriptorSet writes[2];
-  VkBufferImageCopy copy;
+
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
+
+  texture->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
   switch (desc->source) {
   case OWL_TEXTURE_SOURCE_DATA: {
@@ -214,11 +206,13 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
     uint64_t size;
 
     data = desc->data;
-    width = desc->width;
-    height = desc->height;
+    texture->width = desc->width;
+    texture->height = desc->height;
+    texture->mips = owl_texture_2d_calc_mips(desc->width, desc->height);
     pixel_format = desc->format;
 
-    size = width * height * owl_pixel_format_size(pixel_format);
+    size =
+        texture->width * texture->height * owl_pixel_format_size(pixel_format);
 
     upload_data = owl_renderer_upload_allocate(renderer, size, &upload_alloc);
     if (!upload_data)
@@ -229,13 +223,18 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
   } break;
   case OWL_TEXTURE_SOURCE_FILE: {
     uint8_t *data;
-    int channels;
     uint64_t size;
+    int width;
+    int height;
+    int channels;
 
     data = stbi_load(desc->file, &width, &height, &channels, STBI_rgb_alpha);
     if (!data)
       return OWL_ERROR_NOT_FOUND;
 
+    texture->width = width;
+    texture->height = height;
+    texture->mips = owl_texture_2d_calc_mips(width, height);
     pixel_format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
 
     size = width * height * owl_pixel_format_size(pixel_format);
@@ -253,163 +252,182 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
   } break;
   }
 
-  mips = owl_texture_2d_calc_mips(width, height);
+  {
+    VkImageCreateInfo image_info;
 
-  texture->width = width;
-  texture->height = height;
-  texture->mips = mips;
-  texture->layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.pNext = NULL;
+    image_info.flags = 0;
+    image_info.imageType = VK_IMAGE_TYPE_2D;
+    image_info.format = owl_pixel_format_as_format(pixel_format);
+    image_info.extent.width = texture->width;
+    image_info.extent.height = texture->height;
+    image_info.extent.depth = 1;
+    image_info.mipLevels = texture->mips;
+    image_info.arrayLayers = 1;
+    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                       VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                       VK_IMAGE_USAGE_SAMPLED_BIT;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image_info.queueFamilyIndexCount = 0;
+    image_info.pQueueFamilyIndices = NULL;
+    image_info.initialLayout = texture->layout;
 
-  image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  image_info.pNext = NULL;
-  image_info.flags = 0;
-  image_info.imageType = VK_IMAGE_TYPE_2D;
-  image_info.format = owl_pixel_format_as_format(pixel_format);
-  image_info.extent.width = width;
-  image_info.extent.height = height;
-  image_info.extent.depth = 1;
-  image_info.mipLevels = mips;
-  image_info.arrayLayers = 1;
-  image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-  image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-  image_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                     VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                     VK_IMAGE_USAGE_SAMPLED_BIT;
-  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  image_info.queueFamilyIndexCount = 0;
-  image_info.pQueueFamilyIndices = NULL;
-  image_info.initialLayout = texture->layout;
-
-  vk_result =
-      vkCreateImage(renderer->device, &image_info, NULL, &texture->image);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_free_upload;
+    vk_result =
+        vkCreateImage(renderer->device, &image_info, NULL, &texture->image);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_free_upload;
+    }
   }
 
-  vkGetImageMemoryRequirements(renderer->device, texture->image,
-                               &memory_requirements);
+  {
+    VkMemoryRequirements memory_requirements;
+    VkMemoryAllocateInfo memory_info;
 
-  memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  memory_info.pNext = NULL;
-  memory_info.allocationSize = memory_requirements.size;
-  memory_info.memoryTypeIndex = owl_renderer_find_memory_type(
-      renderer, memory_requirements.memoryTypeBits,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    vkGetImageMemoryRequirements(renderer->device, texture->image,
+                                 &memory_requirements);
 
-  vk_result =
-      vkAllocateMemory(renderer->device, &memory_info, NULL, &texture->memory);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_image;
+    memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory_info.pNext = NULL;
+    memory_info.allocationSize = memory_requirements.size;
+    memory_info.memoryTypeIndex = owl_renderer_find_memory_type(
+        renderer, memory_requirements.memoryTypeBits,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
+                                 &texture->memory);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_image;
+    }
+
+    vk_result = vkBindImageMemory(renderer->device, texture->image,
+                                  texture->memory, 0);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_free_memory;
+    }
   }
 
-  vk_result =
-      vkBindImageMemory(renderer->device, texture->image, texture->memory, 0);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_free_memory;
+  {
+    VkImageViewCreateInfo image_view_info;
+
+    image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    image_view_info.pNext = NULL;
+    image_view_info.flags = 0;
+    image_view_info.image = texture->image;
+    image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    image_view_info.format = owl_pixel_format_as_format(pixel_format);
+    image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    image_view_info.subresourceRange.baseMipLevel = 0;
+    image_view_info.subresourceRange.levelCount = texture->mips;
+    image_view_info.subresourceRange.baseArrayLayer = 0;
+    image_view_info.subresourceRange.layerCount = 1;
+
+    vk_result = vkCreateImageView(renderer->device, &image_view_info, NULL,
+                                  &texture->image_view);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_free_memory;
+    }
   }
 
-  image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  image_view_info.pNext = NULL;
-  image_view_info.flags = 0;
-  image_view_info.image = texture->image;
-  image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  image_view_info.format = owl_pixel_format_as_format(pixel_format);
-  image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  image_view_info.subresourceRange.baseMipLevel = 0;
-  image_view_info.subresourceRange.levelCount = mips;
-  image_view_info.subresourceRange.baseArrayLayer = 0;
-  image_view_info.subresourceRange.layerCount = 1;
+  {
+    VkDescriptorSetAllocateInfo set_info;
 
-  vk_result = vkCreateImageView(renderer->device, &image_view_info, NULL,
-                                &texture->image_view);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_free_memory;
-  }
+    set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    set_info.pNext = NULL;
+    set_info.descriptorPool = renderer->descriptor_pool;
+    set_info.descriptorSetCount = 1;
+    set_info.pSetLayouts = &renderer->image_fragment_set_layout;
 
-  set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  set_info.pNext = NULL;
-  set_info.descriptorPool = renderer->descriptor_pool;
-  set_info.descriptorSetCount = 1;
-  set_info.pSetLayouts = &renderer->image_fragment_set_layout;
-
-  vk_result =
-      vkAllocateDescriptorSets(renderer->device, &set_info, &texture->set);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto error_destroy_image_view;
+    vk_result =
+        vkAllocateDescriptorSets(renderer->device, &set_info, &texture->set);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_image_view;
+    }
   }
 
   code = owl_renderer_begin_im_command_buffer(renderer);
   if (code)
     goto error_free_sets;
+  {
+    owl_texture_2d_transition(texture, renderer,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-  owl_texture_2d_transition(texture, renderer,
-                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    {
+      VkBufferImageCopy copy;
 
-  copy.bufferOffset = 0;
-  copy.bufferRowLength = 0;
-  copy.bufferImageHeight = 0;
-  copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  copy.imageSubresource.mipLevel = 0;
-  copy.imageSubresource.baseArrayLayer = 0;
-  copy.imageSubresource.layerCount = 1;
-  copy.imageOffset.x = 0;
-  copy.imageOffset.y = 0;
-  copy.imageOffset.z = 0;
-  copy.imageExtent.width = (uint32_t)width;
-  copy.imageExtent.height = (uint32_t)height;
-  copy.imageExtent.depth = 1;
+      copy.bufferOffset = 0;
+      copy.bufferRowLength = 0;
+      copy.bufferImageHeight = 0;
+      copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      copy.imageSubresource.mipLevel = 0;
+      copy.imageSubresource.baseArrayLayer = 0;
+      copy.imageSubresource.layerCount = 1;
+      copy.imageOffset.x = 0;
+      copy.imageOffset.y = 0;
+      copy.imageOffset.z = 0;
+      copy.imageExtent.width = (uint32_t)texture->width;
+      copy.imageExtent.height = (uint32_t)texture->height;
+      copy.imageExtent.depth = 1;
 
-  vkCmdCopyBufferToImage(renderer->im_command_buffer, upload_alloc.buffer,
-                         texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                         1, &copy);
+      vkCmdCopyBufferToImage(renderer->im_command_buffer, upload_alloc.buffer,
+                             texture->image,
+                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+    }
 
-  owl_texture_2d_generate_mips(texture, renderer);
-
+    owl_texture_2d_generate_mips(texture, renderer);
+  }
   code = owl_renderer_end_im_command_buffer(renderer);
   if (code)
     goto error_free_sets;
 
-  descriptors[0].sampler = renderer->linear_sampler;
-  descriptors[0].imageView = NULL;
-  descriptors[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  {
+    VkDescriptorImageInfo descriptors[2];
+    VkWriteDescriptorSet writes[2];
 
-  descriptors[1].sampler = VK_NULL_HANDLE;
-  descriptors[1].imageView = texture->image_view;
-  descriptors[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    descriptors[0].sampler = renderer->linear_sampler;
+    descriptors[0].imageView = NULL;
+    descriptors[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-  writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  writes[0].pNext = NULL;
-  writes[0].dstSet = texture->set;
-  writes[0].dstBinding = 0;
-  writes[0].dstArrayElement = 0;
-  writes[0].descriptorCount = 1;
-  writes[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-  writes[0].pImageInfo = &descriptors[0];
-  writes[0].pBufferInfo = NULL;
-  writes[0].pTexelBufferView = NULL;
+    descriptors[1].sampler = VK_NULL_HANDLE;
+    descriptors[1].imageView = texture->image_view;
+    descriptors[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-  writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  writes[1].pNext = NULL;
-  writes[1].dstSet = texture->set;
-  writes[1].dstBinding = 1;
-  writes[1].dstArrayElement = 0;
-  writes[1].descriptorCount = 1;
-  writes[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-  writes[1].pImageInfo = &descriptors[1];
-  writes[1].pBufferInfo = NULL;
-  writes[1].pTexelBufferView = NULL;
+    writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[0].pNext = NULL;
+    writes[0].dstSet = texture->set;
+    writes[0].dstBinding = 0;
+    writes[0].dstArrayElement = 0;
+    writes[0].descriptorCount = 1;
+    writes[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+    writes[0].pImageInfo = &descriptors[0];
+    writes[0].pBufferInfo = NULL;
+    writes[0].pTexelBufferView = NULL;
 
-  vkUpdateDescriptorSets(renderer->device, owl_array_size(writes), writes, 0,
-                         NULL);
+    writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[1].pNext = NULL;
+    writes[1].dstSet = texture->set;
+    writes[1].dstBinding = 1;
+    writes[1].dstArrayElement = 0;
+    writes[1].descriptorCount = 1;
+    writes[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    writes[1].pImageInfo = &descriptors[1];
+    writes[1].pBufferInfo = NULL;
+    writes[1].pTexelBufferView = NULL;
+
+    vkUpdateDescriptorSets(renderer->device, owl_array_size(writes), writes, 0,
+                           NULL);
+  }
 
   owl_renderer_upload_free(renderer, upload_data);
 
