@@ -3846,8 +3846,6 @@ owl_renderer_find_memory_type(struct owl_renderer *renderer, uint32_t filter,
 
 owl_public owl_code
 owl_renderer_begin_immediate_command_buffer(struct owl_renderer *renderer) {
-  VkCommandBufferAllocateInfo command_buffer_info;
-  VkCommandBufferBeginInfo begin_info;
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
