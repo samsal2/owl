@@ -39,12 +39,12 @@ struct owl_texture_2d_desc {
   enum owl_pixel_format format;
 };
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_texture_2d_init(struct owl_texture_2d *texture,
                     struct owl_renderer *renderer,
                     struct owl_texture_2d_desc *desc);
 
-owl_public void
+OWL_PUBLIC void
 owl_texture_2d_deinit(struct owl_texture_2d *texture,
                       struct owl_renderer *renderer);
 

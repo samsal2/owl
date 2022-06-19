@@ -13,10 +13,10 @@
 
 OWL_BEGIN_DECLS
 
-#define owl_public extern
-#define owl_global static
-#define owl_private static
-#define owl_local_persist static
+#define OWL_PUBLIC extern
+#define OWL_GLOBAL static
+#define OWL_PRIVATE static
+#define OWL_LOCAL_PERSIST static
 
 typedef float owl_v2[2];
 typedef float owl_v3[3];

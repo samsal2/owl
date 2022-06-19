@@ -18,7 +18,7 @@ OWL_BEGIN_DECLS
 
 struct owl_plataform;
 
-struct owl_frame_allocation {
+struct owl_renderer_frame_allocation {
   uint32_t offset32;
   VkDeviceSize offset;
   VkBuffer buffer;
@@ -27,7 +27,7 @@ struct owl_frame_allocation {
   VkDescriptorSet model2_set;
 };
 
-struct owl_upload_allocation {
+struct owl_renderer_upload_allocation {
   VkBuffer buffer;
 };
 
@@ -143,9 +143,9 @@ struct owl_renderer {
 
   VkCommandPool frame_command_pools[OWL_IN_FLIGHT_FRAME_COUNT];
   VkCommandBuffer frame_command_buffers[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkFence frame_in_flight_fences[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkSemaphore frame_acquire_semaphores[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkSemaphore frame_render_done_semaphores[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkFence in_flight_fences[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkSemaphore acquire_semaphores[OWL_IN_FLIGHT_FRAME_COUNT];
+  VkSemaphore render_done_semaphores[OWL_IN_FLIGHT_FRAME_COUNT];
 
   VkDeviceSize render_buffer_size;
   VkDeviceSize render_buffer_alignment;
@@ -158,79 +158,80 @@ struct owl_renderer {
   VkDescriptorSet render_buffer_model1_sets[OWL_IN_FLIGHT_FRAME_COUNT];
   VkDescriptorSet render_buffer_model2_sets[OWL_IN_FLIGHT_FRAME_COUNT];
 
-  owl_vector(VkBuffer) garbage_buffers[OWL_IN_FLIGHT_FRAME_COUNT];
-  owl_vector(VkDeviceMemory) garbage_memories[OWL_IN_FLIGHT_FRAME_COUNT];
-  owl_vector(VkDescriptorSet) garbage_sets[OWL_IN_FLIGHT_FRAME_COUNT];
+  OWL_VECTOR(VkBuffer) garbage_buffers[OWL_IN_FLIGHT_FRAME_COUNT];
+  OWL_VECTOR(VkDeviceMemory) garbage_memories[OWL_IN_FLIGHT_FRAME_COUNT];
+  OWL_VECTOR(VkDescriptorSet) garbage_sets[OWL_IN_FLIGHT_FRAME_COUNT];
 
   PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;
   PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;
 };
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_renderer_init(struct owl_renderer *renderer,
                   struct owl_plataform *plataform);
 
-owl_public void
+OWL_PUBLIC void
 owl_renderer_deinit(struct owl_renderer *renderer);
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_renderer_init_render_buffers(struct owl_renderer *renderer, uint64_t size);
 
-owl_public void
+OWL_PUBLIC void
 owl_renderer_deinit_render_buffers(struct owl_renderer *renderer);
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_renderer_init_upload_buffer(struct owl_renderer *renderer, uint64_t size);
 
-owl_public void
+OWL_PUBLIC void
 owl_renderer_deinit_upload_buffer(struct owl_renderer *renderer);
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_renderer_resize_swapchain(struct owl_renderer *renderer);
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_renderer_begin_frame(struct owl_renderer *renderer);
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_renderer_end_frame(struct owl_renderer *renderer);
 
-owl_public void *
+OWL_PUBLIC void *
 owl_renderer_frame_allocate(struct owl_renderer *renderer, uint64_t size,
-                            struct owl_frame_allocation *allocation);
+                            struct owl_renderer_frame_allocation *allocation);
 
-owl_public void *
-owl_renderer_upload_allocate(struct owl_renderer *renderer, uint64_t size,
-                             struct owl_upload_allocation *allocation);
+OWL_PUBLIC void *
+owl_renderer_upload_allocate(
+    struct owl_renderer *renderer, uint64_t size,
+    struct owl_renderer_upload_allocation *allocation);
 
-owl_public void
+OWL_PUBLIC void
 owl_renderer_upload_free(struct owl_renderer *renderer, void *ptr);
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_renderer_load_font(struct owl_renderer *renderer, uint32_t size,
                        char const *path);
 
-owl_public void
+OWL_PUBLIC void
 owl_renderer_unload_font(struct owl_renderer *renderer);
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_renderer_load_skybox(struct owl_renderer *renderer, char const *path);
 
-owl_public void
+OWL_PUBLIC void
 owl_renderer_unload_skybox(struct owl_renderer *renderer);
 
-owl_public uint32_t
+OWL_PUBLIC uint32_t
 owl_renderer_find_memory_type(struct owl_renderer *renderer, uint32_t filter,
                               uint32_t properties);
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_renderer_begin_immediate_command_buffer(struct owl_renderer *renderer);
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_renderer_end_immediate_command_buffer(struct owl_renderer *renderer);
 
-owl_public owl_code
-owl_renderer_fill_glyph(struct owl_renderer *renderer, char c, owl_v2 offset,
-                        struct owl_glyph *glyph);
+OWL_PUBLIC owl_code
+owl_renderer_fill_glyph(struct owl_renderer *renderer, char letter,
+                        owl_v2 offset, struct owl_glyph *glyph);
 
 OWL_END_DECLS
 

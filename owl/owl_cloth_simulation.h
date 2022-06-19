@@ -30,16 +30,16 @@ struct owl_cloth_simulation {
   struct owl_texture_2d material;
 };
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
                           struct owl_renderer *renderer, int32_t width,
                           int32_t height, char const *material);
 
-owl_public void
+OWL_PUBLIC void
 owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
                             struct owl_renderer *renderer);
 
-owl_public void
+OWL_PUBLIC void
 owl_cloth_simulation_update(struct owl_cloth_simulation *sim, float dt);
 
 OWL_END_DECLS

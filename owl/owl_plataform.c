@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_plataform_init(struct owl_plataform *plataform, int w, int h,
                    char const *title) {
   int res;
@@ -39,7 +39,7 @@ owl_plataform_init(struct owl_plataform *plataform, int w, int h,
   return code;
 }
 
-owl_public void
+OWL_PUBLIC void
 owl_plataform_deinit(struct owl_plataform *plataform) {
   glfwDestroyWindow(plataform->opaque);
   glfwTerminate();
@@ -47,21 +47,21 @@ owl_plataform_deinit(struct owl_plataform *plataform) {
 
 #define OWL_MAX_INSTANCE_EXTENSION_COUNT 64
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_plataform_get_required_instance_extensions(
     struct owl_plataform *plataform, uint32_t *extension_count,
     char const *const **extensions) {
 #if defined(OWL_ENABLE_VALIDATION)
   char const *const *tmp;
-  owl_local_persist char const *names[OWL_MAX_INSTANCE_EXTENSION_COUNT];
+  OWL_LOCAL_PERSIST char const *names[OWL_MAX_INSTANCE_EXTENSION_COUNT];
 
   owl_code code = OWL_OK;
 
-  owl_unused(plataform);
+  OWL_UNUSED(plataform);
 
   tmp = glfwGetRequiredInstanceExtensions(extension_count);
   if (tmp && OWL_MAX_INSTANCE_EXTENSION_COUNT > (*extension_count + 1)) {
-    owl_memcpy(names, tmp, *extension_count * sizeof(*tmp));
+    OWL_MEMCPY(names, tmp, *extension_count * sizeof(*tmp));
     names[(*extension_count)++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
     *extensions = names;
   } else {
@@ -71,7 +71,7 @@ owl_plataform_get_required_instance_extensions(
   return code;
 
 #else
-  owl_unused(plataform);
+  OWL_UNUSED(plataform);
 
   *extensions = glfwGetRequiredInstanceExtensions(extension_count);
   if (!*extensions)
@@ -81,19 +81,19 @@ owl_plataform_get_required_instance_extensions(
 #endif
 }
 
-owl_public int
+OWL_PUBLIC int
 owl_plataform_should_close(struct owl_plataform *plataform) {
   return glfwWindowShouldClose(plataform->opaque);
 }
 
-owl_public void
+OWL_PUBLIC void
 owl_plataform_poll_events(struct owl_plataform *plataform) {
-  owl_unused(plataform);
+  OWL_UNUSED(plataform);
 
   glfwPollEvents();
 }
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
                                     struct owl_renderer *renderer) {
   VkResult vk_result;
@@ -107,7 +107,7 @@ owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
   return OWL_OK;
 }
 
-owl_public void
+OWL_PUBLIC void
 owl_plataform_get_window_dimensions(struct owl_plataform const *plataform,
                                     uint32_t *width, uint32_t *height) {
   int internal_width;
@@ -119,7 +119,7 @@ owl_plataform_get_window_dimensions(struct owl_plataform const *plataform,
   *height = internal_height;
 }
 
-owl_public void
+OWL_PUBLIC void
 owl_plataform_get_framebuffer_dimensions(struct owl_plataform const *plataform,
                                          uint32_t *width, uint32_t *height) {
   int internal_width;
@@ -131,19 +131,19 @@ owl_plataform_get_framebuffer_dimensions(struct owl_plataform const *plataform,
   *height = internal_height;
 }
 
-owl_public double
+OWL_PUBLIC double
 owl_plataform_get_time(struct owl_plataform *plataform) {
-  owl_unused(plataform);
+  OWL_UNUSED(plataform);
 
   return glfwGetTime();
 }
 
-owl_public char const *
+OWL_PUBLIC char const *
 owl_plataform_get_title(struct owl_plataform const *plataform) {
   return plataform->title;
 }
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_plataform_load_file(char const *path, struct owl_plataform_file *file) {
   FILE *fp = NULL;
   owl_code code = OWL_OK;
@@ -154,7 +154,7 @@ owl_plataform_load_file(char const *path, struct owl_plataform_file *file) {
     file->size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
 
-    file->data = owl_malloc(file->size * sizeof(char));
+    file->data = OWL_MALLOC(file->size * sizeof(char));
     if (file->data)
       fread(file->data, file->size, 1, fp);
     else
@@ -170,7 +170,7 @@ owl_plataform_load_file(char const *path, struct owl_plataform_file *file) {
   return code;
 }
 
-owl_public void
+OWL_PUBLIC void
 owl_plataform_unload_file(struct owl_plataform_file *file) {
-  owl_free(file->data);
+  OWL_FREE(file->data);
 }

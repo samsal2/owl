@@ -4,7 +4,7 @@
 #include "owl_renderer.h"
 #include "stb_image.h"
 
-owl_private void
+OWL_PRIVATE void
 owl_texture_cube_transition(struct owl_texture_cube *texture,
                             struct owl_renderer *renderer,
                             VkImageLayout dst_layout) {
@@ -49,7 +49,7 @@ owl_texture_cube_transition(struct owl_texture_cube *texture,
     src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     dst_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   } else {
-    owl_assert(0 && "Invalid arguments1");
+    OWL_ASSERT(0 && "Invalid arguments1");
   }
 
   if (VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == dst_layout) {
@@ -59,7 +59,7 @@ owl_texture_cube_transition(struct owl_texture_cube *texture,
   } else if (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == dst_layout) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   } else {
-    owl_assert(0 && "Invalid arguments2");
+    OWL_ASSERT(0 && "Invalid arguments2");
   }
 
   vkCmdPipelineBarrier(renderer->immediate_command_buffer, src_stage,
@@ -68,7 +68,7 @@ owl_texture_cube_transition(struct owl_texture_cube *texture,
   texture->layout = dst_layout;
 }
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_texture_cube_init(struct owl_texture_cube *texture,
                       struct owl_renderer *renderer,
                       struct owl_texture_cube_desc *desc) {
@@ -80,7 +80,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
   VkBufferImageCopy copies[6];
 
   uint8_t *upload_data;
-  struct owl_upload_allocation upload_alloc;
+  struct owl_renderer_upload_allocation upload_alloc;
 
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
@@ -116,8 +116,8 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     image_info.pQueueFamilyIndices = NULL;
     image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    vk_result =
-        vkCreateImage(renderer->device, &image_info, NULL, &texture->image);
+    vk_result = vkCreateImage(renderer->device, &image_info, NULL,
+                              &texture->image);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto out;
@@ -188,8 +188,8 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     set_info.descriptorSetCount = 1;
     set_info.pSetLayouts = &renderer->image_fragment_set_layout;
 
-    vk_result =
-        vkAllocateDescriptorSets(renderer->device, &set_info, &texture->set);
+    vk_result = vkAllocateDescriptorSets(renderer->device, &set_info,
+                                         &texture->set);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image_view;
@@ -204,8 +204,8 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     upload_offset = 0;
     image_size = width * height * 4;
     upload_size = width * height * 4 * 6;
-    upload_data =
-        owl_renderer_upload_allocate(renderer, upload_size, &upload_alloc);
+    upload_data = owl_renderer_upload_allocate(renderer, upload_size,
+                                               &upload_alloc);
     if (!upload_data) {
       code = OWL_ERROR_NO_UPLOAD_MEMORY;
       goto error_free_set;
@@ -213,8 +213,8 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
 
     for (i = 0; i < 6; ++i) {
       if (0 < i) {
-        data =
-            stbi_load(desc->files[i], &width, &height, &chans, STBI_rgb_alpha);
+        data = stbi_load(desc->files[i], &width, &height, &chans,
+                         STBI_rgb_alpha);
         if (!data) {
           code = OWL_ERROR_NOT_FOUND;
           goto error_free_upload;
@@ -235,7 +235,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
       copies[i].imageExtent.height = (uint32_t)height;
       copies[i].imageExtent.depth = 1;
 
-      owl_memcpy(upload_data + upload_offset, data, image_size);
+      OWL_MEMCPY(upload_data + upload_offset, data, image_size);
       stbi_image_free(data);
       data = NULL;
     }
@@ -293,7 +293,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     writes[1].pBufferInfo = NULL;
     writes[1].pTexelBufferView = NULL;
 
-    vkUpdateDescriptorSets(renderer->device, owl_array_size(writes), writes, 0,
+    vkUpdateDescriptorSets(renderer->device, OWL_ARRAY_SIZE(writes), writes, 0,
                            NULL);
   }
 
@@ -324,7 +324,7 @@ out:
   return code;
 }
 
-owl_public void
+OWL_PUBLIC void
 owl_texture_cube_deinit(struct owl_texture_cube *texture,
                         struct owl_renderer *renderer) {
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,

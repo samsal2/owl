@@ -38,7 +38,7 @@ struct owl_quad {
  * @param matrix the model matrix
  * @return owl_code
  */
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
               owl_m4 const matrix);
 
@@ -48,7 +48,7 @@ owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
  * @param vk the renderer instance created with owl_renderer_init(...)
  * @return owl_code
  */
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_draw_skybox(struct owl_renderer *renderer);
 
 /**
@@ -60,7 +60,7 @@ owl_draw_skybox(struct owl_renderer *renderer);
  * @param color  the color of the text in normalized values
  * @return owl_code
  */
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_draw_text(struct owl_renderer *renderer, char const *text,
               owl_v3 const position, owl_v3 const color);
 
@@ -72,7 +72,7 @@ owl_draw_text(struct owl_renderer *renderer, char const *text,
  * @param matrix the model matrix
  * @return owl_code
  */
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_draw_model(struct owl_renderer *renderer, struct owl_model const *model,
                owl_m4 const matrix);
 
@@ -82,7 +82,7 @@ owl_draw_model(struct owl_renderer *renderer, struct owl_model const *model,
  * @param renderer
  * @return owl_code
  */
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_draw_renderer_state(struct owl_renderer *renderer);
 
 /**
@@ -90,9 +90,9 @@ owl_draw_renderer_state(struct owl_renderer *renderer);
  *
  * @param renderer
  * @param sim
- * @return owl_public
+ * @return OWL_PUBLIC
  */
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_draw_cloth_simulation(struct owl_renderer *renderer,
                           struct owl_cloth_simulation *sim);
 

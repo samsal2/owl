@@ -18,34 +18,34 @@ struct owl_vector {
   union owl_vector_aligned_data aligned;
 };
 
-#define owl_vector(type) type *
+#define OWL_VECTOR(type) type *
 
-#define owl_vector_init(vec, capacity, size)                                  \
+#define OWL_VECTOR_INIT(vec, capacity, size)                                  \
   owl_vector_init_((void **)(vec), capacity, size, sizeof(**(vec)))
 
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_vector_init_(void **vec, uint64_t capacity, uint64_t size,
                  uint64_t element_size);
 
-#define owl_vector_size(vec) owl_vector_size_((void *)(vec))
-owl_public uint64_t
+#define OWL_VECTOR_SIZE(vec) owl_vector_size_((void *)(vec))
+OWL_PUBLIC uint64_t
 owl_vector_size_(void *vec);
 
-#define owl_vector_clear(vec) owl_vector_clear_((void *)(vec))
-owl_public void
+#define OWL_VECTOR_CLEAR(vec) owl_vector_clear_((void *)(vec))
+OWL_PUBLIC void
 owl_vector_clear_(void *vec);
 
-#define owl_vector_push_back(vec, value)                                      \
+#define OWL_VECTOR_PUSH_BACK(vec, value)                                      \
   owl_vector_push_back_((void **)(vec), (void *)&(value), sizeof(value));
-owl_public owl_code
+OWL_PUBLIC owl_code
 owl_vector_push_back_(void **vec, void *value, uint64_t element_size);
 
-#define owl_vector_pop(vec) owl_vector_pop_((void *)(vec))
-owl_public void
+#define OWL_VECTOR_POP(vec) owl_vector_pop_((void *)(vec))
+OWL_PUBLIC void
 owl_vector_pop_(void *vec);
 
-#define owl_vector_deinit(vec) owl_vector_deinit_((void *)(vec))
-owl_public void
+#define OWL_VECTOR_DEINIT(vec) owl_vector_deinit_((void *)(vec))
+OWL_PUBLIC void
 owl_vector_deinit_(void *vec);
 
 OWL_END_DECLS
