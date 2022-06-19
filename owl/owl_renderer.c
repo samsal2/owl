@@ -2569,7 +2569,7 @@ owl_renderer_deinit_pipelines(struct owl_renderer *renderer) {
   vkDestroyPipeline(renderer->device, renderer->basic_pipeline, NULL);
 }
 
-OWL_PUBLIC owl_code
+OWL_PRIVATE owl_code
 owl_renderer_init_upload_buffer(struct owl_renderer *renderer, uint64_t size) {
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
@@ -2646,13 +2646,13 @@ out:
   return code;
 }
 
-OWL_PUBLIC void
+OWL_PRIVATE void
 owl_renderer_deinit_upload_buffer(struct owl_renderer *renderer) {
   vkFreeMemory(renderer->device, renderer->upload_buffer_memory, NULL);
   vkDestroyBuffer(renderer->device, renderer->upload_buffer, NULL);
 }
 
-OWL_PUBLIC owl_code
+OWL_PRIVATE owl_code
 owl_renderer_init_render_buffers(struct owl_renderer *renderer,
                                  uint64_t size) {
   int32_t i;
@@ -2867,7 +2867,7 @@ out:
   return code;
 }
 
-OWL_PUBLIC void
+OWL_PRIVATE void
 owl_renderer_deinit_render_buffers(struct owl_renderer *renderer) {
   uint32_t i;
 

@@ -174,18 +174,6 @@ OWL_PUBLIC void
 owl_renderer_deinit(struct owl_renderer *renderer);
 
 OWL_PUBLIC owl_code
-owl_renderer_init_render_buffers(struct owl_renderer *renderer, uint64_t size);
-
-OWL_PUBLIC void
-owl_renderer_deinit_render_buffers(struct owl_renderer *renderer);
-
-OWL_PUBLIC owl_code
-owl_renderer_init_upload_buffer(struct owl_renderer *renderer, uint64_t size);
-
-OWL_PUBLIC void
-owl_renderer_deinit_upload_buffer(struct owl_renderer *renderer);
-
-OWL_PUBLIC owl_code
 owl_renderer_resize_swapchain(struct owl_renderer *renderer);
 
 OWL_PUBLIC owl_code
