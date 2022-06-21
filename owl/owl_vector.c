@@ -17,7 +17,7 @@
 
 OWL_PUBLIC owl_code
 owl_vector_init_(void **vec, uint64_t capacity, uint64_t size,
-                 uint64_t element_size) {
+    uint64_t element_size) {
   struct owl_vector *head;
 
   owl_code code = OWL_OK;

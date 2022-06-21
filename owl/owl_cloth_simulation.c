@@ -10,8 +10,8 @@
 
 OWL_PUBLIC owl_code
 owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
-                          struct owl_renderer *renderer, int32_t width,
-                          int32_t height, char const *material) {
+    struct owl_renderer *renderer, int32_t width, int32_t height,
+    char const *material) {
   int32_t i;
   int32_t j;
   owl_code code;
@@ -57,7 +57,7 @@ owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
         particle->links[0] = link;
         particle->distances[0] = owl_v3_distance(particle->position,
-                                                 link->position);
+            link->position);
       } else {
         particle->links[0] = NULL;
         particle->distances[0] = 0.0F;
@@ -68,7 +68,7 @@ owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
         particle->links[1] = link;
         particle->distances[1] = owl_v3_distance(particle->position,
-                                                 link->position);
+            link->position);
       } else {
         particle->links[1] = NULL;
         particle->distances[1] = 0.0F;
@@ -79,7 +79,7 @@ owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
         particle->links[2] = link;
         particle->distances[2] = owl_v3_distance(particle->position,
-                                                 link->position);
+            link->position);
       } else {
         particle->links[2] = NULL;
         particle->distances[2] = 0.0F;
@@ -90,7 +90,7 @@ owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
         particle->links[3] = link;
         particle->distances[3] = owl_v3_distance(particle->position,
-                                                 link->position);
+            link->position);
       } else {
         particle->links[3] = NULL;
         particle->distances[3] = 0.0F;
@@ -115,7 +115,7 @@ out:
 
 OWL_PUBLIC void
 owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
-                            struct owl_renderer *renderer) {
+    struct owl_renderer *renderer) {
   vkDeviceWaitIdle(renderer->device);
 
   OWL_FREE(sim->particles);
@@ -135,7 +135,7 @@ owl_cloth_simulation_update(struct owl_cloth_simulation *sim, float dt) {
 
       /* velocity = position - previous_position */
       OWL_V3_SUB(particle->position, particle->previous_position,
-                 particle->velocity);
+          particle->velocity);
 
       /* velocity *= 1.0F - OWL_DAMPING */
       OWL_V3_SCALE(particle->velocity, 1.0F - OWL_DAMPING, particle->velocity);
@@ -149,7 +149,7 @@ owl_cloth_simulation_update(struct owl_cloth_simulation *sim, float dt) {
 
       /* position = previous_position + delta_position */
       OWL_V3_ADD(particle->previous_position, delta_position,
-                 particle->position);
+          particle->position);
 
       /* reset acceleration */
       OWL_V3_ZERO(particle->acceleration);

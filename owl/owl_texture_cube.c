@@ -6,8 +6,7 @@
 
 OWL_PRIVATE void
 owl_texture_cube_transition(struct owl_texture_cube *texture,
-                            struct owl_renderer *renderer,
-                            VkImageLayout dst_layout) {
+    struct owl_renderer *renderer, VkImageLayout dst_layout) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst_stage = VK_PIPELINE_STAGE_NONE_KHR;
@@ -63,15 +62,14 @@ owl_texture_cube_transition(struct owl_texture_cube *texture,
   }
 
   vkCmdPipelineBarrier(renderer->immediate_command_buffer, src_stage,
-                       dst_stage, 0, 0, NULL, 0, NULL, 1, &barrier);
+      dst_stage, 0, 0, NULL, 0, NULL, 1, &barrier);
 
   texture->layout = dst_layout;
 }
 
 OWL_PUBLIC owl_code
 owl_texture_cube_init(struct owl_texture_cube *texture,
-                      struct owl_renderer *renderer,
-                      struct owl_texture_cube_desc *desc) {
+    struct owl_renderer *renderer, struct owl_texture_cube_desc *desc) {
   int width;
   int height;
   int chans;
@@ -117,7 +115,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     vk_result = vkCreateImage(renderer->device, &image_info, NULL,
-                              &texture->image);
+        &texture->image);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto out;
@@ -128,24 +126,24 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     VkMemoryAllocateInfo memory_info;
 
     vkGetImageMemoryRequirements(renderer->device, texture->image,
-                                 &memory_requirements);
+        &memory_requirements);
 
     memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memory_info.pNext = NULL;
     memory_info.allocationSize = memory_requirements.size;
-    memory_info.memoryTypeIndex = owl_renderer_find_memory_type(
-        renderer, memory_requirements.memoryTypeBits,
+    memory_info.memoryTypeIndex = owl_renderer_find_memory_type(renderer,
+        memory_requirements.memoryTypeBits,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
-                                 &texture->memory);
+        &texture->memory);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image;
     }
 
     vk_result = vkBindImageMemory(renderer->device, texture->image,
-                                  texture->memory, 0);
+        texture->memory, 0);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_memory;
@@ -172,7 +170,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     image_view_info.subresourceRange.layerCount = 6;
 
     vk_result = vkCreateImageView(renderer->device, &image_view_info, NULL,
-                                  &texture->image_view);
+        &texture->image_view);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_memory;
@@ -189,7 +187,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     set_info.pSetLayouts = &renderer->image_fragment_set_layout;
 
     vk_result = vkAllocateDescriptorSets(renderer->device, &set_info,
-                                         &texture->set);
+        &texture->set);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image_view;
@@ -205,7 +203,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     image_size = width * height * 4;
     upload_size = width * height * 4 * 6;
     upload_data = owl_renderer_upload_allocate(renderer, upload_size,
-                                               &upload_alloc);
+        &upload_alloc);
     if (!upload_data) {
       code = OWL_ERROR_NO_UPLOAD_MEMORY;
       goto error_free_set;
@@ -214,7 +212,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     for (i = 0; i < 6; ++i) {
       if (0 < i) {
         data = stbi_load(desc->files[i], &width, &height, &chans,
-                         STBI_rgb_alpha);
+            STBI_rgb_alpha);
         if (!data) {
           code = OWL_ERROR_NOT_FOUND;
           goto error_free_upload;
@@ -246,14 +244,14 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     goto error_free_upload;
 
   owl_texture_cube_transition(texture, renderer,
-                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
   vkCmdCopyBufferToImage(renderer->immediate_command_buffer,
-                         upload_alloc.buffer, texture->image,
-                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, copies);
+      upload_alloc.buffer, texture->image,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, copies);
 
   owl_texture_cube_transition(texture, renderer,
-                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   code = owl_renderer_end_immediate_command_buffer(renderer);
   if (code)
@@ -294,7 +292,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
     writes[1].pTexelBufferView = NULL;
 
     vkUpdateDescriptorSets(renderer->device, OWL_ARRAY_SIZE(writes), writes, 0,
-                           NULL);
+        NULL);
   }
 
   owl_renderer_upload_free(renderer, upload_data);
@@ -306,7 +304,7 @@ error_free_upload:
 
 error_free_set:
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-                       &texture->set);
+      &texture->set);
 
 error_destroy_image_view:
   vkDestroyImageView(renderer->device, texture->image_view, NULL);
@@ -326,9 +324,9 @@ out:
 
 OWL_PUBLIC void
 owl_texture_cube_deinit(struct owl_texture_cube *texture,
-                        struct owl_renderer *renderer) {
+    struct owl_renderer *renderer) {
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-                       &texture->set);
+      &texture->set);
   vkDestroyImageView(renderer->device, texture->image_view, NULL);
   vkFreeMemory(renderer->device, texture->memory, NULL);
   vkDestroyImage(renderer->device, texture->image, NULL);

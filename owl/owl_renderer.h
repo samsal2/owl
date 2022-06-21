@@ -10,27 +10,6 @@
 
 OWL_BEGIN_DECLS
 
-#define OWL_MAX_SWAPCHAIN_IMAGE_COUNT 8
-#define OWL_IN_FLIGHT_FRAME_COUNT 3
-#define OWL_MAX_GARBAGE_COUNT 8
-#define OWL_FONT_FIRST_CHAR ((int)(' '))
-#define OWL_FONT_CHAR_COUNT ((int)('~' - ' '))
-
-struct owl_plataform;
-
-struct owl_renderer_frame_allocation {
-  uint32_t offset32;
-  VkDeviceSize offset;
-  VkBuffer buffer;
-  VkDescriptorSet pvm_set;
-  VkDescriptorSet model1_set;
-  VkDescriptorSet model2_set;
-};
-
-struct owl_renderer_upload_allocation {
-  VkBuffer buffer;
-};
-
 struct owl_renderer_packed_char {
   uint16_t x0;
   uint16_t y0;
@@ -46,6 +25,63 @@ struct owl_renderer_packed_char {
 struct owl_renderer_glyph {
   owl_v3 positions[4];
   owl_v2 uvs[4];
+};
+
+#define OWL_MAX_SWAPCHAIN_IMAGE_COUNT 8
+#define OWL_IN_FLIGHT_FRAME_COUNT 3
+#define OWL_MAX_GARBAGE_COUNT 8
+#define OWL_FONT_FIRST_CHAR ((int)(' '))
+#define OWL_FONT_CHAR_COUNT ((int)('~' - ' '))
+
+struct owl_plataform;
+
+struct owl_renderer_upload_allocator {
+  int32_t in_use;
+  uint64_t size;
+  void *data;
+  VkBuffer buffer;
+  VkDeviceMemory memory;
+};
+
+struct owl_renderer_upload_allocation {
+  VkBuffer buffer;
+};
+
+struct owl_renderer_bump_allocator_slot {
+  void *data;
+  VkBuffer buffer;
+  VkDeviceMemory memory;
+  VkDescriptorSet common_descriptor_set;
+  VkDescriptorSet model1_descriptor_set;
+  VkDescriptorSet model2_descriptor_set;
+};
+
+#define OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT 8
+
+struct owl_renderer_bump_allocator {
+  int32_t start;
+  int32_t end;
+
+  uint64_t size;
+  uint64_t offset;
+  uint64_t alignment;
+
+  struct owl_renderer_bump_allocator_slot
+      slots[OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT];
+};
+
+struct owl_renderer_bump_allocation {
+  uint32_t offset32;
+  uint64_t offset;
+  struct owl_renderer_bump_allocator_slot *slot;
+};
+
+struct owl_renderer_frame {
+  VkCommandPool command_pool;
+  VkCommandBuffer command_buffer;
+  VkFence in_flight_fence;
+  VkSemaphore acquire_semaphore;
+  VkSemaphore render_done_semaphore;
 };
 
 struct owl_renderer {
@@ -123,13 +159,9 @@ struct owl_renderer {
   VkPipeline model_pipeline;
   VkPipeline skybox_pipeline;
 
-  int32_t upload_buffer_in_use;
-  void *upload_buffer_data;
-  VkDeviceSize upload_buffer_size;
-  VkBuffer upload_buffer;
-  VkDeviceMemory upload_buffer_memory;
-
   VkSampler linear_sampler;
+
+  struct owl_renderer_upload_allocator upload_allocator;
 
   int32_t skybox_loaded;
   struct owl_texture_cube skybox;
@@ -141,26 +173,8 @@ struct owl_renderer {
   uint32_t frame;
   uint32_t frame_count;
 
-  VkCommandPool frame_command_pools[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkCommandBuffer frame_command_buffers[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkFence in_flight_fences[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkSemaphore acquire_semaphores[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkSemaphore render_done_semaphores[OWL_IN_FLIGHT_FRAME_COUNT];
-
-  VkDeviceSize render_buffer_size;
-  VkDeviceSize render_buffer_alignment;
-  VkDeviceSize render_buffer_offset;
-
-  void *render_buffer_data[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkBuffer render_buffers[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkDeviceMemory render_buffer_memories[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkDescriptorSet render_buffer_pvm_sets[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkDescriptorSet render_buffer_model1_sets[OWL_IN_FLIGHT_FRAME_COUNT];
-  VkDescriptorSet render_buffer_model2_sets[OWL_IN_FLIGHT_FRAME_COUNT];
-
-  OWL_VECTOR(VkBuffer) garbage_buffers[OWL_IN_FLIGHT_FRAME_COUNT];
-  OWL_VECTOR(VkDeviceMemory) garbage_memories[OWL_IN_FLIGHT_FRAME_COUNT];
-  OWL_VECTOR(VkDescriptorSet) garbage_sets[OWL_IN_FLIGHT_FRAME_COUNT];
+  struct owl_renderer_frame frames[OWL_IN_FLIGHT_FRAME_COUNT];
+  struct owl_renderer_bump_allocator allocators[OWL_IN_FLIGHT_FRAME_COUNT];
 
   PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;
   PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;
@@ -168,7 +182,7 @@ struct owl_renderer {
 
 OWL_PUBLIC owl_code
 owl_renderer_init(struct owl_renderer *renderer,
-                  struct owl_plataform *plataform);
+    struct owl_plataform *plataform);
 
 OWL_PUBLIC void
 owl_renderer_deinit(struct owl_renderer *renderer);
@@ -183,12 +197,11 @@ OWL_PUBLIC owl_code
 owl_renderer_end_frame(struct owl_renderer *renderer);
 
 OWL_PUBLIC void *
-owl_renderer_frame_allocate(struct owl_renderer *renderer, uint64_t size,
-                            struct owl_renderer_frame_allocation *allocation);
+owl_renderer_bump_allocate(struct owl_renderer *renderer, uint64_t size,
+    struct owl_renderer_bump_allocation *allocation);
 
 OWL_PUBLIC void *
-owl_renderer_upload_allocate(
-    struct owl_renderer *renderer, uint64_t size,
+owl_renderer_upload_allocate(struct owl_renderer *renderer, uint64_t size,
     struct owl_renderer_upload_allocation *allocation);
 
 OWL_PUBLIC void
@@ -196,7 +209,7 @@ owl_renderer_upload_free(struct owl_renderer *renderer, void *ptr);
 
 OWL_PUBLIC owl_code
 owl_renderer_load_font(struct owl_renderer *renderer, uint32_t size,
-                       char const *path);
+    char const *path);
 
 OWL_PUBLIC void
 owl_renderer_unload_font(struct owl_renderer *renderer);
@@ -209,7 +222,7 @@ owl_renderer_unload_skybox(struct owl_renderer *renderer);
 
 OWL_PUBLIC uint32_t
 owl_renderer_find_memory_type(struct owl_renderer *renderer, uint32_t filter,
-                              uint32_t properties);
+    uint32_t properties);
 
 OWL_PUBLIC owl_code
 owl_renderer_begin_immediate_command_buffer(struct owl_renderer *renderer);
@@ -219,7 +232,7 @@ owl_renderer_end_immediate_command_buffer(struct owl_renderer *renderer);
 
 OWL_PUBLIC owl_code
 owl_renderer_fill_glyph(struct owl_renderer *renderer, char letter,
-                        owl_v2 offset, struct owl_renderer_glyph *glyph);
+    owl_v2 offset, struct owl_renderer_glyph *glyph);
 
 OWL_END_DECLS
 

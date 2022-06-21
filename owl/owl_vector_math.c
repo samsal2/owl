@@ -123,7 +123,7 @@ owl_m4_translate(owl_v3 const v, owl_m4 in_out) {
 
 OWL_PUBLIC void
 owl_m4_ortho(float left, float right, float bottom, float top, float near,
-             float far, owl_m4 out) {
+    float far, owl_m4 out) {
   float const right_left = 2.0F / (right - left);
   float const tobottom = 2.0F / (top - bottom);
   float const far_near = 1.0F / (far - near);
@@ -177,7 +177,7 @@ owl_m4_perspective(float fov, float ratio, float near, float far, owl_m4 out) {
 
 OWL_PUBLIC void
 owl_m4_look(owl_v3 const eye, owl_v3 const direction, owl_v3 const up,
-            owl_m4 out) {
+    owl_m4 out) {
   owl_v3 f;
   owl_v3 s;
   owl_v3 u;
@@ -210,7 +210,7 @@ owl_m4_look(owl_v3 const eye, owl_v3 const direction, owl_v3 const up,
 
 OWL_PUBLIC void
 owl_m4_look_at(owl_v3 const eye, owl_v3 const center, owl_v3 const up,
-               owl_m4 out) {
+    owl_m4 out) {
   owl_v3 direction;
   OWL_V3_SUB(eye, center, direction);
   owl_m4_look(eye, direction, up, out);

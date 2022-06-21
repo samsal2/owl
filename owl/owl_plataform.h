@@ -20,30 +20,29 @@ struct owl_plataform_file {
 
 OWL_PUBLIC owl_code
 owl_plataform_init(struct owl_plataform *plataform, int width, int height,
-                   char const *title);
+    char const *title);
 
 OWL_PUBLIC void
 owl_plataform_deinit(struct owl_plataform *plataform);
 
 OWL_PUBLIC owl_code
 owl_plataform_get_required_instance_extensions(struct owl_plataform *plataform,
-                                               uint32_t *extension_count,
-                                               char const *const **extensions);
+    uint32_t *extension_count, char const *const **extensions);
 
 OWL_PUBLIC char const *
 owl_plataform_get_title(struct owl_plataform const *plataform);
 
 OWL_PUBLIC void
 owl_plataform_get_window_dimensions(struct owl_plataform const *plataform,
-                                    uint32_t *width, uint32_t *height);
+    uint32_t *width, uint32_t *height);
 
 OWL_PUBLIC void
 owl_plataform_get_framebuffer_dimensions(struct owl_plataform const *plataform,
-                                         uint32_t *width, uint32_t *height);
+    uint32_t *width, uint32_t *height);
 
 OWL_PUBLIC owl_code
 owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
-                                    struct owl_renderer *renderer);
+    struct owl_renderer *renderer);
 
 OWL_PUBLIC int
 owl_plataform_should_close(struct owl_plataform *plataform);

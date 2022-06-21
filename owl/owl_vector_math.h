@@ -159,7 +159,7 @@ OWL_BEGIN_DECLS
 
 #define owl_v4_dot(lhs, rhs)                                                  \
   ((lhs)[0] * (rhs)[0] + (lhs)[1] * (rhs)[1] + (lhs)[2] * (rhs)[2] +          \
-   (lhs)[3] * (rhs)[3])
+      (lhs)[3] * (rhs)[3])
 
 #define OWL_V3_SCALE(v, scale, out)                                           \
   do {                                                                        \
@@ -318,18 +318,18 @@ owl_m4_translate(owl_v3 const v, owl_m4 out);
 
 OWL_PUBLIC void
 owl_m4_ortho(float left, float right, float bot, float top, float near,
-             float far, owl_m4 out);
+    float far, owl_m4 out);
 
 OWL_PUBLIC void
 owl_m4_perspective(float fov, float ratio, float near, float far, owl_m4 out);
 
 OWL_PUBLIC void
 owl_m4_look(owl_v3 const eye, owl_v3 const direction, owl_v3 const up,
-            owl_m4 out);
+    owl_m4 out);
 
 OWL_PUBLIC void
 owl_m4_look_at(owl_v3 const eye, owl_v3 const center, owl_v3 const up,
-               owl_m4 out);
+    owl_m4 out);
 
 OWL_PUBLIC void
 owl_v3_direction(float pitch, float yaw, owl_v3 const up, owl_v3 out);

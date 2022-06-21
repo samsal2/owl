@@ -35,7 +35,7 @@ owl_texture_2d_calc_mips(int w, int h) {
 
 OWL_PRIVATE void
 owl_texture_2d_transition(struct owl_texture_2d *texture,
-                          struct owl_renderer *renderer, VkImageLayout dst) {
+    struct owl_renderer *renderer, VkImageLayout dst) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst_Stage = VK_PIPELINE_STAGE_NONE_KHR;
@@ -91,14 +91,14 @@ owl_texture_2d_transition(struct owl_texture_2d *texture,
   }
 
   vkCmdPipelineBarrier(renderer->immediate_command_buffer, src_stage,
-                       dst_Stage, 0, 0, NULL, 0, NULL, 1, &barrier);
+      dst_Stage, 0, 0, NULL, 0, NULL, 1, &barrier);
 
   texture->layout = dst;
 }
 
 OWL_PRIVATE void
 owl_texture_2d_generate_mips(struct owl_texture_2d *texture,
-                             struct owl_renderer *renderer) {
+    struct owl_renderer *renderer) {
   int i;
   int width;
   int height;
@@ -133,9 +133,9 @@ owl_texture_2d_generate_mips(struct owl_texture_2d *texture,
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-    vkCmdPipelineBarrier(
-        renderer->immediate_command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
+    vkCmdPipelineBarrier(renderer->immediate_command_buffer,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+        NULL, 0, NULL, 1, &barrier);
 
     blit.srcOffsets[0].x = 0;
     blit.srcOffsets[0].y = 0;
@@ -159,9 +159,8 @@ owl_texture_2d_generate_mips(struct owl_texture_2d *texture,
     blit.dstSubresource.layerCount = 1;
 
     vkCmdBlitImage(renderer->immediate_command_buffer, texture->image,
-                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->image,
-                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
-                   VK_FILTER_LINEAR);
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
@@ -169,9 +168,8 @@ owl_texture_2d_generate_mips(struct owl_texture_2d *texture,
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     vkCmdPipelineBarrier(renderer->immediate_command_buffer,
-                         VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0,
-                         NULL, 1, &barrier);
+        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        0, 0, NULL, 0, NULL, 1, &barrier);
   }
 
   barrier.subresourceRange.baseMipLevel = texture->mips - 1;
@@ -180,17 +178,16 @@ owl_texture_2d_generate_mips(struct owl_texture_2d *texture,
   barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-  vkCmdPipelineBarrier(
-      renderer->immediate_command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
+  vkCmdPipelineBarrier(renderer->immediate_command_buffer,
+      VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+      0, NULL, 0, NULL, 1, &barrier);
 
   texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
 OWL_PUBLIC owl_code
 owl_texture_2d_init(struct owl_texture_2d *texture,
-                    struct owl_renderer *renderer,
-                    struct owl_texture_2d_desc *desc) {
+    struct owl_renderer *renderer, struct owl_texture_2d_desc *desc) {
   uint8_t *upload_data;
   enum owl_pixel_format pixel_format;
   struct owl_renderer_upload_allocation upload_alloc;
@@ -276,7 +273,7 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
     image_info.initialLayout = texture->layout;
 
     vk_result = vkCreateImage(renderer->device, &image_info, NULL,
-                              &texture->image);
+        &texture->image);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_upload;
@@ -288,24 +285,24 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
     VkMemoryAllocateInfo memory_info;
 
     vkGetImageMemoryRequirements(renderer->device, texture->image,
-                                 &memory_requirements);
+        &memory_requirements);
 
     memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memory_info.pNext = NULL;
     memory_info.allocationSize = memory_requirements.size;
-    memory_info.memoryTypeIndex = owl_renderer_find_memory_type(
-        renderer, memory_requirements.memoryTypeBits,
+    memory_info.memoryTypeIndex = owl_renderer_find_memory_type(renderer,
+        memory_requirements.memoryTypeBits,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
-                                 &texture->memory);
+        &texture->memory);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image;
     }
 
     vk_result = vkBindImageMemory(renderer->device, texture->image,
-                                  texture->memory, 0);
+        texture->memory, 0);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_memory;
@@ -332,7 +329,7 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
     image_view_info.subresourceRange.layerCount = 1;
 
     vk_result = vkCreateImageView(renderer->device, &image_view_info, NULL,
-                                  &texture->image_view);
+        &texture->image_view);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_memory;
@@ -349,7 +346,7 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
     set_info.pSetLayouts = &renderer->image_fragment_set_layout;
 
     vk_result = vkAllocateDescriptorSets(renderer->device, &set_info,
-                                         &texture->set);
+        &texture->set);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image_view;
@@ -361,7 +358,7 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
     goto error_free_sets;
   {
     owl_texture_2d_transition(texture, renderer,
-                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     {
       VkBufferImageCopy copy;
@@ -381,8 +378,8 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
       copy.imageExtent.depth = 1;
 
       vkCmdCopyBufferToImage(renderer->immediate_command_buffer,
-                             upload_alloc.buffer, texture->image,
-                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+          upload_alloc.buffer, texture->image,
+          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
     }
 
     owl_texture_2d_generate_mips(texture, renderer);
@@ -426,7 +423,7 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
     writes[1].pTexelBufferView = NULL;
 
     vkUpdateDescriptorSets(renderer->device, OWL_ARRAY_SIZE(writes), writes, 0,
-                           NULL);
+        NULL);
   }
 
   owl_renderer_upload_free(renderer, upload_data);
@@ -435,7 +432,7 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
 
 error_free_sets:
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-                       &texture->set);
+      &texture->set);
 
 error_destroy_image_view:
   vkDestroyImageView(renderer->device, texture->image_view, NULL);
@@ -455,9 +452,9 @@ out:
 
 OWL_PUBLIC void
 owl_texture_2d_deinit(struct owl_texture_2d *texture,
-                      struct owl_renderer *renderer) {
+    struct owl_renderer *renderer) {
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-                       &texture->set);
+      &texture->set);
   vkDestroyImageView(renderer->device, texture->image_view, NULL);
   vkFreeMemory(renderer->device, texture->memory, NULL);
   vkDestroyImage(renderer->device, texture->image, NULL);

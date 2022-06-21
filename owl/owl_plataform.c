@@ -14,7 +14,7 @@
 
 OWL_PUBLIC owl_code
 owl_plataform_init(struct owl_plataform *plataform, int w, int h,
-                   char const *title) {
+    char const *title) {
   int res;
   owl_code code = OWL_OK;
 
@@ -48,9 +48,8 @@ owl_plataform_deinit(struct owl_plataform *plataform) {
 #define OWL_MAX_INSTANCE_EXTENSION_COUNT 64
 
 OWL_PUBLIC owl_code
-owl_plataform_get_required_instance_extensions(
-    struct owl_plataform *plataform, uint32_t *extension_count,
-    char const *const **extensions) {
+owl_plataform_get_required_instance_extensions(struct owl_plataform *plataform,
+    uint32_t *extension_count, char const *const **extensions) {
 #if defined(OWL_ENABLE_VALIDATION)
   char const *const *tmp;
   OWL_LOCAL_PERSIST char const *names[OWL_MAX_INSTANCE_EXTENSION_COUNT];
@@ -95,11 +94,11 @@ owl_plataform_poll_events(struct owl_plataform *plataform) {
 
 OWL_PUBLIC owl_code
 owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
-                                    struct owl_renderer *renderer) {
+    struct owl_renderer *renderer) {
   VkResult vk_result;
 
   vk_result = glfwCreateWindowSurface(renderer->instance, plataform->opaque,
-                                      NULL, &renderer->surface);
+      NULL, &renderer->surface);
   OWL_DEBUG_LOG("vk_result: %i\n", vk_result);
   if (vk_result)
     return OWL_ERROR_FATAL;
@@ -109,7 +108,7 @@ owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
 
 OWL_PUBLIC void
 owl_plataform_get_window_dimensions(struct owl_plataform const *plataform,
-                                    uint32_t *width, uint32_t *height) {
+    uint32_t *width, uint32_t *height) {
   int internal_width;
   int internal_height;
 
@@ -121,7 +120,7 @@ owl_plataform_get_window_dimensions(struct owl_plataform const *plataform,
 
 OWL_PUBLIC void
 owl_plataform_get_framebuffer_dimensions(struct owl_plataform const *plataform,
-                                         uint32_t *width, uint32_t *height) {
+    uint32_t *width, uint32_t *height) {
   int internal_width;
   int internal_height;
 

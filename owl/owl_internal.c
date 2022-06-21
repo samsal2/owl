@@ -11,7 +11,7 @@ owl_debug_malloc(size_t s, char const *f, int l) {
   void *p = malloc(s);
   printf("\033[33m[OWL_MALLOC]\033[0m \033[31m(f:%s l:%d)\033[0m p:%p "
          "s:%lu\n",
-         f, l, p, s);
+      f, l, p, s);
   return p;
 }
 
@@ -20,7 +20,7 @@ owl_debug_calloc(size_t c, size_t s, char const *f, int l) {
   void *p = calloc(c, s);
   printf("\033[33m[OWL_CALLOC]\033[0m \033[31m(f:%s l:%d)\033[0m p:%p "
          "c:%lu s:%lu\n",
-         f, l, p, c, s);
+      f, l, p, c, s);
   return p;
 }
 
@@ -29,14 +29,14 @@ owl_debug_realloc(void *p, size_t s, char const *f, int l) {
   void *np = realloc(p, s);
   printf("\033[33m[OWL_REALLOC]\033[0m \033[31m(f:%s l:%d)\033[0m p:%p "
          "np:%p s:%lu\n",
-         f, l, p, np, s);
+      f, l, p, np, s);
   return np;
 }
 
 void
 owl_debug_free(void *p, char const *f, int l) {
   printf("\033[33m[OWL_FREE]\033[0m \033[31m(f:%s l:%d)\033[0m p:%p\n", f, l,
-         p);
+      p);
   free(p);
 }
 

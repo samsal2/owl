@@ -214,14 +214,14 @@ struct owl_model {
 
 OWL_PUBLIC owl_code
 owl_model_init(struct owl_model *model, struct owl_renderer *renderer,
-               char const *path);
+    char const *path);
 
 OWL_PUBLIC void
 owl_model_deinit(struct owl_model *model, struct owl_renderer *renderer);
 
 OWL_PUBLIC owl_code
 owl_model_anim_update(struct owl_model *model, int frame, float dt,
-                      owl_model_anim_id id);
+    owl_model_anim_id id);
 
 OWL_END_DECLS
 
