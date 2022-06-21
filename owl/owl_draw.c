@@ -472,7 +472,7 @@ owl_draw_renderer_state(struct owl_renderer *renderer) {
   position[1] += 0.05F;
 
   snprintf(buffer, sizeof(buffer), "allocator->size: %llu",
-      renderer->frame_allocators[renderer->frame].size);
+      renderer->allocators[renderer->frame].size);
 
   owl_draw_text(renderer, buffer, position, color);
 

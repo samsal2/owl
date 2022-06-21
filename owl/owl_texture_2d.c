@@ -337,16 +337,17 @@ owl_texture_2d_init(struct owl_texture_2d *texture,
   }
 
   {
-    VkDescriptorSetAllocateInfo set_info;
+    VkDescriptorSetAllocateInfo descriptor_set_info;
 
-    set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    set_info.pNext = NULL;
-    set_info.descriptorPool = renderer->descriptor_pool;
-    set_info.descriptorSetCount = 1;
-    set_info.pSetLayouts = &renderer->image_fragment_set_layout;
+    descriptor_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptor_set_info.pNext = NULL;
+    descriptor_set_info.descriptorPool = renderer->descriptor_pool;
+    descriptor_set_info.descriptorSetCount = 1;
+    descriptor_set_info.pSetLayouts =
+        &renderer->image_framgnet_descriptor_set_layout;
 
-    vk_result = vkAllocateDescriptorSets(renderer->device, &set_info,
-        &texture->set);
+    vk_result = vkAllocateDescriptorSets(renderer->device,
+        &descriptor_set_info, &texture->set);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image_view;

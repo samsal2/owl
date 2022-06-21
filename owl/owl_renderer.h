@@ -27,11 +27,10 @@ struct owl_renderer_glyph {
   owl_v2 uvs[4];
 };
 
-#define OWL_MAX_SWAPCHAIN_IMAGE_COUNT 8
-#define OWL_IN_FLIGHT_FRAME_COUNT 2
-#define OWL_MAX_GARBAGE_COUNT 8
-#define OWL_FONT_FIRST_CHAR ((int)(' '))
-#define OWL_FONT_CHAR_COUNT ((int)('~' - ' '))
+#define OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT 8
+#define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT 2
+#define OWL_RENDERER_FONT_FIRST_CHAR ((int)(' '))
+#define OWL_RENDERER_CHAR_COUNT ((int)('~' - ' '))
 
 struct owl_plataform;
 
@@ -128,9 +127,9 @@ struct owl_renderer {
   VkSwapchainKHR swapchain;
   uint32_t swapchain_image;
   uint32_t swapchain_image_count;
-  VkImage swapchain_images[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
-  VkImageView swapchain_image_views[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
-  VkFramebuffer swapchain_framebuffers[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
+  VkImage swapchain_images[OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT];
+  VkImageView swapchain_image_views[OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT];
+  VkFramebuffer swapchain_framebuffers[OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT];
 
   VkCommandPool command_pool;
   VkDescriptorPool descriptor_pool;
@@ -143,11 +142,11 @@ struct owl_renderer {
   VkShaderModule skybox_vertex_shader;
   VkShaderModule skybox_fragment_shader;
 
-  VkDescriptorSetLayout ubo_vertex_set_layout;
-  VkDescriptorSetLayout ubo_fragment_set_layout;
-  VkDescriptorSetLayout ubo_both_set_layout;
-  VkDescriptorSetLayout ssbo_vertex_set_layout;
-  VkDescriptorSetLayout image_fragment_set_layout;
+  VkDescriptorSetLayout ubo_vertex_descriptor_set_layout;
+  VkDescriptorSetLayout ubo_fragment_descriptor_set_layout;
+  VkDescriptorSetLayout ubo_both_descriptor_set_layout;
+  VkDescriptorSetLayout ssbo_vertex_descriptor_set_layout;
+  VkDescriptorSetLayout image_framgnet_descriptor_set_layout;
 
   VkPipelineLayout common_pipeline_layout;
   VkPipelineLayout model_pipeline_layout;
@@ -167,13 +166,14 @@ struct owl_renderer {
 
   int32_t font_loaded;
   struct owl_texture_2d font_atlas;
-  struct owl_renderer_packed_char font_chars[OWL_FONT_CHAR_COUNT];
+  struct owl_renderer_packed_char font_chars[OWL_RENDERER_CHAR_COUNT];
 
   uint32_t frame;
   uint32_t frame_count;
 
-  struct owl_renderer_frame frames[OWL_IN_FLIGHT_FRAME_COUNT];
-  struct owl_renderer_bump_allocator frame_allocators[OWL_IN_FLIGHT_FRAME_COUNT];
+  struct owl_renderer_frame frames[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  struct owl_renderer_bump_allocator
+      allocators[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
 
   PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;
   PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;

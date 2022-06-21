@@ -178,16 +178,17 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
   }
 
   {
-    VkDescriptorSetAllocateInfo set_info;
+    VkDescriptorSetAllocateInfo descriptor_set_info;
 
-    set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    set_info.pNext = NULL;
-    set_info.descriptorPool = renderer->descriptor_pool;
-    set_info.descriptorSetCount = 1;
-    set_info.pSetLayouts = &renderer->image_fragment_set_layout;
+    descriptor_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptor_set_info.pNext = NULL;
+    descriptor_set_info.descriptorPool = renderer->descriptor_pool;
+    descriptor_set_info.descriptorSetCount = 1;
+    descriptor_set_info.pSetLayouts =
+        &renderer->image_framgnet_descriptor_set_layout;
 
-    vk_result = vkAllocateDescriptorSets(renderer->device, &set_info,
-        &texture->set);
+    vk_result = vkAllocateDescriptorSets(renderer->device,
+        &descriptor_set_info, &texture->set);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image_view;
@@ -206,7 +207,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
         &upload_alloc);
     if (!upload_data) {
       code = OWL_ERROR_NO_UPLOAD_MEMORY;
-      goto error_free_set;
+      goto error_free_descriptor_sets;
     }
 
     for (i = 0; i < 6; ++i) {
@@ -215,7 +216,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
             STBI_rgb_alpha);
         if (!data) {
           code = OWL_ERROR_NOT_FOUND;
-          goto error_free_upload;
+          goto error_free_upload_data;
         }
       }
 
@@ -241,7 +242,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
 
   code = owl_renderer_begin_immediate_command_buffer(renderer);
   if (code)
-    goto error_free_upload;
+    goto error_free_upload_data;
 
   owl_texture_cube_transition(texture, renderer,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -255,7 +256,7 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
 
   code = owl_renderer_end_immediate_command_buffer(renderer);
   if (code)
-    goto error_free_upload;
+    goto error_free_upload_data;
 
   {
     VkDescriptorImageInfo descriptors[2];
@@ -299,10 +300,10 @@ owl_texture_cube_init(struct owl_texture_cube *texture,
 
   goto out;
 
-error_free_upload:
+error_free_upload_data:
   owl_renderer_upload_free(renderer, upload_data);
 
-error_free_set:
+error_free_descriptor_sets:
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
       &texture->set);
 
