@@ -1438,7 +1438,7 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
     set_layout_info.pBindings = bindings;
 
     vk_result = vkCreateDescriptorSetLayout(renderer->device, &set_layout_info,
-        NULL, &renderer->image_framgnet_descriptor_set_layout);
+        NULL, &renderer->image_fragment_descriptor_set_layout);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_ssbo_vertex_descriptor_set_layout;
@@ -1450,7 +1450,7 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
     VkPipelineLayoutCreateInfo pipeline_layout_info;
 
     layouts[0] = renderer->ubo_vertex_descriptor_set_layout;
-    layouts[1] = renderer->image_framgnet_descriptor_set_layout;
+    layouts[1] = renderer->image_fragment_descriptor_set_layout;
 
     pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipeline_layout_info.pNext = NULL;
@@ -1478,9 +1478,9 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
     push_constant_range.size = sizeof(struct owl_model_material_push_constant);
 
     layouts[0] = renderer->ubo_both_descriptor_set_layout;
-    layouts[1] = renderer->image_framgnet_descriptor_set_layout;
-    layouts[2] = renderer->image_framgnet_descriptor_set_layout;
-    layouts[3] = renderer->image_framgnet_descriptor_set_layout;
+    layouts[1] = renderer->image_fragment_descriptor_set_layout;
+    layouts[2] = renderer->image_fragment_descriptor_set_layout;
+    layouts[3] = renderer->image_fragment_descriptor_set_layout;
     layouts[4] = renderer->ssbo_vertex_descriptor_set_layout;
     layouts[5] = renderer->ubo_fragment_descriptor_set_layout;
 
@@ -1508,7 +1508,7 @@ error_destroy_common_pipeline_layout:
 
 error_destroy_image_fragment_descriptor_set_layout:
   vkDestroyDescriptorSetLayout(renderer->device,
-      renderer->image_framgnet_descriptor_set_layout, NULL);
+      renderer->image_fragment_descriptor_set_layout, NULL);
 
 error_destroy_ssbo_vertex_descriptor_set_layout:
   vkDestroyDescriptorSetLayout(renderer->device,
@@ -1537,7 +1537,7 @@ owl_renderer_deinit_layouts(struct owl_renderer *renderer) {
   vkDestroyPipelineLayout(renderer->device, renderer->common_pipeline_layout,
       NULL);
   vkDestroyDescriptorSetLayout(renderer->device,
-      renderer->image_framgnet_descriptor_set_layout, NULL);
+      renderer->image_fragment_descriptor_set_layout, NULL);
   vkDestroyDescriptorSetLayout(renderer->device,
       renderer->ssbo_vertex_descriptor_set_layout, NULL);
   vkDestroyDescriptorSetLayout(renderer->device,

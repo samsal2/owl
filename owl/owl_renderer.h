@@ -146,7 +146,7 @@ struct owl_renderer {
   VkDescriptorSetLayout ubo_fragment_descriptor_set_layout;
   VkDescriptorSetLayout ubo_both_descriptor_set_layout;
   VkDescriptorSetLayout ssbo_vertex_descriptor_set_layout;
-  VkDescriptorSetLayout image_framgnet_descriptor_set_layout;
+  VkDescriptorSetLayout image_fragment_descriptor_set_layout;
 
   VkPipelineLayout common_pipeline_layout;
   VkPipelineLayout model_pipeline_layout;
