@@ -28,7 +28,7 @@ struct owl_renderer_glyph {
 };
 
 #define OWL_MAX_SWAPCHAIN_IMAGE_COUNT 8
-#define OWL_IN_FLIGHT_FRAME_COUNT 3
+#define OWL_IN_FLIGHT_FRAME_COUNT 2
 #define OWL_MAX_GARBAGE_COUNT 8
 #define OWL_FONT_FIRST_CHAR ((int)(' '))
 #define OWL_FONT_CHAR_COUNT ((int)('~' - ' '))
@@ -120,18 +120,17 @@ struct owl_renderer {
   VkImageView depth_image_view;
 
   VkRenderPass main_render_pass;
-  VkRenderPass offscreen_render_pass;
 
   VkCommandBuffer immediate_command_buffer;
 
   VkPresentModeKHR present_mode;
 
   VkSwapchainKHR swapchain;
-  uint32_t image;
-  uint32_t image_count;
-  VkImage images[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
-  VkImageView image_views[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
-  VkFramebuffer framebuffers[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
+  uint32_t swapchain_image;
+  uint32_t swapchain_image_count;
+  VkImage swapchain_images[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
+  VkImageView swapchain_image_views[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
+  VkFramebuffer swapchain_framebuffers[OWL_MAX_SWAPCHAIN_IMAGE_COUNT];
 
   VkCommandPool command_pool;
   VkDescriptorPool descriptor_pool;

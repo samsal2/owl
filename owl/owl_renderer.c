@@ -884,7 +884,7 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
   VkResult vk_result;
   owl_code code = OWL_OK;
 
-  renderer->image = 0;
+  renderer->swapchain_image = 0;
 
   code = owl_renderer_ensure_present_mode(renderer, VK_PRESENT_MODE_FIFO_KHR);
   if (code)
@@ -902,7 +902,7 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
     swapchain_info.pNext = NULL;
     swapchain_info.flags = 0;
     swapchain_info.surface = renderer->surface;
-    swapchain_info.minImageCount = renderer->frame_count;
+    swapchain_info.minImageCount = renderer->frame_count + 1;
     swapchain_info.imageFormat = renderer->surface_format.format;
     swapchain_info.imageColorSpace = renderer->surface_format.colorSpace;
     swapchain_info.imageExtent.width = renderer->width;
@@ -936,27 +936,28 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
     }
 
     vk_result = vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
-        &renderer->image_count, NULL);
-    if (vk_result || OWL_MAX_SWAPCHAIN_IMAGE_COUNT <= renderer->image_count) {
+        &renderer->swapchain_image_count, NULL);
+    if (vk_result ||
+        OWL_MAX_SWAPCHAIN_IMAGE_COUNT <= renderer->swapchain_image_count) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_swapchain;
     }
 
     vk_result = vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
-        &renderer->image_count, renderer->images);
+        &renderer->swapchain_image_count, renderer->swapchain_images);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_swapchain;
     }
   }
 
-  for (i = 0; i < (int32_t)renderer->image_count; ++i) {
+  for (i = 0; i < (int32_t)renderer->swapchain_image_count; ++i) {
     VkImageViewCreateInfo image_info;
 
     image_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     image_info.pNext = NULL;
     image_info.flags = 0;
-    image_info.image = renderer->images[i];
+    image_info.image = renderer->swapchain_images[i];
     image_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
     image_info.format = renderer->surface_format.format;
     image_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -970,20 +971,20 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
     image_info.subresourceRange.layerCount = 1;
 
     vk_result = vkCreateImageView(renderer->device, &image_info, NULL,
-        &renderer->image_views[i]); /**/
+        &renderer->swapchain_image_views[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image_views;
     }
   }
 
-  for (i = 0; i < (int32_t)renderer->image_count; ++i) {
+  for (i = 0; i < (int32_t)renderer->swapchain_image_count; ++i) {
     VkImageView attachments[3];
     VkFramebufferCreateInfo framebuffer_info;
 
     attachments[0] = renderer->color_image_view;
     attachments[1] = renderer->depth_image_view;
-    attachments[2] = renderer->image_views[i];
+    attachments[2] = renderer->swapchain_image_views[i];
 
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_info.pNext = NULL;
@@ -996,7 +997,7 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
     framebuffer_info.layers = 1;
 
     vk_result = vkCreateFramebuffer(renderer->device, &framebuffer_info, NULL,
-        &renderer->framebuffers[i]);
+        &renderer->swapchain_framebuffers[i]);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_framebuffers;
@@ -1007,13 +1008,15 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
 
 error_destroy_framebuffers:
   for (i = i - 1; i >= 0; --i)
-    vkDestroyFramebuffer(renderer->device, renderer->framebuffers[i], NULL);
+    vkDestroyFramebuffer(renderer->device, renderer->swapchain_framebuffers[i],
+        NULL);
 
-  i = renderer->image_count;
+  i = renderer->swapchain_image_count;
 
 error_destroy_image_views:
   for (i = i - 1; i >= 0; --i)
-    vkDestroyImageView(renderer->device, renderer->image_views[i], NULL);
+    vkDestroyImageView(renderer->device, renderer->swapchain_image_views[i],
+        NULL);
 
 error_destroy_swapchain:
   vkDestroySwapchainKHR(renderer->device, renderer->swapchain, NULL);
@@ -1026,11 +1029,13 @@ OWL_PRIVATE void
 owl_renderer_deinit_swapchain(struct owl_renderer *renderer) {
   uint32_t i;
 
-  for (i = 0; i < renderer->image_count; ++i)
-    vkDestroyFramebuffer(renderer->device, renderer->framebuffers[i], NULL);
+  for (i = 0; i < renderer->swapchain_image_count; ++i)
+    vkDestroyFramebuffer(renderer->device, renderer->swapchain_framebuffers[i],
+        NULL);
 
-  for (i = 0; i < renderer->image_count; ++i)
-    vkDestroyImageView(renderer->device, renderer->image_views[i], NULL);
+  for (i = 0; i < renderer->swapchain_image_count; ++i)
+    vkDestroyImageView(renderer->device, renderer->swapchain_image_views[i],
+        NULL);
 
   vkDestroySwapchainKHR(renderer->device, renderer->swapchain, NULL);
 }
@@ -3407,43 +3412,30 @@ owl_renderer_bump_allocate(struct owl_renderer *renderer, uint64_t size,
       VK_ERROR_SURFACE_LOST_KHR == (vk_result))
 
 OWL_PUBLIC owl_code
-owl_renderer_acquire_next_swapchain_image(struct owl_renderer *renderer) {
-  owl_code code = OWL_OK;
-  VkResult vk_result = VK_SUCCESS;
-
-  struct owl_renderer_frame *frame = &renderer->frames[renderer->frame];
-
-  uint64_t const timeout = (uint64_t)-1;
-  uint32_t *const image = &renderer->image;
-
-  vk_result = vkAcquireNextImageKHR(renderer->device, renderer->swapchain,
-      timeout, frame->acquire_semaphore, VK_NULL_HANDLE, image);
-  if (!OWL_RENDERER_IS_SWAPCHAIN_OUT_OF_DATE(vk_result) || !vk_result)
-    return OWL_OK;
-
-  code = owl_renderer_resize_swapchain(renderer);
-  if (code)
-    return code;
-
-  vk_result = vkAcquireNextImageKHR(renderer->device, renderer->swapchain,
-      timeout, frame->acquire_semaphore, VK_NULL_HANDLE, image);
-  if (vk_result)
-    return OWL_ERROR_FATAL;
-
-  return OWL_OK;
-}
-
-OWL_PUBLIC owl_code
 owl_renderer_begin_frame(struct owl_renderer *renderer) {
+  VkRenderPassBeginInfo pass_info;
+  VkCommandBufferBeginInfo command_buffer_info;
+
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
   uint64_t const timeout = (uint64_t)-1;
   struct owl_renderer_frame *frame = &renderer->frames[renderer->frame];
 
-  code = owl_renderer_acquire_next_swapchain_image(renderer);
-  if (code)
-    return code;
+  vk_result = vkAcquireNextImageKHR(renderer->device, renderer->swapchain,
+      timeout, frame->acquire_semaphore, VK_NULL_HANDLE,
+      &renderer->swapchain_image);
+  if (OWL_RENDERER_IS_SWAPCHAIN_OUT_OF_DATE(vk_result)) {
+    code = owl_renderer_resize_swapchain(renderer);
+    if (code)
+      return code;
+
+    vk_result = vkAcquireNextImageKHR(renderer->device, renderer->swapchain,
+        timeout, frame->acquire_semaphore, VK_NULL_HANDLE,
+        &renderer->swapchain_image);
+    if (vk_result)
+      return OWL_ERROR_FATAL;
+  }
 
   vk_result = vkWaitForFences(renderer->device, 1, &frame->in_flight_fence,
       VK_TRUE, timeout);
@@ -3460,44 +3452,36 @@ owl_renderer_begin_frame(struct owl_renderer *renderer) {
 
   owl_renderer_pop_old_allocator_slots(renderer);
 
-  {
-    VkCommandBufferBeginInfo command_buffer_info;
+  command_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  command_buffer_info.pNext = NULL;
+  command_buffer_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  command_buffer_info.pInheritanceInfo = NULL;
 
-    command_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    command_buffer_info.pNext = NULL;
-    command_buffer_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    command_buffer_info.pInheritanceInfo = NULL;
+  vk_result = vkBeginCommandBuffer(frame->command_buffer,
+      &command_buffer_info);
+  if (vk_result)
+    return OWL_ERROR_FATAL;
 
-    vk_result = vkBeginCommandBuffer(frame->command_buffer,
-        &command_buffer_info);
-    if (vk_result)
-      return OWL_ERROR_FATAL;
-  }
+  pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  pass_info.pNext = NULL;
+  pass_info.renderPass = renderer->main_render_pass;
+  pass_info.framebuffer =
+      renderer->swapchain_framebuffers[renderer->swapchain_image];
+  pass_info.renderArea.offset.x = 0;
+  pass_info.renderArea.offset.y = 0;
+  pass_info.renderArea.extent.width = renderer->width;
+  pass_info.renderArea.extent.height = renderer->height;
+  pass_info.clearValueCount = OWL_ARRAY_SIZE(renderer->clear_values);
+  pass_info.pClearValues = renderer->clear_values;
 
-  {
-    VkRenderPassBeginInfo pass_info;
-
-    pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    pass_info.pNext = NULL;
-    pass_info.renderPass = renderer->main_render_pass;
-    pass_info.framebuffer = renderer->framebuffers[renderer->image];
-    pass_info.renderArea.offset.x = 0;
-    pass_info.renderArea.offset.y = 0;
-    pass_info.renderArea.extent.width = renderer->width;
-    pass_info.renderArea.extent.height = renderer->height;
-    pass_info.clearValueCount = OWL_ARRAY_SIZE(renderer->clear_values);
-    pass_info.pClearValues = renderer->clear_values;
-
-    vkCmdBeginRenderPass(frame->command_buffer, &pass_info,
-        VK_SUBPASS_CONTENTS_INLINE);
-  }
+  vkCmdBeginRenderPass(frame->command_buffer, &pass_info,
+      VK_SUBPASS_CONTENTS_INLINE);
 
   return OWL_OK;
 }
 
 OWL_PUBLIC owl_code
 owl_renderer_end_frame(struct owl_renderer *renderer) {
-
   VkPipelineStageFlagBits stage;
   VkSubmitInfo submit_info;
   VkPresentInfoKHR present_info;
@@ -3533,7 +3517,7 @@ owl_renderer_end_frame(struct owl_renderer *renderer) {
   present_info.pWaitSemaphores = &frame->render_done_semaphore;
   present_info.swapchainCount = 1;
   present_info.pSwapchains = &renderer->swapchain;
-  present_info.pImageIndices = &renderer->image;
+  present_info.pImageIndices = &renderer->swapchain_image;
   present_info.pResults = NULL;
 
   vk_result = vkQueuePresentKHR(renderer->present_queue, &present_info);
