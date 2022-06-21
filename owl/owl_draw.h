@@ -3,7 +3,7 @@
 
 #include "owl_definitions.h"
 
-OWL_BEGIN_DECLS
+OWL_BEGIN_DECLARATIONS
 
 struct owl_renderer;
 struct owl_model;
@@ -96,6 +96,6 @@ OWL_PUBLIC owl_code
 owl_draw_cloth_simulation(struct owl_renderer *renderer,
     struct owl_cloth_simulation *sim);
 
-OWL_END_DECLS
+OWL_END_DECLARATIONS
 
 #endif

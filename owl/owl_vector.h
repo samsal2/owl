@@ -3,7 +3,7 @@
 
 #include "owl_definitions.h"
 
-OWL_BEGIN_DECLS
+OWL_BEGIN_DECLARATIONS
 
 union owl_vector_aligned_data {
   long long ll_;
@@ -48,6 +48,6 @@ owl_vector_pop_(void *vec);
 OWL_PUBLIC void
 owl_vector_deinit_(void *vec);
 
-OWL_END_DECLS
+OWL_END_DECLARATIONS
 
 #endif

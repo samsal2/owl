@@ -3,7 +3,7 @@
 
 #include "owl_definitions.h"
 
-OWL_BEGIN_DECLS
+OWL_BEGIN_DECLARATIONS
 
 struct owl_renderer;
 
@@ -59,6 +59,6 @@ owl_plataform_load_file(char const *path, struct owl_plataform_file *file);
 OWL_PUBLIC void
 owl_plataform_unload_file(struct owl_plataform_file *file);
 
-OWL_END_DECLS
+OWL_END_DECLARATIONS
 
 #endif

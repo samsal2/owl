@@ -6,7 +6,6 @@
 #include "owl_vector.h"
 #include "owl_vector_math.h"
 #include "stb_truetype.h"
-#include "vulkan/vulkan_core.h"
 
 #define OWL_DEFAULT_BUFFER_SIZE 1024
 

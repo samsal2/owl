@@ -5,7 +5,7 @@
 
 #include <vulkan/vulkan.h>
 
-OWL_BEGIN_DECLS
+OWL_BEGIN_DECLARATIONS
 
 struct owl_renderer;
 
@@ -47,6 +47,6 @@ OWL_PUBLIC void
 owl_texture_2d_deinit(struct owl_texture_2d *texture,
     struct owl_renderer *renderer);
 
-OWL_END_DECLS
+OWL_END_DECLARATIONS
 
 #endif

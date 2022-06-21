@@ -7,7 +7,7 @@
 
 #include <vulkan/vulkan.h>
 
-OWL_BEGIN_DECLS
+OWL_BEGIN_DECLARATIONS
 
 #define OWL_MODEL_MESH_NONE -1
 #define OWL_MODEL_ANIM_NONE -1
@@ -223,6 +223,6 @@ OWL_PUBLIC owl_code
 owl_model_anim_update(struct owl_model *model, int frame, float dt,
     owl_model_anim_id id);
 
-OWL_END_DECLS
+OWL_END_DECLARATIONS
 
 #endif

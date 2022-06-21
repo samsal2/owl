@@ -4,14 +4,14 @@
 #include <stdint.h>
 
 #if defined(__cplusplus)
-#define OWL_BEGIN_DECLS extern "C" {
-#define OWL_END_DECLS }
+#define OWL_BEGIN_DECLARATIONS extern "C" {
+#define OWL_END_DECLARATIONS }
 #else
-#define OWL_BEGIN_DECLS
-#define OWL_END_DECLS
+#define OWL_BEGIN_DECLARATIONS
+#define OWL_END_DECLARATIONS
 #endif
 
-OWL_BEGIN_DECLS
+OWL_BEGIN_DECLARATIONS
 
 #define OWL_PUBLIC extern
 #define OWL_GLOBAL static
@@ -72,6 +72,6 @@ typedef int owl_code;
 /** a fixed size array ran out of space */
 #define OWL_ERROR_NO_SPACE -6
 
-OWL_END_DECLS
+OWL_END_DECLARATIONS
 
 #endif

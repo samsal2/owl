@@ -3,7 +3,7 @@
 
 #include "owl_definitions.h"
 
-OWL_BEGIN_DECLS
+OWL_BEGIN_DECLARATIONS
 
 #define OWL_DEGREES_AS_RADIANS(a) ((a)*0.01745329252F)
 
@@ -405,6 +405,6 @@ owl_m4_print(owl_m4 const m);
 
 #endif /* NDEBUG */
 
-OWL_END_DECLS
+OWL_END_DECLARATIONS
 
 #endif

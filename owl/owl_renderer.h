@@ -8,7 +8,7 @@
 
 #include <vulkan/vulkan.h>
 
-OWL_BEGIN_DECLS
+OWL_BEGIN_DECLARATIONS
 
 struct owl_renderer_packed_char {
   uint16_t x0;
@@ -233,6 +233,6 @@ OWL_PUBLIC owl_code
 owl_renderer_fill_glyph(struct owl_renderer *renderer, char letter,
     owl_v2 offset, struct owl_renderer_glyph *glyph);
 
-OWL_END_DECLS
+OWL_END_DECLARATIONS
 
 #endif

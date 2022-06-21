@@ -5,7 +5,7 @@
 
 #include "owl_texture_2d.h"
 
-OWL_BEGIN_DECLS
+OWL_BEGIN_DECLARATIONS
 
 struct owl_renderer;
 
@@ -42,6 +42,6 @@ owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
 OWL_PUBLIC void
 owl_cloth_simulation_update(struct owl_cloth_simulation *sim, float dt);
 
-OWL_END_DECLS
+OWL_END_DECLARATIONS
 
 #endif
