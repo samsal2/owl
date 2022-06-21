@@ -19,9 +19,9 @@ owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
   struct owl_renderer_frame *frame;
   struct owl_pvm_uniform uniform;
   struct owl_pcu_vertex vertices[4];
-  struct owl_renderer_bump_allocation vertex_allocation;
-  struct owl_renderer_bump_allocation index_allocation;
-  struct owl_renderer_bump_allocation uniform_allocation;
+  struct owl_renderer_frame_allocation vertex_allocation;
+  struct owl_renderer_frame_allocation index_allocation;
+  struct owl_renderer_frame_allocation uniform_allocation;
   OWL_LOCAL_PERSIST uint32_t const indices[] = {2, 3, 1, 1, 0, 2};
 
   frame = &renderer->frames[renderer->frame];
@@ -66,19 +66,19 @@ owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
   OWL_M4_COPY(renderer->view, uniform.view);
   OWL_M4_COPY(matrix, uniform.model);
 
-  data = owl_renderer_bump_allocate(renderer, sizeof(vertices),
+  data = owl_renderer_frame_allocate(renderer, sizeof(vertices),
       &vertex_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, vertices, sizeof(vertices));
 
-  data = owl_renderer_bump_allocate(renderer, sizeof(indices),
+  data = owl_renderer_frame_allocate(renderer, sizeof(indices),
       &index_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, indices, sizeof(indices));
 
-  data = owl_renderer_bump_allocate(renderer, sizeof(uniform),
+  data = owl_renderer_frame_allocate(renderer, sizeof(uniform),
       &uniform_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -180,8 +180,8 @@ owl_draw_model_node(struct owl_renderer *renderer, owl_model_node_id id,
   struct owl_model_ubo1 uniform1;
   struct owl_model_ubo2 uniform2;
   struct owl_renderer_frame *frame;
-  struct owl_renderer_bump_allocation uniform1_allocation;
-  struct owl_renderer_bump_allocation uniform2_allocation;
+  struct owl_renderer_frame_allocation uniform1_allocation;
+  struct owl_renderer_frame_allocation uniform2_allocation;
   owl_code code;
 
   frame = &renderer->frames[renderer->frame];
@@ -213,7 +213,7 @@ owl_draw_model_node(struct owl_renderer *renderer, owl_model_node_id id,
   OWL_V4_ZERO(uniform1.light);
   OWL_V4_ZERO(uniform2.light_direction);
 
-  data = owl_renderer_bump_allocate(renderer, sizeof(uniform1),
+  data = owl_renderer_frame_allocate(renderer, sizeof(uniform1),
       &uniform1_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -224,7 +224,7 @@ owl_draw_model_node(struct owl_renderer *renderer, owl_model_node_id id,
       &uniform1_allocation.slot->model1_descriptor_set, 1,
       &uniform1_allocation.offset32);
 
-  data = owl_renderer_bump_allocate(renderer, sizeof(uniform2),
+  data = owl_renderer_frame_allocate(renderer, sizeof(uniform2),
       &uniform2_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -375,9 +375,9 @@ OWL_PUBLIC owl_code
 owl_draw_skybox(struct owl_renderer *renderer) {
   uint8_t *data;
   struct owl_renderer_frame *frame;
-  struct owl_renderer_bump_allocation vertex_allocation;
-  struct owl_renderer_bump_allocation index_allocation;
-  struct owl_renderer_bump_allocation uniform_allocation;
+  struct owl_renderer_frame_allocation vertex_allocation;
+  struct owl_renderer_frame_allocation index_allocation;
+  struct owl_renderer_frame_allocation uniform_allocation;
   VkDescriptorSet sets[2];
   struct owl_pvm_uniform uniform;
   /*
@@ -411,13 +411,13 @@ owl_draw_skybox(struct owl_renderer *renderer) {
   vkCmdBindPipeline(frame->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
       renderer->skybox_pipeline);
 
-  data = owl_renderer_bump_allocate(renderer, sizeof(vertices),
+  data = owl_renderer_frame_allocate(renderer, sizeof(vertices),
       &vertex_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, vertices, sizeof(vertices));
 
-  data = owl_renderer_bump_allocate(renderer, sizeof(indices),
+  data = owl_renderer_frame_allocate(renderer, sizeof(indices),
       &index_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -428,7 +428,7 @@ owl_draw_skybox(struct owl_renderer *renderer) {
   OWL_M3_COPY(renderer->view, uniform.view);
   OWL_V4_IDENTITY(uniform.model);
 
-  data = owl_renderer_bump_allocate(renderer, sizeof(uniform),
+  data = owl_renderer_frame_allocate(renderer, sizeof(uniform),
       &uniform_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -472,7 +472,7 @@ owl_draw_renderer_state(struct owl_renderer *renderer) {
   position[1] += 0.05F;
 
   snprintf(buffer, sizeof(buffer), "allocator->size: %llu",
-      renderer->allocators[renderer->frame].size);
+      renderer->frame_allocators[renderer->frame].size);
 
   owl_draw_text(renderer, buffer, position, color);
 
@@ -489,18 +489,18 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
 
   uint32_t index_count;
   uint32_t *indices;
-  struct owl_renderer_bump_allocation index_allocation;
+  struct owl_renderer_frame_allocation index_allocation;
 
   uint64_t vertex_count;
   struct owl_pcu_vertex *vertices;
-  struct owl_renderer_bump_allocation vertex_allocation;
+  struct owl_renderer_frame_allocation vertex_allocation;
 
   VkDescriptorSet sets[2];
   struct owl_pvm_uniform *uniform;
-  struct owl_renderer_bump_allocation uniform_allocation;
+  struct owl_renderer_frame_allocation uniform_allocation;
 
   index_count = (sim->width - 1) * (sim->height - 1) * 6;
-  indices = owl_renderer_bump_allocate(renderer,
+  indices = owl_renderer_frame_allocate(renderer,
       index_count * sizeof(*indices), &index_allocation);
   if (!indices)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -520,7 +520,7 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
   }
 
   vertex_count = sim->width * sim->height;
-  vertices = owl_renderer_bump_allocate(renderer,
+  vertices = owl_renderer_frame_allocate(renderer,
       vertex_count * sizeof(*vertices), &vertex_allocation);
   if (!vertices)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -539,7 +539,7 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
     }
   }
 
-  uniform = owl_renderer_bump_allocate(renderer, sizeof(*uniform),
+  uniform = owl_renderer_frame_allocate(renderer, sizeof(*uniform),
       &uniform_allocation);
   if (!uniform)
     return OWL_ERROR_NO_FRAME_MEMORY;

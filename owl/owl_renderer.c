@@ -2661,7 +2661,7 @@ owl_renderer_push_allocator_slot_at_frame(struct owl_renderer *renderer,
   owl_code code = OWL_OK;
   VkResult vk_result = VK_SUCCESS;
 
-  allocator = &renderer->allocators[frame];
+  allocator = &renderer->frame_allocators[frame];
   end = (allocator->end + 1) % OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT;
 
   if (allocator->start == end) {
@@ -2844,7 +2844,7 @@ owl_renderer_pop_allocator_slot_at_frame(struct owl_renderer *renderer,
   struct owl_renderer_bump_allocator *allocator;
   struct owl_renderer_bump_allocator_slot *slot;
 
-  allocator = &renderer->allocators[frame];
+  allocator = &renderer->frame_allocators[frame];
 
   if (allocator->start == allocator->end)
     return;
@@ -2873,7 +2873,7 @@ owl_renderer_pop_old_allocator_slots_at_frame(struct owl_renderer *renderer,
     uint32_t frame) {
   struct owl_renderer_bump_allocator *allocator;
 
-  allocator = &renderer->allocators[frame];
+  allocator = &renderer->frame_allocators[frame];
 
   while (allocator->start != allocator->end)
     owl_renderer_pop_allocator_slot_at_frame(renderer, frame);
@@ -2892,7 +2892,7 @@ owl_renderer_init_allocators(struct owl_renderer *renderer, uint64_t size) {
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
     struct owl_renderer_bump_allocator *allocator;
 
-    allocator = &renderer->allocators[i];
+    allocator = &renderer->frame_allocators[i];
     allocator->start = -1;
     allocator->end = -1;
 
@@ -2922,7 +2922,7 @@ owl_renderer_deinit_allocators(struct owl_renderer *renderer) {
   for (i = 0; i < renderer->frame_count; ++i) {
     /* HACK(samuel): setting end to and invalid slot to make all other slots
      * old */
-    ++renderer->allocators[i].end;
+    ++renderer->frame_allocators[i].end;
     owl_renderer_pop_old_allocator_slots_at_frame(renderer, i);
   }
 }
@@ -3373,14 +3373,14 @@ out:
 }
 
 OWL_PUBLIC void *
-owl_renderer_bump_allocate(struct owl_renderer *renderer, uint64_t size,
-    struct owl_renderer_bump_allocation *allocation) {
+owl_renderer_frame_allocate(struct owl_renderer *renderer, uint64_t size,
+    struct owl_renderer_frame_allocation *allocation) {
   uint64_t required_size;
   uint64_t alignment;
   struct owl_renderer_bump_allocator *allocator;
   struct owl_renderer_bump_allocator_slot *slot;
 
-  allocator = &renderer->allocators[renderer->frame];
+  allocator = &renderer->frame_allocators[renderer->frame];
   alignment = allocator->alignment;
 
   required_size = OWL_ALIGN_UP_2(allocator->offset + size, alignment);
@@ -3525,7 +3525,7 @@ owl_renderer_end_frame(struct owl_renderer *renderer) {
     return owl_renderer_resize_swapchain(renderer);
 
   renderer->frame = (renderer->frame + 1) % renderer->frame_count;
-  renderer->allocators[renderer->frame].offset = 0;
+  renderer->frame_allocators[renderer->frame].offset = 0;
 
   return OWL_OK;
 }

@@ -70,7 +70,7 @@ struct owl_renderer_bump_allocator {
       slots[OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT];
 };
 
-struct owl_renderer_bump_allocation {
+struct owl_renderer_frame_allocation {
   uint32_t offset32;
   uint64_t offset;
   struct owl_renderer_bump_allocator_slot *slot;
@@ -173,7 +173,7 @@ struct owl_renderer {
   uint32_t frame_count;
 
   struct owl_renderer_frame frames[OWL_IN_FLIGHT_FRAME_COUNT];
-  struct owl_renderer_bump_allocator allocators[OWL_IN_FLIGHT_FRAME_COUNT];
+  struct owl_renderer_bump_allocator frame_allocators[OWL_IN_FLIGHT_FRAME_COUNT];
 
   PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;
   PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;
@@ -196,8 +196,8 @@ OWL_PUBLIC owl_code
 owl_renderer_end_frame(struct owl_renderer *renderer);
 
 OWL_PUBLIC void *
-owl_renderer_bump_allocate(struct owl_renderer *renderer, uint64_t size,
-    struct owl_renderer_bump_allocation *allocation);
+owl_renderer_frame_allocate(struct owl_renderer *renderer, uint64_t size,
+    struct owl_renderer_frame_allocation *allocation);
 
 OWL_PUBLIC void *
 owl_renderer_upload_allocate(struct owl_renderer *renderer, uint64_t size,
