@@ -2141,7 +2141,9 @@ OWL_PRIVATE void owl_renderer_deinit_bump_allocator_slot(
 
 OWL_PUBLIC owl_code owl_renderer_push_allocator_slot(
     struct owl_renderer *renderer, uint64_t size) {
+  VkMemoryRequirements memory_requirements;
   struct owl_renderer_bump_allocator_slot *slot;
+  owl_code code = OWL_OK;
   int32_t const capacity = OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT;
   uint32_t const frame = renderer->frame;
   struct owl_renderer_bump_allocator *allocator = &renderer->allocators[frame];
@@ -2155,7 +2157,16 @@ OWL_PUBLIC owl_code owl_renderer_push_allocator_slot(
   allocator->offset = 0;
 
   slot = &allocator->slots[end];
-  return owl_renderer_init_bump_allocator_slot(renderer, size, slot);
+  code = owl_renderer_init_bump_allocator_slot(renderer, size, slot);
+  if (code)
+    return code;
+
+  vkGetBufferMemoryRequirements(renderer->device, slot->buffer,
+      &memory_requirements);
+
+  allocator->alignment = memory_requirements.alignment;
+
+  return OWL_OK;
 }
 
 OWL_PUBLIC void owl_renderer_pop_old_allocator_slots(
@@ -2232,13 +2243,15 @@ OWL_PRIVATE void owl_renderer_deinit_allocators(
 
 OWL_PRIVATE owl_code owl_renderer_init_frames(struct owl_renderer *renderer) {
   int32_t i;
+  struct owl_renderer_frame *frame;
+
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
 
   renderer->frame = 0;
 
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
-    struct owl_renderer_frame *frame = &renderer->frames[i];
+    frame = &renderer->frames[i];
 
     {
       VkCommandPoolCreateInfo command_pool_info;
@@ -2323,25 +2336,22 @@ OWL_PRIVATE owl_code owl_renderer_init_frames(struct owl_renderer *renderer) {
   goto out;
 
   for (; i > 0; --i) {
-    vkDestroySemaphore(renderer->device,
-        renderer->frames[i - 1].render_done_semaphore, NULL);
+    frame = &renderer->frames[i - 1];
+
+    vkDestroySemaphore(renderer->device, frame->render_done_semaphore, NULL);
 
   error_destroy_acquire_semaphore:
-    vkDestroySemaphore(renderer->device,
-        renderer->frames[i - 1].acquire_semaphore, NULL);
+    vkDestroySemaphore(renderer->device, frame->acquire_semaphore, NULL);
 
   error_destroy_in_flight_fence:
-    vkDestroyFence(renderer->device, renderer->frames[i - 1].in_flight_fence,
-        NULL);
+    vkDestroyFence(renderer->device, frame->in_flight_fence, NULL);
 
   error_free_command_buffer:
-    vkFreeCommandBuffers(renderer->device,
-        renderer->frames[i - 1].command_pool, 1,
-        &renderer->frames[i - 1].command_buffer);
+    vkFreeCommandBuffers(renderer->device, frame->command_pool, 1,
+        &frame->command_buffer);
 
   error_destroy_command_pool:
-    vkDestroyCommandPool(renderer->device,
-        renderer->frames[i - 1].command_pool, NULL);
+    vkDestroyCommandPool(renderer->device, frame->command_pool, NULL);
 
   error:
     continue;
