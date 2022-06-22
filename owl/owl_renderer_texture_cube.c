@@ -4,9 +4,9 @@
 #include "owl_renderer.h"
 #include "stb_image.h"
 
-OWL_PRIVATE void
-owl_renderer_texture_cube_transition(struct owl_renderer_texture_cube *texture,
-    struct owl_renderer *renderer, VkImageLayout dst_layout) {
+OWL_PRIVATE void owl_renderer_texture_cube_transition(
+    struct owl_renderer_texture_cube *texture, struct owl_renderer *renderer,
+    VkImageLayout dst_layout) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst_stage = VK_PIPELINE_STAGE_NONE_KHR;
@@ -67,9 +67,8 @@ owl_renderer_texture_cube_transition(struct owl_renderer_texture_cube *texture,
   texture->layout = dst_layout;
 }
 
-OWL_PUBLIC owl_code
-owl_renderer_texture_cube_init(struct owl_renderer_texture_cube *texture,
-    struct owl_renderer *renderer,
+OWL_PUBLIC owl_code owl_renderer_texture_cube_init(
+    struct owl_renderer_texture_cube *texture, struct owl_renderer *renderer,
     struct owl_renderer_texture_cube_desc *desc) {
   int width;
   int height;
@@ -324,9 +323,8 @@ out:
   return code;
 }
 
-OWL_PUBLIC void
-owl_renderer_texture_cube_deinit(struct owl_renderer_texture_cube *texture,
-    struct owl_renderer *renderer) {
+OWL_PUBLIC void owl_renderer_texture_cube_deinit(
+    struct owl_renderer_texture_cube *texture, struct owl_renderer *renderer) {
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
       &texture->set);
   vkDestroyImageView(renderer->device, texture->image_view, NULL);

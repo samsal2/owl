@@ -1553,976 +1553,296 @@ OWL_PRIVATE void owl_renderer_deinit_layouts(struct owl_renderer *renderer) {
 
 OWL_PRIVATE owl_code owl_renderer_init_pipelines(
     struct owl_renderer *renderer) {
+  VkVertexInputBindingDescription vertex_bindings;
+  VkVertexInputAttributeDescription vertex_attributes[6];
+  VkPipelineVertexInputStateCreateInfo vertex_input;
+  VkPipelineInputAssemblyStateCreateInfo input_assembly;
+  VkViewport viewport;
+  VkRect2D scissor;
+  VkPipelineViewportStateCreateInfo viewport_state;
+  VkPipelineRasterizationStateCreateInfo rasterization;
+  VkPipelineMultisampleStateCreateInfo multisample;
+  VkPipelineColorBlendAttachmentState color_attachment;
+  VkPipelineColorBlendStateCreateInfo color;
+  VkPipelineDepthStencilStateCreateInfo depth;
+  VkPipelineShaderStageCreateInfo stages[2];
+  VkGraphicsPipelineCreateInfo pipeline_info;
   VkResult vk_result;
   owl_code code = OWL_OK;
 
-  {
-    VkVertexInputBindingDescription vertex_bindings;
-    VkVertexInputAttributeDescription vertex_attributes[3];
-    VkPipelineVertexInputStateCreateInfo vertex_input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rasterization;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline_info;
+  vertex_bindings.binding = 0;
+  vertex_bindings.stride = sizeof(struct owl_pcu_vertex);
+  vertex_bindings.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    vertex_bindings.binding = 0;
-    vertex_bindings.stride = sizeof(struct owl_pcu_vertex);
-    vertex_bindings.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+  vertex_attributes[0].binding = 0;
+  vertex_attributes[0].location = 0;
+  vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+  vertex_attributes[0].offset = offsetof(struct owl_pcu_vertex, position);
 
-    vertex_attributes[0].binding = 0;
-    vertex_attributes[0].location = 0;
-    vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[0].offset = offsetof(struct owl_pcu_vertex, position);
+  vertex_attributes[1].binding = 0;
+  vertex_attributes[1].location = 1;
+  vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+  vertex_attributes[1].offset = offsetof(struct owl_pcu_vertex, color);
 
-    vertex_attributes[1].binding = 0;
-    vertex_attributes[1].location = 1;
-    vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[1].offset = offsetof(struct owl_pcu_vertex, color);
+  vertex_attributes[2].binding = 0;
+  vertex_attributes[2].location = 2;
+  vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
+  vertex_attributes[2].offset = offsetof(struct owl_pcu_vertex, uv);
 
-    vertex_attributes[2].binding = 0;
-    vertex_attributes[2].location = 2;
-    vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attributes[2].offset = offsetof(struct owl_pcu_vertex, uv);
+  vertex_input.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+  vertex_input.pNext = NULL;
+  vertex_input.flags = 0;
+  vertex_input.vertexBindingDescriptionCount = 1;
+  vertex_input.pVertexBindingDescriptions = &vertex_bindings;
+  vertex_input.vertexAttributeDescriptionCount = 3;
+  vertex_input.pVertexAttributeDescriptions = vertex_attributes;
 
-    vertex_input.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input.pNext = NULL;
-    vertex_input.flags = 0;
-    vertex_input.vertexBindingDescriptionCount = 1;
-    vertex_input.pVertexBindingDescriptions = &vertex_bindings;
-    vertex_input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(
-        vertex_attributes);
-    vertex_input.pVertexAttributeDescriptions = vertex_attributes;
+  input_assembly.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+  input_assembly.pNext = NULL;
+  input_assembly.flags = 0;
+  input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  input_assembly.primitiveRestartEnable = VK_FALSE;
 
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
+  viewport.x = 0.0F;
+  viewport.y = 0.0F;
+  viewport.width = renderer->width;
+  viewport.height = renderer->height;
+  viewport.minDepth = 0.0F;
+  viewport.maxDepth = 1.0F;
 
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = renderer->width;
-    viewport.height = renderer->height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
+  scissor.offset.x = 0;
+  scissor.offset.y = 0;
+  scissor.extent.width = renderer->width;
+  scissor.extent.height = renderer->height;
 
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent.width = renderer->width;
-    scissor.extent.height = renderer->height;
+  viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  viewport_state.pNext = NULL;
+  viewport_state.flags = 0;
+  viewport_state.viewportCount = 1;
+  viewport_state.pViewports = &viewport;
+  viewport_state.scissorCount = 1;
+  viewport_state.pScissors = &scissor;
 
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
+  rasterization.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+  rasterization.pNext = NULL;
+  rasterization.flags = 0;
+  rasterization.depthClampEnable = VK_FALSE;
+  rasterization.rasterizerDiscardEnable = VK_FALSE;
+  rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+  rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+  rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+  rasterization.depthBiasEnable = VK_FALSE;
+  rasterization.depthBiasConstantFactor = 0.0F;
+  rasterization.depthBiasClamp = 0.0F;
+  rasterization.depthBiasSlopeFactor = 0.0F;
+  rasterization.lineWidth = 1.0F;
 
-    rasterization.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterization.pNext = NULL;
-    rasterization.flags = 0;
-    rasterization.depthClampEnable = VK_FALSE;
-    rasterization.rasterizerDiscardEnable = VK_FALSE;
-    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterization.depthBiasEnable = VK_FALSE;
-    rasterization.depthBiasConstantFactor = 0.0F;
-    rasterization.depthBiasClamp = 0.0F;
-    rasterization.depthBiasSlopeFactor = 0.0F;
-    rasterization.lineWidth = 1.0F;
+  multisample.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+  multisample.pNext = NULL;
+  multisample.flags = 0;
+  multisample.rasterizationSamples = renderer->msaa;
+  multisample.sampleShadingEnable = VK_FALSE;
+  multisample.minSampleShading = 1.0F;
+  multisample.pSampleMask = NULL;
+  multisample.alphaToCoverageEnable = VK_FALSE;
+  multisample.alphaToOneEnable = VK_FALSE;
 
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = renderer->msaa;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
+  color_attachment.blendEnable = VK_FALSE;
+  color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+  color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+  color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+  color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+  color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+  color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+  color_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
+                                    VK_COLOR_COMPONENT_G_BIT |
+                                    VK_COLOR_COMPONENT_B_BIT |
+                                    VK_COLOR_COMPONENT_A_BIT;
 
-    color_attachment.blendEnable = VK_FALSE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
-                                      VK_COLOR_COMPONENT_G_BIT |
-                                      VK_COLOR_COMPONENT_B_BIT |
-                                      VK_COLOR_COMPONENT_A_BIT;
+  color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+  color.pNext = NULL;
+  color.flags = 0;
+  color.logicOpEnable = VK_FALSE;
+  color.logicOp = VK_LOGIC_OP_COPY;
+  color.attachmentCount = 1;
+  color.pAttachments = &color_attachment;
+  color.blendConstants[0] = 0.0F;
+  color.blendConstants[1] = 0.0F;
+  color.blendConstants[2] = 0.0F;
+  color.blendConstants[3] = 0.0F;
 
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
+  depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  depth.pNext = NULL;
+  depth.flags = 0;
+  depth.depthTestEnable = VK_TRUE;
+  depth.depthWriteEnable = VK_TRUE;
+  depth.depthCompareOp = VK_COMPARE_OP_LESS;
+  depth.depthBoundsTestEnable = VK_FALSE;
+  depth.stencilTestEnable = VK_FALSE;
+  depth.front.failOp = VK_STENCIL_OP_ZERO;
+  depth.front.passOp = VK_STENCIL_OP_ZERO;
+  depth.front.depthFailOp = VK_STENCIL_OP_ZERO;
+  depth.front.compareOp = VK_COMPARE_OP_NEVER;
+  depth.front.compareMask = 0;
+  depth.front.writeMask = 0;
+  depth.front.reference = 0;
+  depth.back.failOp = VK_STENCIL_OP_ZERO;
+  depth.back.passOp = VK_STENCIL_OP_ZERO;
+  depth.back.depthFailOp = VK_STENCIL_OP_ZERO;
+  depth.back.compareOp = VK_COMPARE_OP_NEVER;
+  depth.back.compareMask = 0;
+  depth.back.writeMask = 0;
+  depth.back.reference = 0;
+  depth.minDepthBounds = 0.0F;
+  depth.maxDepthBounds = 1.0F;
 
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_TRUE;
-    depth.depthWriteEnable = VK_TRUE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.front.failOp = VK_STENCIL_OP_ZERO;
-    depth.front.passOp = VK_STENCIL_OP_ZERO;
-    depth.front.depthFailOp = VK_STENCIL_OP_ZERO;
-    depth.front.compareOp = VK_COMPARE_OP_NEVER;
-    depth.front.compareMask = 0;
-    depth.front.writeMask = 0;
-    depth.front.reference = 0;
-    depth.back.failOp = VK_STENCIL_OP_ZERO;
-    depth.back.passOp = VK_STENCIL_OP_ZERO;
-    depth.back.depthFailOp = VK_STENCIL_OP_ZERO;
-    depth.back.compareOp = VK_COMPARE_OP_NEVER;
-    depth.back.compareMask = 0;
-    depth.back.writeMask = 0;
-    depth.back.reference = 0;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
+  stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  stages[0].pNext = NULL;
+  stages[0].flags = 0;
+  stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+  stages[0].module = renderer->basic_vertex_shader;
+  stages[0].pName = "main";
+  stages[0].pSpecializationInfo = NULL;
 
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = renderer->basic_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
+  stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  stages[1].pNext = NULL;
+  stages[1].flags = 0;
+  stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+  stages[1].module = renderer->basic_fragment_shader;
+  stages[1].pName = "main";
+  stages[1].pSpecializationInfo = NULL;
 
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = renderer->basic_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
+  pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+  pipeline_info.pNext = NULL;
+  pipeline_info.flags = 0;
+  pipeline_info.stageCount = OWL_ARRAY_SIZE(stages);
+  pipeline_info.pStages = stages;
+  pipeline_info.pVertexInputState = &vertex_input;
+  pipeline_info.pInputAssemblyState = &input_assembly;
+  pipeline_info.pTessellationState = NULL;
+  pipeline_info.pViewportState = &viewport_state;
+  pipeline_info.pRasterizationState = &rasterization;
+  pipeline_info.pMultisampleState = &multisample;
+  pipeline_info.pDepthStencilState = &depth;
+  pipeline_info.pColorBlendState = &color;
+  pipeline_info.pDynamicState = NULL;
+  pipeline_info.layout = renderer->common_pipeline_layout;
+  pipeline_info.renderPass = renderer->main_render_pass;
+  pipeline_info.subpass = 0;
+  pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+  pipeline_info.basePipelineIndex = -1;
 
-    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline_info.pNext = NULL;
-    pipeline_info.flags = 0;
-    pipeline_info.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline_info.pStages = stages;
-    pipeline_info.pVertexInputState = &vertex_input;
-    pipeline_info.pInputAssemblyState = &input_assembly;
-    pipeline_info.pTessellationState = NULL;
-    pipeline_info.pViewportState = &viewport_state;
-    pipeline_info.pRasterizationState = &rasterization;
-    pipeline_info.pMultisampleState = &multisample;
-    pipeline_info.pDepthStencilState = &depth;
-    pipeline_info.pColorBlendState = &color;
-    pipeline_info.pDynamicState = NULL;
-    pipeline_info.layout = renderer->common_pipeline_layout;
-    pipeline_info.renderPass = renderer->main_render_pass;
-    pipeline_info.subpass = 0;
-    pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-    pipeline_info.basePipelineIndex = -1;
-
-    vk_result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1,
-        &pipeline_info, NULL, &renderer->basic_pipeline);
-    if (vk_result) {
-      code = OWL_ERROR_FATAL;
-      goto out;
-    }
+  vk_result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1,
+      &pipeline_info, NULL, &renderer->basic_pipeline);
+  if (vk_result) {
+    code = OWL_ERROR_FATAL;
+    goto out;
   }
 
-  {
-    VkVertexInputBindingDescription vertex_bindings;
-    VkVertexInputAttributeDescription vertex_attributes[3];
-    VkPipelineVertexInputStateCreateInfo vertex_input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rasterizer;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline_info;
+  rasterization.polygonMode = VK_POLYGON_MODE_LINE;
 
-    vertex_bindings.binding = 0;
-    vertex_bindings.stride = sizeof(struct owl_pcu_vertex);
-    vertex_bindings.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    vertex_attributes[0].binding = 0;
-    vertex_attributes[0].location = 0;
-    vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[0].offset = offsetof(struct owl_pcu_vertex, position);
-
-    vertex_attributes[1].binding = 0;
-    vertex_attributes[1].location = 1;
-    vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[1].offset = offsetof(struct owl_pcu_vertex, color);
-
-    vertex_attributes[2].binding = 0;
-    vertex_attributes[2].location = 2;
-    vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attributes[2].offset = offsetof(struct owl_pcu_vertex, uv);
-
-    vertex_input.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input.pNext = NULL;
-    vertex_input.flags = 0;
-    vertex_input.vertexBindingDescriptionCount = 1;
-    vertex_input.pVertexBindingDescriptions = &vertex_bindings;
-    vertex_input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(
-        vertex_attributes);
-    vertex_input.pVertexAttributeDescriptions = vertex_attributes;
-
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
-
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = renderer->width;
-    viewport.height = renderer->height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
-
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent.width = renderer->width;
-    scissor.extent.height = renderer->height;
-
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
-
-    rasterizer.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizer.pNext = NULL;
-    rasterizer.flags = 0;
-    rasterizer.depthClampEnable = VK_FALSE;
-    rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizer.depthBiasEnable = VK_FALSE;
-    rasterizer.depthBiasConstantFactor = 0.0F;
-    rasterizer.depthBiasClamp = 0.0F;
-    rasterizer.depthBiasSlopeFactor = 0.0F;
-    rasterizer.lineWidth = 1.0F;
-
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = renderer->msaa;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
-
-    color_attachment.blendEnable = VK_FALSE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
-                                      VK_COLOR_COMPONENT_G_BIT |
-                                      VK_COLOR_COMPONENT_B_BIT |
-                                      VK_COLOR_COMPONENT_A_BIT;
-
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
-
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_TRUE;
-    depth.depthWriteEnable = VK_TRUE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.front.failOp = VK_STENCIL_OP_ZERO;
-    depth.front.passOp = VK_STENCIL_OP_ZERO;
-    depth.front.depthFailOp = VK_STENCIL_OP_ZERO;
-    depth.front.compareOp = VK_COMPARE_OP_NEVER;
-    depth.front.compareMask = 0;
-    depth.front.writeMask = 0;
-    depth.front.reference = 0;
-    depth.back.failOp = VK_STENCIL_OP_ZERO;
-    depth.back.passOp = VK_STENCIL_OP_ZERO;
-    depth.back.depthFailOp = VK_STENCIL_OP_ZERO;
-    depth.back.compareOp = VK_COMPARE_OP_NEVER;
-    depth.back.compareMask = 0;
-    depth.back.writeMask = 0;
-    depth.back.reference = 0;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
-
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = renderer->basic_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = renderer->basic_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
-
-    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline_info.pNext = NULL;
-    pipeline_info.flags = 0;
-    pipeline_info.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline_info.pStages = stages;
-    pipeline_info.pVertexInputState = &vertex_input;
-    pipeline_info.pInputAssemblyState = &input_assembly;
-    pipeline_info.pTessellationState = NULL;
-    pipeline_info.pViewportState = &viewport_state;
-    pipeline_info.pRasterizationState = &rasterizer;
-    pipeline_info.pMultisampleState = &multisample;
-    pipeline_info.pDepthStencilState = &depth;
-    pipeline_info.pColorBlendState = &color;
-    pipeline_info.pDynamicState = NULL;
-    pipeline_info.layout = renderer->common_pipeline_layout;
-    pipeline_info.renderPass = renderer->main_render_pass;
-    pipeline_info.subpass = 0;
-    pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-    pipeline_info.basePipelineIndex = -1;
-
-    /* TODO(samuel): create all pipelines in a single batch */
-    vk_result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1,
-        &pipeline_info, NULL, &renderer->wires_pipeline);
-    if (vk_result) {
-      code = OWL_ERROR_FATAL;
-      goto error_destroy_basic_pipeline;
-    }
+  vk_result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1,
+      &pipeline_info, NULL, &renderer->wires_pipeline);
+  if (vk_result) {
+    code = OWL_ERROR_FATAL;
+    goto error_destroy_basic_pipeline;
   }
 
-  {
-    VkVertexInputBindingDescription vertex_bindings;
-    VkVertexInputAttributeDescription vertex_attributes[3];
-    VkPipelineVertexInputStateCreateInfo vertex_input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo resterization;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline_info;
+  rasterization.polygonMode = VK_POLYGON_MODE_FILL;
 
-    vertex_bindings.binding = 0;
-    vertex_bindings.stride = sizeof(struct owl_pcu_vertex);
-    vertex_bindings.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+  color_attachment.blendEnable = VK_TRUE;
+  color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+  color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+  color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+  color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 
-    vertex_attributes[0].binding = 0;
-    vertex_attributes[0].location = 0;
-    vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[0].offset = offsetof(struct owl_pcu_vertex, position);
+  stages[1].module = renderer->text_fragment_shader;
 
-    vertex_attributes[1].binding = 0;
-    vertex_attributes[1].location = 1;
-    vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[1].offset = offsetof(struct owl_pcu_vertex, color);
-
-    vertex_attributes[2].binding = 0;
-    vertex_attributes[2].location = 2;
-    vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attributes[2].offset = offsetof(struct owl_pcu_vertex, uv);
-
-    vertex_input.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input.pNext = NULL;
-    vertex_input.flags = 0;
-    vertex_input.vertexBindingDescriptionCount = 1;
-    vertex_input.pVertexBindingDescriptions = &vertex_bindings;
-    vertex_input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(
-        vertex_attributes);
-    vertex_input.pVertexAttributeDescriptions = vertex_attributes;
-
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
-
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = renderer->width;
-    viewport.height = renderer->height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
-
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent.width = renderer->width;
-    scissor.extent.height = renderer->height;
-
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
-
-    resterization.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    resterization.pNext = NULL;
-    resterization.flags = 0;
-    resterization.depthClampEnable = VK_FALSE;
-    resterization.rasterizerDiscardEnable = VK_FALSE;
-    resterization.polygonMode = VK_POLYGON_MODE_FILL;
-    resterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    resterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    resterization.depthBiasEnable = VK_FALSE;
-    resterization.depthBiasConstantFactor = 0.0F;
-    resterization.depthBiasClamp = 0.0F;
-    resterization.depthBiasSlopeFactor = 0.0F;
-    resterization.lineWidth = 1.0F;
-
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = renderer->msaa;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
-
-    color_attachment.blendEnable = VK_TRUE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
-                                      VK_COLOR_COMPONENT_G_BIT |
-                                      VK_COLOR_COMPONENT_B_BIT |
-                                      VK_COLOR_COMPONENT_A_BIT;
-
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
-
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_TRUE;
-    depth.depthWriteEnable = VK_TRUE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.front.failOp = VK_STENCIL_OP_ZERO;
-    depth.front.passOp = VK_STENCIL_OP_ZERO;
-    depth.front.depthFailOp = VK_STENCIL_OP_ZERO;
-    depth.front.compareOp = VK_COMPARE_OP_NEVER;
-    depth.front.compareMask = 0;
-    depth.front.writeMask = 0;
-    depth.front.reference = 0;
-    depth.back.failOp = VK_STENCIL_OP_ZERO;
-    depth.back.passOp = VK_STENCIL_OP_ZERO;
-    depth.back.depthFailOp = VK_STENCIL_OP_ZERO;
-    depth.back.compareOp = VK_COMPARE_OP_NEVER;
-    depth.back.compareMask = 0;
-    depth.back.writeMask = 0;
-    depth.back.reference = 0;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
-
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = renderer->basic_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = renderer->text_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
-
-    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline_info.pNext = NULL;
-    pipeline_info.flags = 0;
-    pipeline_info.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline_info.pStages = stages;
-    pipeline_info.pVertexInputState = &vertex_input;
-    pipeline_info.pInputAssemblyState = &input_assembly;
-    pipeline_info.pTessellationState = NULL;
-    pipeline_info.pViewportState = &viewport_state;
-    pipeline_info.pRasterizationState = &resterization;
-    pipeline_info.pMultisampleState = &multisample;
-    pipeline_info.pDepthStencilState = &depth;
-    pipeline_info.pColorBlendState = &color;
-    pipeline_info.pDynamicState = NULL;
-    pipeline_info.layout = renderer->common_pipeline_layout;
-    pipeline_info.renderPass = renderer->main_render_pass;
-    pipeline_info.subpass = 0;
-    pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-    pipeline_info.basePipelineIndex = -1;
-
-    /* TODO(samuel): create all pipelines in a single batch */
-    vk_result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1,
-        &pipeline_info, NULL, &renderer->text_pipeline);
-    if (vk_result) {
-      code = OWL_ERROR_FATAL;
-      goto error_destroy_wires_pipeline;
-    }
+  vk_result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1,
+      &pipeline_info, NULL, &renderer->text_pipeline);
+  if (vk_result) {
+    code = OWL_ERROR_FATAL;
+    goto error_destroy_wires_pipeline;
   }
 
-  {
-    VkVertexInputBindingDescription vertex_bindings;
-    VkVertexInputAttributeDescription vertex_attributes[6];
-    VkPipelineVertexInputStateCreateInfo vertex_input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rasterization;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline_info;
+  vertex_bindings.stride = sizeof(struct owl_pnuujw_vertex);
 
-    vertex_bindings.binding = 0;
-    vertex_bindings.stride = sizeof(struct owl_pnuujw_vertex);
-    vertex_bindings.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+  vertex_attributes[0].binding = 0;
+  vertex_attributes[0].location = 0;
+  vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+  vertex_attributes[0].offset = offsetof(struct owl_pnuujw_vertex, position);
 
-    vertex_attributes[0].binding = 0;
-    vertex_attributes[0].location = 0;
-    vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[0].offset = offsetof(struct owl_pnuujw_vertex, position);
+  vertex_attributes[1].binding = 0;
+  vertex_attributes[1].location = 1;
+  vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+  vertex_attributes[1].offset = offsetof(struct owl_pnuujw_vertex, normal);
 
-    vertex_attributes[1].binding = 0;
-    vertex_attributes[1].location = 1;
-    vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[1].offset = offsetof(struct owl_pnuujw_vertex, normal);
+  vertex_attributes[2].binding = 0;
+  vertex_attributes[2].location = 2;
+  vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
+  vertex_attributes[2].offset = offsetof(struct owl_pnuujw_vertex, uv0);
 
-    vertex_attributes[2].binding = 0;
-    vertex_attributes[2].location = 2;
-    vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attributes[2].offset = offsetof(struct owl_pnuujw_vertex, uv0);
+  vertex_attributes[3].binding = 0;
+  vertex_attributes[3].location = 3;
+  vertex_attributes[3].format = VK_FORMAT_R32G32_SFLOAT;
+  vertex_attributes[3].offset = offsetof(struct owl_pnuujw_vertex, uv1);
 
-    vertex_attributes[3].binding = 0;
-    vertex_attributes[3].location = 3;
-    vertex_attributes[3].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attributes[3].offset = offsetof(struct owl_pnuujw_vertex, uv1);
+  vertex_attributes[4].binding = 0;
+  vertex_attributes[4].location = 4;
+  vertex_attributes[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+  vertex_attributes[4].offset = offsetof(struct owl_pnuujw_vertex, joints0);
 
-    vertex_attributes[4].binding = 0;
-    vertex_attributes[4].location = 4;
-    vertex_attributes[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    vertex_attributes[4].offset = offsetof(struct owl_pnuujw_vertex, joints0);
+  vertex_attributes[5].binding = 0;
+  vertex_attributes[5].location = 5;
+  vertex_attributes[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+  vertex_attributes[5].offset = offsetof(struct owl_pnuujw_vertex, weights0);
 
-    vertex_attributes[5].binding = 0;
-    vertex_attributes[5].location = 5;
-    vertex_attributes[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    vertex_attributes[5].offset = offsetof(struct owl_pnuujw_vertex, weights0);
+  vertex_input.vertexAttributeDescriptionCount = 6;
 
-    vertex_input.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input.pNext = NULL;
-    vertex_input.flags = 0;
-    vertex_input.vertexBindingDescriptionCount = 1;
-    vertex_input.pVertexBindingDescriptions = &vertex_bindings;
-    vertex_input.vertexAttributeDescriptionCount = OWL_ARRAY_SIZE(
-        vertex_attributes);
-    vertex_input.pVertexAttributeDescriptions = vertex_attributes;
+  color_attachment.blendEnable = VK_FALSE;
+  color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+  color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+  color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+  color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
+  stages[0].module = renderer->model_vertex_shader;
+  stages[1].module = renderer->model_fragment_shader;
 
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = renderer->width;
-    viewport.height = renderer->height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
+  pipeline_info.layout = renderer->model_pipeline_layout;
 
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent.width = renderer->width;
-    scissor.extent.height = renderer->height;
-
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
-
-    rasterization.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterization.pNext = NULL;
-    rasterization.flags = 0;
-    rasterization.depthClampEnable = VK_FALSE;
-    rasterization.rasterizerDiscardEnable = VK_FALSE;
-    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterization.depthBiasEnable = VK_FALSE;
-    rasterization.depthBiasConstantFactor = 0.0F;
-    rasterization.depthBiasClamp = 0.0F;
-    rasterization.depthBiasSlopeFactor = 0.0F;
-    rasterization.lineWidth = 1.0F;
-
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = renderer->msaa;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
-
-    color_attachment.blendEnable = VK_FALSE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
-                                      VK_COLOR_COMPONENT_G_BIT |
-                                      VK_COLOR_COMPONENT_B_BIT |
-                                      VK_COLOR_COMPONENT_A_BIT;
-
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
-
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_TRUE;
-    depth.depthWriteEnable = VK_TRUE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.front.failOp = VK_STENCIL_OP_ZERO;
-    depth.front.passOp = VK_STENCIL_OP_ZERO;
-    depth.front.depthFailOp = VK_STENCIL_OP_ZERO;
-    depth.front.compareOp = VK_COMPARE_OP_NEVER;
-    depth.front.compareMask = 0;
-    depth.front.writeMask = 0;
-    depth.front.reference = 0;
-    depth.back.failOp = VK_STENCIL_OP_ZERO;
-    depth.back.passOp = VK_STENCIL_OP_ZERO;
-    depth.back.depthFailOp = VK_STENCIL_OP_ZERO;
-    depth.back.compareOp = VK_COMPARE_OP_NEVER;
-    depth.back.compareMask = 0;
-    depth.back.writeMask = 0;
-    depth.back.reference = 0;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
-
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = renderer->model_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = renderer->model_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
-
-    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline_info.pNext = NULL;
-    pipeline_info.flags = 0;
-    pipeline_info.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline_info.pStages = stages;
-    pipeline_info.pVertexInputState = &vertex_input;
-    pipeline_info.pInputAssemblyState = &input_assembly;
-    pipeline_info.pTessellationState = NULL;
-    pipeline_info.pViewportState = &viewport_state;
-    pipeline_info.pRasterizationState = &rasterization;
-    pipeline_info.pMultisampleState = &multisample;
-    pipeline_info.pDepthStencilState = &depth;
-    pipeline_info.pColorBlendState = &color;
-    pipeline_info.pDynamicState = NULL;
-    pipeline_info.layout = renderer->model_pipeline_layout;
-    pipeline_info.renderPass = renderer->main_render_pass;
-    pipeline_info.subpass = 0;
-    pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-    pipeline_info.basePipelineIndex = -1;
-
-    /* TODO(samuel): create all pipelines in a single batch */
-    vk_result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1,
-        &pipeline_info, NULL, &renderer->model_pipeline);
-    if (vk_result) {
-      code = OWL_ERROR_FATAL;
-      goto error_destroy_text_pipeline;
-    }
+  vk_result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1,
+      &pipeline_info, NULL, &renderer->model_pipeline);
+  if (vk_result) {
+    code = OWL_ERROR_FATAL;
+    goto error_destroy_text_pipeline;
   }
 
-  {
-    VkVertexInputBindingDescription vertex_bindings;
-    VkVertexInputAttributeDescription vertex_attributes;
-    VkPipelineVertexInputStateCreateInfo vertex_input;
-    VkPipelineInputAssemblyStateCreateInfo input_assembly;
-    VkViewport viewport;
-    VkRect2D scissor;
-    VkPipelineViewportStateCreateInfo viewport_state;
-    VkPipelineRasterizationStateCreateInfo rasterization;
-    VkPipelineMultisampleStateCreateInfo multisample;
-    VkPipelineColorBlendAttachmentState color_attachment;
-    VkPipelineColorBlendStateCreateInfo color;
-    VkPipelineDepthStencilStateCreateInfo depth;
-    VkPipelineShaderStageCreateInfo stages[2];
-    VkGraphicsPipelineCreateInfo pipeline_info;
+  vertex_bindings.stride = sizeof(struct owl_p_vertex);
 
-    vertex_bindings.binding = 0;
-    vertex_bindings.stride = sizeof(struct owl_p_vertex);
-    vertex_bindings.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+  vertex_attributes[0].binding = 0;
+  vertex_attributes[0].location = 0;
+  vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+  vertex_attributes[0].offset = offsetof(struct owl_p_vertex, position);
 
-    vertex_attributes.binding = 0;
-    vertex_attributes.location = 0;
-    vertex_attributes.format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes.offset = offsetof(struct owl_p_vertex, position);
+  vertex_input.vertexAttributeDescriptionCount = 1;
 
-    vertex_input.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input.pNext = NULL;
-    vertex_input.flags = 0;
-    vertex_input.vertexBindingDescriptionCount = 1;
-    vertex_input.pVertexBindingDescriptions = &vertex_bindings;
-    vertex_input.vertexAttributeDescriptionCount = 1;
-    vertex_input.pVertexAttributeDescriptions = &vertex_attributes;
+  depth.depthTestEnable = VK_FALSE;
+  depth.depthWriteEnable = VK_FALSE;
 
-    input_assembly.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.pNext = NULL;
-    input_assembly.flags = 0;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
+  stages[0].module = renderer->skybox_vertex_shader;
+  stages[1].module = renderer->skybox_fragment_shader;
 
-    viewport.x = 0.0F;
-    viewport.y = 0.0F;
-    viewport.width = renderer->width;
-    viewport.height = renderer->height;
-    viewport.minDepth = 0.0F;
-    viewport.maxDepth = 1.0F;
+  pipeline_info.layout = renderer->common_pipeline_layout;
 
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent.width = renderer->width;
-    scissor.extent.height = renderer->height;
+  vk_result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1,
+      &pipeline_info, NULL, &renderer->skybox_pipeline);
 
-    viewport_state.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.pNext = NULL;
-    viewport_state.flags = 0;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = &viewport;
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = &scissor;
-
-    rasterization.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterization.pNext = NULL;
-    rasterization.flags = 0;
-    rasterization.depthClampEnable = VK_FALSE;
-    rasterization.rasterizerDiscardEnable = VK_FALSE;
-    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterization.depthBiasEnable = VK_FALSE;
-    rasterization.depthBiasConstantFactor = 0.0F;
-    rasterization.depthBiasClamp = 0.0F;
-    rasterization.depthBiasSlopeFactor = 0.0F;
-    rasterization.lineWidth = 1.0F;
-
-    multisample.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample.pNext = NULL;
-    multisample.flags = 0;
-    multisample.rasterizationSamples = renderer->msaa;
-    multisample.sampleShadingEnable = VK_FALSE;
-    multisample.minSampleShading = 1.0F;
-    multisample.pSampleMask = NULL;
-    multisample.alphaToCoverageEnable = VK_FALSE;
-    multisample.alphaToOneEnable = VK_FALSE;
-
-    color_attachment.blendEnable = VK_FALSE;
-    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    color_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
-                                      VK_COLOR_COMPONENT_G_BIT |
-                                      VK_COLOR_COMPONENT_B_BIT |
-                                      VK_COLOR_COMPONENT_A_BIT;
-
-    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color.pNext = NULL;
-    color.flags = 0;
-    color.logicOpEnable = VK_FALSE;
-    color.logicOp = VK_LOGIC_OP_COPY;
-    color.attachmentCount = 1;
-    color.pAttachments = &color_attachment;
-    color.blendConstants[0] = 0.0F;
-    color.blendConstants[1] = 0.0F;
-    color.blendConstants[2] = 0.0F;
-    color.blendConstants[3] = 0.0F;
-
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.pNext = NULL;
-    depth.flags = 0;
-    depth.depthTestEnable = VK_FALSE;
-    depth.depthWriteEnable = VK_FALSE;
-    depth.depthCompareOp = VK_COMPARE_OP_NEVER;
-    depth.depthBoundsTestEnable = VK_FALSE;
-    depth.stencilTestEnable = VK_FALSE;
-    depth.front.failOp = VK_STENCIL_OP_ZERO;
-    depth.front.passOp = VK_STENCIL_OP_ZERO;
-    depth.front.depthFailOp = VK_STENCIL_OP_ZERO;
-    depth.front.compareOp = VK_COMPARE_OP_NEVER;
-    depth.front.compareMask = 0;
-    depth.front.writeMask = 0;
-    depth.front.reference = 0;
-    depth.back.failOp = VK_STENCIL_OP_ZERO;
-    depth.back.passOp = VK_STENCIL_OP_ZERO;
-    depth.back.depthFailOp = VK_STENCIL_OP_ZERO;
-    depth.back.compareOp = VK_COMPARE_OP_NEVER;
-    depth.back.compareMask = 0;
-    depth.back.writeMask = 0;
-    depth.back.reference = 0;
-    depth.minDepthBounds = 0.0F;
-    depth.maxDepthBounds = 1.0F;
-
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].pNext = NULL;
-    stages[0].flags = 0;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = renderer->skybox_vertex_shader;
-    stages[0].pName = "main";
-    stages[0].pSpecializationInfo = NULL;
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].pNext = NULL;
-    stages[1].flags = 0;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = renderer->skybox_fragment_shader;
-    stages[1].pName = "main";
-    stages[1].pSpecializationInfo = NULL;
-
-    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipeline_info.pNext = NULL;
-    pipeline_info.flags = 0;
-    pipeline_info.stageCount = OWL_ARRAY_SIZE(stages);
-    pipeline_info.pStages = stages;
-    pipeline_info.pVertexInputState = &vertex_input;
-    pipeline_info.pInputAssemblyState = &input_assembly;
-    pipeline_info.pTessellationState = NULL;
-    pipeline_info.pViewportState = &viewport_state;
-    pipeline_info.pRasterizationState = &rasterization;
-    pipeline_info.pMultisampleState = &multisample;
-    pipeline_info.pDepthStencilState = &depth;
-    pipeline_info.pColorBlendState = &color;
-    pipeline_info.pDynamicState = NULL;
-    pipeline_info.layout = renderer->common_pipeline_layout;
-    pipeline_info.renderPass = renderer->main_render_pass;
-    pipeline_info.subpass = 0;
-    pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-    pipeline_info.basePipelineIndex = -1;
-
-    /* TODO(samuel): create all pipelines in a single batch */
-    vk_result = vkCreateGraphicsPipelines(renderer->device, VK_NULL_HANDLE, 1,
-        &pipeline_info, NULL, &renderer->skybox_pipeline);
-
-    if (vk_result) {
-      code = OWL_ERROR_FATAL;
-      goto error_destroy_model_pipeline;
-    }
+  if (vk_result) {
+    code = OWL_ERROR_FATAL;
+    goto error_destroy_model_pipeline;
   }
 
   goto out;
@@ -3395,7 +2715,8 @@ OWL_PUBLIC void *owl_renderer_frame_allocate(struct owl_renderer *renderer,
       VK_ERROR_SURFACE_LOST_KHR == (vk_result))
 
 OWL_PUBLIC owl_code owl_renderer_begin_frame(struct owl_renderer *renderer) {
-  VkRenderPassBeginInfo pass_info;
+  VkFramebuffer framebuffer;
+  VkRenderPassBeginInfo render_pass_info;
   VkCommandBufferBeginInfo command_buffer_info;
 
   VkResult vk_result = VK_SUCCESS;
@@ -3444,19 +2765,19 @@ OWL_PUBLIC owl_code owl_renderer_begin_frame(struct owl_renderer *renderer) {
   if (vk_result)
     return OWL_ERROR_FATAL;
 
-  pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  pass_info.pNext = NULL;
-  pass_info.renderPass = renderer->main_render_pass;
-  pass_info.framebuffer =
-      renderer->swapchain_framebuffers[renderer->swapchain_image];
-  pass_info.renderArea.offset.x = 0;
-  pass_info.renderArea.offset.y = 0;
-  pass_info.renderArea.extent.width = renderer->width;
-  pass_info.renderArea.extent.height = renderer->height;
-  pass_info.clearValueCount = OWL_ARRAY_SIZE(renderer->clear_values);
-  pass_info.pClearValues = renderer->clear_values;
+  framebuffer = renderer->swapchain_framebuffers[renderer->swapchain_image];
+  render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  render_pass_info.pNext = NULL;
+  render_pass_info.renderPass = renderer->main_render_pass;
+  render_pass_info.framebuffer = framebuffer;
+  render_pass_info.renderArea.offset.x = 0;
+  render_pass_info.renderArea.offset.y = 0;
+  render_pass_info.renderArea.extent.width = renderer->width;
+  render_pass_info.renderArea.extent.height = renderer->height;
+  render_pass_info.clearValueCount = OWL_ARRAY_SIZE(renderer->clear_values);
+  render_pass_info.pClearValues = renderer->clear_values;
 
-  vkCmdBeginRenderPass(frame->command_buffer, &pass_info,
+  vkCmdBeginRenderPass(frame->command_buffer, &render_pass_info,
       VK_SUBPASS_CONTENTS_INLINE);
 
   return OWL_OK;

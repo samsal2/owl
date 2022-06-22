@@ -24,14 +24,12 @@ struct owl_renderer_texture_cube {
   VkImageLayout layout;
 };
 
-OWL_PUBLIC owl_code
-owl_renderer_texture_cube_init(struct owl_renderer_texture_cube *texture,
-    struct owl_renderer *renderer,
+OWL_PUBLIC owl_code owl_renderer_texture_cube_init(
+    struct owl_renderer_texture_cube *texture, struct owl_renderer *renderer,
     struct owl_renderer_texture_cube_desc *desc);
 
-OWL_PUBLIC void
-owl_renderer_texture_cube_deinit(struct owl_renderer_texture_cube *texture,
-    struct owl_renderer *renderer);
+OWL_PUBLIC void owl_renderer_texture_cube_deinit(
+    struct owl_renderer_texture_cube *texture, struct owl_renderer *renderer);
 
 OWL_END_DECLARATIONS
 

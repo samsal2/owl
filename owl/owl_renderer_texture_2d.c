@@ -6,8 +6,7 @@
 
 #include <math.h>
 
-OWL_PUBLIC VkFormat
-owl_pixel_format_as_format(enum owl_pixel_format format) {
+OWL_PUBLIC VkFormat owl_pixel_format_as_format(enum owl_pixel_format format) {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
     return VK_FORMAT_R8_UNORM;
@@ -17,8 +16,7 @@ owl_pixel_format_as_format(enum owl_pixel_format format) {
   }
 }
 
-OWL_PUBLIC uint64_t
-owl_pixel_format_size(enum owl_pixel_format format) {
+OWL_PUBLIC uint64_t owl_pixel_format_size(enum owl_pixel_format format) {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
     return 1 * sizeof(uint8_t);
@@ -28,14 +26,13 @@ owl_pixel_format_size(enum owl_pixel_format format) {
   }
 }
 
-OWL_PUBLIC uint32_t
-owl_renderer_texture_2d_calc_mips(int w, int h) {
+OWL_PUBLIC uint32_t owl_renderer_texture_2d_calc_mips(int w, int h) {
   return (uint32_t)(floor(log2(OWL_MAX(w, h))) + 1);
 }
 
-OWL_PRIVATE void
-owl_renderer_texture_2d_transition(struct owl_renderer_texture_2d *texture,
-    struct owl_renderer *renderer, VkImageLayout dst) {
+OWL_PRIVATE void owl_renderer_texture_2d_transition(
+    struct owl_renderer_texture_2d *texture, struct owl_renderer *renderer,
+    VkImageLayout dst) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst_Stage = VK_PIPELINE_STAGE_NONE_KHR;
@@ -96,9 +93,8 @@ owl_renderer_texture_2d_transition(struct owl_renderer_texture_2d *texture,
   texture->layout = dst;
 }
 
-OWL_PRIVATE void
-owl_renderer_texture_2d_generate_mips(struct owl_renderer_texture_2d *texture,
-    struct owl_renderer *renderer) {
+OWL_PRIVATE void owl_renderer_texture_2d_generate_mips(
+    struct owl_renderer_texture_2d *texture, struct owl_renderer *renderer) {
   int i;
   int width;
   int height;
@@ -185,9 +181,9 @@ owl_renderer_texture_2d_generate_mips(struct owl_renderer_texture_2d *texture,
   texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
-OWL_PUBLIC owl_code
-owl_renderer_texture_2d_init(struct owl_renderer_texture_2d *texture,
-    struct owl_renderer *renderer, struct owl_renderer_texture_2d_desc *desc) {
+OWL_PUBLIC owl_code owl_renderer_texture_2d_init(
+    struct owl_renderer_texture_2d *texture, struct owl_renderer *renderer,
+    struct owl_renderer_texture_2d_desc *desc) {
   uint8_t *upload_data;
   enum owl_pixel_format pixel_format;
   struct owl_renderer_upload_allocation upload_alloc;
@@ -452,9 +448,8 @@ out:
   return code;
 }
 
-OWL_PUBLIC void
-owl_renderer_texture_2d_deinit(struct owl_renderer_texture_2d *texture,
-    struct owl_renderer *renderer) {
+OWL_PUBLIC void owl_renderer_texture_2d_deinit(
+    struct owl_renderer_texture_2d *texture, struct owl_renderer *renderer) {
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
       &texture->set);
   vkDestroyImageView(renderer->device, texture->image_view, NULL);
