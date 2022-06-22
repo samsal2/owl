@@ -50,7 +50,6 @@ OWL_PRIVATE owl_code owl_renderer_init_instance(
   VkResult vk_result = VK_SUCCESS;
 
   {
-
     uint32_t extension_count;
     char const *const *extensions;
 
@@ -1964,24 +1963,11 @@ OWL_PRIVATE void owl_renderer_deinit_upload_buffer(
   vkDestroyBuffer(renderer->device, allocator->buffer, NULL);
 }
 
-OWL_PRIVATE owl_code owl_renderer_push_allocator_slot_at_frame(
-    struct owl_renderer *renderer, uint64_t size, uint32_t frame) {
-  int32_t end;
-  struct owl_renderer_bump_allocator *allocator;
-  struct owl_renderer_bump_allocator_slot *slot;
-
+OWL_PRIVATE owl_code owl_renderer_init_bump_allocator_slot(
+    struct owl_renderer *renderer, uint64_t size,
+    struct owl_renderer_bump_allocator_slot *slot) {
   owl_code code = OWL_OK;
   VkResult vk_result = VK_SUCCESS;
-
-  allocator = &renderer->allocators[frame];
-  end = (allocator->end + 1) % OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT;
-
-  if (allocator->start == end) {
-    code = OWL_ERROR_FATAL;
-    goto out;
-  }
-
-  slot = &allocator->slots[end];
 
   {
     VkBufferCreateInfo buffer_info;
@@ -2016,8 +2002,6 @@ OWL_PRIVATE owl_code owl_renderer_push_allocator_slot_at_frame(
 
     vkGetBufferMemoryRequirements(renderer->device, slot->buffer,
         &memory_requirements);
-
-    allocator->alignment = memory_requirements.alignment;
 
     memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memory_info.pNext = NULL;
@@ -2127,10 +2111,6 @@ OWL_PRIVATE owl_code owl_renderer_push_allocator_slot_at_frame(
         NULL);
   }
 
-  allocator->size = size;
-  allocator->offset = 0;
-  allocator->end = end;
-
   goto out;
 
 error_free_memory:
@@ -2143,54 +2123,52 @@ out:
   return code;
 }
 
-OWL_PUBLIC owl_code owl_renderer_push_allocator_slot(
-    struct owl_renderer *renderer, uint64_t size) {
-  uint32_t const frame = renderer->frame;
-  return owl_renderer_push_allocator_slot_at_frame(renderer, size, frame);
-}
+OWL_PRIVATE void owl_renderer_deinit_bump_allocator_slot(
+    struct owl_renderer *renderer,
+    struct owl_renderer_bump_allocator_slot *slot) {
+  VkDescriptorSet descriptor_sets[3];
 
-OWL_PRIVATE void owl_renderer_pop_allocator_slot_at_frame(
-    struct owl_renderer *renderer, uint32_t frame) {
-  struct owl_renderer_bump_allocator *allocator;
-  struct owl_renderer_bump_allocator_slot *slot;
+  descriptor_sets[0] = slot->common_descriptor_set;
+  descriptor_sets[1] = slot->model1_descriptor_set;
+  descriptor_sets[2] = slot->model2_descriptor_set;
 
-  allocator = &renderer->allocators[frame];
-
-  if (allocator->start == allocator->end)
-    return;
-
-  slot = &allocator->slots[allocator->start];
-
-  vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-      &slot->common_descriptor_set);
-
-  vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-      &slot->model1_descriptor_set);
-
-  vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-      &slot->model2_descriptor_set);
+  vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool,
+      OWL_ARRAY_SIZE(descriptor_sets), descriptor_sets);
 
   vkFreeMemory(renderer->device, slot->memory, NULL);
-
   vkDestroyBuffer(renderer->device, slot->buffer, NULL);
-
-  allocator->start = (allocator->start + 1) %
-                     OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT;
 }
 
-OWL_PUBLIC void owl_renderer_pop_old_allocator_slots_at_frame(
-    struct owl_renderer *renderer, uint32_t frame) {
-  struct owl_renderer_bump_allocator *allocator;
+OWL_PUBLIC owl_code owl_renderer_push_allocator_slot(
+    struct owl_renderer *renderer, uint64_t size) {
+  struct owl_renderer_bump_allocator_slot *slot;
+  int32_t const capacity = OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT;
+  uint32_t const frame = renderer->frame;
+  struct owl_renderer_bump_allocator *allocator = &renderer->allocators[frame];
+  int32_t const end = (allocator->end + 1) % capacity;
 
-  allocator = &renderer->allocators[frame];
+  if (end == allocator->start)
+    return OWL_ERROR_FATAL;
 
-  while (allocator->start != allocator->end)
-    owl_renderer_pop_allocator_slot_at_frame(renderer, frame);
+  allocator->end = end;
+  allocator->size = size;
+  allocator->offset = 0;
+
+  slot = &allocator->slots[end];
+  return owl_renderer_init_bump_allocator_slot(renderer, size, slot);
 }
 
 OWL_PUBLIC void owl_renderer_pop_old_allocator_slots(
     struct owl_renderer *renderer) {
-  owl_renderer_pop_old_allocator_slots_at_frame(renderer, renderer->frame);
+  int32_t i;
+  int32_t const capacity = OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT;
+  uint32_t frame = renderer->frame;
+  struct owl_renderer_bump_allocator *allocator = &renderer->allocators[frame];
+
+  for (i = allocator->start; i != allocator->end; i = (i + 1) % capacity) {
+    struct owl_renderer_bump_allocator_slot *slot = &allocator->slots[i];
+    owl_renderer_deinit_bump_allocator_slot(renderer, slot);
+  }
 }
 
 OWL_PRIVATE owl_code owl_renderer_init_allocators(
@@ -2199,26 +2177,35 @@ OWL_PRIVATE owl_code owl_renderer_init_allocators(
   owl_code code = OWL_OK;
 
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
-    struct owl_renderer_bump_allocator *allocator;
+    VkMemoryRequirements memory_requirements;
+    struct owl_renderer_bump_allocator *allocator = &renderer->allocators[i];
+    struct owl_renderer_bump_allocator_slot *slot = &allocator->slots[0];
 
-    allocator = &renderer->allocators[i];
-    allocator->start = -1;
-    allocator->end = -1;
+    allocator->size = size;
+    allocator->offset = 0;
+    allocator->start = 0;
+    allocator->end = 0;
 
-    code = owl_renderer_push_allocator_slot_at_frame(renderer, size, i);
+    code = owl_renderer_init_bump_allocator_slot(renderer, size, slot);
     if (code)
-      goto error_pop_allocator_slots;
+      goto error_deinit_allocator_slots;
 
-    allocator->start = allocator->end;
+    vkGetBufferMemoryRequirements(renderer->device, slot->buffer,
+        &memory_requirements);
+
+    allocator->alignment = memory_requirements.alignment;
   }
 
   renderer->frame = 0;
 
   goto out;
 
-error_pop_allocator_slots:
-  for (i = i - 1; i >= 0; --i)
-    owl_renderer_pop_allocator_slot_at_frame(renderer, i);
+error_deinit_allocator_slots:
+  for (i = i - 1; i >= 0; --i) {
+    struct owl_renderer_bump_allocator *allocator = &renderer->allocators[i];
+    struct owl_renderer_bump_allocator_slot *slot = &allocator->slots[0];
+    owl_renderer_deinit_bump_allocator_slot(renderer, slot);
+  }
 
 out:
   return code;
@@ -2229,10 +2216,15 @@ OWL_PRIVATE void owl_renderer_deinit_allocators(
   uint32_t i;
 
   for (i = 0; i < renderer->frame_count; ++i) {
-    /* HACK(samuel): setting end to and invalid slot to make all other slots
-     * old */
-    ++renderer->allocators[i].end;
-    owl_renderer_pop_old_allocator_slots_at_frame(renderer, i);
+    int j;
+    int const capacity = OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT;
+    struct owl_renderer_bump_allocator *allocator = &renderer->allocators[i];
+    int32_t one_past_end = (allocator->end + 1) % capacity;
+
+    for (j = allocator->start; j != one_past_end; j = (j + 1) % capacity) {
+      struct owl_renderer_bump_allocator_slot *slot = &allocator->slots[j];
+      owl_renderer_deinit_bump_allocator_slot(renderer, slot);
+    }
   }
 }
 
