@@ -3,7 +3,7 @@
 
 #include "owl_definitions.h"
 #include "owl_renderer.h"
-#include "owl_renderer_texture_2d.h"
+#include "owl_texture_2d.h"
 
 #include <vulkan/vulkan.h>
 
@@ -85,7 +85,7 @@ struct owl_model_node {
 };
 
 struct owl_model_image {
-  struct owl_renderer_texture_2d image;
+  struct owl_texture_2d image;
 };
 
 struct owl_model_texture {

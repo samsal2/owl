@@ -14,12 +14,12 @@ OWL_PUBLIC owl_code owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
   int32_t i;
   int32_t j;
   owl_code code;
-  struct owl_renderer_texture_2d_desc texture_desc;
+  struct owl_texture_2d_desc texture_desc;
 
   texture_desc.source = OWL_RENDERER_TEXTURE_SOURCE_FILE;
   texture_desc.file = material;
 
-  code = owl_renderer_texture_2d_init(&sim->material, renderer, &texture_desc);
+  code = owl_texture_2d_init(&sim->material, renderer, &texture_desc);
   if (code)
     goto out;
 
@@ -106,7 +106,7 @@ OWL_PUBLIC owl_code owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
   goto out;
 
 error_deinit_material:
-  owl_renderer_texture_2d_deinit(&sim->material, renderer);
+  owl_texture_2d_deinit(&sim->material, renderer);
 
 out:
   return code;
@@ -117,7 +117,7 @@ OWL_PUBLIC void owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
   vkDeviceWaitIdle(renderer->device);
 
   OWL_FREE(sim->particles);
-  owl_renderer_texture_2d_deinit(&sim->material, renderer);
+  owl_texture_2d_deinit(&sim->material, renderer);
 }
 
 OWL_PUBLIC void owl_cloth_simulation_update(struct owl_cloth_simulation *sim,

@@ -3,7 +3,7 @@
 
 #include "owl_definitions.h"
 
-#include "owl_renderer_texture_2d.h"
+#include "owl_texture_2d.h"
 
 OWL_BEGIN_DECLARATIONS
 
@@ -27,7 +27,7 @@ struct owl_cloth_simulation {
   int32_t particle_count;
   struct owl_cloth_particle *particles;
 
-  struct owl_renderer_texture_2d material;
+  struct owl_texture_2d material;
 };
 
 OWL_PUBLIC owl_code owl_cloth_simulation_init(struct owl_cloth_simulation *sim,

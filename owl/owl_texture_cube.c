@@ -1,12 +1,11 @@
-#include "owl_renderer_texture_cube.h"
+#include "owl_texture_cube.h"
 
 #include "owl_internal.h"
 #include "owl_renderer.h"
 #include "stb_image.h"
 
-OWL_PRIVATE void owl_renderer_texture_cube_transition(
-    struct owl_renderer_texture_cube *texture, struct owl_renderer *renderer,
-    VkImageLayout dst_layout) {
+OWL_PRIVATE void owl_texture_cube_transition(struct owl_texture_cube *texture,
+    struct owl_renderer *renderer, VkImageLayout dst_layout) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst_stage = VK_PIPELINE_STAGE_NONE_KHR;
@@ -67,9 +66,8 @@ OWL_PRIVATE void owl_renderer_texture_cube_transition(
   texture->layout = dst_layout;
 }
 
-OWL_PUBLIC owl_code owl_renderer_texture_cube_init(
-    struct owl_renderer_texture_cube *texture, struct owl_renderer *renderer,
-    struct owl_renderer_texture_cube_desc *desc) {
+OWL_PUBLIC owl_code owl_texture_cube_init(struct owl_texture_cube *texture,
+    struct owl_renderer *renderer, struct owl_texture_cube_desc *desc) {
   int width;
   int height;
   int chans;
@@ -92,29 +90,29 @@ OWL_PUBLIC owl_code owl_renderer_texture_cube_init(
   }
 
   {
-    VkImageCreateInfo image_info;
+    VkImageCreateInfo image_create_info;
 
-    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    image_info.pNext = NULL;
-    image_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-    image_info.imageType = VK_IMAGE_TYPE_2D;
-    image_info.format = VK_FORMAT_R8G8B8A8_SRGB;
-    image_info.extent.width = (uint32_t)width;
-    image_info.extent.height = (uint32_t)height;
-    image_info.extent.depth = 1;
-    image_info.mipLevels = 1;
-    image_info.arrayLayers = 6; /* 6 sides of the cube */
-    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    image_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                       VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                       VK_IMAGE_USAGE_SAMPLED_BIT;
-    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    image_info.queueFamilyIndexCount = 0;
-    image_info.pQueueFamilyIndices = NULL;
-    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_create_info.pNext = NULL;
+    image_create_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    image_create_info.imageType = VK_IMAGE_TYPE_2D;
+    image_create_info.format = VK_FORMAT_R8G8B8A8_SRGB;
+    image_create_info.extent.width = (uint32_t)width;
+    image_create_info.extent.height = (uint32_t)height;
+    image_create_info.extent.depth = 1;
+    image_create_info.mipLevels = 1;
+    image_create_info.arrayLayers = 6; /* 6 sides of the cube */
+    image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    image_create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_create_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                              VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                              VK_IMAGE_USAGE_SAMPLED_BIT;
+    image_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image_create_info.queueFamilyIndexCount = 0;
+    image_create_info.pQueueFamilyIndices = NULL;
+    image_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    vk_result = vkCreateImage(renderer->device, &image_info, NULL,
+    vk_result = vkCreateImage(renderer->device, &image_create_info, NULL,
         &texture->image);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
@@ -123,19 +121,19 @@ OWL_PUBLIC owl_code owl_renderer_texture_cube_init(
   }
   {
     VkMemoryRequirements memory_requirements;
-    VkMemoryAllocateInfo memory_info;
+    VkMemoryAllocateInfo memory_allocate_info;
 
     vkGetImageMemoryRequirements(renderer->device, texture->image,
         &memory_requirements);
 
-    memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memory_info.pNext = NULL;
-    memory_info.allocationSize = memory_requirements.size;
-    memory_info.memoryTypeIndex = owl_renderer_find_memory_type(renderer,
-        memory_requirements.memoryTypeBits,
+    memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory_allocate_info.pNext = NULL;
+    memory_allocate_info.allocationSize = memory_requirements.size;
+    memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
+        renderer, memory_requirements.memoryTypeBits,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
+    vk_result = vkAllocateMemory(renderer->device, &memory_allocate_info, NULL,
         &texture->memory);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
@@ -151,26 +149,27 @@ OWL_PUBLIC owl_code owl_renderer_texture_cube_init(
   }
 
   {
-    VkImageViewCreateInfo image_view_info;
+    VkImageViewCreateInfo image_view_create_info;
 
-    image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    image_view_info.pNext = NULL;
-    image_view_info.flags = 0;
-    image_view_info.image = texture->image;
-    image_view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-    image_view_info.format = VK_FORMAT_R8G8B8A8_SRGB;
-    image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    image_view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    image_view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    image_view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    image_view_info.subresourceRange.baseMipLevel = 0;
-    image_view_info.subresourceRange.levelCount = 1;
-    image_view_info.subresourceRange.baseArrayLayer = 0;
-    image_view_info.subresourceRange.layerCount = 6;
+    image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    image_view_create_info.pNext = NULL;
+    image_view_create_info.flags = 0;
+    image_view_create_info.image = texture->image;
+    image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+    image_view_create_info.format = VK_FORMAT_R8G8B8A8_SRGB;
+    image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.subresourceRange.aspectMask =
+        VK_IMAGE_ASPECT_COLOR_BIT;
+    image_view_create_info.subresourceRange.baseMipLevel = 0;
+    image_view_create_info.subresourceRange.levelCount = 1;
+    image_view_create_info.subresourceRange.baseArrayLayer = 0;
+    image_view_create_info.subresourceRange.layerCount = 6;
 
-    vk_result = vkCreateImageView(renderer->device, &image_view_info, NULL,
-        &texture->image_view);
+    vk_result = vkCreateImageView(renderer->device, &image_view_create_info,
+        NULL, &texture->image_view);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_free_memory;
@@ -178,17 +177,18 @@ OWL_PUBLIC owl_code owl_renderer_texture_cube_init(
   }
 
   {
-    VkDescriptorSetAllocateInfo descriptor_set_info;
+    VkDescriptorSetAllocateInfo descriptor_set_allocate_info;
 
-    descriptor_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptor_set_info.pNext = NULL;
-    descriptor_set_info.descriptorPool = renderer->descriptor_pool;
-    descriptor_set_info.descriptorSetCount = 1;
-    descriptor_set_info.pSetLayouts =
+    descriptor_set_allocate_info.sType =
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptor_set_allocate_info.pNext = NULL;
+    descriptor_set_allocate_info.descriptorPool = renderer->descriptor_pool;
+    descriptor_set_allocate_info.descriptorSetCount = 1;
+    descriptor_set_allocate_info.pSetLayouts =
         &renderer->image_fragment_descriptor_set_layout;
 
     vk_result = vkAllocateDescriptorSets(renderer->device,
-        &descriptor_set_info, &texture->set);
+        &descriptor_set_allocate_info, &texture->descriptor_set);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
       goto error_destroy_image_view;
@@ -244,14 +244,14 @@ OWL_PUBLIC owl_code owl_renderer_texture_cube_init(
   if (code)
     goto error_free_upload_data;
 
-  owl_renderer_texture_cube_transition(texture, renderer,
+  owl_texture_cube_transition(texture, renderer,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
   vkCmdCopyBufferToImage(renderer->immediate_command_buffer,
       upload_alloc.buffer, texture->image,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, copies);
 
-  owl_renderer_texture_cube_transition(texture, renderer,
+  owl_texture_cube_transition(texture, renderer,
       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
   code = owl_renderer_end_immediate_command_buffer(renderer);
@@ -272,7 +272,7 @@ OWL_PUBLIC owl_code owl_renderer_texture_cube_init(
 
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[0].pNext = NULL;
-    writes[0].dstSet = texture->set;
+    writes[0].dstSet = texture->descriptor_set;
     writes[0].dstBinding = 0;
     writes[0].dstArrayElement = 0;
     writes[0].descriptorCount = 1;
@@ -283,7 +283,7 @@ OWL_PUBLIC owl_code owl_renderer_texture_cube_init(
 
     writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[1].pNext = NULL;
-    writes[1].dstSet = texture->set;
+    writes[1].dstSet = texture->descriptor_set;
     writes[1].dstBinding = 1;
     writes[1].dstArrayElement = 0;
     writes[1].descriptorCount = 1;
@@ -305,7 +305,7 @@ error_free_upload_data:
 
 error_free_descriptor_sets:
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-      &texture->set);
+      &texture->descriptor_set);
 
 error_destroy_image_view:
   vkDestroyImageView(renderer->device, texture->image_view, NULL);
@@ -323,10 +323,10 @@ out:
   return code;
 }
 
-OWL_PUBLIC void owl_renderer_texture_cube_deinit(
-    struct owl_renderer_texture_cube *texture, struct owl_renderer *renderer) {
+OWL_PUBLIC void owl_texture_cube_deinit(struct owl_texture_cube *texture,
+    struct owl_renderer *renderer) {
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-      &texture->set);
+      &texture->descriptor_set);
   vkDestroyImageView(renderer->device, texture->image_view, NULL);
   vkFreeMemory(renderer->device, texture->memory, NULL);
   vkDestroyImage(renderer->device, texture->image, NULL);

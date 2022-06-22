@@ -5,8 +5,8 @@
 #include "owl_model.h"
 #include "owl_plataform.h"
 #include "owl_renderer.h"
-#include "owl_renderer_texture_2d.h"
-#include "owl_renderer_texture_cube.h"
+#include "owl_texture_2d.h"
+#include "owl_texture_cube.h"
 #include "owl_vector_math.h"
 
 #include <stdio.h>
@@ -429,7 +429,7 @@ OWL_PUBLIC owl_code owl_draw_skybox(struct owl_renderer *renderer) {
   OWL_MEMCPY(data, &uniform, sizeof(uniform));
 
   sets[0] = uniform_allocation.slot->common_descriptor_set;
-  sets[1] = renderer->skybox.set;
+  sets[1] = renderer->skybox.descriptor_set;
 
   vkCmdBindVertexBuffers(frame->command_buffer, 0, 1,
       &vertex_allocation.slot->buffer, &vertex_allocation.offset);

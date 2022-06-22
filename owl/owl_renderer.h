@@ -2,8 +2,8 @@
 #define OWL_RENDERER_H_
 
 #include "owl_definitions.h"
-#include "owl_renderer_texture_2d.h"
-#include "owl_renderer_texture_cube.h"
+#include "owl_texture_2d.h"
+#include "owl_texture_cube.h"
 
 #include <vulkan/vulkan.h>
 
@@ -161,10 +161,10 @@ struct owl_renderer {
   struct owl_renderer_upload_allocator upload_allocator;
 
   int32_t skybox_loaded;
-  struct owl_renderer_texture_cube skybox;
+  struct owl_texture_cube skybox;
 
   int32_t font_loaded;
-  struct owl_renderer_texture_2d font_atlas;
+  struct owl_texture_2d font_atlas;
   struct owl_renderer_packed_char font_chars[OWL_RENDERER_CHAR_COUNT];
 
   uint32_t frame;

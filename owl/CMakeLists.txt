@@ -9,10 +9,10 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_model.h
   owl_plataform.c
   owl_plataform.h
-  owl_renderer_texture_2d.c
-  owl_renderer_texture_2d.h
-  owl_renderer_texture_cube.c
-  owl_renderer_texture_cube.h
+  owl_texture_2d.c
+  owl_texture_2d.h
+  owl_texture_cube.c
+  owl_texture_cube.h
   owl_vector_math.c
   owl_vector_math.h
   owl_draw.c
