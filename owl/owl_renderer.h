@@ -74,14 +74,6 @@ struct owl_renderer_frame_allocation {
   struct owl_renderer_bump_allocator_slot *slot;
 };
 
-struct owl_renderer_frame {
-  VkCommandPool command_pool;
-  VkCommandBuffer command_buffer;
-  VkFence in_flight_fence;
-  VkSemaphore acquire_semaphore;
-  VkSemaphore render_done_semaphore;
-};
-
 struct owl_renderer {
   struct owl_plataform *plataform;
 
