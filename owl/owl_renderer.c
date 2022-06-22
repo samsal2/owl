@@ -2169,6 +2169,8 @@ OWL_PUBLIC void owl_renderer_pop_old_allocator_slots(
     struct owl_renderer_bump_allocator_slot *slot = &allocator->slots[i];
     owl_renderer_deinit_bump_allocator_slot(renderer, slot);
   }
+
+  allocator->start = allocator->end;
 }
 
 OWL_PRIVATE owl_code owl_renderer_init_allocators(
