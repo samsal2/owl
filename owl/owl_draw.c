@@ -102,7 +102,7 @@ OWL_PUBLIC owl_code owl_draw_quad(struct owl_renderer *renderer,
 }
 
 OWL_PRIVATE owl_code owl_draw_glyph(struct owl_renderer *renderer,
-    struct owl_renderer_glyph *glyph, owl_v3 const color) {
+    struct owl_glyph *glyph, owl_v3 const color) {
   owl_m4 matrix;
   owl_v3 scale;
   struct owl_quad quad;
@@ -150,7 +150,7 @@ OWL_PUBLIC owl_code owl_draw_text(struct owl_renderer *renderer,
   offset[1] = position[1] * (float)renderer->height;
 
   for (letter = &text[0]; '\0' != *letter; ++letter) {
-    struct owl_renderer_glyph glyph;
+    struct owl_glyph glyph;
 
     code = owl_renderer_fill_glyph(renderer, *letter, offset, &glyph);
     if (code)

@@ -3111,7 +3111,7 @@ cleanup:
 }
 
 OWL_PUBLIC owl_code owl_renderer_fill_glyph(struct owl_renderer *renderer,
-    char c, owl_v2 offset, struct owl_renderer_glyph *glyph) {
+    char c, owl_v2 offset, struct owl_glyph *glyph) {
   stbtt_aligned_quad quad;
   owl_code code = OWL_OK;
 

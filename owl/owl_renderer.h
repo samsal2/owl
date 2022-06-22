@@ -9,7 +9,7 @@
 
 OWL_BEGIN_DECLARATIONS
 
-struct owl_renderer_packed_char {
+struct owl_packed_char {
   uint16_t x0;
   uint16_t y0;
   uint16_t x1;
@@ -21,7 +21,7 @@ struct owl_renderer_packed_char {
   float y_offset2;
 };
 
-struct owl_renderer_glyph {
+struct owl_glyph {
   owl_v3 positions[4];
   owl_v2 uvs[4];
 };
@@ -165,7 +165,7 @@ struct owl_renderer {
 
   int32_t font_loaded;
   struct owl_texture_2d font_atlas;
-  struct owl_renderer_packed_char font_chars[OWL_RENDERER_CHAR_COUNT];
+  struct owl_packed_char font_chars[OWL_RENDERER_CHAR_COUNT];
 
   uint32_t frame;
   uint32_t frame_count;
@@ -219,7 +219,7 @@ OWL_PUBLIC owl_code owl_renderer_end_immediate_command_buffer(
     struct owl_renderer *renderer);
 
 OWL_PUBLIC owl_code owl_renderer_fill_glyph(struct owl_renderer *renderer,
-    char letter, owl_v2 offset, struct owl_renderer_glyph *glyph);
+    char letter, owl_v2 offset, struct owl_glyph *glyph);
 
 OWL_END_DECLARATIONS
 
