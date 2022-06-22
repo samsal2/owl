@@ -5,6 +5,7 @@
 #include "owl_plataform.h"
 #include "owl_vector_math.h"
 #include "stb_truetype.h"
+#include "vulkan/vulkan_core.h"
 
 #define OWL_DEFAULT_BUFFER_SIZE (1 << 16)
 
@@ -2257,7 +2258,6 @@ OWL_PRIVATE void owl_renderer_deinit_allocators(
 
 OWL_PRIVATE owl_code owl_renderer_init_frames(struct owl_renderer *renderer) {
   int32_t i;
-  struct owl_renderer_frame *frame;
 
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
@@ -2265,112 +2265,124 @@ OWL_PRIVATE owl_code owl_renderer_init_frames(struct owl_renderer *renderer) {
   renderer->frame = 0;
 
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
-    frame = &renderer->frames[i];
+    VkCommandPoolCreateInfo command_pool_create_info;
 
-    {
-      VkCommandPoolCreateInfo command_pool_create_info;
+    command_pool_create_info.sType =
+        VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    command_pool_create_info.pNext = NULL;
+    command_pool_create_info.flags = 0;
+    command_pool_create_info.queueFamilyIndex =
+        renderer->graphics_queue_family;
 
-      command_pool_create_info.sType =
-          VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-      command_pool_create_info.pNext = NULL;
-      command_pool_create_info.flags = 0;
-      command_pool_create_info.queueFamilyIndex =
-          renderer->graphics_queue_family;
-
-      vk_result = vkCreateCommandPool(renderer->device,
-          &command_pool_create_info, NULL, &frame->command_pool);
-      if (vk_result) {
-        code = OWL_ERROR_FATAL;
-        goto error;
-      }
+    vk_result = vkCreateCommandPool(renderer->device,
+        &command_pool_create_info, NULL, &renderer->submit_command_pools[i]);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_submit_command_pools;
     }
+  }
 
-    {
-      VkCommandBufferAllocateInfo command_buffer_allocate_info;
+  for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
+    VkCommandBufferAllocateInfo command_buffer_allocate_info;
+    VkCommandPool command_pool = renderer->submit_command_pools[i];
 
-      command_buffer_allocate_info.sType =
-          VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-      command_buffer_allocate_info.pNext = NULL;
-      command_buffer_allocate_info.commandPool = frame->command_pool;
-      command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-      command_buffer_allocate_info.commandBufferCount = 1;
+    command_buffer_allocate_info.sType =
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    command_buffer_allocate_info.pNext = NULL;
+    command_buffer_allocate_info.commandPool = command_pool;
+    command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    command_buffer_allocate_info.commandBufferCount = 1;
 
-      vk_result = vkAllocateCommandBuffers(renderer->device,
-          &command_buffer_allocate_info, &frame->command_buffer);
-      if (vk_result) {
-        code = OWL_ERROR_FATAL;
-        goto error_destroy_command_pool;
-      }
+    vk_result = vkAllocateCommandBuffers(renderer->device,
+        &command_buffer_allocate_info, &renderer->submit_command_buffers[i]);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_free_submit_command_buffers;
     }
+  }
 
-    {
-      VkFenceCreateInfo fence_create_info;
+  for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
+    VkFenceCreateInfo fence_create_info;
 
-      fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-      fence_create_info.pNext = NULL;
-      fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fence_create_info.pNext = NULL;
+    fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-      vk_result = vkCreateFence(renderer->device, &fence_create_info, NULL,
-          &frame->in_flight_fence);
-      if (vk_result) {
-        code = OWL_ERROR_FATAL;
-        goto error_free_command_buffer;
-      }
+    vk_result = vkCreateFence(renderer->device, &fence_create_info, NULL,
+        &renderer->in_flight_fences[i]);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_in_flight_fences;
     }
+  }
 
-    {
-      VkSemaphoreCreateInfo semaphore_create_info;
+  for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
+    VkSemaphoreCreateInfo semaphore_create_info;
 
-      semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-      semaphore_create_info.pNext = NULL;
-      semaphore_create_info.flags = 0;
+    semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphore_create_info.pNext = NULL;
+    semaphore_create_info.flags = 0;
 
-      vk_result = vkCreateSemaphore(renderer->device, &semaphore_create_info,
-          NULL, &frame->acquire_semaphore);
-      if (vk_result) {
-        code = OWL_ERROR_FATAL;
-        goto error_destroy_in_flight_fence;
-      }
+    vk_result = vkCreateSemaphore(renderer->device, &semaphore_create_info,
+        NULL, &renderer->acquire_semaphores[i]);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_acquire_semaphores;
     }
+  }
 
-    {
-      VkSemaphoreCreateInfo semaphore_create_info;
+  for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
+    VkSemaphoreCreateInfo semaphore_create_info;
 
-      semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-      semaphore_create_info.pNext = NULL;
-      semaphore_create_info.flags = 0;
+    semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphore_create_info.pNext = NULL;
+    semaphore_create_info.flags = 0;
 
-      vk_result = vkCreateSemaphore(renderer->device, &semaphore_create_info,
-          NULL, &frame->render_done_semaphore);
-      if (vk_result) {
-        code = OWL_ERROR_FATAL;
-        goto error_destroy_acquire_semaphore;
-      }
+    vk_result = vkCreateSemaphore(renderer->device, &semaphore_create_info,
+        NULL, &renderer->render_done_semaphores[i]);
+    if (vk_result) {
+      code = OWL_ERROR_FATAL;
+      goto error_destroy_render_done_semaphores;
     }
   }
 
   goto out;
 
-  for (; i > 0; --i) {
-    frame = &renderer->frames[i - 1];
+error_destroy_render_done_semaphores:
+  for (i = i - 1; i > 0; --i) {
+    VkSemaphore semaphore = renderer->render_done_semaphores[i];
+    vkDestroySemaphore(renderer->device, semaphore, NULL);
+  }
 
-    vkDestroySemaphore(renderer->device, frame->render_done_semaphore, NULL);
+  i = renderer->frame_count;
 
-  error_destroy_acquire_semaphore:
-    vkDestroySemaphore(renderer->device, frame->acquire_semaphore, NULL);
+error_destroy_acquire_semaphores:
+  for (i = i - 1; i > 0; --i) {
+    VkSemaphore semaphore = renderer->acquire_semaphores[i];
+    vkDestroySemaphore(renderer->device, semaphore, NULL);
+  }
 
-  error_destroy_in_flight_fence:
-    vkDestroyFence(renderer->device, frame->in_flight_fence, NULL);
+  i = renderer->frame_count;
 
-  error_free_command_buffer:
-    vkFreeCommandBuffers(renderer->device, frame->command_pool, 1,
-        &frame->command_buffer);
+error_destroy_in_flight_fences:
+  for (i = i - 1; i > 0; --i) {
+    VkFence fence = renderer->in_flight_fences[i];
+    vkDestroyFence(renderer->device, fence, NULL);
+  }
 
-  error_destroy_command_pool:
-    vkDestroyCommandPool(renderer->device, frame->command_pool, NULL);
+  i = renderer->frame_count;
 
-  error:
-    continue;
+error_free_submit_command_buffers:
+  for (i = i - 1; i > 0; --i) {
+    VkCommandPool command_pool = renderer->submit_command_pools[i];
+    VkCommandBuffer command_buffer = renderer->submit_command_buffers[i];
+    vkFreeCommandBuffers(renderer->device, command_pool, 1, &command_buffer);
+  }
+
+error_destroy_submit_command_pools:
+  for (i = i - 1; i > 0; --i) {
+    VkCommandPool command_pool = renderer->submit_command_pools[i];
+    vkDestroyCommandPool(renderer->device, command_pool, NULL);
   }
 
 out:
@@ -2381,18 +2393,35 @@ OWL_PRIVATE void owl_renderer_deinit_frames(struct owl_renderer *renderer) {
   uint32_t i;
 
   for (i = 0; i < renderer->frame_count; ++i) {
-    struct owl_renderer_frame *frame = &renderer->frames[i];
+    VkSemaphore semaphore = renderer->render_done_semaphores[i];
+    vkDestroySemaphore(renderer->device, semaphore, NULL);
+  }
 
-    vkDestroySemaphore(renderer->device, frame->render_done_semaphore, NULL);
+  i = renderer->frame_count;
 
-    vkDestroySemaphore(renderer->device, frame->acquire_semaphore, NULL);
+  for (i = 0; i < renderer->frame_count; ++i) {
+    VkSemaphore semaphore = renderer->acquire_semaphores[i];
+    vkDestroySemaphore(renderer->device, semaphore, NULL);
+  }
 
-    vkDestroyFence(renderer->device, frame->in_flight_fence, NULL);
+  i = renderer->frame_count;
 
-    vkFreeCommandBuffers(renderer->device, frame->command_pool, 1,
-        &frame->command_buffer);
+  for (i = 0; i < renderer->frame_count; ++i) {
+    VkFence fence = renderer->in_flight_fences[i];
+    vkDestroyFence(renderer->device, fence, NULL);
+  }
 
-    vkDestroyCommandPool(renderer->device, frame->command_pool, NULL);
+  i = renderer->frame_count;
+
+  for (i = 0; i < renderer->frame_count; ++i) {
+    VkCommandPool command_pool = renderer->submit_command_pools[i];
+    VkCommandBuffer command_buffer = renderer->submit_command_buffers[i];
+    vkFreeCommandBuffers(renderer->device, command_pool, 1, &command_buffer);
+  }
+
+  for (i = 0; i < renderer->frame_count; ++i) {
+    VkCommandPool command_pool = renderer->submit_command_pools[i];
+    vkDestroyCommandPool(renderer->device, command_pool, NULL);
   }
 }
 
@@ -2744,34 +2773,37 @@ OWL_PUBLIC owl_code owl_renderer_begin_frame(struct owl_renderer *renderer) {
 
   uint64_t const timeout = (uint64_t)-1;
   uint32_t const clear_value_count = OWL_ARRAY_SIZE(renderer->clear_values);
+  uint32_t const frame = renderer->frame;
   VkClearValue const *clear_values = renderer->clear_values;
-  struct owl_renderer_frame *frame = &renderer->frames[renderer->frame];
+  VkCommandPool command_pool = renderer->submit_command_pools[frame];
+  VkCommandBuffer command_buffer = renderer->submit_command_buffers[frame];
+  VkFence in_flight_fence = renderer->in_flight_fences[frame];
+  VkSemaphore acquire_semaphore = renderer->acquire_semaphores[frame];
 
   vk_result = vkAcquireNextImageKHR(renderer->device, renderer->swapchain,
-      timeout, frame->acquire_semaphore, VK_NULL_HANDLE,
-      &renderer->swapchain_image);
+      timeout, acquire_semaphore, VK_NULL_HANDLE, &renderer->swapchain_image);
   if (OWL_RENDERER_IS_SWAPCHAIN_OUT_OF_DATE(vk_result)) {
     code = owl_renderer_resize_swapchain(renderer);
     if (code)
       return code;
 
     vk_result = vkAcquireNextImageKHR(renderer->device, renderer->swapchain,
-        timeout, frame->acquire_semaphore, VK_NULL_HANDLE,
+        timeout, acquire_semaphore, VK_NULL_HANDLE,
         &renderer->swapchain_image);
     if (vk_result)
       return OWL_ERROR_FATAL;
   }
 
-  vk_result = vkWaitForFences(renderer->device, 1, &frame->in_flight_fence,
+  vk_result = vkWaitForFences(renderer->device, 1, &in_flight_fence,
       VK_TRUE, timeout);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
-  vk_result = vkResetFences(renderer->device, 1, &frame->in_flight_fence);
+  vk_result = vkResetFences(renderer->device, 1, &in_flight_fence);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
-  vk_result = vkResetCommandPool(renderer->device, frame->command_pool, 0);
+  vk_result = vkResetCommandPool(renderer->device, command_pool, 0);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
@@ -2784,8 +2816,7 @@ OWL_PUBLIC owl_code owl_renderer_begin_frame(struct owl_renderer *renderer) {
       VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   command_buffer_begin_info.pInheritanceInfo = NULL;
 
-  vk_result = vkBeginCommandBuffer(frame->command_buffer,
-      &command_buffer_begin_info);
+  vk_result = vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
@@ -2801,7 +2832,7 @@ OWL_PUBLIC owl_code owl_renderer_begin_frame(struct owl_renderer *renderer) {
   render_pass_begin_info.clearValueCount = clear_value_count;
   render_pass_begin_info.pClearValues = clear_values;
 
-  vkCmdBeginRenderPass(frame->command_buffer, &render_pass_begin_info,
+  vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info,
       VK_SUBPASS_CONTENTS_INLINE);
 
   return OWL_OK;
@@ -2812,12 +2843,16 @@ OWL_PUBLIC owl_code owl_renderer_end_frame(struct owl_renderer *renderer) {
   VkSubmitInfo submit_info;
   VkPresentInfoKHR present_info;
 
-  struct owl_renderer_frame *frame = &renderer->frames[renderer->frame];
+  uint32_t const frame = renderer->frame;
+  VkCommandBuffer command_buffer = renderer->submit_command_buffers[frame];
+  VkFence in_flight_fence = renderer->in_flight_fences[frame];
+  VkSemaphore acquire_semaphore = renderer->acquire_semaphores[frame];
+  VkSemaphore render_done_semaphore = renderer->render_done_semaphores[frame];
 
   VkResult vk_result;
 
-  vkCmdEndRenderPass(frame->command_buffer);
-  vk_result = vkEndCommandBuffer(frame->command_buffer);
+  vkCmdEndRenderPass(command_buffer);
+  vk_result = vkEndCommandBuffer(command_buffer);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
@@ -2825,22 +2860,22 @@ OWL_PUBLIC owl_code owl_renderer_end_frame(struct owl_renderer *renderer) {
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.pNext = NULL;
   submit_info.waitSemaphoreCount = 1;
-  submit_info.pWaitSemaphores = &frame->acquire_semaphore;
+  submit_info.pWaitSemaphores = &acquire_semaphore;
   submit_info.signalSemaphoreCount = 1;
-  submit_info.pSignalSemaphores = &frame->render_done_semaphore;
+  submit_info.pSignalSemaphores = &render_done_semaphore;
   submit_info.pWaitDstStageMask = &stage;
   submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &frame->command_buffer;
+  submit_info.pCommandBuffers = &command_buffer;
 
   vk_result = vkQueueSubmit(renderer->graphics_queue, 1, &submit_info,
-      frame->in_flight_fence);
+      in_flight_fence);
   if (vk_result)
     return OWL_ERROR_FATAL;
 
   present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   present_info.pNext = NULL;
   present_info.waitSemaphoreCount = 1;
-  present_info.pWaitSemaphores = &frame->render_done_semaphore;
+  present_info.pWaitSemaphores = &render_done_semaphore;
   present_info.swapchainCount = 1;
   present_info.pSwapchains = &renderer->swapchain;
   present_info.pImageIndices = &renderer->swapchain_image;

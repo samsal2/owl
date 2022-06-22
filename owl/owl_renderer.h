@@ -9,6 +9,13 @@
 
 OWL_BEGIN_DECLARATIONS
 
+#define OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT 8
+#define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT 2
+#define OWL_RENDERER_FONT_FIRST_CHAR ((int)(' '))
+#define OWL_RENDERER_CHAR_COUNT ((int)('~' - ' '))
+
+struct owl_plataform;
+
 struct owl_packed_char {
   uint16_t x0;
   uint16_t y0;
@@ -25,13 +32,6 @@ struct owl_glyph {
   owl_v3 positions[4];
   owl_v2 uvs[4];
 };
-
-#define OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT 8
-#define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT 2
-#define OWL_RENDERER_FONT_FIRST_CHAR ((int)(' '))
-#define OWL_RENDERER_CHAR_COUNT ((int)('~' - ' '))
-
-struct owl_plataform;
 
 struct owl_renderer_upload_allocator {
   int32_t in_use;
@@ -170,7 +170,13 @@ struct owl_renderer {
   uint32_t frame;
   uint32_t frame_count;
 
-  struct owl_renderer_frame frames[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkCommandPool submit_command_pools[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkCommandBuffer submit_command_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+
+  VkFence in_flight_fences[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkSemaphore acquire_semaphores[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkSemaphore render_done_semaphores[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+
   struct owl_renderer_bump_allocator
       allocators[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
 

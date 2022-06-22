@@ -5,7 +5,6 @@
 
 struct owl_plataform;
 struct owl_render;
-struct owl_render_frame;
 struct owl_dynamic_buffer;
 struct owl_dynamic_buffer_ref;
 struct owl_uniform_buffer;
