@@ -159,7 +159,7 @@ OWL_BEGIN_DECLARATIONS
 
 #define owl_v4_dot(lhs, rhs)                                                  \
   ((lhs)[0] * (rhs)[0] + (lhs)[1] * (rhs)[1] + (lhs)[2] * (rhs)[2] +          \
-      (lhs)[3] * (rhs)[3])
+   (lhs)[3] * (rhs)[3])
 
 #define OWL_V3_SCALE(v, scale, out)                                           \
   do {                                                                        \
@@ -289,64 +289,80 @@ OWL_BEGIN_DECLARATIONS
     (out)[3] = (lhs)[3] * (rhs)[3];                                           \
   } while (0)
 
-OWL_PUBLIC void owl_v3_cross(owl_v3 const lhs, owl_v3 const rhs, owl_v3 out);
+OWL_PUBLIC void
+owl_v3_cross(owl_v3 const lhs, owl_v3 const rhs, owl_v3 out);
 
-OWL_PUBLIC void owl_m4_multiply_v4(owl_m4 const m, owl_v4 const v, owl_v4 out);
+OWL_PUBLIC void
+owl_m4_multiply_v4(owl_m4 const m, owl_v4 const v, owl_v4 out);
 
-OWL_PUBLIC float owl_v2_magnitude(owl_v2 const v);
+OWL_PUBLIC float
+owl_v2_magnitude(owl_v2 const v);
 
-OWL_PUBLIC float owl_v3_magnitude(owl_v3 const v);
+OWL_PUBLIC float
+owl_v3_magnitude(owl_v3 const v);
 
-OWL_PUBLIC float owl_v4_magnitude(owl_v3 const v);
+OWL_PUBLIC float
+owl_v4_magnitude(owl_v3 const v);
 
-OWL_PUBLIC void owl_v3_normalize(owl_v3 const v, owl_v3 out);
+OWL_PUBLIC void
+owl_v3_normalize(owl_v3 const v, owl_v3 out);
 
-OWL_PUBLIC void owl_v4_normalize(owl_v4 const v, owl_v4 out);
+OWL_PUBLIC void
+owl_v4_normalize(owl_v4 const v, owl_v4 out);
 
-OWL_PUBLIC void owl_m4_make_rotate(float angle, owl_v3 const axis, owl_m4 out);
+OWL_PUBLIC void
+owl_m4_make_rotate(float angle, owl_v3 const axis, owl_m4 out);
 
-OWL_PUBLIC void owl_m4_translate(owl_v3 const v, owl_m4 out);
+OWL_PUBLIC void
+owl_m4_translate(owl_v3 const v, owl_m4 out);
 
-OWL_PUBLIC void owl_m4_ortho(float left, float right, float bot, float top,
-    float near, float far, owl_m4 out);
+OWL_PUBLIC void
+owl_m4_ortho(float left, float right, float bot, float top, float near,
+             float far, owl_m4 out);
 
-OWL_PUBLIC void owl_m4_perspective(float fov, float ratio, float near,
-    float far, owl_m4 out);
+OWL_PUBLIC void
+owl_m4_perspective(float fov, float ratio, float near, float far, owl_m4 out);
 
-OWL_PUBLIC void owl_m4_look(owl_v3 const eye, owl_v3 const direction,
-    owl_v3 const up, owl_m4 out);
+OWL_PUBLIC void
+owl_m4_look(owl_v3 const eye, owl_v3 const direction, owl_v3 const up,
+            owl_m4 out);
 
-OWL_PUBLIC void owl_m4_look_at(owl_v3 const eye, owl_v3 const center,
-    owl_v3 const up, owl_m4 out);
+OWL_PUBLIC void
+owl_m4_look_at(owl_v3 const eye, owl_v3 const center, owl_v3 const up,
+               owl_m4 out);
 
-OWL_PUBLIC void owl_v3_direction(float pitch, float yaw, owl_v3 const up,
-    owl_v3 out);
+OWL_PUBLIC void
+owl_v3_direction(float pitch, float yaw, owl_v3 const up, owl_v3 out);
 
-OWL_PUBLIC void owl_m4_multiply(owl_m4 const lhs, owl_m4 const rhs,
-    owl_m4 out);
+OWL_PUBLIC void
+owl_m4_multiply(owl_m4 const lhs, owl_m4 const rhs, owl_m4 out);
 
-OWL_PUBLIC void owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis,
-    owl_m4 out);
+OWL_PUBLIC void
+owl_m4_rotate(owl_m4 const m, float angle, owl_v3 const axis, owl_m4 out);
 
-OWL_PUBLIC float owl_v2_distance(owl_v2 const src, owl_v2 const dst);
+OWL_PUBLIC float
+owl_v2_distance(owl_v2 const src, owl_v2 const dst);
 
-OWL_PUBLIC float owl_v3_distance(owl_v3 const src, owl_v3 const dst);
+OWL_PUBLIC float
+owl_v3_distance(owl_v3 const src, owl_v3 const dst);
 
-OWL_PUBLIC void owl_v3_mix(owl_v3 const src, owl_v3 const dst, float weight,
-    owl_v3 out);
+OWL_PUBLIC void
+owl_v3_mix(owl_v3 const src, owl_v3 const dst, float weight, owl_v3 out);
 
-OWL_PUBLIC void owl_v4_mix(owl_v4 const src, owl_v4 const dst, float weight,
-    owl_v4 out);
+OWL_PUBLIC void
+owl_v4_mix(owl_v4 const src, owl_v4 const dst, float weight, owl_v4 out);
 
-OWL_PUBLIC void owl_q4_as_m4(owl_q4 const q, owl_m4 out);
+OWL_PUBLIC void
+owl_q4_as_m4(owl_q4 const q, owl_m4 out);
 
-OWL_PUBLIC void owl_m4_scale_v3(owl_m4 const src, owl_v3 const scale,
-    owl_m4 out);
+OWL_PUBLIC void
+owl_m4_scale_v3(owl_m4 const src, owl_v3 const scale, owl_m4 out);
 
-OWL_PUBLIC void owl_v4_quat_slerp(owl_v4 const src, owl_v4 const dst, float t,
-    owl_v4 out);
+OWL_PUBLIC void
+owl_v4_quat_slerp(owl_v4 const src, owl_v4 const dst, float t, owl_v4 out);
 
-OWL_PUBLIC void owl_m4_inverse(owl_m4 const mat, owl_m4 dst);
+OWL_PUBLIC void
+owl_m4_inverse(owl_m4 const mat, owl_m4 dst);
 
 #ifndef NDEBUG
 
@@ -375,13 +391,17 @@ OWL_PUBLIC void owl_m4_inverse(owl_m4 const mat, owl_m4 dst);
 
 /* clang-format on */
 
-OWL_PUBLIC void owl_v2_print(owl_v2 const v);
+OWL_PUBLIC void
+owl_v2_print(owl_v2 const v);
 
-OWL_PUBLIC void owl_v3_print(owl_v3 const v);
+OWL_PUBLIC void
+owl_v3_print(owl_v3 const v);
 
-OWL_PUBLIC void owl_v4_print(owl_v4 const v);
+OWL_PUBLIC void
+owl_v4_print(owl_v4 const v);
 
-OWL_PUBLIC void owl_m4_print(owl_m4 const m);
+OWL_PUBLIC void
+owl_m4_print(owl_m4 const m);
 
 #endif /* NDEBUG */
 
