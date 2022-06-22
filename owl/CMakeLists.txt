@@ -13,8 +13,6 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_renderer_texture_2d.h
   owl_renderer_texture_cube.c
   owl_renderer_texture_cube.h
-  owl_vector.c
-  owl_vector.h
   owl_vector_math.c
   owl_vector_math.h
   owl_draw.c
