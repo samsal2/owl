@@ -7,7 +7,7 @@ OWL_BEGIN_DECLARATIONS
 
 struct owl_renderer;
 struct owl_model;
-struct owl_texture_2d;
+struct owl_renderer_texture_2d;
 struct owl_cloth_simulation;
 
 struct owl_quad {
@@ -27,7 +27,7 @@ struct owl_quad {
   /** normalized bottom right uv  */
   owl_v2 uv1;
   /** texture to draw */
-  struct owl_texture_2d *texture;
+  struct owl_renderer_texture_2d *texture;
 };
 
 /**

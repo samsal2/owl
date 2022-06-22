@@ -5,8 +5,8 @@
 #include "owl_model.h"
 #include "owl_plataform.h"
 #include "owl_renderer.h"
-#include "owl_texture_2d.h"
-#include "owl_texture_cube.h"
+#include "owl_renderer_texture_2d.h"
+#include "owl_renderer_texture_cube.h"
 #include "owl_vector_math.h"
 
 #include <stdio.h>

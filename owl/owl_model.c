@@ -52,7 +52,7 @@ owl_model_images_load(struct owl_model *model, struct owl_renderer *renderer,
 
   for (i = 0; i < (int)gltf->images_count; ++i) {
     struct owl_model_uri uri;
-    struct owl_texture_2d_desc desc;
+    struct owl_renderer_texture_2d_desc desc;
     struct owl_model_image *image = &model->images[i];
 
     code = owl_model_uri_init(gltf->images[i].uri, &uri);
@@ -60,10 +60,10 @@ owl_model_images_load(struct owl_model *model, struct owl_renderer *renderer,
       goto out;
     }
 
-    desc.source = OWL_TEXTURE_SOURCE_FILE;
+    desc.source = OWL_RENDERER_TEXTURE_SOURCE_FILE;
     desc.file = uri.path;
 
-    code = owl_texture_2d_init(&image->image, renderer, &desc);
+    code = owl_renderer_texture_2d_init(&image->image, renderer, &desc);
     if (code) {
       OWL_DEBUG_LOG("Failed to load texture %s!\n", desc.file);
       goto out;
@@ -1082,7 +1082,7 @@ owl_model_deinit(struct owl_model *model, struct owl_renderer *renderer) {
   vkDestroyBuffer(renderer->device, model->vk_vertex_buffer, NULL);
 
   for (i = 0; i < model->image_count; ++i) {
-    owl_texture_2d_deinit(&model->images[i].image, renderer);
+    owl_renderer_texture_2d_deinit(&model->images[i].image, renderer);
   }
 
   for (i = 0; i < model->skin_count; ++i) {

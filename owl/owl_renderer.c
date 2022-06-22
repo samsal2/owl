@@ -7,7 +7,7 @@
 #include "owl_vector_math.h"
 #include "stb_truetype.h"
 
-#define OWL_DEFAULT_BUFFER_SIZE 1024
+#define OWL_DEFAULT_BUFFER_SIZE (1 << 16)
 
 #if defined(OWL_ENABLE_VALIDATION)
 
@@ -3569,7 +3569,7 @@ owl_renderer_load_font(struct owl_renderer *renderer, uint32_t size,
   uint8_t *bitmap;
   stbtt_pack_context pack;
   struct owl_plataform_file file;
-  struct owl_texture_2d_desc texture_desc;
+  struct owl_renderer_texture_2d_desc texture_desc;
   int32_t stb_result;
   int32_t const width = OWL_FONT_ATLAS_WIDTH;
   int32_t const height = OWL_FONT_ATLAS_HEIGHT;
@@ -3604,13 +3604,14 @@ owl_renderer_load_font(struct owl_renderer *renderer, uint32_t size,
     goto error_pack_end;
   }
 
-  texture_desc.source = OWL_TEXTURE_SOURCE_DATA;
+  texture_desc.source = OWL_RENDERER_TEXTURE_SOURCE_DATA;
   texture_desc.data = bitmap;
   texture_desc.width = OWL_FONT_ATLAS_WIDTH;
   texture_desc.height = OWL_FONT_ATLAS_HEIGHT;
   texture_desc.format = OWL_PIXEL_FORMAT_R8_UNORM;
 
-  code = owl_texture_2d_init(&renderer->font_atlas, renderer, &texture_desc);
+  code = owl_renderer_texture_2d_init(&renderer->font_atlas, renderer,
+      &texture_desc);
   if (!code)
     renderer->font_loaded = 1;
 
@@ -3628,7 +3629,7 @@ error_unload_file:
 
 OWL_PUBLIC void
 owl_renderer_unload_font(struct owl_renderer *renderer) {
-  owl_texture_2d_deinit(&renderer->font_atlas, renderer);
+  owl_renderer_texture_2d_deinit(&renderer->font_atlas, renderer);
   renderer->font_loaded = 0;
 }
 
@@ -3638,7 +3639,7 @@ OWL_PUBLIC owl_code
 owl_renderer_load_skybox(struct owl_renderer *renderer, char const *path) {
   int32_t i;
   owl_code code;
-  struct owl_texture_cube_desc texture_desc;
+  struct owl_renderer_texture_cube_desc texture_desc;
   char buffers[6][OWL_MAX_SKYBOX_PATH_LENGTH];
 
   OWL_LOCAL_PERSIST char const *names[6] = {"left.jpg", "right.jpg", "top.jpg",
@@ -3649,7 +3650,8 @@ owl_renderer_load_skybox(struct owl_renderer *renderer, char const *path) {
     texture_desc.files[i] = buffers[i];
   }
 
-  code = owl_texture_cube_init(&renderer->skybox, renderer, &texture_desc);
+  code = owl_renderer_texture_cube_init(&renderer->skybox, renderer,
+      &texture_desc);
   if (!code)
     renderer->skybox_loaded = 1;
 
@@ -3658,7 +3660,7 @@ owl_renderer_load_skybox(struct owl_renderer *renderer, char const *path) {
 
 OWL_PUBLIC void
 owl_renderer_unload_skybox(struct owl_renderer *renderer) {
-  owl_texture_cube_deinit(&renderer->skybox, renderer);
+  owl_renderer_texture_cube_deinit(&renderer->skybox, renderer);
   renderer->skybox_loaded = 0;
 }
 
