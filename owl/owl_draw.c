@@ -18,9 +18,9 @@ OWL_PUBLIC owl_code owl_draw_quad(struct owl_renderer *renderer,
   VkCommandBuffer command_buffer;
   struct owl_pvm_uniform uniform;
   struct owl_pcu_vertex vertices[4];
-  struct owl_renderer_frame_allocation vertex_allocation;
-  struct owl_renderer_frame_allocation index_allocation;
-  struct owl_renderer_frame_allocation uniform_allocation;
+  struct owl_renderer_vertex_allocation vertex_allocation;
+  struct owl_renderer_index_allocation index_allocation;
+  struct owl_renderer_uniform_allocation uniform_allocation;
   OWL_LOCAL_PERSIST uint32_t const indices[] = {2, 3, 1, 1, 0, 2};
 
   command_buffer = renderer->submit_command_buffers[renderer->frame];
@@ -65,36 +65,39 @@ OWL_PUBLIC owl_code owl_draw_quad(struct owl_renderer *renderer,
   OWL_M4_COPY(renderer->view, uniform.view);
   OWL_M4_COPY(matrix, uniform.model);
 
-  data = owl_renderer_frame_allocate(renderer, sizeof(vertices),
+  data = owl_renderer_allocate_vertex(renderer, sizeof(vertices),
       &vertex_allocation);
+  OWL_ASSERT(data);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, vertices, sizeof(vertices));
 
-  data = owl_renderer_frame_allocate(renderer, sizeof(indices),
+  data = owl_renderer_allocate_index(renderer, sizeof(indices),
       &index_allocation);
+  OWL_ASSERT(data);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, indices, sizeof(indices));
 
-  data = owl_renderer_frame_allocate(renderer, sizeof(uniform),
+  data = owl_renderer_allocate_uniform(renderer, sizeof(uniform),
       &uniform_allocation);
+  OWL_ASSERT(data);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, &uniform, sizeof(uniform));
 
-  sets[0] = uniform_allocation.slot->common_descriptor_set;
+  sets[0] = uniform_allocation.pvm_descriptor_set;
   sets[1] = quad->texture->set;
 
-  vkCmdBindVertexBuffers(command_buffer, 0, 1,
-      &vertex_allocation.slot->buffer, &vertex_allocation.offset);
+  vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_allocation.buffer,
+      &vertex_allocation.offset);
 
-  vkCmdBindIndexBuffer(command_buffer, index_allocation.slot->buffer,
+  vkCmdBindIndexBuffer(command_buffer, index_allocation.buffer,
       index_allocation.offset, VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(command_buffer,
-      VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->common_pipeline_layout, 0,
-      OWL_ARRAY_SIZE(sets), sets, 1, &uniform_allocation.offset32);
+  vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+      renderer->common_pipeline_layout, 0, OWL_ARRAY_SIZE(sets), sets, 1,
+      &uniform_allocation.offset);
 
   vkCmdDrawIndexed(command_buffer, OWL_ARRAY_SIZE(indices), 1, 0, 0, 0);
 
@@ -177,8 +180,8 @@ OWL_PRIVATE owl_code owl_draw_model_node(struct owl_renderer *renderer,
   struct owl_model_skin_ssbo *ssbo;
   struct owl_model_ubo1 uniform1;
   struct owl_model_ubo2 uniform2;
-  struct owl_renderer_frame_allocation uniform1_allocation;
-  struct owl_renderer_frame_allocation uniform2_allocation;
+  struct owl_renderer_uniform_allocation uniform1_allocation;
+  struct owl_renderer_uniform_allocation uniform2_allocation;
   owl_code code;
 
   command_buffer = renderer->submit_command_buffers[renderer->frame];
@@ -210,27 +213,27 @@ OWL_PRIVATE owl_code owl_draw_model_node(struct owl_renderer *renderer,
   OWL_V4_ZERO(uniform1.light);
   OWL_V4_ZERO(uniform2.light_direction);
 
-  data = owl_renderer_frame_allocate(renderer, sizeof(uniform1),
+  data = owl_renderer_allocate_uniform(renderer, sizeof(uniform1),
       &uniform1_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, &uniform1, sizeof(uniform1));
 
-  vkCmdBindDescriptorSets(command_buffer,
-      VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->model_pipeline_layout, 0, 1,
-      &uniform1_allocation.slot->model1_descriptor_set, 1,
-      &uniform1_allocation.offset32);
+  vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+      renderer->model_pipeline_layout, 0, 1,
+      &uniform1_allocation.model1_descriptor_set, 1,
+      &uniform1_allocation.offset);
 
-  data = owl_renderer_frame_allocate(renderer, sizeof(uniform2),
+  data = owl_renderer_allocate_uniform(renderer, sizeof(uniform2),
       &uniform2_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, &uniform2, sizeof(uniform2));
 
-  vkCmdBindDescriptorSets(command_buffer,
-      VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->model_pipeline_layout, 5, 1,
-      &uniform1_allocation.slot->model2_descriptor_set, 1,
-      &uniform2_allocation.offset32);
+  vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+      renderer->model_pipeline_layout, 5, 1,
+      &uniform1_allocation.model2_descriptor_set, 1,
+      &uniform2_allocation.offset);
 
   for (i = 0; i < mesh->primitive_count; ++i) {
     VkDescriptorSet sets[4];
@@ -265,9 +268,9 @@ OWL_PRIVATE owl_code owl_draw_model_node(struct owl_renderer *renderer,
     sets[2] = physical_desc_image->image.set;
     sets[3] = skin->ssbo_sets[renderer->frame];
 
-    vkCmdBindDescriptorSets(command_buffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->model_pipeline_layout, 1,
-        OWL_ARRAY_SIZE(sets), sets, 0, NULL);
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        renderer->model_pipeline_layout, 1, OWL_ARRAY_SIZE(sets), sets, 0,
+        NULL);
 
     push_constant.base_color_factor[0] = material->base_color_factor[0];
     push_constant.base_color_factor[1] = material->base_color_factor[1];
@@ -332,8 +335,8 @@ OWL_PRIVATE owl_code owl_draw_model_node(struct owl_renderer *renderer,
         VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push_constant),
         &push_constant);
 
-    vkCmdDrawIndexed(command_buffer, primitive->count, 1,
-        primitive->first, 0, 0);
+    vkCmdDrawIndexed(command_buffer, primitive->count, 1, primitive->first, 0,
+        0);
   }
 
   return OWL_OK;
@@ -370,9 +373,9 @@ OWL_PUBLIC owl_code owl_draw_model(struct owl_renderer *renderer,
 
 OWL_PUBLIC owl_code owl_draw_skybox(struct owl_renderer *renderer) {
   uint8_t *data;
-  struct owl_renderer_frame_allocation vertex_allocation;
-  struct owl_renderer_frame_allocation index_allocation;
-  struct owl_renderer_frame_allocation uniform_allocation;
+  struct owl_renderer_vertex_allocation vertex_allocation;
+  struct owl_renderer_index_allocation index_allocation;
+  struct owl_renderer_uniform_allocation uniform_allocation;
   VkDescriptorSet sets[2];
   VkCommandBuffer command_buffer;
   struct owl_pvm_uniform uniform;
@@ -407,13 +410,13 @@ OWL_PUBLIC owl_code owl_draw_skybox(struct owl_renderer *renderer) {
   vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
       renderer->skybox_pipeline);
 
-  data = owl_renderer_frame_allocate(renderer, sizeof(vertices),
+  data = owl_renderer_allocate_vertex(renderer, sizeof(vertices),
       &vertex_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, vertices, sizeof(vertices));
 
-  data = owl_renderer_frame_allocate(renderer, sizeof(indices),
+  data = owl_renderer_allocate_index(renderer, sizeof(indices),
       &index_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -424,24 +427,24 @@ OWL_PUBLIC owl_code owl_draw_skybox(struct owl_renderer *renderer) {
   OWL_M3_COPY(renderer->view, uniform.view);
   OWL_V4_IDENTITY(uniform.model);
 
-  data = owl_renderer_frame_allocate(renderer, sizeof(uniform),
+  data = owl_renderer_allocate_uniform(renderer, sizeof(uniform),
       &uniform_allocation);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, &uniform, sizeof(uniform));
 
-  sets[0] = uniform_allocation.slot->common_descriptor_set;
+  sets[0] = uniform_allocation.pvm_descriptor_set;
   sets[1] = renderer->skybox.descriptor_set;
 
-  vkCmdBindVertexBuffers(command_buffer, 0, 1,
-      &vertex_allocation.slot->buffer, &vertex_allocation.offset);
+  vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_allocation.buffer,
+      &vertex_allocation.offset);
 
-  vkCmdBindIndexBuffer(command_buffer, index_allocation.slot->buffer,
+  vkCmdBindIndexBuffer(command_buffer, index_allocation.buffer,
       index_allocation.offset, VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(command_buffer,
-      VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->common_pipeline_layout, 0,
-      OWL_ARRAY_SIZE(sets), sets, 1, &uniform_allocation.offset32);
+  vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+      renderer->common_pipeline_layout, 0, OWL_ARRAY_SIZE(sets), sets, 1,
+      &uniform_allocation.offset);
 
   vkCmdDrawIndexed(command_buffer, OWL_ARRAY_SIZE(indices), 1, 0, 0, 0);
 
@@ -466,8 +469,29 @@ OWL_PUBLIC owl_code owl_draw_renderer_state(struct owl_renderer *renderer) {
 
   position[1] += 0.05F;
 
-  snprintf(buffer, sizeof(buffer), "allocator->size: %llu",
-      renderer->allocators[renderer->frame].size);
+  snprintf(buffer, sizeof(buffer), "vertex_buffer_size: %llu",
+      renderer->vertex_buffer_size);
+
+  owl_draw_text(renderer, buffer, position, color);
+
+  position[1] += 0.05F;
+
+  snprintf(buffer, sizeof(buffer), "index_buffer_size: %llu",
+      renderer->index_buffer_size);
+
+  owl_draw_text(renderer, buffer, position, color);
+
+  position[1] += 0.05F;
+
+  snprintf(buffer, sizeof(buffer), "uniform_buffer_size: %llu",
+      renderer->uniform_buffer_size);
+
+  owl_draw_text(renderer, buffer, position, color);
+
+  position[1] += 0.05F;
+
+  snprintf(buffer, sizeof(buffer), "upload_buffer_size: %llu",
+      renderer->upload_buffer_size);
 
   owl_draw_text(renderer, buffer, position, color);
 
@@ -481,22 +505,22 @@ OWL_PUBLIC owl_code owl_draw_cloth_simulation(struct owl_renderer *renderer,
 
   uint32_t index_count;
   uint32_t *indices;
-  struct owl_renderer_frame_allocation index_allocation;
+  struct owl_renderer_index_allocation index_allocation;
 
   uint64_t vertex_count;
   struct owl_pcu_vertex *vertices;
-  struct owl_renderer_frame_allocation vertex_allocation;
+  struct owl_renderer_vertex_allocation vertex_allocation;
 
   VkDescriptorSet sets[2];
   struct owl_pvm_uniform *uniform;
-  struct owl_renderer_frame_allocation uniform_allocation;
+  struct owl_renderer_uniform_allocation uniform_allocation;
 
   VkCommandBuffer command_buffer;
 
   command_buffer = renderer->submit_command_buffers[renderer->frame];
 
   index_count = (sim->width - 1) * (sim->height - 1) * 6;
-  indices = owl_renderer_frame_allocate(renderer,
+  indices = owl_renderer_allocate_index(renderer,
       index_count * sizeof(*indices), &index_allocation);
   if (!indices)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -516,7 +540,7 @@ OWL_PUBLIC owl_code owl_draw_cloth_simulation(struct owl_renderer *renderer,
   }
 
   vertex_count = sim->width * sim->height;
-  vertices = owl_renderer_frame_allocate(renderer,
+  vertices = owl_renderer_allocate_vertex(renderer,
       vertex_count * sizeof(*vertices), &vertex_allocation);
   if (!vertices)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -535,7 +559,7 @@ OWL_PUBLIC owl_code owl_draw_cloth_simulation(struct owl_renderer *renderer,
     }
   }
 
-  uniform = owl_renderer_frame_allocate(renderer, sizeof(*uniform),
+  uniform = owl_renderer_allocate_uniform(renderer, sizeof(*uniform),
       &uniform_allocation);
   if (!uniform)
     return OWL_ERROR_NO_FRAME_MEMORY;
@@ -544,21 +568,21 @@ OWL_PUBLIC owl_code owl_draw_cloth_simulation(struct owl_renderer *renderer,
   OWL_M4_COPY(renderer->view, uniform->view);
   OWL_M4_COPY(sim->model, uniform->model);
 
-  sets[0] = uniform_allocation.slot->common_descriptor_set;
+  sets[0] = uniform_allocation.pvm_descriptor_set;
   sets[1] = sim->material.set;
 
   vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
       renderer->basic_pipeline);
 
-  vkCmdBindVertexBuffers(command_buffer, 0, 1,
-      &vertex_allocation.slot->buffer, &vertex_allocation.offset);
+  vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_allocation.buffer,
+      &vertex_allocation.offset);
 
-  vkCmdBindIndexBuffer(command_buffer, index_allocation.slot->buffer,
+  vkCmdBindIndexBuffer(command_buffer, index_allocation.buffer,
       index_allocation.offset, VK_INDEX_TYPE_UINT32);
 
-  vkCmdBindDescriptorSets(command_buffer,
-      VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->common_pipeline_layout, 0,
-      OWL_ARRAY_SIZE(sets), sets, 1, &uniform_allocation.offset32);
+  vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+      renderer->common_pipeline_layout, 0, OWL_ARRAY_SIZE(sets), sets, 1,
+      &uniform_allocation.offset);
 
   vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
 

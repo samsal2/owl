@@ -11,6 +11,7 @@ OWL_BEGIN_DECLARATIONS
 
 #define OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT 8
 #define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT 2
+#define OWL_RENDERER_GARBAGE_COUNT 3
 #define OWL_RENDERER_FONT_FIRST_CHAR ((int)(' '))
 #define OWL_RENDERER_CHAR_COUNT ((int)('~' - ' '))
 
@@ -33,45 +34,26 @@ struct owl_glyph {
   owl_v2 uvs[4];
 };
 
-struct owl_renderer_upload_allocator {
-  int32_t in_use;
-  uint64_t size;
-  void *data;
-  VkBuffer buffer;
-  VkDeviceMemory memory;
-};
-
 struct owl_renderer_upload_allocation {
   VkBuffer buffer;
 };
 
-struct owl_renderer_bump_allocator_slot {
-  void *data;
+struct owl_renderer_vertex_allocation {
+  uint64_t offset;
   VkBuffer buffer;
-  VkDeviceMemory memory;
-  VkDescriptorSet common_descriptor_set;
+};
+
+struct owl_renderer_index_allocation {
+  uint64_t offset;
+  VkBuffer buffer;
+};
+
+struct owl_renderer_uniform_allocation {
+  uint32_t offset;
+  VkBuffer buffer;
+  VkDescriptorSet pvm_descriptor_set;
   VkDescriptorSet model1_descriptor_set;
   VkDescriptorSet model2_descriptor_set;
-};
-
-#define OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT 8
-
-struct owl_renderer_bump_allocator {
-  int32_t start;
-  int32_t end;
-
-  uint64_t size;
-  uint64_t offset;
-  uint64_t alignment;
-
-  struct owl_renderer_bump_allocator_slot
-      slots[OWL_RENDERER_BUMP_ALLOCATOR_SLOT_COUNT];
-};
-
-struct owl_renderer_frame_allocation {
-  uint32_t offset32;
-  uint64_t offset;
-  struct owl_renderer_bump_allocator_slot *slot;
 };
 
 struct owl_renderer {
@@ -150,14 +132,18 @@ struct owl_renderer {
 
   VkSampler linear_sampler;
 
-  struct owl_renderer_upload_allocator upload_allocator;
-
   int32_t skybox_loaded;
   struct owl_texture_cube skybox;
 
   int32_t font_loaded;
   struct owl_texture_2d font_atlas;
   struct owl_packed_char font_chars[OWL_RENDERER_CHAR_COUNT];
+
+  int32_t upload_buffer_in_use;
+  void *upload_buffer_data;
+  VkDeviceSize upload_buffer_size;
+  VkBuffer upload_buffer;
+  VkDeviceMemory upload_buffer_memory;
 
   uint32_t frame;
   uint32_t frame_count;
@@ -169,8 +155,46 @@ struct owl_renderer {
   VkSemaphore acquire_semaphores[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
   VkSemaphore render_done_semaphores[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
 
-  struct owl_renderer_bump_allocator
-      allocators[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkDeviceSize vertex_buffer_size;
+  VkDeviceSize vertex_buffer_offset;
+  VkDeviceSize vertex_buffer_alignment;
+  VkDeviceSize vertex_buffer_aligned_size;
+  VkDeviceMemory vertex_buffer_memory;
+  void *vertex_buffer_data;
+
+  VkBuffer vertex_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+
+  VkDeviceSize index_buffer_size;
+  VkDeviceSize index_buffer_offset;
+  VkDeviceSize index_buffer_alignment;
+  VkDeviceMemory index_buffer_memory;
+  VkDeviceSize index_buffer_aligned_size;
+  void *index_buffer_data;
+
+  VkBuffer index_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+
+  VkDeviceSize uniform_buffer_size;
+  VkDeviceSize uniform_buffer_offset;
+  VkDeviceSize uniform_buffer_alignment;
+  VkDeviceMemory uniform_buffer_memory;
+  VkDeviceSize uniform_buffer_aligned_size;
+  void *uniform_buffer_data;
+
+  VkBuffer uniform_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  /* clang-format off */
+  VkDescriptorSet uniform_pvm_descriptor_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkDescriptorSet uniform_model1_descriptor_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkDescriptorSet uniform_model2_descriptor_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  /* clang-format on */
+
+  uint32_t garbage;
+  uint32_t garbage_buffer_counts[OWL_RENDERER_GARBAGE_COUNT];
+  uint32_t garbage_memory_counts[OWL_RENDERER_GARBAGE_COUNT];
+  uint32_t garbage_descriptor_set_counts[OWL_RENDERER_GARBAGE_COUNT];
+
+  VkBuffer garbage_buffers[OWL_RENDERER_GARBAGE_COUNT][32];
+  VkDeviceMemory garbage_memories[OWL_RENDERER_GARBAGE_COUNT][32];
+  VkDescriptorSet garbage_descriptor_sets[OWL_RENDERER_GARBAGE_COUNT][32];
 
   PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;
   PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;
@@ -188,8 +212,14 @@ OWL_PUBLIC owl_code owl_renderer_begin_frame(struct owl_renderer *renderer);
 
 OWL_PUBLIC owl_code owl_renderer_end_frame(struct owl_renderer *renderer);
 
-OWL_PUBLIC void *owl_renderer_frame_allocate(struct owl_renderer *renderer,
-    uint64_t size, struct owl_renderer_frame_allocation *allocation);
+OWL_PUBLIC void *owl_renderer_allocate_vertex(struct owl_renderer *renderer,
+    uint64_t size, struct owl_renderer_vertex_allocation *allocation);
+
+OWL_PUBLIC void *owl_renderer_allocate_index(struct owl_renderer *renderer,
+    uint64_t size, struct owl_renderer_index_allocation *allocation);
+
+OWL_PUBLIC void *owl_renderer_allocate_uniform(struct owl_renderer *renderer,
+    uint64_t size, struct owl_renderer_uniform_allocation *allocation);
 
 OWL_PUBLIC void *owl_renderer_upload_allocate(struct owl_renderer *renderer,
     uint64_t size, struct owl_renderer_upload_allocation *allocation);
