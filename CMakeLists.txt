@@ -24,7 +24,7 @@ add_subdirectory(deps/stb)
 add_subdirectory(deps/cgltf)
 
 # add sources
-add_subdirectory(${PROJECT_NAME})
+add_subdirectory(src)
 add_subdirectory(shaders)
 
 # link libraries
@@ -37,7 +37,7 @@ target_link_libraries(${PROJECT_NAME}
 # includes
 target_include_directories(${PROJECT_NAME} 
   PUBLIC ${Vulkan_INCLUDE_DIR}
-  PUBLIC ${PROJECT_SOURCE_DIR})
+  PUBLIC src)
 
 # compile options
 target_compile_options(${PROJECT_NAME} PUBLIC
