@@ -3,6 +3,7 @@
 #include "owl_internal.h"
 #include "owl_model.h"
 #include "owl_plataform.h"
+#include "owl_texture.h"
 #include "owl_vector_math.h"
 #include "stb_truetype.h"
 
@@ -2977,7 +2978,7 @@ out:
 }
 
 OWL_PUBLIC void *
-owl_renderer_allocate_vertex(
+owl_renderer_vertex_allocate(
     struct owl_renderer *renderer, uint64_t size,
     struct owl_renderer_vertex_allocation *allocation) {
   uint8_t *data = renderer->vertex_buffer_data;
@@ -3012,7 +3013,7 @@ owl_renderer_allocate_vertex(
 }
 
 OWL_PUBLIC void *
-owl_renderer_allocate_index(struct owl_renderer *renderer, uint64_t size,
+owl_renderer_index_allocate(struct owl_renderer *renderer, uint64_t size,
                             struct owl_renderer_index_allocation *allocation) {
   uint8_t *data = renderer->index_buffer_data;
   uint32_t const frame = renderer->frame;
@@ -3046,7 +3047,7 @@ owl_renderer_allocate_index(struct owl_renderer *renderer, uint64_t size,
 }
 
 OWL_PUBLIC void *
-owl_renderer_allocate_uniform(
+owl_renderer_uniform_allocate(
     struct owl_renderer *renderer, uint64_t size,
     struct owl_renderer_uniform_allocation *allocation) {
   uint8_t *data = renderer->uniform_buffer_data;
@@ -3265,7 +3266,7 @@ owl_renderer_load_font(struct owl_renderer *renderer, uint32_t size,
   uint8_t *bitmap;
   stbtt_pack_context pack;
   struct owl_plataform_file file;
-  struct owl_texture_2d_desc texture_desc;
+  struct owl_texture_desc texture_desc;
   int32_t stb_result;
   int32_t const width = OWL_FONT_ATLAS_WIDTH;
   int32_t const height = OWL_FONT_ATLAS_HEIGHT;
@@ -3301,13 +3302,15 @@ owl_renderer_load_font(struct owl_renderer *renderer, uint32_t size,
     goto error_pack_end;
   }
 
-  texture_desc.source = OWL_RENDERER_TEXTURE_SOURCE_DATA;
-  texture_desc.data = bitmap;
+  texture_desc.source = OWL_TEXTURE_SOURCE_DATA;
+  texture_desc.type = OWL_TEXTURE_TYPE_2D;
+  texture_desc.path = NULL;
+  texture_desc.pixels = bitmap;
   texture_desc.width = OWL_FONT_ATLAS_WIDTH;
   texture_desc.height = OWL_FONT_ATLAS_HEIGHT;
   texture_desc.format = OWL_PIXEL_FORMAT_R8_UNORM;
 
-  code = owl_texture_2d_init(&renderer->font_atlas, renderer, &texture_desc);
+  code = owl_texture_init(renderer, &texture_desc, &renderer->font_atlas);
   if (!code)
     renderer->font_loaded = 1;
 
@@ -3325,7 +3328,7 @@ error_unload_file:
 
 OWL_PUBLIC void
 owl_renderer_unload_font(struct owl_renderer *renderer) {
-  owl_texture_2d_deinit(&renderer->font_atlas, renderer);
+  owl_texture_deinit(renderer, &renderer->font_atlas);
   renderer->font_loaded = 0;
 }
 
@@ -3333,21 +3336,18 @@ owl_renderer_unload_font(struct owl_renderer *renderer) {
 
 OWL_PUBLIC owl_code
 owl_renderer_load_skybox(struct owl_renderer *renderer, char const *path) {
-  int32_t i;
   owl_code code;
-  struct owl_texture_cube_desc texture_desc;
-  char buffers[6][OWL_MAX_SKYBOX_PATH_LENGTH];
+  struct owl_texture_desc texture_desc;
 
-  OWL_LOCAL_PERSIST char const *names[6] = {"left.jpg",  "right.jpg",
-                                            "top.jpg",   "bottom.jpg",
-                                            "front.jpg", "back.jpg"};
+  texture_desc.type = OWL_TEXTURE_TYPE_CUBE;
+  texture_desc.source = OWL_TEXTURE_SOURCE_FILE;
+  texture_desc.path = path;
+  texture_desc.pixels = NULL;
+  texture_desc.width = 0;
+  texture_desc.height = 0;
+  texture_desc.format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
 
-  for (i = 0; i < (int32_t)OWL_ARRAY_SIZE(names); ++i) {
-    snprintf(buffers[i], OWL_MAX_SKYBOX_PATH_LENGTH, "%s/%s", path, names[i]);
-    texture_desc.files[i] = buffers[i];
-  }
-
-  code = owl_texture_cube_init(&renderer->skybox, renderer, &texture_desc);
+  code = owl_texture_init(renderer, &texture_desc, &renderer->skybox);
   if (!code)
     renderer->skybox_loaded = 1;
 
@@ -3356,7 +3356,7 @@ owl_renderer_load_skybox(struct owl_renderer *renderer, char const *path) {
 
 OWL_PUBLIC void
 owl_renderer_unload_skybox(struct owl_renderer *renderer) {
-  owl_texture_cube_deinit(&renderer->skybox, renderer);
+  owl_texture_deinit(renderer, &renderer->skybox);
   renderer->skybox_loaded = 0;
 }
 

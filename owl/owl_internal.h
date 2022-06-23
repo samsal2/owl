@@ -1,15 +1,17 @@
-#ifndef OWL_INTERNAL_H_
-#define OWL_INTERNAL_H_
+#ifndef OWL_INTERNAL_H
+#define OWL_INTERNAL_H
 
 #include <assert.h>
 #define OWL_ASSERT(e) assert(e)
 
+#include <stdio.h>
 #include <string.h>
 #define OWL_MEMSET(dst, c, s) memset(dst, c, s)
 #define OWL_MEMCPY(dst, src, s) memcpy(dst, src, s)
 #define OWL_STRNCPY(dst, src, n) strncpy(dst, src, n)
 #define OWL_STRNCMP(lhs, rhs, n) strncmp(lhs, rhs, n)
 #define OWL_STRLEN(str) strlen(str)
+#define OWL_SNPRINTF snprintf
 
 #if !defined(NDEBUG)
 

@@ -1,9 +1,8 @@
-#ifndef OWL_RENDERER_H_
-#define OWL_RENDERER_H_
+#ifndef OWL_RENDERER_H
+#define OWL_RENDERER_H
 
 #include "owl_definitions.h"
-#include "owl_texture_2d.h"
-#include "owl_texture_cube.h"
+#include "owl_texture.h"
 
 #include <vulkan/vulkan.h>
 
@@ -133,10 +132,10 @@ struct owl_renderer {
   VkSampler linear_sampler;
 
   int32_t skybox_loaded;
-  struct owl_texture_cube skybox;
+  struct owl_texture skybox;
 
   int32_t font_loaded;
-  struct owl_texture_2d font_atlas;
+  struct owl_texture font_atlas;
   struct owl_packed_char font_chars[OWL_RENDERER_CHAR_COUNT];
 
   int32_t upload_buffer_in_use;
@@ -217,16 +216,16 @@ OWL_PUBLIC owl_code
 owl_renderer_end_frame(struct owl_renderer *renderer);
 
 OWL_PUBLIC void *
-owl_renderer_allocate_vertex(
+owl_renderer_vertex_allocate(
     struct owl_renderer *renderer, uint64_t size,
     struct owl_renderer_vertex_allocation *allocation);
 
 OWL_PUBLIC void *
-owl_renderer_allocate_index(struct owl_renderer *renderer, uint64_t size,
+owl_renderer_index_allocate(struct owl_renderer *renderer, uint64_t size,
                             struct owl_renderer_index_allocation *allocation);
 
 OWL_PUBLIC void *
-owl_renderer_allocate_uniform(
+owl_renderer_uniform_allocate(
     struct owl_renderer *renderer, uint64_t size,
     struct owl_renderer_uniform_allocation *allocation);
 

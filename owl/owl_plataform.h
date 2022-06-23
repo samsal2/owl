@@ -1,5 +1,5 @@
-#ifndef OWL_PLATAFORM_H_
-#define OWL_PLATAFORM_H_
+#ifndef OWL_PLATAFORM_H
+#define OWL_PLATAFORM_H
 
 #include "owl_definitions.h"
 

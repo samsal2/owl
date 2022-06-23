@@ -1,5 +1,5 @@
-#ifndef OWL_VECTOR_MATH_H_
-#define OWL_VECTOR_MATH_H_
+#ifndef OWL_VECTOR_MATH_H
+#define OWL_VECTOR_MATH_H
 
 #include "owl_definitions.h"
 

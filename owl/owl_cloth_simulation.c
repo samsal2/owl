@@ -1,5 +1,6 @@
 #include "owl_cloth_simulation.h"
 
+#include "owl/owl_texture.h"
 #include "owl_internal.h"
 #include "owl_renderer.h"
 #include "owl_vector_math.h"
@@ -15,12 +16,16 @@ owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
   int32_t i;
   int32_t j;
   owl_code code;
-  struct owl_texture_2d_desc texture_desc;
+  struct owl_texture_desc texture_desc;
 
-  texture_desc.source = OWL_RENDERER_TEXTURE_SOURCE_FILE;
-  texture_desc.file = material;
+  texture_desc.source = OWL_TEXTURE_SOURCE_FILE;
+  texture_desc.type = OWL_TEXTURE_TYPE_2D;
+  texture_desc.path = material;
+  texture_desc.width = 0;
+  texture_desc.height = 0;
+  texture_desc.format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
 
-  code = owl_texture_2d_init(&sim->material, renderer, &texture_desc);
+  code = owl_texture_init(renderer, &texture_desc, &sim->material);
   if (code)
     goto out;
 
@@ -107,7 +112,7 @@ owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
   goto out;
 
 error_deinit_material:
-  owl_texture_2d_deinit(&sim->material, renderer);
+  owl_texture_deinit(renderer, &sim->material);
 
 out:
   return code;
@@ -119,7 +124,7 @@ owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
   vkDeviceWaitIdle(renderer->device);
 
   OWL_FREE(sim->particles);
-  owl_texture_2d_deinit(&sim->material, renderer);
+  owl_texture_deinit(renderer, &sim->material);
 }
 
 OWL_PUBLIC void

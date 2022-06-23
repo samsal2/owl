@@ -1,5 +1,5 @@
-#ifndef OWL_H_
-#define OWL_H_
+#ifndef OWL_H
+#define OWL_H
 
 #include "owl_cloth_simulation.h"
 #include "owl_draw.h"

@@ -1,5 +1,5 @@
-#ifndef OWL_DEFINITIONS_H_
-#define OWL_DEFINITIONS_H_
+#ifndef OWL_DEFINITIONS_H
+#define OWL_DEFINITIONS_H
 
 #include <stdint.h>
 
@@ -65,6 +65,7 @@ typedef int owl_code;
 #define OWL_ERROR_NO_MEMORY -4
 #define OWL_ERROR_NOT_FOUND -5
 #define OWL_ERROR_NO_SPACE -6
+#define OWL_ERROR_INVALID_VALUE -7
 
 OWL_END_DECLARATIONS
 
