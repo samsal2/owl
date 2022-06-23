@@ -1836,81 +1836,17 @@ owl_renderer_deinit_pipelines(struct owl_renderer *renderer) {
 }
 
 OWL_PRIVATE owl_code
-owl_renderer_init_upload_buffer(struct owl_renderer *renderer, uint64_t size) {
-  VkResult vk_result = VK_SUCCESS;
-
-  renderer->upload_buffer_size = size;
+owl_renderer_init_upload_buffer(struct owl_renderer *renderer) {
   renderer->upload_buffer_in_use = 0;
-
-  {
-    VkBufferCreateInfo buffer_create_info;
-
-    buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_create_info.pNext = NULL;
-    buffer_create_info.flags = 0;
-    buffer_create_info.size = size;
-    buffer_create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    buffer_create_info.queueFamilyIndexCount = 0;
-    buffer_create_info.pQueueFamilyIndices = NULL;
-
-    vk_result = vkCreateBuffer(renderer->device, &buffer_create_info, NULL,
-                               &renderer->upload_buffer);
-    if (vk_result)
-      goto error;
-  }
-
-  {
-    VkMemoryPropertyFlagBits memory_properties;
-    VkMemoryRequirements memory_requirements;
-    VkMemoryAllocateInfo memory_allocate_info;
-
-    memory_properties = 0;
-    memory_properties |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    memory_properties |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    vkGetBufferMemoryRequirements(renderer->device, renderer->upload_buffer,
-                                  &memory_requirements);
-
-    memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memory_allocate_info.pNext = NULL;
-    memory_allocate_info.allocationSize = memory_requirements.size;
-    memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
-        renderer, memory_requirements.memoryTypeBits, memory_properties);
-
-    vk_result = vkAllocateMemory(renderer->device, &memory_allocate_info, NULL,
-                                 &renderer->upload_buffer_memory);
-    if (vk_result)
-      goto error_destroy_buffer;
-
-    vk_result = vkBindBufferMemory(renderer->device, renderer->upload_buffer,
-                                   renderer->upload_buffer_memory, 0);
-    if (vk_result)
-      goto error_free_memory;
-
-    vk_result = vkMapMemory(renderer->device, renderer->upload_buffer_memory,
-                            0, renderer->upload_buffer_size, 0,
-                            &renderer->upload_buffer_data);
-    if (vk_result)
-      goto error_free_memory;
-  }
-
   return OWL_OK;
-
-error_free_memory:
-  vkFreeMemory(renderer->device, renderer->upload_buffer_memory, NULL);
-
-error_destroy_buffer:
-  vkDestroyBuffer(renderer->device, renderer->upload_buffer, NULL);
-
-error:
-  return OWL_ERROR_FATAL;
 }
 
 OWL_PRIVATE void
 owl_renderer_deinit_upload_buffer(struct owl_renderer *renderer) {
-  vkFreeMemory(renderer->device, renderer->upload_buffer_memory, NULL);
-  vkDestroyBuffer(renderer->device, renderer->upload_buffer, NULL);
+  if (renderer->upload_buffer_in_use) {
+    vkFreeMemory(renderer->device, renderer->upload_buffer_memory, NULL);
+    vkDestroyBuffer(renderer->device, renderer->upload_buffer, NULL);
+  }
 }
 
 OWL_PRIVATE owl_code
@@ -2787,7 +2723,7 @@ owl_renderer_init(struct owl_renderer *renderer,
     goto error_deinit_layouts;
   }
 
-  code = owl_renderer_init_upload_buffer(renderer, OWL_DEFAULT_BUFFER_SIZE);
+  code = owl_renderer_init_upload_buffer(renderer);
   if (code) {
     OWL_DEBUG_LOG("Failed to initialize upload heap!\n");
     goto error_deinit_pipelines;
@@ -3229,23 +3165,78 @@ OWL_PUBLIC void *
 owl_renderer_upload_allocate(
     struct owl_renderer *renderer, uint64_t size,
     struct owl_renderer_upload_allocation *allocation) {
+  VkResult vk_result;
+
   if (renderer->upload_buffer_in_use)
-    return NULL;
+    goto error;
 
-  if (renderer->upload_buffer_size < size) {
-    owl_code code;
+  renderer->upload_buffer_size = size;
 
-    owl_renderer_deinit_upload_buffer(renderer);
+  {
+    VkBufferCreateInfo buffer_create_info;
 
-    code = owl_renderer_init_upload_buffer(renderer, size * 2);
-    if (code)
-      return NULL;
+    buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_create_info.pNext = NULL;
+    buffer_create_info.flags = 0;
+    buffer_create_info.size = size;
+    buffer_create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    buffer_create_info.queueFamilyIndexCount = 0;
+    buffer_create_info.pQueueFamilyIndices = NULL;
+
+    vk_result = vkCreateBuffer(renderer->device, &buffer_create_info, NULL,
+                               &renderer->upload_buffer);
+    if (vk_result)
+      goto error;
+  }
+
+  {
+    VkMemoryPropertyFlagBits memory_properties;
+    VkMemoryRequirements memory_requirements;
+    VkMemoryAllocateInfo memory_allocate_info;
+
+    memory_properties = 0;
+    memory_properties |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    memory_properties |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    vkGetBufferMemoryRequirements(renderer->device, renderer->upload_buffer,
+                                  &memory_requirements);
+
+    memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory_allocate_info.pNext = NULL;
+    memory_allocate_info.allocationSize = memory_requirements.size;
+    memory_allocate_info.memoryTypeIndex = owl_renderer_find_memory_type(
+        renderer, memory_requirements.memoryTypeBits, memory_properties);
+
+    vk_result = vkAllocateMemory(renderer->device, &memory_allocate_info, NULL,
+                                 &renderer->upload_buffer_memory);
+    if (vk_result)
+      goto error_destroy_buffer;
+
+    vk_result = vkBindBufferMemory(renderer->device, renderer->upload_buffer,
+                                   renderer->upload_buffer_memory, 0);
+    if (vk_result)
+      goto error_free_memory;
+
+    vk_result = vkMapMemory(renderer->device, renderer->upload_buffer_memory,
+                            0, renderer->upload_buffer_size, 0,
+                            &renderer->upload_buffer_data);
+    if (vk_result)
+      goto error_free_memory;
   }
 
   allocation->buffer = renderer->upload_buffer;
-  renderer->upload_buffer_in_use = 1;
 
   return renderer->upload_buffer_data;
+
+error_free_memory:
+  vkFreeMemory(renderer->device, renderer->upload_buffer_memory, NULL);
+
+error_destroy_buffer:
+  vkDestroyBuffer(renderer->device, renderer->upload_buffer, NULL);
+
+error:
+  return NULL;
 }
 
 OWL_PUBLIC void
@@ -3253,6 +3244,12 @@ owl_renderer_upload_free(struct owl_renderer *renderer, void *ptr) {
   OWL_UNUSED(ptr);
   OWL_ASSERT(renderer->upload_buffer_data == ptr);
   renderer->upload_buffer_in_use = 0;
+  renderer->upload_buffer_size = 0;
+  renderer->upload_buffer_data = NULL;
+  
+  vkFreeMemory(renderer->device, renderer->upload_buffer_memory, NULL);
+  vkDestroyBuffer(renderer->device, renderer->upload_buffer, NULL);
+  
 }
 
 #define OWL_FONT_ATLAS_WIDTH 1024
