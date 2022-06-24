@@ -160,7 +160,6 @@ struct owl_renderer {
   VkDeviceSize vertex_buffer_aligned_size;
   VkDeviceMemory vertex_buffer_memory;
   void *vertex_buffer_data;
-
   VkBuffer vertex_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
 
   VkDeviceSize index_buffer_size;
@@ -169,7 +168,6 @@ struct owl_renderer {
   VkDeviceMemory index_buffer_memory;
   VkDeviceSize index_buffer_aligned_size;
   void *index_buffer_data;
-
   VkBuffer index_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
 
   VkDeviceSize uniform_buffer_size;
@@ -178,7 +176,6 @@ struct owl_renderer {
   VkDeviceMemory uniform_buffer_memory;
   VkDeviceSize uniform_buffer_aligned_size;
   void *uniform_buffer_data;
-
   VkBuffer uniform_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
   /* clang-format off */
   VkDescriptorSet uniform_pvm_descriptor_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];

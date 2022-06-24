@@ -1,11 +1,13 @@
 #include "owl_renderer.h"
 
+#include "owl_definitions.h"
 #include "owl_internal.h"
 #include "owl_model.h"
 #include "owl_plataform.h"
 #include "owl_texture.h"
 #include "owl_vector_math.h"
 #include "stb_truetype.h"
+#include "vulkan/vulkan_core.h"
 
 #include <stdio.h>
 
@@ -55,10 +57,9 @@ PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext = NULL;
 
 static owl_code
 owl_renderer_init_instance(struct owl_renderer *renderer) {
-  VkResult vk_result = VK_SUCCESS;
-
   {
     owl_code code;
+    VkResult vk_result = VK_SUCCESS;
 
     uint32_t extension_count;
     char const *const *extensions;
@@ -104,6 +105,7 @@ owl_renderer_init_instance(struct owl_renderer *renderer) {
 
 #if defined(OWL_ENABLE_VALIDATION)
   {
+    VkResult vk_result;
     VkDebugUtilsMessengerCreateInfoEXT debug_messenger_create_info;
 
     if (!vk_create_debug_utils_messenger_ext) {
@@ -413,7 +415,7 @@ owl_renderer_ensure_physical_device(struct owl_renderer *renderer) {
                                          devices);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
-    goto out_free_devices;
+    goto cleanup;
   }
 
   for (i = 0; i < device_count; ++i) {
@@ -425,10 +427,10 @@ owl_renderer_ensure_physical_device(struct owl_renderer *renderer) {
 
   if (!owl_renderer_validate_queue_families(renderer)) {
     code = OWL_ERROR_FATAL;
-    goto out_free_devices;
+    goto cleanup;
   }
 
-out_free_devices:
+cleanup:
   OWL_FREE(devices);
 
   return code;
@@ -531,10 +533,9 @@ owl_renderer_clamp_dimensions(struct owl_renderer *renderer) {
 
 static owl_code
 owl_renderer_init_attachments(struct owl_renderer *renderer) {
-  VkResult vk_result = VK_SUCCESS;
-
   {
     VkImageCreateInfo image_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     image_create_info.pNext = NULL;
@@ -564,6 +565,7 @@ owl_renderer_init_attachments(struct owl_renderer *renderer) {
     VkMemoryPropertyFlagBits memory_properties;
     VkMemoryRequirements memory_requirements;
     VkMemoryAllocateInfo memory_allocate_info;
+    VkResult vk_result = VK_SUCCESS;
 
     memory_properties = 0;
     memory_properties |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -590,6 +592,7 @@ owl_renderer_init_attachments(struct owl_renderer *renderer) {
 
   {
     VkImageViewCreateInfo image_view_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     image_view_create_info.pNext = NULL;
@@ -640,6 +643,7 @@ owl_renderer_init_attachments(struct owl_renderer *renderer) {
   {
 
     VkImageCreateInfo image_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     image_create_info.pNext = NULL;
@@ -669,6 +673,7 @@ owl_renderer_init_attachments(struct owl_renderer *renderer) {
     VkMemoryPropertyFlagBits memory_properties;
     VkMemoryRequirements memory_requirements;
     VkMemoryAllocateInfo memory_allocate_info;
+    VkResult vk_result = VK_SUCCESS;
 
     memory_properties = 0;
     memory_properties |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -694,6 +699,7 @@ owl_renderer_init_attachments(struct owl_renderer *renderer) {
   }
   {
     VkImageViewCreateInfo image_view_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     image_view_create_info.pNext = NULL;
@@ -1040,10 +1046,9 @@ owl_renderer_deinit_swapchain(struct owl_renderer *renderer) {
 
 static owl_code
 owl_renderer_init_pools(struct owl_renderer *renderer) {
-  VkResult vk_result = VK_SUCCESS;
-
   {
     VkCommandPoolCreateInfo command_pool_info;
+    VkResult vk_result = VK_SUCCESS;
 
     command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     command_pool_info.pNext = NULL;
@@ -1059,6 +1064,8 @@ owl_renderer_init_pools(struct owl_renderer *renderer) {
   {
     VkDescriptorPoolSize sizes[6];
     VkDescriptorPoolCreateInfo descriptor_pool_create_info;
+    VkResult vk_result = VK_SUCCESS;
+
     sizes[0].descriptorCount = 256;
     sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
@@ -1110,10 +1117,10 @@ owl_renderer_deinit_pools(struct owl_renderer *renderer) {
 
 static owl_code
 owl_renderer_init_shaders(struct owl_renderer *renderer) {
-  VkResult vk_result = VK_SUCCESS;
 
   {
     VkShaderModuleCreateInfo shader_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     /* TODO(samuel): Properly load code at runtime */
     static uint32_t const spv[] = {
@@ -1134,6 +1141,7 @@ owl_renderer_init_shaders(struct owl_renderer *renderer) {
 
   {
     VkShaderModuleCreateInfo shader_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     static uint32_t const spv[] = {
 #include "owl_basic.frag.spv.u32"
@@ -1153,6 +1161,7 @@ owl_renderer_init_shaders(struct owl_renderer *renderer) {
 
   {
     VkShaderModuleCreateInfo shader_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     static uint32_t const spv[] = {
 #include "owl_font.frag.spv.u32"
@@ -1173,6 +1182,7 @@ owl_renderer_init_shaders(struct owl_renderer *renderer) {
 
   {
     VkShaderModuleCreateInfo shader_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     static uint32_t const spv[] = {
 #include "owl_model.vert.spv.u32"
@@ -1193,6 +1203,7 @@ owl_renderer_init_shaders(struct owl_renderer *renderer) {
 
   {
     VkShaderModuleCreateInfo shader_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     static uint32_t const spv[] = {
 #include "owl_model.frag.spv.u32"
@@ -1213,6 +1224,7 @@ owl_renderer_init_shaders(struct owl_renderer *renderer) {
 
   {
     VkShaderModuleCreateInfo shader_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     static uint32_t const spv[] = {
 #include "owl_skybox.vert.spv.u32"
@@ -1233,6 +1245,7 @@ owl_renderer_init_shaders(struct owl_renderer *renderer) {
 
   {
     VkShaderModuleCreateInfo shader_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     static uint32_t const spv[] = {
 #include "owl_skybox.frag.spv.u32"
@@ -1297,11 +1310,10 @@ owl_renderer_deinit_shaders(struct owl_renderer *renderer) {
 
 static owl_code
 owl_renderer_init_layouts(struct owl_renderer *renderer) {
-  VkResult vk_result = VK_SUCCESS;
-
   {
     VkDescriptorSetLayoutBinding binding;
     VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     binding.binding = 0;
     binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
@@ -1326,6 +1338,7 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
   {
     VkDescriptorSetLayoutBinding binding;
     VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     binding.binding = 0;
     binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
@@ -1350,6 +1363,7 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
   {
     VkDescriptorSetLayoutBinding binding;
     VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     binding.binding = 0;
     binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
@@ -1375,6 +1389,7 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
   {
     VkDescriptorSetLayoutBinding binding;
     VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     binding.binding = 0;
     binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -1399,6 +1414,7 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
   {
     VkDescriptorSetLayoutBinding bindings[2];
     VkDescriptorSetLayoutCreateInfo descriptor_set_layout_info;
+    VkResult vk_result = VK_SUCCESS;
 
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
@@ -1429,6 +1445,7 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
   {
     VkDescriptorSetLayout layouts[2];
     VkPipelineLayoutCreateInfo pipeline_layout_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     layouts[0] = renderer->ubo_vertex_descriptor_set_layout;
     layouts[1] = renderer->image_fragment_descriptor_set_layout;
@@ -1453,6 +1470,7 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
     VkDescriptorSetLayout layouts[6];
     VkPushConstantRange push_constant_range;
     VkPipelineLayoutCreateInfo pipeline_layout_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     push_constant_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     push_constant_range.offset = 0;
@@ -2042,10 +2060,9 @@ static owl_code
 owl_renderer_init_vertex_buffer(struct owl_renderer *renderer, uint64_t size) {
   int32_t i;
 
-  VkResult vk_result = VK_SUCCESS;
-
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
     VkBufferCreateInfo buffer_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_create_info.pNext = NULL;
@@ -2068,6 +2085,7 @@ owl_renderer_init_vertex_buffer(struct owl_renderer *renderer, uint64_t size) {
     VkMemoryPropertyFlagBits memory_properties;
     VkMemoryAllocateInfo memory_allocate_info;
     VkMemoryRequirements memory_requirements;
+    VkResult vk_result = VK_SUCCESS;
 
     memory_properties = 0;
     memory_properties |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
@@ -2136,10 +2154,9 @@ static owl_code
 owl_renderer_init_index_buffer(struct owl_renderer *renderer, uint64_t size) {
   int32_t i;
 
-  VkResult vk_result = VK_SUCCESS;
-
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
     VkBufferCreateInfo buffer_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_create_info.pNext = NULL;
@@ -2162,6 +2179,7 @@ owl_renderer_init_index_buffer(struct owl_renderer *renderer, uint64_t size) {
     VkMemoryPropertyFlagBits memory_properties;
     VkMemoryAllocateInfo memory_allocate_info;
     VkMemoryRequirements memory_requirements;
+    VkResult vk_result = VK_SUCCESS;
 
     memory_properties = 0;
     memory_properties |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
@@ -2232,10 +2250,9 @@ owl_renderer_init_uniform_buffer(struct owl_renderer *renderer,
                                  uint64_t size) {
   int32_t i;
 
-  VkResult vk_result = VK_SUCCESS;
-
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
     VkBufferCreateInfo buffer_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_create_info.pNext = NULL;
@@ -2258,6 +2275,7 @@ owl_renderer_init_uniform_buffer(struct owl_renderer *renderer,
     VkMemoryPropertyFlagBits memory_properties;
     VkMemoryAllocateInfo memory_allocate_info;
     VkMemoryRequirements memory_requirements;
+    VkResult vk_result = VK_SUCCESS;
 
     memory_properties = 0;
     memory_properties |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
@@ -2301,6 +2319,7 @@ owl_renderer_init_uniform_buffer(struct owl_renderer *renderer,
       VkDescriptorSetLayout layouts[3];
       VkDescriptorSet descriptor_sets[3];
       VkDescriptorSetAllocateInfo descriptor_set_allocate_info;
+      VkResult vk_result = VK_SUCCESS;
 
       layouts[0] = renderer->ubo_vertex_descriptor_set_layout;
       layouts[1] = renderer->ubo_both_descriptor_set_layout;
@@ -2432,12 +2451,11 @@ owl_renderer_deinit_uniform_buffer(struct owl_renderer *renderer) {
 static owl_code
 owl_renderer_init_frames(struct owl_renderer *renderer) {
   int32_t i;
-  VkResult vk_result = VK_SUCCESS;
-
   renderer->frame = 0;
 
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
     VkCommandPoolCreateInfo command_pool_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     command_pool_create_info.sType =
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -2455,6 +2473,7 @@ owl_renderer_init_frames(struct owl_renderer *renderer) {
 
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
     VkCommandBufferAllocateInfo command_buffer_allocate_info;
+    VkResult vk_result = VK_SUCCESS;
     VkCommandPool command_pool = renderer->submit_command_pools[i];
 
     command_buffer_allocate_info.sType =
@@ -2473,6 +2492,7 @@ owl_renderer_init_frames(struct owl_renderer *renderer) {
 
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
     VkFenceCreateInfo fence_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fence_create_info.pNext = NULL;
@@ -2486,6 +2506,7 @@ owl_renderer_init_frames(struct owl_renderer *renderer) {
 
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
     VkSemaphoreCreateInfo semaphore_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     semaphore_create_info.pNext = NULL;
@@ -2499,6 +2520,7 @@ owl_renderer_init_frames(struct owl_renderer *renderer) {
 
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
     VkSemaphoreCreateInfo semaphore_create_info;
+    VkResult vk_result = VK_SUCCESS;
 
     semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     semaphore_create_info.pNext = NULL;
