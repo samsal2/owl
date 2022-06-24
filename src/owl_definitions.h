@@ -14,9 +14,6 @@
 OWL_BEGIN_DECLARATIONS
 
 #define OWL_PUBLIC extern
-#define OWL_GLOBAL static
-#define OWL_PRIVATE static
-#define OWL_LOCAL_PERSIST static
 
 typedef float owl_v2[2];
 typedef float owl_v3[3];

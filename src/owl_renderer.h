@@ -194,9 +194,6 @@ struct owl_renderer {
   VkBuffer garbage_buffers[OWL_RENDERER_GARBAGE_COUNT][32];
   VkDeviceMemory garbage_memories[OWL_RENDERER_GARBAGE_COUNT][32];
   VkDescriptorSet garbage_descriptor_sets[OWL_RENDERER_GARBAGE_COUNT][32];
-
-  PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;
-  PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;
 };
 
 OWL_PUBLIC owl_code

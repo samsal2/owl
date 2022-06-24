@@ -1,8 +1,8 @@
 #include "owl_cloth_simulation.h"
 
-#include "owl_texture.h"
 #include "owl_internal.h"
 #include "owl_renderer.h"
+#include "owl_texture.h"
 #include "owl_vector_math.h"
 
 #define OWL_GRAVITY 0.05F

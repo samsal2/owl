@@ -20,7 +20,7 @@ owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
   struct owl_renderer_vertex_allocation vertex_allocation;
   struct owl_renderer_index_allocation index_allocation;
   struct owl_renderer_uniform_allocation uniform_allocation;
-  OWL_LOCAL_PERSIST uint32_t const indices[] = {2, 3, 1, 1, 0, 2};
+  static uint32_t const indices[] = {2, 3, 1, 1, 0, 2};
 
   command_buffer = renderer->submit_command_buffers[renderer->frame];
 
@@ -104,7 +104,7 @@ owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
   return OWL_OK;
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_draw_glyph(struct owl_renderer *renderer, struct owl_glyph *glyph,
                owl_v3 const color) {
   owl_m4 matrix;
@@ -170,7 +170,7 @@ owl_draw_text(struct owl_renderer *renderer, char const *text,
   return OWL_OK;
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_draw_model_node(struct owl_renderer *renderer, owl_model_node_id id,
                     struct owl_model const *model, owl_m4 const matrix) {
   int i;
@@ -393,22 +393,20 @@ owl_draw_skybox(struct owl_renderer *renderer) {
    * | /  | /
    * 2----3
    */
-  OWL_LOCAL_PERSIST struct owl_p_vertex const vertices[] = {
-      {-1.0F, -1.0F, -1.0F}, /* 0 */
-      {1.0F, -1.0F, -1.0F},  /* 1 */
-      {-1.0F, 1.0F, -1.0F},  /* 2 */
-      {1.0F, 1.0F, -1.0F},   /* 3 */
-      {-1.0F, -1.0F, 1.0F},  /* 4 */
-      {1.0F, -1.0F, 1.0F},   /* 5 */
-      {-1.0F, 1.0F, 1.0F},   /* 6 */
-      {1.0F, 1.0F, 1.0F}};   /* 7 */
-  OWL_LOCAL_PERSIST uint32_t const indices[] = {
-      2, 3, 1, 1, 0, 2,  /* face 0 ....*/
-      3, 7, 5, 5, 1, 3,  /* face 1 */
-      6, 2, 0, 0, 4, 6,  /* face 2 */
-      7, 6, 4, 4, 5, 7,  /* face 3 */
-      3, 2, 6, 6, 7, 3,  /* face 4 */
-      4, 0, 1, 1, 5, 4}; /* face 5 */
+  static struct owl_p_vertex const vertices[] = {{-1.0F, -1.0F, -1.0F}, /* 0 */
+                                                 {1.0F, -1.0F, -1.0F},  /* 1 */
+                                                 {-1.0F, 1.0F, -1.0F},  /* 2 */
+                                                 {1.0F, 1.0F, -1.0F},   /* 3 */
+                                                 {-1.0F, -1.0F, 1.0F},  /* 4 */
+                                                 {1.0F, -1.0F, 1.0F},   /* 5 */
+                                                 {-1.0F, 1.0F, 1.0F},   /* 6 */
+                                                 {1.0F, 1.0F, 1.0F}};   /* 7 */
+  static uint32_t const indices[] = {2, 3, 1, 1, 0, 2,  /* face 0 ....*/
+                                     3, 7, 5, 5, 1, 3,  /* face 1 */
+                                     6, 2, 0, 0, 4, 6,  /* face 2 */
+                                     7, 6, 4, 4, 5, 7,  /* face 3 */
+                                     3, 2, 6, 6, 7, 3,  /* face 4 */
+                                     4, 0, 1, 1, 5, 4}; /* face 5 */
 
   command_buffer = renderer->submit_command_buffers[renderer->frame];
 
@@ -462,8 +460,8 @@ owl_draw_renderer_state(struct owl_renderer *renderer) {
   char buffer[256];
   owl_v3 position = {-0.8F, -0.8F, 0.0F};
   owl_v3 color = {1.0F, 1.0F, 1.0F};
-  OWL_LOCAL_PERSIST double previous_time = 0.0;
-  OWL_LOCAL_PERSIST double current_time = 0.0;
+  static double previous_time = 0.0;
+  static double current_time = 0.0;
   double fps = 0.0;
 
   previous_time = current_time;

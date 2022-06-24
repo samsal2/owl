@@ -1,9 +1,9 @@
 #include "owl_model.h"
 
 #include "cgltf.h"
-#include "owl_texture.h"
 #include "owl_internal.h"
 #include "owl_renderer.h"
+#include "owl_texture.h"
 #include "owl_vector_math.h"
 
 #include <float.h>
@@ -29,14 +29,14 @@ struct owl_model_uri {
   char path[OWL_MODEL_MAX_NAME_LENGTH];
 };
 
-OWL_PRIVATE void const *
+static void const *
 owl_resolve_gltf_accessor(struct cgltf_accessor const *accessor) {
   struct cgltf_buffer_view const *view = accessor->buffer_view;
   uint8_t const *data = view->buffer->data;
   return &data[accessor->offset + view->offset];
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_model_uri_init(char const *src, struct owl_model_uri *uri) {
   owl_code code = OWL_OK;
 
@@ -45,7 +45,7 @@ owl_model_uri_init(char const *src, struct owl_model_uri *uri) {
   return code;
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_model_images_load(struct owl_model *model, struct owl_renderer *renderer,
                       struct cgltf_data const *gltf) {
   int i;
@@ -81,7 +81,7 @@ out:
   return code;
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_model_textures_load(struct owl_model *model,
                         struct cgltf_data const *gltf) {
   int i;
@@ -97,7 +97,7 @@ owl_model_textures_load(struct owl_model *model,
   return code;
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_model_materials_load(struct owl_model *model,
                          struct cgltf_data const *gltf) {
   int i;
@@ -156,7 +156,7 @@ struct owl_model_load {
   uint32_t *indices;
 };
 
-OWL_PRIVATE struct cgltf_attribute const *
+static struct cgltf_attribute const *
 owl_find_gltf_attribute(struct cgltf_primitive const *p, char const *name) {
   int i;
   struct cgltf_attribute const *attr = NULL;
@@ -174,7 +174,7 @@ out:
   return attr;
 }
 
-OWL_PRIVATE void
+static void
 owl_model_load_find_capacities(struct owl_model_load *load,
                                struct cgltf_data const *gltf) {
   int i;
@@ -197,7 +197,7 @@ owl_model_load_find_capacities(struct owl_model_load *load,
   }
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_model_load_init(struct owl_model_load *load,
                     struct cgltf_data const *gltf) {
   uint64_t size;
@@ -233,13 +233,13 @@ out:
   return code;
 }
 
-OWL_PRIVATE void
+static void
 owl_model_load_deinit(struct owl_model_load *load) {
   OWL_FREE(load->indices);
   OWL_FREE(load->vertices);
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_model_node_load(struct owl_model *model, struct cgltf_data const *gltf,
                     struct cgltf_node const *gn, struct owl_model_load *load) {
   int i;
@@ -469,7 +469,7 @@ out:
   return code;
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
                        struct owl_model_load const *load) {
   VkBufferCreateInfo buffer_info;
@@ -625,7 +625,7 @@ out:
   return code;
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_model_nodes_load(struct owl_model *model, struct owl_renderer *renderer,
                      struct cgltf_data const *gltf) {
   int i;
@@ -679,7 +679,7 @@ out:
   return code;
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
                      struct cgltf_data const *gltf) {
   int i;
@@ -849,7 +849,7 @@ out:
   return code;
 }
 
-OWL_PRIVATE owl_code
+static owl_code
 owl_model_anims_load(struct cgltf_data const *gltf, struct owl_model *model) {
   int i;
   owl_code code = OWL_OK;
@@ -1107,7 +1107,7 @@ owl_model_deinit(struct owl_model *model, struct owl_renderer *renderer) {
   }
 }
 
-OWL_PRIVATE void
+static void
 owl_model_resolve_local_node_matrix(struct owl_model const *model,
                                     owl_model_node_id nid, owl_m4 matrix) {
   owl_m4 tmp;
@@ -1129,7 +1129,7 @@ owl_model_resolve_local_node_matrix(struct owl_model const *model,
   owl_m4_multiply(matrix, node->matrix, matrix);
 }
 
-OWL_PRIVATE void
+static void
 owl_model_resolve_node_matrix(struct owl_model const *model,
                               owl_model_node_id nid, owl_m4 matrix) {
   owl_model_node_id parent;
@@ -1144,7 +1144,7 @@ owl_model_resolve_node_matrix(struct owl_model const *model,
   }
 }
 
-OWL_PRIVATE void
+static void
 owl_model_node_joints_update(struct owl_model *model, int frame,
                              owl_model_node_id nid) {
   int i;

@@ -9,7 +9,7 @@
 
 #define OWL_TEXTURE_MAX_PATH_LENGTH 128
 
-OWL_PRIVATE VkFormat
+static VkFormat
 owl_pixel_format_as_vk_format(enum owl_pixel_format format) {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
@@ -20,7 +20,7 @@ owl_pixel_format_as_vk_format(enum owl_pixel_format format) {
   }
 }
 
-OWL_PRIVATE uint64_t
+static uint64_t
 owl_pixel_format_size(enum owl_pixel_format format) {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
@@ -31,12 +31,12 @@ owl_pixel_format_size(enum owl_pixel_format format) {
   }
 }
 
-OWL_PRIVATE uint32_t
+static uint32_t
 owl_texture_calculate_mipmaps(struct owl_texture *texture) {
   return (uint32_t)(floor(log2(OWL_MAX(texture->width, texture->height))) + 1);
 }
 
-OWL_PRIVATE void
+static void
 owl_texture_change_layout(struct owl_texture *texture,
                           struct owl_renderer *renderer,
                           VkImageLayout layout) {
@@ -101,7 +101,7 @@ owl_texture_change_layout(struct owl_texture *texture,
   texture->layout = layout;
 }
 
-OWL_PRIVATE void
+static void
 owl_texture_generate_mipmaps(struct owl_texture *texture,
                              struct owl_renderer *renderer) {
   int32_t i;
@@ -298,9 +298,8 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
       uint64_t pixel_size;
       /* TODO(samuel): currently the images in the specified must have these
        * names and extensions, make this a non requirement */
-      OWL_LOCAL_PERSIST char const *names[6] = {"left.jpg",  "right.jpg",
-                                                "top.jpg",   "bottom.jpg",
-                                                "front.jpg", "back.jpg"};
+      static char const *names[6] = {"left.jpg",   "right.jpg", "top.jpg",
+                                     "bottom.jpg", "front.jpg", "back.jpg"};
       /* set the width and texture to 0 as a way to check if a width and height
        * has been loaded */
       texture->width = 0;

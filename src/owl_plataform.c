@@ -53,7 +53,7 @@ owl_plataform_get_required_instance_extensions(
     char const *const **extensions) {
 #if defined(OWL_ENABLE_VALIDATION)
   char const *const *tmp;
-  OWL_LOCAL_PERSIST char const *names[OWL_MAX_INSTANCE_EXTENSION_COUNT];
+  static char const *names[OWL_MAX_INSTANCE_EXTENSION_COUNT];
 
   owl_code code = OWL_OK;
 

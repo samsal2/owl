@@ -388,7 +388,7 @@ owl_m4_scale_v3(owl_m4 const src, owl_v3 const scale, owl_m4 out) {
   OWL_V4_COPY(m[3], out[3]);
 }
 
-OWL_PRIVATE void
+static void
 owl_v4_quat_lerp(owl_v4 const src, owl_v4 const dst, float t, owl_v4 dest) {
   owl_v4 s;
   owl_v4 v;
