@@ -180,258 +180,312 @@ owl_renderer_deinit_surface(struct owl_renderer *renderer) {
 static char const *const device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-static int
-owl_renderer_validate_queue_families(struct owl_renderer *renderer) {
-  if ((uint32_t)-1 == renderer->graphics_queue_family)
-    return 0;
-
-  if ((uint32_t)-1 == renderer->present_queue_family)
-    return 0;
-
-  return 1;
-}
-
-static int
-owl_renderer_ensure_queue_families(struct owl_renderer *renderer) {
-  uint32_t i;
-  VkResult vk_result = VK_SUCCESS;
-  uint32_t property_count = 0;
-  VkQueueFamilyProperties *properties = NULL;
-
-  renderer->graphics_queue_family = (uint32_t)-1;
-  renderer->present_queue_family = (uint32_t)-1;
-
-  vkGetPhysicalDeviceQueueFamilyProperties(renderer->physical_device,
-                                           &property_count, NULL);
-
-  properties = OWL_MALLOC(property_count * sizeof(*properties));
-  if (!properties)
-    return 0;
-
-  vkGetPhysicalDeviceQueueFamilyProperties(renderer->physical_device,
-                                           &property_count, properties);
-
-  for (i = 0; i < property_count; ++i) {
-    VkBool32 has_surface;
-
-    vk_result = vkGetPhysicalDeviceSurfaceSupportKHR(
-        renderer->physical_device, i, renderer->surface, &has_surface);
-    if (vk_result)
-      goto cleanup;
-
-    if (has_surface)
-      renderer->present_queue_family = i;
-
-    if (VK_QUEUE_GRAPHICS_BIT & properties[i].queueFlags)
-      renderer->graphics_queue_family = i;
-
-    if (owl_renderer_validate_queue_families(renderer))
-      goto cleanup;
-  }
-
-cleanup:
-  OWL_FREE(properties);
-
-  return owl_renderer_validate_queue_families(renderer);
-}
-
-static int
-owl_renderer_validate_device_extensions(struct owl_renderer *renderer) {
-  int32_t found = 0;
-  uint32_t i = 0;
-  uint32_t property_count = 0;
-  VkExtensionProperties *properties = NULL;
-  int32_t *state = NULL;
-  VkResult vk_result = VK_SUCCESS;
-
-  vk_result = vkEnumerateDeviceExtensionProperties(
-      renderer->physical_device, NULL, &property_count, NULL);
-  if (vk_result)
-    return 0;
-
-  properties = OWL_MALLOC(property_count * sizeof(*properties));
-  if (!properties)
-    return 0;
-
-  vk_result = vkEnumerateDeviceExtensionProperties(
-      renderer->physical_device, NULL, &property_count, properties);
-  if (vk_result)
-    goto out_free_properties;
-
-  state = OWL_MALLOC(OWL_ARRAY_SIZE(device_extensions) * sizeof(*state));
-  if (!state)
-    goto out_free_state;
-
-  for (i = 0; i < OWL_ARRAY_SIZE(device_extensions); ++i)
-    state[i] = 0;
-
-  for (i = 0; i < property_count; ++i) {
-    uint32_t j;
-    for (j = 0; j < OWL_ARRAY_SIZE(device_extensions); ++j) {
-      size_t const max_extension_length = VK_MAX_EXTENSION_NAME_SIZE;
-      char const *l = device_extensions[j];
-      char const *r = properties[j].extensionName;
-
-      uint32_t minlen = OWL_MIN(max_extension_length, OWL_STRLEN(l));
-
-      state[j] = !OWL_STRNCMP(l, r, minlen);
-    }
-  }
-
-  found = 1;
-  for (i = 0; i < OWL_ARRAY_SIZE(device_extensions) && found; ++i)
-    if (!state[i])
-      found = 0;
-
-out_free_state:
-  OWL_FREE(state);
-
-out_free_properties:
-  OWL_FREE(properties);
-
-  return found;
-}
-
+/* TODO(samuel): refactor this function, it's way too big */
 static owl_code
-owl_renderer_ensure_surface_format(struct owl_renderer *renderer,
-                                   VkFormat format,
-                                   VkColorSpaceKHR color_space) {
-  uint32_t i;
-  uint32_t format_count = 0;
-  VkSurfaceFormatKHR *formats = NULL;
-  VkResult vk_result = VK_SUCCESS;
-  owl_code code = OWL_ERROR_NOT_FOUND;
-
-  vk_result = vkGetPhysicalDeviceSurfaceFormatsKHR(
-      renderer->physical_device, renderer->surface, &format_count, NULL);
-  if (vk_result)
-    return OWL_ERROR_FATAL;
-
-  formats = OWL_MALLOC(format_count * sizeof(*formats));
-  if (!formats)
-    return OWL_ERROR_NO_MEMORY;
-
-  vk_result = vkGetPhysicalDeviceSurfaceFormatsKHR(
-      renderer->physical_device, renderer->surface, &format_count, formats);
-  if (vk_result) {
-    code = OWL_ERROR_FATAL;
-    goto out_free_formats;
-  }
-
-  for (i = 0; i < format_count && OWL_ERROR_NOT_FOUND == code; ++i)
-    if (formats[i].format == format && formats[i].colorSpace == color_space)
-      code = OWL_OK;
-
-  if (!code) {
-    renderer->surface_format.format = format;
-    renderer->surface_format.colorSpace = color_space;
-  }
-
-out_free_formats:
-  OWL_FREE(formats);
-
-  return code;
-}
-
-static owl_code
-owl_renderer_ensure_msaa(struct owl_renderer *renderer,
-                         VkSampleCountFlagBits msaa) {
-  VkPhysicalDeviceProperties properties;
-  VkSampleCountFlagBits limit = ~0U;
-
+owl_renderer_select_physical_device(struct owl_renderer *renderer) {
   owl_code code = OWL_OK;
+  VkResult vk_result = VK_SUCCESS;
 
-  vkGetPhysicalDeviceProperties(renderer->physical_device, &properties);
-
-  limit &= properties.limits.framebufferColorSampleCounts;
-  limit &= properties.limits.framebufferDepthSampleCounts;
-
-  if (VK_SAMPLE_COUNT_1_BIT & msaa) {
-    code = OWL_ERROR_NOT_FOUND;
-  } else if (limit & msaa) {
-    renderer->msaa = msaa;
-    code = OWL_OK;
-  } else {
-    renderer->msaa = VK_SAMPLE_COUNT_2_BIT;
-    code = OWL_ERROR_NOT_FOUND;
-  }
-
-  return code;
-}
-
-static int32_t
-owl_renderer_validate_physical_device(struct owl_renderer *renderer) {
-  int32_t has_families;
-  int32_t has_extensions;
-  uint32_t has_formats;
-  uint32_t has_modes;
-  VkPhysicalDeviceFeatures feats;
-  VkResult vk_result;
-
-  vk_result = vkGetPhysicalDeviceSurfaceFormatsKHR(
-      renderer->physical_device, renderer->surface, &has_formats, NULL);
-  if (vk_result || !has_formats)
-    return 0;
-
-  vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR(
-      renderer->physical_device, renderer->surface, &has_modes, NULL);
-  if (vk_result || !has_modes)
-    return 0;
-
-  has_families = owl_renderer_ensure_queue_families(renderer);
-  if (!has_families)
-    return 0;
-
-  has_extensions = owl_renderer_validate_device_extensions(renderer);
-  if (!has_extensions)
-    return 0;
-
-  vkGetPhysicalDeviceFeatures(renderer->physical_device, &feats);
-  if (!feats.samplerAnisotropy)
-    return 0;
-
-  return 1;
-}
-
-static owl_code
-owl_renderer_ensure_physical_device(struct owl_renderer *renderer) {
-  uint32_t i;
   uint32_t device_count = 0;
-  VkPhysicalDevice *devices = NULL;
-  VkResult vk_result = VK_SUCCESS;
-  owl_code code = OWL_OK;
+  VkPhysicalDevice *devices;
 
   vk_result = vkEnumeratePhysicalDevices(renderer->instance, &device_count,
                                          NULL);
-  if (vk_result)
-    return OWL_ERROR_FATAL;
+  if (!vk_result) {
+    devices = OWL_MALLOC(device_count * sizeof(*devices));
+    if (devices) {
+      vk_result = vkEnumeratePhysicalDevices(renderer->instance, &device_count,
+                                             devices);
+      if (!vk_result) {
+        uint32_t i;
+        int32_t device_found = 0;
 
-  devices = OWL_MALLOC(device_count * sizeof(*devices));
+        for (i = 0; i < device_count && !code && !device_found; ++i) {
+          int32_t has_extensions = 0;
+          uint32_t has_formats = 0;
+          uint32_t has_present_modes = 0;
+          uint32_t present_family = (uint32_t)-1;
+          uint32_t graphics_family = (uint32_t)-1;
+          VkPhysicalDevice const device = devices[i];
 
-  if (!devices)
-    return OWL_ERROR_NO_MEMORY;
+          vkGetPhysicalDeviceSurfaceFormatsKHR(device, renderer->surface,
+                                               &has_formats, NULL);
 
-  vk_result = vkEnumeratePhysicalDevices(renderer->instance, &device_count,
-                                         devices);
-  if (vk_result) {
+          if (has_formats)
+            vkGetPhysicalDeviceSurfacePresentModesKHR(
+                device, renderer->surface, &has_present_modes, NULL);
+
+          if (has_present_modes) {
+            uint32_t queue_family_properties_count;
+            VkQueueFamilyProperties *queue_family_properties;
+
+            vkGetPhysicalDeviceQueueFamilyProperties(
+                device, &queue_family_properties_count, NULL);
+
+            queue_family_properties = OWL_MALLOC(
+                queue_family_properties_count *
+                sizeof(*queue_family_properties));
+            if (queue_family_properties) {
+              uint32_t current_family = 0;
+
+              vkGetPhysicalDeviceQueueFamilyProperties(
+                  device, &queue_family_properties_count,
+                  queue_family_properties);
+
+              for (; current_family < queue_family_properties_count &&
+                     ((uint32_t)-1 == present_family ||
+                      (uint32_t)-1 == graphics_family);
+                   ++current_family) {
+                VkBool32 has_surface;
+                VkQueueFamilyProperties *properties;
+
+                properties = &queue_family_properties[i];
+
+                if (properties->queueFlags & VK_QUEUE_GRAPHICS_BIT)
+                  graphics_family = current_family;
+
+                vkGetPhysicalDeviceSurfaceSupportKHR(
+                    device, current_family, renderer->surface, &has_surface);
+
+                if (has_surface)
+                  present_family = current_family;
+              }
+
+              OWL_FREE(queue_family_properties);
+            } else {
+              code = OWL_ERROR_NO_MEMORY;
+            }
+          }
+
+          OWL_DEBUG_LOG("present_family %u\n", present_family);
+          OWL_DEBUG_LOG("graphics_family %u\n", graphics_family);
+
+          if ((uint32_t)-1 != present_family &&
+              (uint32_t)-1 != graphics_family) {
+            int32_t *extensions_found = NULL;
+            uint32_t extension_property_count = 0;
+            VkExtensionProperties *extension_properties = NULL;
+
+            vk_result = vkEnumerateDeviceExtensionProperties(
+                device, NULL, &extension_property_count, NULL);
+            if (!vk_result) {
+              extension_properties = OWL_MALLOC(extension_property_count *
+                                                sizeof(*extension_properties));
+              extensions_found = OWL_MALLOC(OWL_ARRAY_SIZE(device_extensions) *
+                                            sizeof(*extensions_found));
+
+              if (extension_properties && extensions_found) {
+                vk_result = vkEnumerateDeviceExtensionProperties(
+                    device, NULL, &extension_property_count,
+                    extension_properties);
+                if (!vk_result) {
+                  uint32_t j;
+
+                  for (j = 0; j < OWL_ARRAY_SIZE(device_extensions); ++j)
+                    extensions_found[j] = 0;
+
+                  for (j = 0; j < OWL_ARRAY_SIZE(device_extensions); ++j) {
+                    uint32_t k;
+                    char const *required = device_extensions[j];
+                    uint32_t const required_length = OWL_STRLEN(required);
+
+                    OWL_DEBUG_LOG("looking at %s\n", required);
+
+                    for (k = 0;
+                         k < extension_property_count && !extensions_found[j];
+                         ++k) {
+                      uint32_t min_length;
+                      char const *current;
+                      uint32_t const max_length = VK_MAX_EXTENSION_NAME_SIZE;
+
+                      current = extension_properties[k].extensionName;
+                      min_length = OWL_MIN(required_length, max_length);
+
+                      OWL_DEBUG_LOG("  comparing to %s\n", current);
+
+                      if (!OWL_STRNCMP(required, current, min_length))
+                        extensions_found[j] = 1;
+                    }
+                  }
+
+                  has_extensions = 1;
+
+                  for (j = 0; j < OWL_ARRAY_SIZE(device_extensions); ++j)
+                    if (!extensions_found[j])
+                      has_extensions = 0;
+
+                } else {
+                  code = OWL_ERROR_FATAL;
+                }
+
+                OWL_FREE(extension_properties);
+                OWL_FREE(extensions_found);
+              }
+            } else {
+              code = OWL_ERROR_FATAL;
+            }
+          }
+
+          if (has_extensions) {
+            device_found = 1;
+            renderer->physical_device = device;
+            renderer->graphics_queue_family = graphics_family;
+            renderer->present_queue_family = present_family;
+
+            {
+              VkPhysicalDeviceProperties properties;
+
+              VkSampleCountFlagBits requested_samples = VK_SAMPLE_COUNT_2_BIT;
+              VkSampleCountFlagBits supported_samples = 0;
+
+              vkGetPhysicalDeviceProperties(device, &properties);
+
+              supported_samples |=
+                  properties.limits.framebufferColorSampleCounts;
+              supported_samples |=
+                  properties.limits.framebufferDepthSampleCounts;
+
+              if (VK_SAMPLE_COUNT_1_BIT & requested_samples) {
+                code = OWL_ERROR_NOT_FOUND;
+              } else if (supported_samples & requested_samples) {
+                renderer->msaa = requested_samples;
+              } else {
+                renderer->msaa = VK_SAMPLE_COUNT_2_BIT;
+                code = OWL_ERROR_NOT_FOUND;
+              }
+            }
+
+            {
+              VkFormat requested_format = VK_FORMAT_B8G8R8A8_SRGB;
+              VkColorSpaceKHR requested_color_space =
+                  VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+
+              int32_t found_format = 0;
+
+              uint32_t format_count = 0;
+              VkSurfaceFormatKHR *formats = NULL;
+
+              vk_result = vkGetPhysicalDeviceSurfaceFormatsKHR(
+                  device, renderer->surface, &format_count, NULL);
+              if (!vk_result) {
+                formats = OWL_MALLOC(format_count * sizeof(*formats));
+                if (formats) {
+                  uint32_t j;
+                  vk_result = vkGetPhysicalDeviceSurfaceFormatsKHR(
+                      device, renderer->surface, &format_count, formats);
+
+                  OWL_DEBUG_LOG("looking at %i\n", requested_format);
+                  OWL_DEBUG_LOG("looking at %i\n", requested_color_space);
+                  for (j = 0; j < format_count && !found_format; ++j) {
+                    OWL_DEBUG_LOG("  comparing to  %i\n", formats[j].format);
+                    OWL_DEBUG_LOG("  comparing to  %i\n",
+                                  formats[j].colorSpace);
+                    if (formats[j].format == requested_format &&
+                        formats[j].colorSpace == requested_color_space)
+                      found_format = 1;
+                  }
+
+                  if (found_format) {
+                    renderer->surface_format.format = requested_format;
+                    renderer->surface_format.colorSpace =
+                        requested_color_space;
+                  } else {
+                    OWL_DEBUG_LOG("could't find format\n");
+                    code = OWL_ERROR_FATAL;
+                  }
+
+                  OWL_FREE(formats);
+                }
+              } else {
+                code = OWL_ERROR_FATAL;
+              }
+            }
+            {
+              uint32_t present_mode_count;
+              VkPresentModeKHR present_modes[16];
+              int32_t found_present_mode = 0;
+              VkPresentModeKHR requested_present_mode =
+                  VK_PRESENT_MODE_FIFO_KHR;
+
+              vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR(
+                  device, renderer->surface, &present_mode_count, NULL);
+              if (!vk_result &&
+                  OWL_ARRAY_SIZE(present_modes) > present_mode_count) {
+                uint32_t j;
+
+                vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR(
+                    device, renderer->surface, &present_mode_count, NULL);
+
+                OWL_DEBUG_LOG("present mode count %u\n", present_mode_count);
+                OWL_DEBUG_LOG("looking at %i\n", requested_present_mode);
+                for (j = 0; j < present_mode_count; ++j) {
+                  OWL_DEBUG_LOG("  comparing to %i\n", present_modes[j]);
+                  if (requested_present_mode == present_modes[j]) {
+                    found_present_mode = 1;
+                  }
+                }
+
+                if (found_present_mode) {
+                  renderer->present_mode = requested_present_mode;
+                } else {
+                  /* NOTE(samuel): not setting code because for som reason
+                     vkGetPhysicalDeviceSurfacePresentModesKHR  doesn't
+                     list VK_PRESENT_MODE_FIFO_KHR, which is _required_ to be
+                     supported */
+                  OWL_DEBUG_LOG("could't find present mode, falling back to "
+                                "VK_PRESENT_MODE_FIFO_KHR\n");
+                  renderer->present_mode = VK_PRESENT_MODE_FIFO_KHR;
+                }
+
+              } else {
+                code = OWL_ERROR_FATAL;
+              }
+            }
+            {
+              VkFormatProperties d24_unorm_s8_uint_properties;
+              VkFormatProperties d32_sfloat_s8_uint_properties;
+
+              vkGetPhysicalDeviceFormatProperties(
+                  device, VK_FORMAT_D24_UNORM_S8_UINT,
+                  &d24_unorm_s8_uint_properties);
+
+              vkGetPhysicalDeviceFormatProperties(
+                  device, VK_FORMAT_D32_SFLOAT_S8_UINT,
+                  &d32_sfloat_s8_uint_properties);
+
+              if (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT &
+                  d24_unorm_s8_uint_properties.optimalTilingFeatures) {
+                renderer->depth_format = VK_FORMAT_D24_UNORM_S8_UINT;
+              } else if (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT &
+                         d32_sfloat_s8_uint_properties.optimalTilingFeatures) {
+                renderer->depth_format = VK_FORMAT_D32_SFLOAT_S8_UINT;
+              } else {
+                OWL_DEBUG_LOG("could't find depth format\n");
+                code = OWL_ERROR_FATAL;
+              }
+            }
+          }
+
+          OWL_DEBUG_LOG("has_formats %i\n", (int)has_formats);
+          OWL_DEBUG_LOG("has_present_modes %i\n", (int)has_present_modes);
+          OWL_DEBUG_LOG("has_extensions %i\n", (int)has_extensions);
+        }
+
+        OWL_DEBUG_LOG("device_found: %i, %i\n", device_found, code);
+        if (!device_found)
+          code = OWL_ERROR_FATAL;
+
+      } else {
+        code = OWL_ERROR_FATAL;
+      }
+
+      OWL_FREE(devices);
+    } else {
+      code = OWL_ERROR_NO_MEMORY;
+    }
+  } else {
     code = OWL_ERROR_FATAL;
-    goto cleanup;
   }
-
-  for (i = 0; i < device_count; ++i) {
-    renderer->physical_device = devices[i];
-
-    if (owl_renderer_validate_physical_device(renderer))
-      break;
-  }
-
-  if (!owl_renderer_validate_queue_families(renderer)) {
-    code = OWL_ERROR_FATAL;
-    goto cleanup;
-  }
-
-cleanup:
-  OWL_FREE(devices);
 
   return code;
 }
@@ -444,19 +498,6 @@ owl_renderer_init_device(struct owl_renderer *renderer) {
   float const priority = 1.0F;
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
-
-  code = owl_renderer_ensure_physical_device(renderer);
-  if (code)
-    return code;
-
-  code = owl_renderer_ensure_msaa(renderer, VK_SAMPLE_COUNT_2_BIT);
-  if (code)
-    return code;
-
-  code = owl_renderer_ensure_surface_format(renderer, VK_FORMAT_B8G8R8A8_SRGB,
-                                            VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
-  if (code)
-    return code;
 
   queue_create_info[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_create_info[0].pNext = NULL;
@@ -618,30 +659,6 @@ owl_renderer_init_attachments(struct owl_renderer *renderer) {
   }
 
   {
-    VkFormatProperties d24_unorm_s8_uint_properties;
-    VkFormatProperties d32_sfloat_s8_uint_properties;
-
-    vkGetPhysicalDeviceFormatProperties(renderer->physical_device,
-                                        VK_FORMAT_D24_UNORM_S8_UINT,
-                                        &d24_unorm_s8_uint_properties);
-
-    vkGetPhysicalDeviceFormatProperties(renderer->physical_device,
-                                        VK_FORMAT_D32_SFLOAT_S8_UINT,
-                                        &d32_sfloat_s8_uint_properties);
-
-    if (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT &
-        d24_unorm_s8_uint_properties.optimalTilingFeatures) {
-      renderer->depth_format = VK_FORMAT_D24_UNORM_S8_UINT;
-    } else if (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT &
-               d32_sfloat_s8_uint_properties.optimalTilingFeatures) {
-      renderer->depth_format = VK_FORMAT_D32_SFLOAT_S8_UINT;
-    } else {
-      goto error_destroy_color_image_view;
-    }
-  }
-
-  {
-
     VkImageCreateInfo image_create_info;
     VkResult vk_result = VK_SUCCESS;
 
@@ -857,40 +874,6 @@ owl_renderer_deinit_render_passes(struct owl_renderer *renderer) {
 #define OWL_MAX_PRESENT_MODE_COUNT 16
 
 static owl_code
-owl_renderer_ensure_present_mode(struct owl_renderer *renderer,
-                                 VkPresentModeKHR prefered_present_mode) {
-  uint32_t i;
-
-  uint32_t mode_count;
-  VkPresentModeKHR modes[OWL_MAX_PRESENT_MODE_COUNT];
-
-  int32_t found = 0;
-
-  VkResult vk_result = VK_SUCCESS;
-
-  vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR(
-      renderer->physical_device, renderer->surface, &mode_count, NULL);
-  if (vk_result || OWL_MAX_PRESENT_MODE_COUNT <= mode_count)
-    return OWL_ERROR_FATAL;
-
-  vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR(
-      renderer->physical_device, renderer->surface, &mode_count, modes);
-  if (vk_result)
-    return OWL_ERROR_FATAL;
-
-  for (i = 0; i < mode_count && !found; ++i)
-    if (modes[i] == prefered_present_mode)
-      found = 1;
-
-  if (!found)
-    return OWL_ERROR_FATAL;
-
-  renderer->present_mode = prefered_present_mode;
-
-  return OWL_OK;
-}
-
-static owl_code
 owl_renderer_init_swapchain(struct owl_renderer *renderer) {
   int32_t i;
 
@@ -900,10 +883,6 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
 
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;
-
-  code = owl_renderer_ensure_present_mode(renderer, VK_PRESENT_MODE_FIFO_KHR);
-  if (code)
-    return code;
 
   renderer->swapchain_image = 0;
 
@@ -2700,16 +2679,22 @@ owl_renderer_init(struct owl_renderer *renderer,
     goto error_deinit_instance;
   }
 
-  code = owl_renderer_init_device(renderer);
+  code = owl_renderer_select_physical_device(renderer);
   if (code) {
-    OWL_DEBUG_LOG("Failed to initialize device!\n");
+    OWL_DEBUG_LOG("Couldn't find physical device\n");
     goto error_deinit_surface;
   }
 
   code = owl_renderer_clamp_dimensions(renderer);
   if (code) {
-    OWL_DEBUG_LOG("Failed to clamp dimensions!\n");
-    goto error_deinit_device;
+    OWL_DEBUG_LOG("Couldn't clamp dimensions\n");
+    goto error_deinit_surface;
+  }
+
+  code = owl_renderer_init_device(renderer);
+  if (code) {
+    OWL_DEBUG_LOG("Failed to initialize device!\n");
+    goto error_deinit_surface;
   }
 
   code = owl_renderer_init_attachments(renderer);
