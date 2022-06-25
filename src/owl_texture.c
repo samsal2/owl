@@ -192,6 +192,7 @@ owl_texture_generate_mipmaps(struct owl_texture *texture,
   texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
+/* TODO(samuel): testing new cleanup style, refactor later */
 OWL_PUBLIC owl_code
 owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
                  struct owl_texture *texture) {

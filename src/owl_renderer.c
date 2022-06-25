@@ -162,7 +162,7 @@ static void
 owl_renderer_deinit_instance(struct owl_renderer *renderer) {
 #if defined(OWL_ENABLE_VALIDATION)
   vk_destroy_debug_utils_messenger_ext(renderer->instance,
-                                       renderer->debug_messenger, NULL);
+                                        renderer->debug_messenger, NULL);
 #endif
   vkDestroyInstance(renderer->instance, NULL);
 }
@@ -350,8 +350,8 @@ owl_renderer_select_physical_device(struct owl_renderer *renderer) {
               } else if (supported_samples & requested_samples) {
                 renderer->msaa = requested_samples;
               } else {
+                OWL_DEBUG_LOG("falling back to VK_SAMPLE_COUNT_2_BIT\n");
                 renderer->msaa = VK_SAMPLE_COUNT_2_BIT;
-                code = OWL_ERROR_NOT_FOUND;
               }
             }
 
@@ -465,13 +465,8 @@ owl_renderer_select_physical_device(struct owl_renderer *renderer) {
               }
             }
           }
-
-          OWL_DEBUG_LOG("has_formats %i\n", (int)has_formats);
-          OWL_DEBUG_LOG("has_present_modes %i\n", (int)has_present_modes);
-          OWL_DEBUG_LOG("has_extensions %i\n", (int)has_extensions);
         }
 
-        OWL_DEBUG_LOG("device_found: %i, %i\n", device_found, code);
         if (!device_found)
           code = OWL_ERROR_FATAL;
 
@@ -2878,7 +2873,7 @@ owl_renderer_resize_swapchain(struct owl_renderer *renderer) {
   vk_result = vkDeviceWaitIdle(renderer->device);
   if (vk_result) {
     code = OWL_ERROR_FATAL;
-    goto out;
+    goto error;
   }
 
   owl_plataform_get_framebuffer_dimensions(renderer->plataform, &width,
@@ -2896,13 +2891,13 @@ owl_renderer_resize_swapchain(struct owl_renderer *renderer) {
   code = owl_renderer_clamp_dimensions(renderer);
   if (code) {
     OWL_DEBUG_LOG("Failed to clamp dimensions!\n");
-    goto out;
+    goto error;
   }
 
   code = owl_renderer_init_attachments(renderer);
   if (code) {
     OWL_DEBUG_LOG("Failed to resize attachments!\n");
-    goto out;
+    goto error;
   }
 
   code = owl_renderer_init_swapchain(renderer);
@@ -2917,7 +2912,7 @@ owl_renderer_resize_swapchain(struct owl_renderer *renderer) {
     goto error_deinit_swapchain;
   }
 
-  goto out;
+  return OWL_OK;
 
 error_deinit_swapchain:
   owl_renderer_deinit_swapchain(renderer);
@@ -2925,7 +2920,7 @@ error_deinit_swapchain:
 error_deinit_attachments:
   owl_renderer_deinit_attachments(renderer);
 
-out:
+error:
   return code;
 }
 
