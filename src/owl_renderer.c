@@ -2880,9 +2880,8 @@ error:
 }
 
 OWL_PUBLIC void *
-owl_renderer_vertex_allocate(
-    struct owl_renderer *renderer, uint64_t size,
-    struct owl_vertex_allocation *allocation) {
+owl_renderer_vertex_allocate(struct owl_renderer *renderer, uint64_t size,
+                             struct owl_vertex_allocation *allocation) {
   uint8_t *data = renderer->vertex_buffer_data;
   uint32_t const frame = renderer->frame;
   uint64_t const alignment = renderer->vertex_buffer_alignment;
@@ -2949,9 +2948,8 @@ owl_renderer_index_allocate(struct owl_renderer *renderer, uint64_t size,
 }
 
 OWL_PUBLIC void *
-owl_renderer_uniform_allocate(
-    struct owl_renderer *renderer, uint64_t size,
-    struct owl_uniform_allocation *allocation) {
+owl_renderer_uniform_allocate(struct owl_renderer *renderer, uint64_t size,
+                              struct owl_uniform_allocation *allocation) {
   uint8_t *data = renderer->uniform_buffer_data;
   uint32_t const frame = renderer->frame;
   uint64_t const alignment = renderer->uniform_buffer_alignment;
@@ -3136,9 +3134,8 @@ owl_renderer_end_frame(struct owl_renderer *renderer) {
 }
 
 OWL_PUBLIC void *
-owl_renderer_upload_allocate(
-    struct owl_renderer *renderer, uint64_t size,
-    struct owl_upload_allocation *allocation) {
+owl_renderer_upload_allocate(struct owl_renderer *renderer, uint64_t size,
+                             struct owl_upload_allocation *allocation) {
   VkResult vk_result;
 
   if (renderer->upload_buffer_in_use)

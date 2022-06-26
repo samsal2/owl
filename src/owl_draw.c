@@ -337,8 +337,7 @@ owl_draw_model(struct owl_renderer *renderer, struct owl_model const *model,
   vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     renderer->model_pipeline);
 
-  vkCmdBindVertexBuffers(command_buffer, 0, 1, &model->vertex_buffer,
-                         &offset);
+  vkCmdBindVertexBuffers(command_buffer, 0, 1, &model->vertex_buffer, &offset);
 
   vkCmdBindIndexBuffer(command_buffer, model->index_buffer, 0,
                        VK_INDEX_TYPE_UINT32);

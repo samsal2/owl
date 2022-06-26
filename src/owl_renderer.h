@@ -207,23 +207,20 @@ OWL_PUBLIC owl_code
 owl_renderer_end_frame(struct owl_renderer *renderer);
 
 OWL_PUBLIC void *
-owl_renderer_vertex_allocate(
-    struct owl_renderer *renderer, uint64_t size,
-    struct owl_vertex_allocation *allocation);
+owl_renderer_vertex_allocate(struct owl_renderer *renderer, uint64_t size,
+                             struct owl_vertex_allocation *allocation);
 
 OWL_PUBLIC void *
 owl_renderer_index_allocate(struct owl_renderer *renderer, uint64_t size,
                             struct owl_index_allocation *allocation);
 
 OWL_PUBLIC void *
-owl_renderer_uniform_allocate(
-    struct owl_renderer *renderer, uint64_t size,
-    struct owl_uniform_allocation *allocation);
+owl_renderer_uniform_allocate(struct owl_renderer *renderer, uint64_t size,
+                              struct owl_uniform_allocation *allocation);
 
 OWL_PUBLIC void *
-owl_renderer_upload_allocate(
-    struct owl_renderer *renderer, uint64_t size,
-    struct owl_upload_allocation *allocation);
+owl_renderer_upload_allocate(struct owl_renderer *renderer, uint64_t size,
+                             struct owl_upload_allocation *allocation);
 
 OWL_PUBLIC void
 owl_renderer_upload_free(struct owl_renderer *renderer, void *ptr);
