@@ -46,20 +46,24 @@ struct owl_model_material_push_constant {
   float alpha_mask_cutoff;
 };
 
-struct owl_model_ubo1 {
+struct owl_model_uniform {
   owl_m4 projection;
   owl_m4 view;
   owl_m4 model;
-  owl_v4 light;
+  owl_v4 camera_position;
+  owl_v4 light_direction;
+  owl_v4 light_position;
+  float exposure;
+  float gamma;
+  float prefiltered_cube_mips;
+  float scale_ibl_ambient;
+  float debug_view_inputs;
+  float debug_view_equation;
 };
 
 struct owl_model_mesh {
   int primitive_count;
   owl_model_primitive_id primitives[OWL_MODEL_MAX_ITEMS];
-};
-
-struct owl_model_ubo2 {
-  owl_v4 light_direction;
 };
 
 struct owl_model_primitive {
@@ -108,6 +112,7 @@ struct owl_model_material {
   owl_model_texture_id occlusion_texture;
   owl_model_texture_id emissive_texture;
   owl_v4 base_color_factor;
+  VkDescriptorSet descriptor_set;
 };
 
 struct owl_model_skin_ssbo {

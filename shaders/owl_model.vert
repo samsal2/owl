@@ -11,13 +11,21 @@ layout(set = 0, binding = 0) uniform UBO {
   mat4 projection;
   mat4 view;
   mat4 model;
+  vec4 camera_position;
+  vec4 light_direction;
   vec4 light_position;
+  float exposure;
+  float gamma;
+  float prefiltered_cube_mips;
+  float scale_ibl_ambient;
+  float debug_view_inputs;
+  float debug_view_equation;
 }
 ubo;
 
 #define OWL_MODEL_SKIN_MAX_JOINT_COUNT 128
 
-layout(std430, set = 4, binding = 0) readonly buffer SSBO {
+layout(std430, set = 2, binding = 0) readonly buffer SSBO {
   mat4 matrix;
   mat4 joint_matrices[OWL_MODEL_SKIN_MAX_JOINT_COUNT];
   int joint_matrice_count;

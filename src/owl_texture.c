@@ -478,7 +478,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
     descriptor_set_allocate_info.descriptorPool = renderer->descriptor_pool;
     descriptor_set_allocate_info.descriptorSetCount = 1;
     descriptor_set_allocate_info.pSetLayouts =
-        &renderer->image_fragment_descriptor_set_layout;
+        &renderer->common_texture_descriptor_set_layout;
 
     vk_result = vkAllocateDescriptorSets(renderer->device,
                                          &descriptor_set_allocate_info,

@@ -5,6 +5,7 @@
 #include "owl_renderer.h"
 #include "owl_texture.h"
 #include "owl_vector_math.h"
+#include "vulkan/vulkan_core.h"
 
 #include <float.h>
 #include <stdio.h>
@@ -99,6 +100,7 @@ owl_model_textures_load(struct owl_model *model,
 
 static owl_code
 owl_model_materials_load(struct owl_model *model,
+                         struct owl_renderer *renderer,
                          struct cgltf_data const *gltf) {
   int i;
   owl_code code = OWL_OK;
@@ -140,6 +142,101 @@ owl_model_materials_load(struct owl_model *model,
     material->alpha_mode = (enum owl_model_alpha_mode)gm->alpha_mode;
     material->alpha_cutoff = gm->alpha_cutoff;
     material->double_sided = gm->double_sided;
+
+    {
+      VkDescriptorSetAllocateInfo descriptor_set_allocate_info;
+      VkResult vk_result;
+
+      descriptor_set_allocate_info.sType =
+          VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+      descriptor_set_allocate_info.pNext = NULL;
+      descriptor_set_allocate_info.descriptorPool = renderer->descriptor_pool;
+      descriptor_set_allocate_info.descriptorSetCount = 1;
+      descriptor_set_allocate_info.pSetLayouts =
+          &renderer->model_material_descriptor_set_layout;
+
+      vk_result = vkAllocateDescriptorSets(renderer->device,
+                                           &descriptor_set_allocate_info,
+                                           &material->descriptor_set);
+      if (vk_result) {
+        code = OWL_ERROR_FATAL;
+        goto out;
+      }
+    }
+
+    {
+      VkDescriptorImageInfo descriptors[4];
+      VkWriteDescriptorSet writes[4];
+
+      descriptors[0].sampler = renderer->linear_sampler;
+      descriptors[0].imageView = NULL;
+      descriptors[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+      descriptors[1].sampler = VK_NULL_HANDLE;
+      descriptors[1].imageView =
+          model->images[model->textures[material->base_color_texture].image]
+              .image.image_view;
+      descriptors[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+      descriptors[2].sampler = VK_NULL_HANDLE;
+      descriptors[2].imageView =
+          model->images[model->textures[material->normal_texture].image]
+              .image.image_view;
+      descriptors[2].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+      descriptors[3].sampler = VK_NULL_HANDLE;
+      descriptors[3].imageView =
+          model->images[model->textures[material->physical_desc_texture].image]
+              .image.image_view;
+      descriptors[3].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+      writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      writes[0].pNext = NULL;
+      writes[0].dstSet = material->descriptor_set;
+      writes[0].dstBinding = 0;
+      writes[0].dstArrayElement = 0;
+      writes[0].descriptorCount = 1;
+      writes[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+      writes[0].pImageInfo = &descriptors[0];
+      writes[0].pBufferInfo = NULL;
+      writes[0].pTexelBufferView = NULL;
+
+      writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      writes[1].pNext = NULL;
+      writes[1].dstSet = material->descriptor_set;
+      writes[1].dstBinding = 1;
+      writes[1].dstArrayElement = 0;
+      writes[1].descriptorCount = 1;
+      writes[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+      writes[1].pImageInfo = &descriptors[1];
+      writes[1].pBufferInfo = NULL;
+      writes[1].pTexelBufferView = NULL;
+
+      writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      writes[2].pNext = NULL;
+      writes[2].dstSet = material->descriptor_set;
+      writes[2].dstBinding = 2;
+      writes[2].dstArrayElement = 0;
+      writes[2].descriptorCount = 1;
+      writes[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+      writes[2].pImageInfo = &descriptors[2];
+      writes[2].pBufferInfo = NULL;
+      writes[2].pTexelBufferView = NULL;
+
+      writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      writes[3].pNext = NULL;
+      writes[3].dstSet = material->descriptor_set;
+      writes[3].dstBinding = 3;
+      writes[3].dstArrayElement = 0;
+      writes[3].descriptorCount = 1;
+      writes[3].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+      writes[3].pImageInfo = &descriptors[3];
+      writes[3].pBufferInfo = NULL;
+      writes[3].pTexelBufferView = NULL;
+
+      vkUpdateDescriptorSets(renderer->device, OWL_ARRAY_SIZE(writes), writes,
+                             0, NULL);
+    }
   }
 
 out:
@@ -783,7 +880,7 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       VkDescriptorSetAllocateInfo info;
 
       for (j = 0; j < (int)renderer->frame_count; ++j)
-        layouts[j] = renderer->ssbo_vertex_descriptor_set_layout;
+        layouts[j] = renderer->model_joints_descriptor_set_layout;
 
       info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
       info.pNext = NULL;
@@ -1047,7 +1144,7 @@ owl_model_init(struct owl_model *model, struct owl_renderer *renderer,
     goto error_data_free;
   }
 
-  code = owl_model_materials_load(model, data);
+  code = owl_model_materials_load(model, renderer, data);
   if (code) {
     OWL_DEBUG_LOG("Filed to parse load gltf materials!");
     goto error_data_free;

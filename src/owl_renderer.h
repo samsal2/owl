@@ -3,6 +3,7 @@
 
 #include "owl_definitions.h"
 #include "owl_texture.h"
+#include "vulkan/vulkan_core.h"
 
 #include <vulkan/vulkan.h>
 
@@ -50,9 +51,8 @@ struct owl_renderer_index_allocation {
 struct owl_renderer_uniform_allocation {
   uint32_t offset;
   VkBuffer buffer;
-  VkDescriptorSet pvm_descriptor_set;
-  VkDescriptorSet model1_descriptor_set;
-  VkDescriptorSet model2_descriptor_set;
+  VkDescriptorSet common_descriptor_set;
+  VkDescriptorSet model_descriptor_set;
 };
 
 struct owl_renderer {
@@ -114,11 +114,11 @@ struct owl_renderer {
   VkShaderModule skybox_vertex_shader;
   VkShaderModule skybox_fragment_shader;
 
-  VkDescriptorSetLayout ubo_vertex_descriptor_set_layout;
-  VkDescriptorSetLayout ubo_fragment_descriptor_set_layout;
-  VkDescriptorSetLayout ubo_both_descriptor_set_layout;
-  VkDescriptorSetLayout ssbo_vertex_descriptor_set_layout;
-  VkDescriptorSetLayout image_fragment_descriptor_set_layout;
+  VkDescriptorSetLayout common_uniform_descriptor_set_layout;
+  VkDescriptorSetLayout common_texture_descriptor_set_layout;
+  VkDescriptorSetLayout model_uniform_descriptor_set_layout;
+  VkDescriptorSetLayout model_joints_descriptor_set_layout;
+  VkDescriptorSetLayout model_material_descriptor_set_layout;
 
   VkPipelineLayout common_pipeline_layout;
   VkPipelineLayout model_pipeline_layout;
@@ -179,8 +179,7 @@ struct owl_renderer {
   VkBuffer uniform_buffers[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
   /* clang-format off */
   VkDescriptorSet uniform_pvm_descriptor_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
-  VkDescriptorSet uniform_model1_descriptor_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
-  VkDescriptorSet uniform_model2_descriptor_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
+  VkDescriptorSet uniform_model_descriptor_sets[OWL_RENDERER_IN_FLIGHT_FRAME_COUNT];
   /* clang-format on */
 
   uint32_t garbage;

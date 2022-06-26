@@ -162,7 +162,7 @@ static void
 owl_renderer_deinit_instance(struct owl_renderer *renderer) {
 #if defined(OWL_ENABLE_VALIDATION)
   vk_destroy_debug_utils_messenger_ext(renderer->instance,
-                                        renderer->debug_messenger, NULL);
+                                       renderer->debug_messenger, NULL);
 #endif
   vkDestroyInstance(renderer->instance, NULL);
 }
@@ -1304,34 +1304,40 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
 
     vk_result = vkCreateDescriptorSetLayout(
         renderer->device, &descriptor_set_layout_create_info, NULL,
-        &renderer->ubo_vertex_descriptor_set_layout);
+        &renderer->common_uniform_descriptor_set_layout);
     if (vk_result)
       goto error;
   }
 
   {
-    VkDescriptorSetLayoutBinding binding;
+    VkDescriptorSetLayoutBinding bindings[2];
     VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
     VkResult vk_result = VK_SUCCESS;
 
-    binding.binding = 0;
-    binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-    binding.descriptorCount = 1;
-    binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    binding.pImmutableSamplers = NULL;
+    bindings[0].binding = 0;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+    bindings[0].descriptorCount = 1;
+    bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[0].pImmutableSamplers = NULL;
+
+    bindings[1].binding = 1;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    bindings[1].descriptorCount = 1;
+    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[1].pImmutableSamplers = NULL;
 
     descriptor_set_layout_create_info.sType =
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     descriptor_set_layout_create_info.pNext = NULL;
     descriptor_set_layout_create_info.flags = 0;
-    descriptor_set_layout_create_info.bindingCount = 1;
-    descriptor_set_layout_create_info.pBindings = &binding;
+    descriptor_set_layout_create_info.bindingCount = OWL_ARRAY_SIZE(bindings);
+    descriptor_set_layout_create_info.pBindings = bindings;
 
     vk_result = vkCreateDescriptorSetLayout(
         renderer->device, &descriptor_set_layout_create_info, NULL,
-        &renderer->ubo_fragment_descriptor_set_layout);
+        &renderer->common_texture_descriptor_set_layout);
     if (vk_result)
-      goto error_destroy_ubo_vertex_descriptor_set_layout;
+      goto error_destroy_common_uniform_descriptor_set_layout;
   }
 
   {
@@ -1355,9 +1361,9 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
 
     vk_result = vkCreateDescriptorSetLayout(
         renderer->device, &descriptor_set_layout_create_info, NULL,
-        &renderer->ubo_both_descriptor_set_layout);
+        &renderer->model_uniform_descriptor_set_layout);
     if (vk_result)
-      goto error_destroy_ubo_fragment_descriptor_set_layout;
+      goto error_destroy_common_texture_descriptor_set_layout;
   }
 
   {
@@ -1380,14 +1386,14 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
 
     vk_result = vkCreateDescriptorSetLayout(
         renderer->device, &descriptor_set_layout_create_info, NULL,
-        &renderer->ssbo_vertex_descriptor_set_layout);
+        &renderer->model_joints_descriptor_set_layout);
     if (vk_result)
-      goto error_destroy_ubo_both_descriptor_set_layout;
+      goto error_destroy_model_uniform_descriptor_set_layout;
   }
 
   {
-    VkDescriptorSetLayoutBinding bindings[2];
-    VkDescriptorSetLayoutCreateInfo descriptor_set_layout_info;
+    VkDescriptorSetLayoutBinding bindings[4];
+    VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
     VkResult vk_result = VK_SUCCESS;
 
     bindings[0].binding = 0;
@@ -1402,18 +1408,30 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
     bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     bindings[1].pImmutableSamplers = NULL;
 
-    descriptor_set_layout_info.sType =
+    bindings[2].binding = 2;
+    bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    bindings[2].descriptorCount = 1;
+    bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[2].pImmutableSamplers = NULL;
+
+    bindings[3].binding = 3;
+    bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    bindings[3].descriptorCount = 1;
+    bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[3].pImmutableSamplers = NULL;
+
+    descriptor_set_layout_create_info.sType =
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptor_set_layout_info.pNext = NULL;
-    descriptor_set_layout_info.flags = 0;
-    descriptor_set_layout_info.bindingCount = OWL_ARRAY_SIZE(bindings);
-    descriptor_set_layout_info.pBindings = bindings;
+    descriptor_set_layout_create_info.pNext = NULL;
+    descriptor_set_layout_create_info.flags = 0;
+    descriptor_set_layout_create_info.bindingCount = OWL_ARRAY_SIZE(bindings);
+    descriptor_set_layout_create_info.pBindings = bindings;
 
     vk_result = vkCreateDescriptorSetLayout(
-        renderer->device, &descriptor_set_layout_info, NULL,
-        &renderer->image_fragment_descriptor_set_layout);
+        renderer->device, &descriptor_set_layout_create_info, NULL,
+        &renderer->model_material_descriptor_set_layout);
     if (vk_result)
-      goto error_destroy_ssbo_vertex_descriptor_set_layout;
+      goto error_destroy_model_joints_descriptor_set_layout;
   }
 
   {
@@ -1421,8 +1439,8 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
     VkPipelineLayoutCreateInfo pipeline_layout_create_info;
     VkResult vk_result = VK_SUCCESS;
 
-    layouts[0] = renderer->ubo_vertex_descriptor_set_layout;
-    layouts[1] = renderer->image_fragment_descriptor_set_layout;
+    layouts[0] = renderer->common_uniform_descriptor_set_layout;
+    layouts[1] = renderer->common_texture_descriptor_set_layout;
 
     pipeline_layout_create_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1437,11 +1455,11 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
                                        &pipeline_layout_create_info, NULL,
                                        &renderer->common_pipeline_layout);
     if (vk_result)
-      goto error_destroy_image_fragment_descriptor_set_layout;
+      goto error_destroy_model_material_descriptor_set_layout;
   }
 
   {
-    VkDescriptorSetLayout layouts[6];
+    VkDescriptorSetLayout layouts[3];
     VkPushConstantRange push_constant_range;
     VkPipelineLayoutCreateInfo pipeline_layout_create_info;
     VkResult vk_result = VK_SUCCESS;
@@ -1450,12 +1468,9 @@ owl_renderer_init_layouts(struct owl_renderer *renderer) {
     push_constant_range.offset = 0;
     push_constant_range.size = sizeof(struct owl_model_material_push_constant);
 
-    layouts[0] = renderer->ubo_both_descriptor_set_layout;
-    layouts[1] = renderer->image_fragment_descriptor_set_layout;
-    layouts[2] = renderer->image_fragment_descriptor_set_layout;
-    layouts[3] = renderer->image_fragment_descriptor_set_layout;
-    layouts[4] = renderer->ssbo_vertex_descriptor_set_layout;
-    layouts[5] = renderer->ubo_fragment_descriptor_set_layout;
+    layouts[0] = renderer->model_uniform_descriptor_set_layout;
+    layouts[1] = renderer->model_material_descriptor_set_layout;
+    layouts[2] = renderer->model_joints_descriptor_set_layout;
 
     pipeline_layout_create_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1479,25 +1494,25 @@ error_destroy_common_pipeline_layout:
   vkDestroyPipelineLayout(renderer->device, renderer->common_pipeline_layout,
                           NULL);
 
-error_destroy_image_fragment_descriptor_set_layout:
+error_destroy_model_material_descriptor_set_layout:
   vkDestroyDescriptorSetLayout(
-      renderer->device, renderer->image_fragment_descriptor_set_layout, NULL);
+      renderer->device, renderer->model_material_descriptor_set_layout, NULL);
 
-error_destroy_ssbo_vertex_descriptor_set_layout:
+error_destroy_model_joints_descriptor_set_layout:
   vkDestroyDescriptorSetLayout(
-      renderer->device, renderer->ssbo_vertex_descriptor_set_layout, NULL);
+      renderer->device, renderer->model_joints_descriptor_set_layout, NULL);
 
-error_destroy_ubo_both_descriptor_set_layout:
-  vkDestroyDescriptorSetLayout(renderer->device,
-                               renderer->ubo_both_descriptor_set_layout, NULL);
-
-error_destroy_ubo_fragment_descriptor_set_layout:
+error_destroy_model_uniform_descriptor_set_layout:
   vkDestroyDescriptorSetLayout(
-      renderer->device, renderer->ubo_fragment_descriptor_set_layout, NULL);
+      renderer->device, renderer->model_uniform_descriptor_set_layout, NULL);
 
-error_destroy_ubo_vertex_descriptor_set_layout:
+error_destroy_common_texture_descriptor_set_layout:
   vkDestroyDescriptorSetLayout(
-      renderer->device, renderer->ubo_vertex_descriptor_set_layout, NULL);
+      renderer->device, renderer->common_texture_descriptor_set_layout, NULL);
+
+error_destroy_common_uniform_descriptor_set_layout:
+  vkDestroyDescriptorSetLayout(
+      renderer->device, renderer->common_uniform_descriptor_set_layout, NULL);
 
 error:
   return OWL_ERROR_FATAL;
@@ -1510,15 +1525,15 @@ owl_renderer_deinit_layouts(struct owl_renderer *renderer) {
   vkDestroyPipelineLayout(renderer->device, renderer->common_pipeline_layout,
                           NULL);
   vkDestroyDescriptorSetLayout(
-      renderer->device, renderer->image_fragment_descriptor_set_layout, NULL);
+      renderer->device, renderer->model_material_descriptor_set_layout, NULL);
   vkDestroyDescriptorSetLayout(
-      renderer->device, renderer->ssbo_vertex_descriptor_set_layout, NULL);
-  vkDestroyDescriptorSetLayout(renderer->device,
-                               renderer->ubo_both_descriptor_set_layout, NULL);
+      renderer->device, renderer->model_joints_descriptor_set_layout, NULL);
   vkDestroyDescriptorSetLayout(
-      renderer->device, renderer->ubo_fragment_descriptor_set_layout, NULL);
+      renderer->device, renderer->model_uniform_descriptor_set_layout, NULL);
   vkDestroyDescriptorSetLayout(
-      renderer->device, renderer->ubo_vertex_descriptor_set_layout, NULL);
+      renderer->device, renderer->common_texture_descriptor_set_layout, NULL);
+  vkDestroyDescriptorSetLayout(
+      renderer->device, renderer->common_uniform_descriptor_set_layout, NULL);
 }
 
 static owl_code
@@ -1869,8 +1884,10 @@ static void
 owl_renderer_collect_garbage(struct owl_renderer *renderer) {
   uint32_t i;
   uint32_t const garbage_frames = OWL_RENDERER_GARBAGE_COUNT;
+  /* use the _oldest_ garbage framt to collect */
   uint32_t const collect = (renderer->garbage + 2) % garbage_frames;
 
+  /* update the garbage index */
   renderer->garbage = (renderer->garbage + 1) % garbage_frames;
 
   if (renderer->garbage_descriptor_set_counts[collect]) {
@@ -2012,16 +2029,7 @@ owl_renderer_garbage_push_uniform(struct owl_renderer *renderer) {
     uint32_t const count = descriptor_set_count;
     VkDescriptorSet descriptor_set;
 
-    descriptor_set = renderer->uniform_model1_descriptor_sets[i];
-    renderer->garbage_descriptor_sets[garbage][count + i] = descriptor_set;
-  }
-  descriptor_set_count += renderer->frame_count;
-
-  for (i = 0; i < renderer->frame_count; ++i) {
-    uint32_t const count = descriptor_set_count;
-    VkDescriptorSet descriptor_set;
-
-    descriptor_set = renderer->uniform_model2_descriptor_sets[i];
+    descriptor_set = renderer->uniform_model_descriptor_sets[i];
     renderer->garbage_descriptor_sets[garbage][count + i] = descriptor_set;
   }
   descriptor_set_count += renderer->frame_count;
@@ -2290,14 +2298,13 @@ owl_renderer_init_uniform_buffer(struct owl_renderer *renderer,
 
   for (i = 0; i < (int32_t)renderer->frame_count; ++i) {
     {
-      VkDescriptorSetLayout layouts[3];
-      VkDescriptorSet descriptor_sets[3];
+      VkDescriptorSetLayout layouts[2];
+      VkDescriptorSet descriptor_sets[2];
       VkDescriptorSetAllocateInfo descriptor_set_allocate_info;
       VkResult vk_result = VK_SUCCESS;
 
-      layouts[0] = renderer->ubo_vertex_descriptor_set_layout;
-      layouts[1] = renderer->ubo_both_descriptor_set_layout;
-      layouts[2] = renderer->ubo_fragment_descriptor_set_layout;
+      layouts[0] = renderer->common_uniform_descriptor_set_layout;
+      layouts[1] = renderer->model_uniform_descriptor_set_layout;
 
       descriptor_set_allocate_info.sType =
           VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -2313,13 +2320,12 @@ owl_renderer_init_uniform_buffer(struct owl_renderer *renderer,
         goto error_free_descriptor_sets;
 
       renderer->uniform_pvm_descriptor_sets[i] = descriptor_sets[0];
-      renderer->uniform_model1_descriptor_sets[i] = descriptor_sets[1];
-      renderer->uniform_model2_descriptor_sets[i] = descriptor_sets[2];
+      renderer->uniform_model_descriptor_sets[i] = descriptor_sets[1];
     }
 
     {
-      VkDescriptorBufferInfo descriptors[3];
-      VkWriteDescriptorSet writes[3];
+      VkDescriptorBufferInfo descriptors[2];
+      VkWriteDescriptorSet writes[2];
 
       descriptors[0].buffer = renderer->uniform_buffers[i];
       descriptors[0].offset = 0;
@@ -2338,11 +2344,11 @@ owl_renderer_init_uniform_buffer(struct owl_renderer *renderer,
 
       descriptors[1].buffer = renderer->uniform_buffers[i];
       descriptors[1].offset = 0;
-      descriptors[1].range = sizeof(struct owl_model_ubo1);
+      descriptors[1].range = sizeof(struct owl_model_uniform);
 
       writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       writes[1].pNext = NULL;
-      writes[1].dstSet = renderer->uniform_model1_descriptor_sets[i];
+      writes[1].dstSet = renderer->uniform_model_descriptor_sets[i];
       writes[1].dstBinding = 0;
       writes[1].dstArrayElement = 0;
       writes[1].descriptorCount = 1;
@@ -2350,21 +2356,6 @@ owl_renderer_init_uniform_buffer(struct owl_renderer *renderer,
       writes[1].pImageInfo = NULL;
       writes[1].pBufferInfo = &descriptors[1];
       writes[1].pTexelBufferView = NULL;
-
-      descriptors[2].buffer = renderer->uniform_buffers[i];
-      descriptors[2].offset = 0;
-      descriptors[2].range = sizeof(struct owl_model_ubo2);
-
-      writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-      writes[2].pNext = NULL;
-      writes[2].dstSet = renderer->uniform_model2_descriptor_sets[i];
-      writes[2].dstBinding = 0;
-      writes[2].dstArrayElement = 0;
-      writes[2].descriptorCount = 1;
-      writes[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-      writes[2].pImageInfo = NULL;
-      writes[2].pBufferInfo = &descriptors[2];
-      writes[2].pTexelBufferView = NULL;
 
       vkUpdateDescriptorSets(renderer->device, OWL_ARRAY_SIZE(writes), writes,
                              0, NULL);
@@ -2381,8 +2372,7 @@ error_free_descriptor_sets:
     VkDescriptorSet descriptor_sets[3];
 
     descriptor_sets[0] = renderer->uniform_pvm_descriptor_sets[i];
-    descriptor_sets[1] = renderer->uniform_model1_descriptor_sets[i];
-    descriptor_sets[2] = renderer->uniform_model2_descriptor_sets[i];
+    descriptor_sets[1] = renderer->uniform_model_descriptor_sets[i];
 
     vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool,
                          OWL_ARRAY_SIZE(descriptor_sets), descriptor_sets);
@@ -2406,11 +2396,10 @@ static void
 owl_renderer_deinit_uniform_buffer(struct owl_renderer *renderer) {
   uint32_t i;
   for (i = 0; i < renderer->frame_count; ++i) {
-    VkDescriptorSet descriptor_sets[3];
+    VkDescriptorSet descriptor_sets[2];
 
     descriptor_sets[0] = renderer->uniform_pvm_descriptor_sets[i];
-    descriptor_sets[1] = renderer->uniform_model1_descriptor_sets[i];
-    descriptor_sets[2] = renderer->uniform_model2_descriptor_sets[i];
+    descriptor_sets[1] = renderer->uniform_model_descriptor_sets[i];
 
     vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool,
                          OWL_ARRAY_SIZE(descriptor_sets), descriptor_sets);
@@ -3022,12 +3011,10 @@ owl_renderer_uniform_allocate(
 
   allocation->offset = renderer->uniform_buffer_offset;
   allocation->buffer = renderer->uniform_buffers[frame];
-  allocation->pvm_descriptor_set =
+  allocation->common_descriptor_set =
       renderer->uniform_pvm_descriptor_sets[frame];
-  allocation->model1_descriptor_set =
-      renderer->uniform_model1_descriptor_sets[frame];
-  allocation->model2_descriptor_set =
-      renderer->uniform_model2_descriptor_sets[frame];
+  allocation->model_descriptor_set =
+      renderer->uniform_model_descriptor_sets[frame];
 
   renderer->uniform_buffer_offset = OWL_ALIGN_UP_2(required, alignment);
 

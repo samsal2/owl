@@ -1,32 +1,26 @@
 #version 450
 
-layout(set = 1, binding = 0) uniform sampler sampler0;
-layout(set = 1, binding = 1) uniform texture2D color_map;
-layout(set = 2, binding = 0) uniform sampler sampler1;
-layout(set = 2, binding = 1) uniform texture2D normal_map;
-layout(set = 3, binding = 0) uniform sampler sampler2;
-layout(set = 3, binding = 1) uniform texture2D physical_descriptor_map;
+layout (set = 1, binding = 0) uniform sampler sampler0;
+layout (set = 1, binding = 1) uniform texture2D color_map;
+layout (set = 1, binding = 2) uniform texture2D normal_map;
+layout (set = 1, binding = 3) uniform texture2D physical_descriptor_map;
 
-layout(set = 0, binding = 0) uniform UBO {
+layout (set = 0, binding = 0) uniform UBO {
   mat4 projection;
   mat4 view;
   mat4 model;
-  vec3 camera_position;
-}
-ubo;
-
-layout(set = 5, binding = 0) uniform UBO_PARAMS {
+  vec4 camera_position;
   vec4 light_direction;
+  vec4 light_position;
   float exposure;
   float gamma;
   float prefiltered_cube_mips;
   float scale_ibl_ambient;
   float debug_view_inputs;
-  float dedbug_view_equation;
-}
-ubo_params;
+  float debug_view_equation;
+} ubo;
 
-layout(push_constant) uniform MATERIAL {
+layout (push_constant) uniform MATERIAL {
   vec4 base_color_factor;
   vec4 emissive_factor;
   vec4 diffuse_factor;
@@ -44,14 +38,14 @@ layout(push_constant) uniform MATERIAL {
 }
 material;
 
-layout(location = 0) in vec3 in_world_position;
-layout(location = 1) in vec3 in_normal;
-layout(location = 2) in vec2 in_uv0;
-layout(location = 3) in vec2 in_uv1;
-layout(location = 4) in vec3 in_view;
-layout(location = 5) in vec3 in_light;
+layout (location = 0) in vec3 in_world_position;
+layout (location = 1) in vec3 in_normal;
+layout (location = 2) in vec2 in_uv0;
+layout (location = 3) in vec2 in_uv1;
+layout (location = 4) in vec3 in_view;
+layout (location = 5) in vec3 in_light;
 
-layout(location = 0) out vec4 out_frag_color;
+layout (location = 0) out vec4 out_frag_color;
 
 struct pbr_info {
   float normal_dot_light; // cos angle between normal and light direction
@@ -116,10 +110,10 @@ getNormal() {
 
   if (0 == material.normal_uv_set)
     tangent_normal =
-        texture(sampler2D(normal_map, sampler1), in_uv0).xyz * 2.0 - 1;
+        texture(sampler2D(normal_map, sampler0), in_uv0).xyz * 2.0 - 1;
   else
     tangent_normal =
-        texture(sampler2D(normal_map, sampler1), in_uv1).xyz * 2.0 - 1;
+        texture(sampler2D(normal_map, sampler0), in_uv1).xyz * 2.0 - 1;
 
   vec3 q1 = dFdx(in_world_position);
   vec3 q2 = dFdy(in_world_position);
@@ -138,7 +132,7 @@ getNormal() {
 vec3
 getIBLContribution(pbr_info pbr_inputs, vec3 n, vec3 reflection) {
   float lod =
-      (pbr_inputs.perceptual_roughness * ubo_params.prefiltered_cube_mips);
+      (pbr_inputs.perceptual_roughness * ubo.prefiltered_cube_mips);
   // retrieve a scale and bias to F0. See [1], Figure 3
 #if 0
 	vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
@@ -164,8 +158,8 @@ getIBLContribution(pbr_info pbr_inputs, vec3 n, vec3 reflection) {
 
   // For presentation, this allows us to disable IBL terms
   // For presentation, this allows us to disable IBL terms
-  diffuse *= ubo_params.scale_ibl_ambient;
-  specular *= ubo_params.scale_ibl_ambient;
+  diffuse *= ubo.scale_ibl_ambient;
+  specular *= ubo.scale_ibl_ambient;
 
   return diffuse + specular;
 }
@@ -173,9 +167,9 @@ getIBLContribution(pbr_info pbr_inputs, vec3 n, vec3 reflection) {
 
 vec4
 tonemap(vec4 color) {
-  vec3 outcol = Uncharted2Tonemap(color.rgb * ubo_params.exposure);
+  vec3 outcol = Uncharted2Tonemap(color.rgb * ubo.exposure);
   outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
-  return vec4(pow(outcol, vec3(1.0f / ubo_params.gamma)), color.a);
+  return vec4(pow(outcol, vec3(1.0f / ubo.gamma)), color.a);
 }
 
 const float M_PI = 3.141592653589793;
@@ -270,13 +264,13 @@ main() {
 
     if (0 == material.physical_descriptor_uv_set) {
       vec4 sample_metallic_roughness =
-          texture(sampler2D(physical_descriptor_map, sampler2), in_uv0);
+          texture(sampler2D(physical_descriptor_map, sampler0), in_uv0);
       perceptual_roughness =
           sample_metallic_roughness.g * perceptual_roughness;
       metallic = sample_metallic_roughness.b * metallic;
     } else if (1 == material.physical_descriptor_uv_set) {
       vec4 sample_metallic_roughness =
-          texture(sampler2D(physical_descriptor_map, sampler2), in_uv1);
+          texture(sampler2D(physical_descriptor_map, sampler0), in_uv1);
       perceptual_roughness =
           sample_metallic_roughness.g * perceptual_roughness;
       metallic = sample_metallic_roughness.b * metallic;
@@ -299,11 +293,11 @@ main() {
     if (0 == material.physical_descriptor_uv_set) {
       perceptual_roughness =
           1.0 -
-          texture(sampler2D(physical_descriptor_map, sampler2), in_uv0).a;
+          texture(sampler2D(physical_descriptor_map, sampler0), in_uv0).a;
     } else if (1 == material.physical_descriptor_uv_set) {
       perceptual_roughness =
           1.0 -
-          texture(sampler2D(physical_descriptor_map, sampler2), in_uv1).a;
+          texture(sampler2D(physical_descriptor_map, sampler0), in_uv1).a;
     } else {
       perceptual_roughness = 0.0F;
     }
@@ -314,7 +308,7 @@ main() {
         SRGBtoLINEAR(texture(sampler2D(color_map, sampler0), in_uv0));
     vec3 specular =
         SRGBtoLINEAR(
-            texture(sampler2D(physical_descriptor_map, sampler2), in_uv0))
+            texture(sampler2D(physical_descriptor_map, sampler0), in_uv0))
             .rgb;
 
     const float max_specular = max(max(specular.r, specular.g), specular.b);
@@ -348,8 +342,8 @@ main() {
   vec3 specular_environment_r90 = vec3(1.0, 1.0, 1.0) * reflectance90;
 
   vec3 n = (material.normal_uv_set > -1) ? getNormal() : normalize(in_normal);
-  vec3 v = normalize(ubo.camera_position - in_world_position);
-  vec3 l = normalize(ubo_params.light_direction.xyz);
+  vec3 v = normalize(ubo.camera_position.xyz - in_world_position);
+  vec3 l = normalize(ubo.light_direction.xyz);
   vec3 h = normalize(l + v);
   vec3 reflection = -normalize(reflect(v, n));
   reflection.y *= -1.0;
