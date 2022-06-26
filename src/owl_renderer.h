@@ -3,20 +3,20 @@
 
 #include "owl_definitions.h"
 #include "owl_texture.h"
-#include "vulkan/vulkan_core.h"
 
 #include <vulkan/vulkan.h>
 
 OWL_BEGIN_DECLARATIONS
 
 #define OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT 8
-#define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT 2
-#define OWL_RENDERER_GARBAGE_COUNT 3
+#define OWL_RENDERER_IN_FLIGHT_FRAME_COUNT 3
+#define OWL_RENDERER_GARBAGE_COUNT (OWL_RENDERER_IN_FLIGHT_FRAME_COUNT + 1)
 #define OWL_RENDERER_FONT_FIRST_CHAR ((int)(' '))
 #define OWL_RENDERER_CHAR_COUNT ((int)('~' - ' '))
 
 struct owl_plataform;
 
+/* TODO(samuel): proper font module */
 struct owl_packed_char {
   uint16_t x0;
   uint16_t y0;

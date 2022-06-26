@@ -7,7 +7,6 @@
 #include "owl_texture.h"
 #include "owl_vector_math.h"
 #include "stb_truetype.h"
-#include "vulkan/vulkan_core.h"
 
 #include <stdio.h>
 
@@ -405,7 +404,7 @@ owl_renderer_select_physical_device(struct owl_renderer *renderer) {
               VkPresentModeKHR present_modes[16];
               int32_t found_present_mode = 0;
               VkPresentModeKHR requested_present_mode =
-                  VK_PRESENT_MODE_FIFO_KHR;
+                  VK_PRESENT_MODE_IMMEDIATE_KHR;
 
               vk_result = vkGetPhysicalDeviceSurfacePresentModesKHR(
                   device, renderer->surface, &present_mode_count, NULL);
@@ -866,8 +865,6 @@ owl_renderer_deinit_render_passes(struct owl_renderer *renderer) {
   vkDestroyRenderPass(renderer->device, renderer->main_render_pass, NULL);
 }
 
-#define OWL_MAX_PRESENT_MODE_COUNT 16
-
 static owl_code
 owl_renderer_init_swapchain(struct owl_renderer *renderer) {
   int32_t i;
@@ -888,7 +885,7 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
   swapchain_create_info.pNext = NULL;
   swapchain_create_info.flags = 0;
   swapchain_create_info.surface = renderer->surface;
-  swapchain_create_info.minImageCount = renderer->frame_count + 1;
+  swapchain_create_info.minImageCount = renderer->frame_count;
   swapchain_create_info.imageFormat = renderer->surface_format.format;
   swapchain_create_info.imageColorSpace = renderer->surface_format.colorSpace;
   swapchain_create_info.imageExtent.width = renderer->width;

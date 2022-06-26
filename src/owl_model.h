@@ -9,6 +9,8 @@
 
 OWL_BEGIN_DECLARATIONS
 
+/* TODO(samuel): rewrite this code, most of it is garbage */
+
 #define OWL_MODEL_MESH_NONE -1
 #define OWL_MODEL_ANIM_NONE -1
 #define OWL_MODEL_SKIN_NONE -1
@@ -175,11 +177,11 @@ struct owl_model_anim {
 };
 
 struct owl_model {
-  VkBuffer vk_vertex_buffer;
-  VkDeviceMemory vk_vertex_memory;
+  VkBuffer vertex_buffer;
+  VkDeviceMemory vertex_memory;
 
-  VkBuffer vk_index_buffer;
-  VkDeviceMemory vk_index_memory;
+  VkBuffer index_buffer;
+  VkDeviceMemory index_memory;
 
   owl_model_anim_id active_anim;
 

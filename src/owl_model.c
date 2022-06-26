@@ -596,13 +596,13 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
   buffer_info.pQueueFamilyIndices = 0;
 
   vk_result = vkCreateBuffer(renderer->device, &buffer_info, NULL,
-                             &model->vk_vertex_buffer);
+                             &model->vertex_buffer);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_FATAL;
     goto out;
   }
 
-  vkGetBufferMemoryRequirements(renderer->device, model->vk_vertex_buffer,
+  vkGetBufferMemoryRequirements(renderer->device, model->vertex_buffer,
                                 &memory_requirements);
 
   memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -613,14 +613,14 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
-                               &model->vk_vertex_memory);
+                               &model->vertex_memory);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_FATAL;
     goto out;
   }
 
-  vk_result = vkBindBufferMemory(renderer->device, model->vk_vertex_buffer,
-                                 model->vk_vertex_memory, 0);
+  vk_result = vkBindBufferMemory(renderer->device, model->vertex_buffer,
+                                 model->vertex_memory, 0);
 
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_FATAL;
@@ -643,7 +643,7 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
   copy.size = size;
 
   vkCmdCopyBuffer(renderer->immediate_command_buffer, allocation.buffer,
-                  model->vk_vertex_buffer, 1, &copy);
+                  model->vertex_buffer, 1, &copy);
 
   code = owl_renderer_end_immediate_command_buffer(renderer);
   if (code)
@@ -664,13 +664,13 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
   buffer_info.pQueueFamilyIndices = 0;
 
   vk_result = vkCreateBuffer(renderer->device, &buffer_info, NULL,
-                             &model->vk_index_buffer);
+                             &model->index_buffer);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_FATAL;
     goto out;
   }
 
-  vkGetBufferMemoryRequirements(renderer->device, model->vk_index_buffer,
+  vkGetBufferMemoryRequirements(renderer->device, model->index_buffer,
                                 &memory_requirements);
 
   memory_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -681,14 +681,14 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   vk_result = vkAllocateMemory(renderer->device, &memory_info, NULL,
-                               &model->vk_index_memory);
+                               &model->index_memory);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_FATAL;
     goto out;
   }
 
-  vk_result = vkBindBufferMemory(renderer->device, model->vk_index_buffer,
-                                 model->vk_index_memory, 0);
+  vk_result = vkBindBufferMemory(renderer->device, model->index_buffer,
+                                 model->index_memory, 0);
   if (VK_SUCCESS != vk_result) {
     code = OWL_ERROR_FATAL;
     goto out;
@@ -710,7 +710,7 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
   copy.size = size;
 
   vkCmdCopyBuffer(renderer->immediate_command_buffer, allocation.buffer,
-                  model->vk_index_buffer, 1, &copy);
+                  model->index_buffer, 1, &copy);
 
   code = owl_renderer_end_immediate_command_buffer(renderer);
   if (code)
@@ -1181,10 +1181,10 @@ owl_model_deinit(struct owl_model *model, struct owl_renderer *renderer) {
 
   vkDeviceWaitIdle(renderer->device);
 
-  vkFreeMemory(renderer->device, model->vk_index_memory, NULL);
-  vkDestroyBuffer(renderer->device, model->vk_index_buffer, NULL);
-  vkFreeMemory(renderer->device, model->vk_vertex_memory, NULL);
-  vkDestroyBuffer(renderer->device, model->vk_vertex_buffer, NULL);
+  vkFreeMemory(renderer->device, model->index_memory, NULL);
+  vkDestroyBuffer(renderer->device, model->index_buffer, NULL);
+  vkFreeMemory(renderer->device, model->vertex_memory, NULL);
+  vkDestroyBuffer(renderer->device, model->vertex_buffer, NULL);
 
   for (i = 0; i < model->image_count; ++i) {
     owl_texture_deinit(renderer, &model->images[i].image);
@@ -1201,6 +1201,11 @@ owl_model_deinit(struct owl_model *model, struct owl_renderer *renderer) {
     for (j = 0; j < (int)renderer->frame_count; ++j) {
       vkDestroyBuffer(renderer->device, model->skins[i].ssbo_buffers[j], NULL);
     }
+  }
+
+  for (i = 0; i < model->material_count; ++i) {
+    vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
+                         &model->materials[i].descriptor_set);
   }
 }
 

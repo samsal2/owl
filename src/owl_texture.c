@@ -3,7 +3,6 @@
 #include "owl_internal.h"
 #include "owl_renderer.h"
 #include "stb_image.h"
-#include "vulkan/vulkan_core.h"
 
 #include <math.h>
 
