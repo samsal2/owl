@@ -34,21 +34,21 @@ struct owl_glyph {
   owl_v2 uvs[4];
 };
 
-struct owl_renderer_upload_allocation {
+struct owl_upload_allocation {
   VkBuffer buffer;
 };
 
-struct owl_renderer_vertex_allocation {
+struct owl_vertex_allocation {
   uint64_t offset;
   VkBuffer buffer;
 };
 
-struct owl_renderer_index_allocation {
+struct owl_index_allocation {
   uint64_t offset;
   VkBuffer buffer;
 };
 
-struct owl_renderer_uniform_allocation {
+struct owl_uniform_allocation {
   uint32_t offset;
   VkBuffer buffer;
   VkDescriptorSet common_descriptor_set;
@@ -74,8 +74,8 @@ struct owl_renderer {
 
   VkPhysicalDevice physical_device;
   VkDevice device;
-  uint32_t graphics_queue_family;
-  uint32_t present_queue_family;
+  uint32_t graphics_family;
+  uint32_t present_family;
   VkQueue graphics_queue;
   VkQueue present_queue;
 
@@ -209,21 +209,21 @@ owl_renderer_end_frame(struct owl_renderer *renderer);
 OWL_PUBLIC void *
 owl_renderer_vertex_allocate(
     struct owl_renderer *renderer, uint64_t size,
-    struct owl_renderer_vertex_allocation *allocation);
+    struct owl_vertex_allocation *allocation);
 
 OWL_PUBLIC void *
 owl_renderer_index_allocate(struct owl_renderer *renderer, uint64_t size,
-                            struct owl_renderer_index_allocation *allocation);
+                            struct owl_index_allocation *allocation);
 
 OWL_PUBLIC void *
 owl_renderer_uniform_allocate(
     struct owl_renderer *renderer, uint64_t size,
-    struct owl_renderer_uniform_allocation *allocation);
+    struct owl_uniform_allocation *allocation);
 
 OWL_PUBLIC void *
 owl_renderer_upload_allocate(
     struct owl_renderer *renderer, uint64_t size,
-    struct owl_renderer_upload_allocation *allocation);
+    struct owl_upload_allocation *allocation);
 
 OWL_PUBLIC void
 owl_renderer_upload_free(struct owl_renderer *renderer, void *ptr);

@@ -322,8 +322,8 @@ owl_renderer_select_physical_device(struct owl_renderer *renderer) {
           if (has_extensions) {
             device_found = 1;
             renderer->physical_device = device;
-            renderer->graphics_queue_family = graphics_family;
-            renderer->present_queue_family = present_family;
+            renderer->graphics_family = graphics_family;
+            renderer->present_family = present_family;
 
             {
               VkPhysicalDeviceProperties properties;
@@ -490,14 +490,14 @@ owl_renderer_init_device(struct owl_renderer *renderer) {
   queue_infos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_infos[0].pNext = NULL;
   queue_infos[0].flags = 0;
-  queue_infos[0].queueFamilyIndex = renderer->graphics_queue_family;
+  queue_infos[0].queueFamilyIndex = renderer->graphics_family;
   queue_infos[0].queueCount = 1;
   queue_infos[0].pQueuePriorities = &priority;
 
   queue_infos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_infos[1].pNext = NULL;
   queue_infos[1].flags = 0;
-  queue_infos[1].queueFamilyIndex = renderer->present_queue_family;
+  queue_infos[1].queueFamilyIndex = renderer->present_family;
   queue_infos[1].queueCount = 1;
   queue_infos[1].pQueuePriorities = &priority;
 
@@ -506,7 +506,7 @@ owl_renderer_init_device(struct owl_renderer *renderer) {
   info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   info.pNext = NULL;
   info.flags = 0;
-  if (renderer->graphics_queue_family == renderer->present_queue_family) {
+  if (renderer->graphics_family == renderer->present_family) {
     info.queueCreateInfoCount = 1;
   } else {
     info.queueCreateInfoCount = 2;
@@ -523,10 +523,10 @@ owl_renderer_init_device(struct owl_renderer *renderer) {
   if (vk_result)
     return OWL_ERROR_FATAL;
 
-  vkGetDeviceQueue(renderer->device, renderer->graphics_queue_family, 0,
+  vkGetDeviceQueue(renderer->device, renderer->graphics_family, 0,
                    &renderer->graphics_queue);
 
-  vkGetDeviceQueue(renderer->device, renderer->present_queue_family, 0,
+  vkGetDeviceQueue(renderer->device, renderer->present_family, 0,
                    &renderer->present_queue);
 
   return code;
@@ -891,10 +891,10 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
     info.clipped = VK_TRUE;
     info.oldSwapchain = VK_NULL_HANDLE;
 
-    families[0] = renderer->graphics_queue_family;
-    families[1] = renderer->present_queue_family;
+    families[0] = renderer->graphics_family;
+    families[1] = renderer->present_family;
 
-    if (renderer->graphics_queue_family == renderer->present_queue_family) {
+    if (renderer->graphics_family == renderer->present_family) {
       info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
       info.queueFamilyIndexCount = 0;
       info.pQueueFamilyIndices = NULL;
@@ -1017,7 +1017,7 @@ owl_renderer_init_pools(struct owl_renderer *renderer) {
     info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     info.pNext = NULL;
     info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    info.queueFamilyIndex = renderer->graphics_queue_family;
+    info.queueFamilyIndex = renderer->graphics_family;
 
     vk_result = vkCreateCommandPool(renderer->device, &info, NULL,
                                     &renderer->command_pool);
@@ -2395,7 +2395,7 @@ owl_renderer_init_frames(struct owl_renderer *renderer) {
     info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     info.pNext = NULL;
     info.flags = 0;
-    info.queueFamilyIndex = renderer->graphics_queue_family;
+    info.queueFamilyIndex = renderer->graphics_family;
 
     vk_result = vkCreateCommandPool(renderer->device, &info, NULL,
                                     &renderer->submit_command_pools[i]);
@@ -2882,7 +2882,7 @@ error:
 OWL_PUBLIC void *
 owl_renderer_vertex_allocate(
     struct owl_renderer *renderer, uint64_t size,
-    struct owl_renderer_vertex_allocation *allocation) {
+    struct owl_vertex_allocation *allocation) {
   uint8_t *data = renderer->vertex_buffer_data;
   uint32_t const frame = renderer->frame;
   uint64_t const alignment = renderer->vertex_buffer_alignment;
@@ -2916,7 +2916,7 @@ owl_renderer_vertex_allocate(
 
 OWL_PUBLIC void *
 owl_renderer_index_allocate(struct owl_renderer *renderer, uint64_t size,
-                            struct owl_renderer_index_allocation *allocation) {
+                            struct owl_index_allocation *allocation) {
   uint8_t *data = renderer->index_buffer_data;
   uint32_t const frame = renderer->frame;
   uint64_t const alignment = renderer->index_buffer_alignment;
@@ -2951,7 +2951,7 @@ owl_renderer_index_allocate(struct owl_renderer *renderer, uint64_t size,
 OWL_PUBLIC void *
 owl_renderer_uniform_allocate(
     struct owl_renderer *renderer, uint64_t size,
-    struct owl_renderer_uniform_allocation *allocation) {
+    struct owl_uniform_allocation *allocation) {
   uint8_t *data = renderer->uniform_buffer_data;
   uint32_t const frame = renderer->frame;
   uint64_t const alignment = renderer->uniform_buffer_alignment;
@@ -3138,7 +3138,7 @@ owl_renderer_end_frame(struct owl_renderer *renderer) {
 OWL_PUBLIC void *
 owl_renderer_upload_allocate(
     struct owl_renderer *renderer, uint64_t size,
-    struct owl_renderer_upload_allocation *allocation) {
+    struct owl_upload_allocation *allocation) {
   VkResult vk_result;
 
   if (renderer->upload_buffer_in_use)

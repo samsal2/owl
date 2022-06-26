@@ -201,7 +201,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
   VkResult vk_result;
 
   uint8_t *upload_data = NULL;
-  struct owl_renderer_upload_allocation upload_allocation;
+  struct owl_upload_allocation upload_allocation;
 
   texture->layout = VK_IMAGE_LAYOUT_UNDEFINED;
   texture->image = VK_NULL_HANDLE;

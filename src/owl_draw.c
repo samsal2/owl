@@ -17,9 +17,9 @@ owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
   VkCommandBuffer command_buffer;
   struct owl_pvm_uniform uniform;
   struct owl_pcu_vertex vertices[4];
-  struct owl_renderer_vertex_allocation vertex_allocation;
-  struct owl_renderer_index_allocation index_allocation;
-  struct owl_renderer_uniform_allocation uniform_allocation;
+  struct owl_vertex_allocation vertex_allocation;
+  struct owl_index_allocation index_allocation;
+  struct owl_uniform_allocation uniform_allocation;
   static uint32_t const indices[] = {2, 3, 1, 1, 0, 2};
 
   command_buffer = renderer->submit_command_buffers[renderer->frame];
@@ -182,7 +182,7 @@ owl_draw_model_node(struct owl_renderer *renderer, owl_model_node_id id,
   struct owl_model_skin const *skin;
   struct owl_model_skin_ssbo *ssbo;
   struct owl_model_uniform uniform;
-  struct owl_renderer_uniform_allocation uniform1_allocation;
+  struct owl_uniform_allocation uniform1_allocation;
   owl_code code;
 
   command_buffer = renderer->submit_command_buffers[renderer->frame];
@@ -356,9 +356,9 @@ owl_draw_model(struct owl_renderer *renderer, struct owl_model const *model,
 OWL_PUBLIC owl_code
 owl_draw_skybox(struct owl_renderer *renderer) {
   uint8_t *data;
-  struct owl_renderer_vertex_allocation vertex_allocation;
-  struct owl_renderer_index_allocation index_allocation;
-  struct owl_renderer_uniform_allocation uniform_allocation;
+  struct owl_vertex_allocation vertex_allocation;
+  struct owl_index_allocation index_allocation;
+  struct owl_uniform_allocation uniform_allocation;
   VkDescriptorSet descriptor_sets[2];
   VkCommandBuffer command_buffer;
   struct owl_pvm_uniform uniform;
@@ -489,15 +489,15 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
 
   uint32_t index_count;
   uint32_t *indices;
-  struct owl_renderer_index_allocation index_allocation;
+  struct owl_index_allocation index_allocation;
 
   uint64_t vertex_count;
   struct owl_pcu_vertex *vertices;
-  struct owl_renderer_vertex_allocation vertex_allocation;
+  struct owl_vertex_allocation vertex_allocation;
 
   VkDescriptorSet descriptor_sets[2];
   struct owl_pvm_uniform *uniform;
-  struct owl_renderer_uniform_allocation uniform_allocation;
+  struct owl_uniform_allocation uniform_allocation;
 
   VkCommandBuffer command_buffer;
 
