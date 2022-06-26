@@ -918,8 +918,7 @@ owl_renderer_init_swapchain(struct owl_renderer *renderer) {
 
   vk_result = vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
                                       &renderer->swapchain_image_count, NULL);
-  if (vk_result || OWL_RENDERER_MAX_SWAPCHAIN_IMAGE_COUNT <=
-                       renderer->swapchain_image_count)
+  if (vk_result || OWL_SWAPCHAIN_IMAGE_MAX <= renderer->swapchain_image_count)
     goto error_destroy_swapchain;
 
   vk_result = vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain,
@@ -1868,7 +1867,7 @@ owl_renderer_init_garbage(struct owl_renderer *renderer) {
 
   renderer->garbage = 0;
 
-  for (i = 0; i < OWL_RENDERER_GARBAGE_COUNT; ++i) {
+  for (i = 0; i < OWL_GARBAGE_FRAME_COUNT; ++i) {
     renderer->garbage_buffer_counts[i] = 0;
     renderer->garbage_memory_counts[i] = 0;
     renderer->garbage_descriptor_set_counts[i] = 0;
@@ -1880,7 +1879,7 @@ owl_renderer_init_garbage(struct owl_renderer *renderer) {
 static void
 owl_renderer_collect_garbage(struct owl_renderer *renderer) {
   uint32_t i;
-  uint32_t const garbage_frames = OWL_RENDERER_GARBAGE_COUNT;
+  uint32_t const garbage_frames = OWL_GARBAGE_FRAME_COUNT;
   /* use the _oldest_ garbage framt to collect */
   uint32_t const collect = (renderer->garbage + 2) % garbage_frames;
 
@@ -1913,7 +1912,7 @@ owl_renderer_collect_garbage(struct owl_renderer *renderer) {
 static void
 owl_renderer_deinit_garbage(struct owl_renderer *renderer) {
   renderer->garbage = 0;
-  for (; renderer->garbage < OWL_RENDERER_GARBAGE_COUNT; ++renderer->garbage)
+  for (; renderer->garbage < OWL_GARBAGE_FRAME_COUNT; ++renderer->garbage)
     owl_renderer_collect_garbage(renderer);
 }
 
@@ -1986,9 +1985,8 @@ owl_renderer_garbage_push_uniform(struct owl_renderer *renderer) {
   uint32_t const garbage = renderer->garbage;
   uint32_t const buffer_count = renderer->garbage_buffer_counts[garbage];
   uint32_t const memory_count = renderer->garbage_memory_counts[garbage];
-  /* clang-format off */
-  uint32_t descriptor_set_count = renderer->garbage_descriptor_set_counts[garbage];
-  /* clang-format on */
+  uint32_t descriptor_set_count =
+      renderer->garbage_descriptor_set_counts[garbage];
 
   if (capacity <= buffer_count + renderer->frame_count)
     return OWL_ERROR_NO_SPACE;
@@ -1996,10 +1994,8 @@ owl_renderer_garbage_push_uniform(struct owl_renderer *renderer) {
   if (capacity <= memory_count + 1)
     return OWL_ERROR_NO_SPACE;
 
-  /* clang-format off */
   if (capacity <= descriptor_set_count + renderer->frame_count * 3)
     return OWL_ERROR_NO_SPACE;
-  /* clang-format on */
 
   for (i = 0; i < renderer->frame_count; ++i) {
     VkBuffer buffer = renderer->uniform_buffers[i];
@@ -2022,7 +2018,7 @@ owl_renderer_garbage_push_uniform(struct owl_renderer *renderer) {
   }
   descriptor_set_count += renderer->frame_count;
 
-  for (i = 0; i < OWL_RENDERER_IN_FLIGHT_FRAME_COUNT; ++i) {
+  for (i = 0; i < OWL_IN_FLIGHT_FRAME_COUNT; ++i) {
     uint32_t const count = descriptor_set_count;
     VkDescriptorSet descriptor_set;
 
@@ -2626,7 +2622,7 @@ owl_renderer_init(struct owl_renderer *renderer,
   renderer->immediate_command_buffer = VK_NULL_HANDLE;
   renderer->skybox_loaded = 0;
   renderer->font_loaded = 0;
-  renderer->frame_count = OWL_RENDERER_IN_FLIGHT_FRAME_COUNT;
+  renderer->frame_count = OWL_IN_FLIGHT_FRAME_COUNT;
 
   renderer->clear_values[0].color.float32[0] = 0.0F;
   renderer->clear_values[0].color.float32[1] = 0.0F;
@@ -3262,8 +3258,8 @@ owl_renderer_load_font(struct owl_renderer *renderer, uint32_t size,
   int32_t stb_result;
   int32_t const width = OWL_FONT_ATLAS_WIDTH;
   int32_t const height = OWL_FONT_ATLAS_HEIGHT;
-  int32_t const first = OWL_RENDERER_FONT_FIRST_CHAR;
-  int32_t const num = OWL_RENDERER_CHAR_COUNT;
+  int32_t const first = OWL_FIRST_CHAR;
+  int32_t const num = OWL_CHAR_COUNT;
 
   if (renderer->font_loaded)
     owl_renderer_unload_font(renderer);
@@ -3480,8 +3476,7 @@ owl_renderer_fill_glyph(struct owl_renderer *renderer, char c, owl_v2 offset,
 
   stbtt_GetPackedQuad((stbtt_packedchar *)(&renderer->font_chars[0]),
                       OWL_FONT_ATLAS_WIDTH, OWL_FONT_ATLAS_HEIGHT,
-                      c - OWL_RENDERER_FONT_FIRST_CHAR, &offset[0], &offset[1],
-                      &quad, 1);
+                      c - OWL_FIRST_CHAR, &offset[0], &offset[1], &quad, 1);
 
   OWL_V3_SET(glyph->positions[0], quad.x0, quad.y0, 0.0F);
   OWL_V3_SET(glyph->positions[1], quad.x1, quad.y0, 0.0F);

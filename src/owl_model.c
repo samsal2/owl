@@ -839,7 +839,7 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       info.queueFamilyIndexCount = 0;
       info.pQueueFamilyIndices = NULL;
 
-      for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
+      for (j = 0; j < OWL_IN_FLIGHT_FRAME_COUNT; ++j) {
         OWL_CHECK(vkCreateBuffer(renderer->device, &info, NULL,
                                  &skin->ssbo_buffers[j]));
       }
@@ -859,7 +859,7 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
       info.pNext = NULL;
       info.allocationSize = skin->ssbo_buffer_aligned_size *
-                            OWL_RENDERER_IN_FLIGHT_FRAME_COUNT;
+                            OWL_IN_FLIGHT_FRAME_COUNT;
       info.memoryTypeIndex = owl_renderer_find_memory_type(
           renderer, requirements.memoryTypeBits,
           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -868,7 +868,7 @@ owl_model_skins_load(struct owl_model *model, struct owl_renderer *renderer,
       OWL_CHECK(
           vkAllocateMemory(renderer->device, &info, NULL, &skin->ssbo_memory));
 
-      for (j = 0; j < OWL_RENDERER_IN_FLIGHT_FRAME_COUNT; ++j) {
+      for (j = 0; j < OWL_IN_FLIGHT_FRAME_COUNT; ++j) {
         OWL_CHECK(vkBindBufferMemory(
             renderer->device, skin->ssbo_buffers[j], skin->ssbo_memory,
             (uint64_t)j * skin->ssbo_buffer_aligned_size));
