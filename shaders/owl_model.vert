@@ -54,12 +54,12 @@ main() {
                        in_weights0.z * node.joint_matrices[int(in_joints0.z)] +
                        in_weights0.w * node.joint_matrices[int(in_joints0.w)];
 
-    local_position =
-        ubo.model * node.matrix * skin_matrix * vec4(in_position, 1.0);
-    out_normal =
-        normalize(transpose(inverse(mat3(ubo.view * ubo.model * node.matrix *
-                                         skin_matrix))) *
-                  in_normal);
+    local_position = ubo.model * node.matrix * skin_matrix *
+                     vec4(in_position, 1.0);
+    out_normal = normalize(
+        transpose(
+            inverse(mat3(ubo.view * ubo.model * node.matrix * skin_matrix))) *
+        in_normal);
   } else {
     local_position = ubo.model * node.matrix * vec4(in_position, 1.0);
     out_normal = normalize(
