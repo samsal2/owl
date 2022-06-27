@@ -6,8 +6,13 @@ set(GLSL_SHADERS
   owl_model.frag
   owl_skybox.vert
   owl_skybox.frag
-  owl_fluid.vert
-  owl_fluid.frag)
+  owl_fluid_splat.comp
+  owl_fluid_advect.comp
+  owl_fluid_diverge.comp
+  owl_fluid_curl.comp
+  owl_fluid_vorticity.comp
+  owl_fluid_pressure.comp
+  owl_fluid_gradient_subtract.comp)
 
 if ("${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}" STREQUAL "")
   message(AUTHOR_WARNING "missing Vulkan_GLSLANG_VALIDATOR_EXECUTABLE"

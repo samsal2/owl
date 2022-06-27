@@ -34,21 +34,21 @@ struct owl_glyph {
   owl_v2 uvs[4];
 };
 
-struct owl_upload_allocation {
+struct owl_renderer_upload_allocation {
   VkBuffer buffer;
 };
 
-struct owl_vertex_allocation {
+struct owl_renderer_vertex_allocation {
   uint64_t offset;
   VkBuffer buffer;
 };
 
-struct owl_index_allocation {
+struct owl_renderer_index_allocation {
   uint64_t offset;
   VkBuffer buffer;
 };
 
-struct owl_uniform_allocation {
+struct owl_renderer_uniform_allocation {
   uint32_t offset;
   VkBuffer buffer;
   VkDescriptorSet common_descriptor_set;
@@ -76,8 +76,10 @@ struct owl_renderer {
   VkDevice device;
   uint32_t graphics_family;
   uint32_t present_family;
+  uint32_t compute_family;
   VkQueue graphics_queue;
   VkQueue present_queue;
+  VkQueue compute_queue;
 
   VkSampleCountFlagBits msaa;
   VkFormat depth_format;
@@ -128,6 +130,14 @@ struct owl_renderer {
   VkPipeline text_pipeline;
   VkPipeline model_pipeline;
   VkPipeline skybox_pipeline;
+
+  VkPipeline fluid_simulation_advect_pipeline;
+  VkPipeline fluid_simulation_curl_pipeline;
+  VkPipeline fluid_simulation_diverge_pipeline;
+  VkPipeline fluid_simulation_gradient_subtract_pipeline;
+  VkPipeline fluid_simulation_pressure_pipeline;
+  VkPipeline fluid_simulation_splat_pipeline;
+  VkPipeline fluid_simulation_vorticity_pipeline;
 
   VkSampler linear_sampler;
 
@@ -208,19 +218,19 @@ owl_renderer_end_frame(struct owl_renderer *renderer);
 
 OWL_PUBLIC void *
 owl_renderer_vertex_allocate(struct owl_renderer *renderer, uint64_t size,
-                             struct owl_vertex_allocation *allocation);
+                             struct owl_renderer_vertex_allocation *allocation);
 
 OWL_PUBLIC void *
 owl_renderer_index_allocate(struct owl_renderer *renderer, uint64_t size,
-                            struct owl_index_allocation *allocation);
+                            struct owl_renderer_index_allocation *allocation);
 
 OWL_PUBLIC void *
 owl_renderer_uniform_allocate(struct owl_renderer *renderer, uint64_t size,
-                              struct owl_uniform_allocation *allocation);
+                              struct owl_renderer_uniform_allocation *allocation);
 
 OWL_PUBLIC void *
 owl_renderer_upload_allocate(struct owl_renderer *renderer, uint64_t size,
-                             struct owl_upload_allocation *allocation);
+                             struct owl_renderer_upload_allocation *allocation);
 
 OWL_PUBLIC void
 owl_renderer_upload_free(struct owl_renderer *renderer, void *ptr);

@@ -575,7 +575,7 @@ owl_model_buffers_load(struct owl_model *model, struct owl_renderer *renderer,
   uint64_t size;
   uint8_t *data;
   VkBufferCopy copy;
-  struct owl_upload_allocation allocation;
+  struct owl_renderer_upload_allocation allocation;
 
   VkResult vk_result = VK_SUCCESS;
   owl_code code = OWL_OK;

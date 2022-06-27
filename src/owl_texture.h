@@ -11,7 +11,8 @@ struct owl_renderer;
 
 enum owl_texture_type {
   OWL_TEXTURE_TYPE_2D,
-  OWL_TEXTURE_TYPE_CUBE
+  OWL_TEXTURE_TYPE_CUBE,
+  OWL_TEXTURE_TYPE_COMPUTE
 };
 
 enum owl_texture_source {
@@ -19,9 +20,11 @@ enum owl_texture_source {
   OWL_TEXTURE_SOURCE_DATA
 };
 
+
 enum owl_pixel_format {
   OWL_PIXEL_FORMAT_R8G8B8A8_SRGB,
-  OWL_PIXEL_FORMAT_R8_UNORM
+  OWL_PIXEL_FORMAT_R8_UNORM,
+  OWL_PIXEL_FORMAT_R32G32B32A32_SFLOAT
 };
 
 struct owl_texture_desc {
@@ -53,6 +56,10 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
 OWL_PUBLIC void
 owl_texture_deinit(struct owl_renderer *renderer, struct owl_texture *texture);
 
+OWL_PUBLIC void
+owl_texture_change_layout(struct owl_texture *texture,
+                          VkCommandBuffer command_buffer,
+                          VkImageLayout layout);
 OWL_END_DECLARATIONS
 
 #endif
