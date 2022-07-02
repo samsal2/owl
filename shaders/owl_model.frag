@@ -21,7 +21,7 @@ layout(set = 0, binding = 0) uniform UBO {
 }
 ubo;
 
-layout(push_constant) uniform MATERIAL {
+layout (push_constant) uniform MATERIAL {
   vec4 base_color_factor;
   vec4 emissive_factor;
   vec4 diffuse_factor;

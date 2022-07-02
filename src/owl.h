@@ -3,6 +3,7 @@
 
 #include "owl_cloth_simulation.h"
 #include "owl_draw.h"
+#include "owl_fluid_simulation.h"
 #include "owl_model.h"
 #include "owl_plataform.h"
 #include "owl_renderer.h"

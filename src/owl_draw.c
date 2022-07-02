@@ -1,6 +1,7 @@
 #include "owl_draw.h"
 
 #include "owl_cloth_simulation.h"
+#include "owl_fluid_simulation.h"
 #include "owl_internal.h"
 #include "owl_model.h"
 #include "owl_plataform.h"
@@ -9,6 +10,8 @@
 
 #include <stdio.h>
 
+/* TODO(samuel): this can be optimized to a single uniforma allcation, even
+ * just a push_constant */
 OWL_PUBLIC owl_code
 owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
               owl_m4 const matrix) {
@@ -571,4 +574,41 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
   vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
 
   return OWL_OK;
+}
+
+OWL_PUBLIC owl_code
+owl_draw_fluid_simulation(struct owl_renderer *renderer,
+                          struct owl_fluid_simulation *sim) {
+  struct owl_quad quad;
+  owl_m4 const matrix = OWL_M4_IDENTITY_VALUE;
+  uint32_t const frame = renderer->frame;
+  VkCommandBuffer command_buffer = renderer->submit_command_buffers[frame];
+
+  quad.position0[0] = -1.0F;
+  quad.position0[1] = -1.0F;
+
+  quad.position1[0] = 1.0F;
+  quad.position1[1] = 1.0F;
+
+  quad.color[0] = 1.0F;
+  quad.color[1] = 1.0F;
+  quad.color[2] = 1.0F;
+
+  quad.uv0[0] = 0.0F;
+  quad.uv0[1] = 0.0F;
+
+  quad.uv1[0] = 1.0F;
+  quad.uv1[1] = 1.0F;
+
+#if 1
+  quad.texture = &sim->dye[sim->dye_read].texture;
+#else
+  quad.texture = &renderer->font_atlas;
+  OWL_UNUSED(sim);
+#endif
+
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    renderer->basic_pipeline);
+
+  return owl_draw_quad(renderer, &quad, matrix);
 }

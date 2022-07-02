@@ -1,30 +1,22 @@
 #version 450
 
 layout (set = 0, binding = 0) uniform UBO {
-  int workflow;
-  int velocity_index;
-  int dye_index;
-  float radius;
-
   vec2 point;
-  vec2 padding;
+  float radius;
+  float aspect_ratio;
+
+  vec2 sim_texel_size;
+  vec2 dye_texel_size;
 
   vec4 color;
 
-  vec2 dye_dimensions;
-  vec2 sim_dimensions;
-
   float dt;
-  float dissipation;
-  vec2 texel_size;
-  
-  vec2 dye_texel_size;
-  vec2 sim_texel_size;
-
-  float aspect_ratio;
-  float decay;
   float curl;
 } ubo;
+
+layout (push_constant) uniform CONSTANTS {
+  vec2 texel_size; 
+} constants;
 
 /* velocity */
 layout (set = 1, binding = 0, rgba32f) uniform readonly image2D source0;
@@ -54,7 +46,7 @@ void main() {
   ivec2 vt = ivec2(uv_world.x, uv_world.y - 1);
   ivec2 vb = ivec2(uv_world.x, uv_world.y + 1);
 
-  vec2 uv_norm = uv_world * ubo.texel_size;
+  vec2 uv_norm = uv_world * constants.texel_size;
 
 
   float l = imageLoad(source1, vl).x;

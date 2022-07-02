@@ -115,15 +115,25 @@ struct owl_renderer {
   VkShaderModule model_fragment_shader;
   VkShaderModule skybox_vertex_shader;
   VkShaderModule skybox_fragment_shader;
+  VkShaderModule fluid_simulation_advect_shader;
+  VkShaderModule fluid_simulation_curl_shader;
+  VkShaderModule fluid_simulation_diverge_shader;
+  VkShaderModule fluid_simulation_gradient_subtract_shader;
+  VkShaderModule fluid_simulation_pressure_shader;
+  VkShaderModule fluid_simulation_splat_shader;
+  VkShaderModule fluid_simulation_vorticity_shader;
 
   VkDescriptorSetLayout common_uniform_descriptor_set_layout;
   VkDescriptorSetLayout common_texture_descriptor_set_layout;
   VkDescriptorSetLayout model_uniform_descriptor_set_layout;
   VkDescriptorSetLayout model_joints_descriptor_set_layout;
   VkDescriptorSetLayout model_material_descriptor_set_layout;
+  VkDescriptorSetLayout fluid_simulation_uniform_descriptor_set_layout;
+  VkDescriptorSetLayout fluid_simulation_source_descriptor_set_layout;
 
   VkPipelineLayout common_pipeline_layout;
   VkPipelineLayout model_pipeline_layout;
+  VkPipelineLayout fluid_simulation_pipeline_layout;
 
   VkPipeline basic_pipeline;
   VkPipeline wires_pipeline;

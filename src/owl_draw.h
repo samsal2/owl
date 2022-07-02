@@ -9,6 +9,7 @@ struct owl_renderer;
 struct owl_model;
 struct owl_texture;
 struct owl_cloth_simulation;
+struct owl_fluid_simulation;
 
 struct owl_quad {
   /*
@@ -95,6 +96,16 @@ owl_draw_renderer_state(struct owl_renderer *renderer);
 OWL_PUBLIC owl_code
 owl_draw_cloth_simulation(struct owl_renderer *renderer,
                           struct owl_cloth_simulation *sim);
+/**
+ * @brief
+ *
+ * @param renderer
+ * @param sim
+ * @return OWL_PUBLIC
+ */
+OWL_PUBLIC owl_code
+owl_draw_fluid_simulation(struct owl_renderer *renderer,
+                          struct owl_fluid_simulation *sim);
 
 OWL_END_DECLARATIONS
 

@@ -15,6 +15,8 @@ target_sources(${PROJECT_NAME} PRIVATE
   owl_vector_math.h
   owl_draw.c
   owl_draw.h
+  owl_fluid_simulation.c
+  owl_fluid_simulation.h
   owl_renderer.c
   owl_renderer.h)
 

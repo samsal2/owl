@@ -4,7 +4,7 @@
 #include "owl_renderer.h"
 #include "stb_image.h"
 
-#include "vulkan/vulkan_core.h"
+#include <_types/_uint64_t.h>
 #include <math.h>
 
 #define OWL_TEXTURE_MAX_PATH_LENGTH 128
@@ -18,6 +18,9 @@ owl_pixel_format_as_vk_format(enum owl_pixel_format format) {
   case OWL_PIXEL_FORMAT_R8G8B8A8_SRGB:
     return VK_FORMAT_R8G8B8A8_SRGB;
 
+  case OWL_PIXEL_FORMAT_R8G8B8A8_UNORM:
+    return VK_FORMAT_R8G8B8A8_UNORM;
+
   case OWL_PIXEL_FORMAT_R32G32B32A32_SFLOAT:
     return VK_FORMAT_R32G32B32A32_SFLOAT;
   }
@@ -30,6 +33,9 @@ owl_pixel_format_size(enum owl_pixel_format format) {
     return 1 * sizeof(uint8_t);
 
   case OWL_PIXEL_FORMAT_R8G8B8A8_SRGB:
+    return 4 * sizeof(uint8_t);
+
+  case OWL_PIXEL_FORMAT_R8G8B8A8_UNORM:
     return 4 * sizeof(uint8_t);
 
   case OWL_PIXEL_FORMAT_R32G32B32A32_SFLOAT:
@@ -48,7 +54,7 @@ owl_texture_change_layout(struct owl_texture *texture,
                           VkImageLayout layout) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_NONE_KHR;
-  VkPipelineStageFlags dst_Stage = VK_PIPELINE_STAGE_NONE_KHR;
+  VkPipelineStageFlags dst_stage = VK_PIPELINE_STAGE_NONE_KHR;
 
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
   barrier.pNext = NULL;
@@ -70,14 +76,14 @@ owl_texture_change_layout(struct owl_texture *texture,
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
     src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    dst_Stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    dst_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
   } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == texture->layout &&
              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == layout) {
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
     src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    dst_Stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dst_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   } else if (VK_IMAGE_LAYOUT_UNDEFINED == texture->layout &&
              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL == layout) {
     barrier.srcAccessMask = VK_ACCESS_NONE_KHR;
@@ -85,7 +91,16 @@ owl_texture_change_layout(struct owl_texture *texture,
                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
     src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    dst_Stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dst_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  } else if (VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == texture->layout &&
+             VK_IMAGE_LAYOUT_GENERAL == layout) {
+    /* FIXME(samuel): is this correct? */
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    dst_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
   } else {
     OWL_ASSERT(0 && "Invalid arguments");
   }
@@ -96,11 +111,13 @@ owl_texture_change_layout(struct owl_texture *texture,
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   } else if (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL == layout) {
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  } else if (VK_IMAGE_LAYOUT_GENERAL == layout) {
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   } else {
     OWL_ASSERT(0 && "Invalid arguments");
   }
 
-  vkCmdPipelineBarrier(command_buffer, src_stage, dst_Stage, 0, 0, NULL, 0,
+  vkCmdPipelineBarrier(command_buffer, src_stage, dst_stage, 0, 0, NULL, 0,
                        NULL, 1, &barrier);
 
   texture->layout = layout;
@@ -114,6 +131,8 @@ owl_texture_generate_mipmaps(struct owl_texture *texture,
   int32_t height;
   VkImageMemoryBarrier barrier;
   VkCommandBuffer command_buffer = renderer->immediate_command_buffer;
+
+  OWL_ASSERT(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL == texture->layout);
 
   if (1 == texture->mipmaps || 0 == texture->mipmaps)
     return;
@@ -197,7 +216,7 @@ owl_texture_generate_mipmaps(struct owl_texture *texture,
   texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
-/* TODO(samuel): testing new cleanup style, refactor later */
+/* TODO(samuel): cleanup */
 OWL_PUBLIC owl_code
 owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
                  struct owl_texture *texture) {
@@ -223,7 +242,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
     /* loading a cubemap from raw data not supported atm */
     if (OWL_TEXTURE_TYPE_CUBE == desc->type) {
       code = OWL_ERROR_INVALID_VALUE;
-      goto error;
+      goto error_free_upload_data;
     }
 
     texture->layers = 1;
@@ -244,7 +263,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
                                                &upload_allocation);
     if (!upload_data) {
       code = OWL_ERROR_NO_MEMORY;
-      goto error;
+      goto error_free_upload_data;
     }
 
     /* copy the data into the buffer */
@@ -269,7 +288,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
       data = stbi_load(desc->path, &width, &height, &channels, STBI_rgb_alpha);
       if (!data) {
         code = OWL_ERROR_FATAL;
-        goto error;
+        goto error_free_upload_data;
       }
 
       texture->width = width;
@@ -285,7 +304,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
       if (!upload_data) {
         stbi_image_free(data);
         code = OWL_ERROR_NO_MEMORY;
-        goto error;
+        goto error_free_upload_data;
       }
 
       /* copy into the upload buffer */
@@ -307,8 +326,8 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
        * names and extensions, make this a non requirement */
       static char const *names[6] = {"left.jpg",   "right.jpg", "top.jpg",
                                      "bottom.jpg", "front.jpg", "back.jpg"};
-      /* set the width and texture to 0 as a way to check if a width and height
-       * has been loaded */
+      /* set the width and texture to 0 as a way to check if a width and
+       * height has been loaded */
       texture->width = 0;
       texture->height = 0;
       texture->layers = 6;
@@ -328,7 +347,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
         if (!data) {
           OWL_ASSERT(0);
           code = OWL_ERROR_FATAL;
-          goto error;
+          goto error_free_upload_data;
         }
 
         /* if texture->width and texture->height have been set (!= 0) */
@@ -339,9 +358,10 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
             OWL_ASSERT(0);
             stbi_image_free(data);
             code = OWL_ERROR_FATAL;
-            goto error;
+            goto error_free_upload_data;
           }
-        } else { /* if texture->width and texture->height have not been set  */
+        } else { /* if texture->width and texture->height have not been set
+                  */
           /* set them to the current width and height */
           texture->width = width;
           texture->height = height;
@@ -355,7 +375,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
           if (!upload_data) { /* not enough memory, error out */
             stbi_image_free(data);
             code = OWL_ERROR_FATAL;
-            goto error;
+            goto error_free_upload_data;
           }
         }
 
@@ -371,10 +391,13 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
     }
   } else {
     code = OWL_ERROR_FATAL;
-    goto error;
+    goto error_free_upload_data;
   }
 
-  texture->mipmaps = owl_texture_calculate_mipmaps(texture);
+  if (OWL_TEXTURE_TYPE_COMPUTE == desc->type)
+    texture->mipmaps = 1;
+  else
+    texture->mipmaps = owl_texture_calculate_mipmaps(texture);
 
   /* create the vulkan resources */
 
@@ -400,6 +423,8 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
     info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (OWL_TEXTURE_TYPE_COMPUTE == desc->type)
+      info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
     if (OWL_TEXTURE_TYPE_COMPUTE == desc->type &&
         (renderer->compute_family != renderer->graphics_family)) {
       families[0] = renderer->graphics_family;
@@ -419,7 +444,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
     vk_result = vkCreateImage(renderer->device, &info, NULL, &texture->image);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
-      goto error;
+      goto error_free_upload_data;
     }
   }
 
@@ -444,14 +469,14 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
                                  &texture->memory);
     if (vk_result) {
       code = OWL_ERROR_NO_MEMORY;
-      goto error;
+      goto error_destroy_image;
     }
 
     vk_result = vkBindImageMemory(renderer->device, texture->image,
                                   texture->memory, 0);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
-      goto error;
+      goto error_free_memory;
     }
   }
 
@@ -481,7 +506,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
                                   &texture->image_view);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
-      goto error;
+      goto error_free_memory;
     }
   }
 
@@ -498,38 +523,18 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
                                          &texture->descriptor_set);
     if (vk_result) {
       code = OWL_ERROR_FATAL;
-      goto error;
+      goto error_destroy_image_view;
     }
   }
 
   code = owl_renderer_begin_immediate_command_buffer(renderer);
   if (code)
-    goto error;
+    goto error_free_descriptor_set;
 
   owl_texture_change_layout(texture, renderer->immediate_command_buffer,
                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-  if (OWL_TEXTURE_TYPE_2D == desc->type) {
-    VkBufferImageCopy copy;
-
-    copy.bufferOffset = 0;
-    copy.bufferRowLength = 0;
-    copy.bufferImageHeight = 0;
-    copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    copy.imageSubresource.mipLevel = 0;
-    copy.imageSubresource.baseArrayLayer = 0;
-    copy.imageSubresource.layerCount = 1;
-    copy.imageOffset.x = 0;
-    copy.imageOffset.y = 0;
-    copy.imageOffset.z = 0;
-    copy.imageExtent.width = texture->width;
-    copy.imageExtent.height = texture->height;
-    copy.imageExtent.depth = 1;
-
-    vkCmdCopyBufferToImage(renderer->immediate_command_buffer,
-                           upload_allocation.buffer, texture->image,
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-  } else if (OWL_TEXTURE_TYPE_CUBE == desc->type) {
+  if (OWL_TEXTURE_TYPE_CUBE == desc->type) {
     int32_t i;
     uint64_t offset = 0;
     uint64_t pixel_size;
@@ -561,14 +566,40 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
                            upload_allocation.buffer, texture->image,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                            OWL_ARRAY_SIZE(copies), copies);
+
+  } else {
+    VkBufferImageCopy copy;
+
+    copy.bufferOffset = 0;
+    copy.bufferRowLength = 0;
+    copy.bufferImageHeight = 0;
+    copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy.imageSubresource.mipLevel = 0;
+    copy.imageSubresource.baseArrayLayer = 0;
+    copy.imageSubresource.layerCount = 1;
+    copy.imageOffset.x = 0;
+    copy.imageOffset.y = 0;
+    copy.imageOffset.z = 0;
+    copy.imageExtent.width = texture->width;
+    copy.imageExtent.height = texture->height;
+    copy.imageExtent.depth = 1;
+
+    vkCmdCopyBufferToImage(renderer->immediate_command_buffer,
+                           upload_allocation.buffer, texture->image,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
   }
 
-  /* NOTE(samuel): this transfers the layout to shared read optimal */
-  owl_texture_generate_mipmaps(texture, renderer);
+  if (OWL_TEXTURE_TYPE_COMPUTE == desc->type)
+    owl_texture_change_layout(texture, renderer->immediate_command_buffer,
+                              VK_IMAGE_LAYOUT_GENERAL);
+  else
+    owl_texture_generate_mipmaps(texture, renderer);
+
+  OWL_ASSERT(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL != texture->layout);
 
   code = owl_renderer_end_immediate_command_buffer(renderer);
   if (code)
-    goto error;
+    goto error_free_descriptor_set;
 
   {
     VkDescriptorImageInfo descriptors[2];
@@ -576,11 +607,11 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
 
     descriptors[0].sampler = renderer->linear_sampler;
     descriptors[0].imageView = NULL;
-    descriptors[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    descriptors[0].imageLayout = texture->layout;
 
     descriptors[1].sampler = VK_NULL_HANDLE;
     descriptors[1].imageView = texture->image_view;
-    descriptors[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    descriptors[1].imageLayout = texture->layout;
 
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[0].pNext = NULL;
@@ -612,28 +643,20 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
 
   return OWL_OK;
 
-error:
-  if (texture->descriptor_set) {
-    vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-                         &texture->descriptor_set);
-    texture->descriptor_set = VK_NULL_HANDLE;
-  }
+error_free_descriptor_set:
+  vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
+                        &texture->descriptor_set);
 
-  if (texture->image_view) {
-    vkDestroyImageView(renderer->device, texture->image_view, NULL);
-    texture->image_view = VK_NULL_HANDLE;
-  }
+error_destroy_image_view:
+  vkDestroyImageView(renderer->device, texture->image_view, NULL);
 
-  if (texture->memory) {
-    vkFreeMemory(renderer->device, texture->memory, NULL);
-    texture->memory = VK_NULL_HANDLE;
-  }
+error_free_memory:
+  vkFreeMemory(renderer->device, texture->memory, NULL);
 
-  if (texture->image) {
-    vkDestroyImage(renderer->device, texture->image, NULL);
-    texture->image = VK_NULL_HANDLE;
-  }
+error_destroy_image:
+  vkDestroyImage(renderer->device, texture->image, NULL);
 
+error_free_upload_data:
   if (upload_data)
     owl_renderer_upload_free(renderer, upload_data);
 
