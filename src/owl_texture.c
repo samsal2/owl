@@ -4,7 +4,6 @@
 #include "owl_renderer.h"
 #include "stb_image.h"
 
-#include <_types/_uint64_t.h>
 #include <math.h>
 
 #define OWL_TEXTURE_MAX_PATH_LENGTH 128
