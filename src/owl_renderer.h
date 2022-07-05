@@ -3,7 +3,6 @@
 
 #include "owl_definitions.h"
 #include "owl_texture.h"
-#include "vulkan/vulkan_core.h"
 
 #include <vulkan/vulkan.h>
 

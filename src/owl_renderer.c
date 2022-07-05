@@ -7,7 +7,6 @@
 #include "owl_texture.h"
 #include "owl_vector_math.h"
 #include "stb_truetype.h"
-#include "vulkan/vulkan_core.h"
 
 #include <stdio.h>
 
