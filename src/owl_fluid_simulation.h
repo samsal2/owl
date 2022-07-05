@@ -59,17 +59,15 @@ struct owl_fluid_simulation {
 };
 
 /* TODO(samuel): simulation parameters */
-OWL_PUBLIC owl_code
-owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
-                          struct owl_renderer *renderer);
+OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
+                                              struct owl_renderer *renderer);
 
-OWL_PUBLIC void
-owl_fluid_simulation_update(struct owl_fluid_simulation *sim,
-                            struct owl_renderer *renderer, float dt);
+OWL_PUBLIC void owl_fluid_simulation_update(struct owl_fluid_simulation *sim,
+                                            struct owl_renderer *renderer,
+                                            float dt);
 
-OWL_PUBLIC void
-owl_fluid_simulation_deinit(struct owl_fluid_simulation *sim,
-                            struct owl_renderer *renderer);
+OWL_PUBLIC void owl_fluid_simulation_deinit(struct owl_fluid_simulation *sim,
+                                            struct owl_renderer *renderer);
 
 OWL_END_DECLARATIONS
 

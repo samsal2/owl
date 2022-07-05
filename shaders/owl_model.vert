@@ -39,8 +39,7 @@ layout(location = 3) out vec2 out_uv1;
 layout(location = 4) out vec3 out_view;
 layout(location = 5) out vec3 out_light;
 
-void
-main() {
+void main() {
   out_normal = in_normal;
   out_uv0 = in_uv0;
   out_uv1 = in_uv1;

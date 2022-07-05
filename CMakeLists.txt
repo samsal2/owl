@@ -6,6 +6,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# find external libraries
+find_package(Vulkan REQUIRED)
+
 # declare the library 
 add_library(${PROJECT_NAME})
 
@@ -16,28 +19,18 @@ set_target_properties(${PROJECT_NAME}
         C_STANDARD_REQUIRED ON
         C_EXTENSIONS        OFF)
 
-# find external libraries
-find_package(Vulkan REQUIRED)
-
-add_subdirectory(deps/glfw)
-add_subdirectory(deps/stb)
-add_subdirectory(deps/cgltf)
-
-# add sources
-add_subdirectory(src)
-add_subdirectory(shaders)
-
 # link libraries
 target_link_libraries(${PROJECT_NAME} 
-  PUBLIC ${Vulkan_LIBRARIES}
-  PRIVATE cgltf
-  PRIVATE glfw
-  PRIVATE stb)
+  PUBLIC ${Vulkan_LIBRARIES})
 
 # includes
 target_include_directories(${PROJECT_NAME} 
-  PUBLIC ${Vulkan_INCLUDE_DIR}
-  PUBLIC src)
+  PUBLIC ${Vulkan_INCLUDE_DIR} src)
+
+# add sources
+add_subdirectory(deps)
+add_subdirectory(src)
+add_subdirectory(shaders)
 
 # compile options
 target_compile_options(${PROJECT_NAME} PUBLIC

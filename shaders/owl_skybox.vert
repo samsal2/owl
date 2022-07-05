@@ -11,8 +11,7 @@ ubo;
 
 layout(location = 0) out vec3 outUVW;
 
-void
-main() {
+void main() {
   outUVW = inPos;
   // Convert cubemap coordinates into Vulkan coordinate space
   outUVW.xy *= -1.0;

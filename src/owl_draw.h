@@ -39,9 +39,9 @@ struct owl_quad {
  * @param matrix the model matrix
  * @return owl_code
  */
-OWL_PUBLIC owl_code
-owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
-              owl_m4 const matrix);
+OWL_PUBLIC owl_code owl_draw_quad(struct owl_renderer *renderer,
+                                  struct owl_quad const *quad,
+                                  owl_m4 const matrix);
 
 /**
  * @brief draw the loaded skybox
@@ -49,8 +49,7 @@ owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
  * @param vk the renderer instance created with owl_renderer_init(...)
  * @return owl_code
  */
-OWL_PUBLIC owl_code
-owl_draw_skybox(struct owl_renderer *renderer);
+OWL_PUBLIC owl_code owl_draw_skybox(struct owl_renderer *renderer);
 
 /**
  * @brief draws text using the loaded font
@@ -61,9 +60,9 @@ owl_draw_skybox(struct owl_renderer *renderer);
  * @param color  the color of the text in normalized values
  * @return owl_code
  */
-OWL_PUBLIC owl_code
-owl_draw_text(struct owl_renderer *renderer, char const *text,
-              owl_v3 const position, owl_v3 const color);
+OWL_PUBLIC owl_code owl_draw_text(struct owl_renderer *renderer,
+                                  char const *text, owl_v3 const position,
+                                  owl_v3 const color);
 
 /**
  * @brief draw a model
@@ -73,9 +72,9 @@ owl_draw_text(struct owl_renderer *renderer, char const *text,
  * @param matrix the model matrix
  * @return owl_code
  */
-OWL_PUBLIC owl_code
-owl_draw_model(struct owl_renderer *renderer, struct owl_model const *model,
-               owl_m4 const matrix);
+OWL_PUBLIC owl_code owl_draw_model(struct owl_renderer *renderer,
+                                   struct owl_model const *model,
+                                   owl_m4 const matrix);
 
 /**
  * @brief draws the renderer debug state
@@ -83,8 +82,7 @@ owl_draw_model(struct owl_renderer *renderer, struct owl_model const *model,
  * @param renderer
  * @return owl_code
  */
-OWL_PUBLIC owl_code
-owl_draw_renderer_state(struct owl_renderer *renderer);
+OWL_PUBLIC owl_code owl_draw_renderer_state(struct owl_renderer *renderer);
 
 /**
  * @brief draws the cloth simulation
@@ -93,9 +91,8 @@ owl_draw_renderer_state(struct owl_renderer *renderer);
  * @param sim
  * @return OWL_PUBLIC
  */
-OWL_PUBLIC owl_code
-owl_draw_cloth_simulation(struct owl_renderer *renderer,
-                          struct owl_cloth_simulation *sim);
+OWL_PUBLIC owl_code owl_draw_cloth_simulation(
+    struct owl_renderer *renderer, struct owl_cloth_simulation *sim);
 /**
  * @brief
  *
@@ -103,9 +100,8 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
  * @param sim
  * @return OWL_PUBLIC
  */
-OWL_PUBLIC owl_code
-owl_draw_fluid_simulation(struct owl_renderer *renderer,
-                          struct owl_fluid_simulation *sim);
+OWL_PUBLIC owl_code owl_draw_fluid_simulation(
+    struct owl_renderer *renderer, struct owl_fluid_simulation *sim);
 
 OWL_END_DECLARATIONS
 

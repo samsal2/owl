@@ -12,9 +12,9 @@
 
 /* TODO(samuel): this can be optimized to a single uniforma allcation, even
  * just a push_constant */
-OWL_PUBLIC owl_code
-owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
-              owl_m4 const matrix) {
+OWL_PUBLIC owl_code owl_draw_quad(struct owl_renderer *renderer,
+                                  struct owl_quad const *quad,
+                                  owl_m4 const matrix) {
   uint8_t *data;
   VkDescriptorSet descriptor_sets[2];
   VkCommandBuffer command_buffer;
@@ -107,9 +107,8 @@ owl_draw_quad(struct owl_renderer *renderer, struct owl_quad const *quad,
   return OWL_OK;
 }
 
-static owl_code
-owl_draw_glyph(struct owl_renderer *renderer, struct owl_glyph *glyph,
-               owl_v3 const color) {
+static owl_code owl_draw_glyph(struct owl_renderer *renderer,
+                               struct owl_glyph *glyph, owl_v3 const color) {
   owl_m4 matrix;
   owl_v3 scale;
   struct owl_quad quad;
@@ -142,9 +141,9 @@ owl_draw_glyph(struct owl_renderer *renderer, struct owl_glyph *glyph,
   return owl_draw_quad(renderer, &quad, matrix);
 }
 
-OWL_PUBLIC owl_code
-owl_draw_text(struct owl_renderer *renderer, char const *text,
-              owl_v3 const position, owl_v3 const color) {
+OWL_PUBLIC owl_code owl_draw_text(struct owl_renderer *renderer,
+                                  char const *text, owl_v3 const position,
+                                  owl_v3 const color) {
   char const *letter;
   owl_v2 offset;
   owl_code code;
@@ -173,9 +172,10 @@ owl_draw_text(struct owl_renderer *renderer, char const *text,
   return OWL_OK;
 }
 
-static owl_code
-owl_draw_model_node(struct owl_renderer *renderer, owl_model_node_id id,
-                    struct owl_model const *model, owl_m4 const matrix) {
+static owl_code owl_draw_model_node(struct owl_renderer *renderer,
+                                    owl_model_node_id id,
+                                    struct owl_model const *model,
+                                    owl_m4 const matrix) {
   int i;
   uint8_t *data;
   owl_model_node_id parent;
@@ -326,9 +326,9 @@ owl_draw_model_node(struct owl_renderer *renderer, owl_model_node_id id,
   return OWL_OK;
 }
 
-OWL_PUBLIC owl_code
-owl_draw_model(struct owl_renderer *renderer, struct owl_model const *model,
-               owl_m4 const matrix) {
+OWL_PUBLIC owl_code owl_draw_model(struct owl_renderer *renderer,
+                                   struct owl_model const *model,
+                                   owl_m4 const matrix) {
   int i;
 
   uint64_t offset = 0;
@@ -355,8 +355,7 @@ owl_draw_model(struct owl_renderer *renderer, struct owl_model const *model,
   return OWL_OK;
 }
 
-OWL_PUBLIC owl_code
-owl_draw_skybox(struct owl_renderer *renderer) {
+OWL_PUBLIC owl_code owl_draw_skybox(struct owl_renderer *renderer) {
   uint8_t *data;
   struct owl_renderer_vertex_allocation vertex_allocation;
   struct owl_renderer_index_allocation index_allocation;
@@ -435,8 +434,7 @@ owl_draw_skybox(struct owl_renderer *renderer) {
   return OWL_OK;
 }
 
-OWL_PUBLIC owl_code
-owl_draw_renderer_state(struct owl_renderer *renderer) {
+OWL_PUBLIC owl_code owl_draw_renderer_state(struct owl_renderer *renderer) {
   char buffer[256];
   owl_v3 position = {-0.8F, -0.8F, 0.0F};
   owl_v3 color = {1.0F, 1.0F, 1.0F};
@@ -483,9 +481,8 @@ owl_draw_renderer_state(struct owl_renderer *renderer) {
   return OWL_OK;
 }
 
-OWL_PUBLIC owl_code
-owl_draw_cloth_simulation(struct owl_renderer *renderer,
-                          struct owl_cloth_simulation *sim) {
+OWL_PUBLIC owl_code owl_draw_cloth_simulation(
+    struct owl_renderer *renderer, struct owl_cloth_simulation *sim) {
   int32_t i;
   int32_t j;
 
@@ -576,9 +573,8 @@ owl_draw_cloth_simulation(struct owl_renderer *renderer,
   return OWL_OK;
 }
 
-OWL_PUBLIC owl_code
-owl_draw_fluid_simulation(struct owl_renderer *renderer,
-                          struct owl_fluid_simulation *sim) {
+OWL_PUBLIC owl_code owl_draw_fluid_simulation(
+    struct owl_renderer *renderer, struct owl_fluid_simulation *sim) {
   struct owl_quad quad;
   owl_m4 const matrix = OWL_M4_IDENTITY_VALUE;
   uint32_t const frame = renderer->frame;

@@ -18,24 +18,19 @@
 #include <stdio.h>
 
 #define OWL_MALLOC(s) owl_debug_malloc(s, __FILE__, __LINE__)
-void *
-owl_debug_malloc(size_t s, char const *f, int l);
+void *owl_debug_malloc(size_t s, char const *f, int l);
 
 #define OWL_CALLOC(c, s) owl_debug_calloc(c, s, __FILE__, __LINE__)
-void *
-owl_debug_calloc(size_t c, size_t s, char const *f, int l);
+void *owl_debug_calloc(size_t c, size_t s, char const *f, int l);
 
 #define OWL_REALLOC(p, s) owl_debug_realloc(p, s, __FILE__, __LINE__)
-void *
-owl_debug_realloc(void *p, size_t s, char const *f, int l);
+void *owl_debug_realloc(void *p, size_t s, char const *f, int l);
 
 #define OWL_FREE(p) owl_debug_free(p, __FILE__, __LINE__)
-void
-owl_debug_free(void *p, char const *f, int l);
+void owl_debug_free(void *p, char const *f, int l);
 
 #define OWL_DEBUG_LOG(...) owl_debug_log(__FILE__, __LINE__, __VA_ARGS__)
-void
-owl_debug_log(char const *f, int l, char const *format, ...);
+void owl_debug_log(char const *f, int l, char const *format, ...);
 
 #else /* NDEBUG */
 

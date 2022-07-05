@@ -1,6 +1,6 @@
 #version 450
 
-layout (set = 0, binding = 0) uniform UBO {
+layout(set = 0, binding = 0) uniform UBO {
   vec2 point;
   float radius;
   float aspect_ratio;
@@ -12,16 +12,16 @@ layout (set = 0, binding = 0) uniform UBO {
 
   float dt;
   float curl;
-} ubo;
+}
+ubo;
 
 /* this is set per dispatch invocation depending on the source dimensions */
-layout (push_constant) uniform CONSTANTS {
-  vec2 texel_size; 
-} constants;
+layout(push_constant) uniform CONSTANTS { vec2 texel_size; }
+constants;
 
-layout (set = 1, binding = 0, rgba32f) uniform readonly image2D source0;
-layout (set = 2, binding = 0, rgba32f) uniform readonly image2D source1;
-layout (set = 3, binding = 0, rgba32f) uniform writeonly image2D destination0;
+layout(set = 1, binding = 0, rgba32f) uniform readonly image2D source0;
+layout(set = 2, binding = 0, rgba32f) uniform readonly image2D source1;
+layout(set = 3, binding = 0, rgba32f) uniform writeonly image2D destination0;
 
 void main() {
   ivec2 uv_world;
@@ -37,10 +37,9 @@ void main() {
 
   vec2 p = uv_norm - ubo.point;
   p.x *= ubo.aspect_ratio;
-  
+
   vec3 splat = exp(-dot(p, p) / ubo.radius) * ubo.color.xyz;
   vec3 base = imageLoad(source0, uv_world).xyz;
-  
+
   imageStore(destination0, uv_world, vec4(base + splat, 1.0));
 }
-

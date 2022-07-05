@@ -49,17 +49,16 @@ struct owl_texture {
   VkDescriptorSet descriptor_set;
 };
 
-OWL_PUBLIC owl_code
-owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
-                 struct owl_texture *texture);
+OWL_PUBLIC owl_code owl_texture_init(struct owl_renderer *renderer,
+                                     struct owl_texture_desc *desc,
+                                     struct owl_texture *texture);
 
-OWL_PUBLIC void
-owl_texture_deinit(struct owl_renderer *renderer, struct owl_texture *texture);
+OWL_PUBLIC void owl_texture_deinit(struct owl_renderer *renderer,
+                                   struct owl_texture *texture);
 
-OWL_PUBLIC void
-owl_texture_change_layout(struct owl_texture *texture,
-                          VkCommandBuffer command_buffer,
-                          VkImageLayout layout);
+OWL_PUBLIC void owl_texture_change_layout(struct owl_texture *texture,
+                                          VkCommandBuffer command_buffer,
+                                          VkImageLayout layout);
 OWL_END_DECLARATIONS
 
 #endif

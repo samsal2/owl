@@ -9,10 +9,10 @@
 #define OWL_DAMPING 0.002F
 #define OWL_STEPS 4
 
-OWL_PUBLIC owl_code
-owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
-                          struct owl_renderer *renderer, int32_t width,
-                          int32_t height, char const *material) {
+OWL_PUBLIC owl_code owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
+                                              struct owl_renderer *renderer,
+                                              int32_t width, int32_t height,
+                                              char const *material) {
   int32_t i;
   int32_t j;
   owl_code code;
@@ -118,17 +118,16 @@ out:
   return code;
 }
 
-OWL_PUBLIC void
-owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
-                            struct owl_renderer *renderer) {
+OWL_PUBLIC void owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
+                                            struct owl_renderer *renderer) {
   vkDeviceWaitIdle(renderer->device);
 
   OWL_FREE(sim->particles);
   owl_texture_deinit(renderer, &sim->material);
 }
 
-OWL_PUBLIC void
-owl_cloth_simulation_update(struct owl_cloth_simulation *sim, float dt) {
+OWL_PUBLIC void owl_cloth_simulation_update(struct owl_cloth_simulation *sim,
+                                            float dt) {
   int32_t i;
   for (i = 0; i < sim->particle_count; ++i) {
     struct owl_cloth_particle *particle = &sim->particles[i];

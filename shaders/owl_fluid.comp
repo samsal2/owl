@@ -3,7 +3,7 @@
 #define WORKFLOW_SPLAT 0
 #define WORKFLOW_ADVECT 2
 
-layout (set = 0, binding = 0) uniform UBO {
+layout(set = 0, binding = 0) uniform UBO {
   int workflow;
   int velocity_index;
   int dye_index;
@@ -20,27 +20,27 @@ layout (set = 0, binding = 0) uniform UBO {
   float dt;
   float dissipation;
   vec2 texel_size;
-  
+
   vec2 dye_texel_size;
   vec2 sim_texel_size;
 
   float aspect_ratio;
   float decay;
-} ubo;
+}
+ubo;
 
 /* TODO(samuel): don't really need rgba32f */
-layout (set = 1, binding = 0, rgba32f) uniform readonly image2D divergence;
-layout (set = 1, binding = 1, rgba32f) uniform readonly image2D curl;
-layout (set = 1, binding = 2, rgba32f) uniform readonly image2D velocity0;
-layout (set = 1, binding = 3, rgba32f) uniform readonly image2D velocity1;
-layout (set = 1, binding = 4, rgba32f) uniform readonly image2D dye0;
-layout (set = 1, binding = 5, rgba32f) uniform readonly image2D dye1;
-layout (set = 1, binding = 6, rgba32f) uniform readonly image2D pressure0;
-layout (set = 1, binding = 7, rgba32f) uniform readonly image2D pressure1;
+layout(set = 1, binding = 0, rgba32f) uniform readonly image2D divergence;
+layout(set = 1, binding = 1, rgba32f) uniform readonly image2D curl;
+layout(set = 1, binding = 2, rgba32f) uniform readonly image2D velocity0;
+layout(set = 1, binding = 3, rgba32f) uniform readonly image2D velocity1;
+layout(set = 1, binding = 4, rgba32f) uniform readonly image2D dye0;
+layout(set = 1, binding = 5, rgba32f) uniform readonly image2D dye1;
+layout(set = 1, binding = 6, rgba32f) uniform readonly image2D pressure0;
+layout(set = 1, binding = 7, rgba32f) uniform readonly image2D pressure1;
 
-
-layout (set = 2, binding = 0, rgba32f) uniform writeonly image2D destination0;
-layout (set = 3, binding = 0, rgba32f) uniform readonly image2D source0;
+layout(set = 2, binding = 0, rgba32f) uniform writeonly image2D destination0;
+layout(set = 3, binding = 0, rgba32f) uniform readonly image2D source0;
 
 /* https://github.com/KhronosGroup/GLSL/issues/57 */
 /* welp, macro time */
@@ -57,16 +57,16 @@ vec4 bilerp(readonly image2D image, vec2 uv, vec2 texel_size) {
 }
 #endif
 
-#define bilerp(image, uv, texel_size, result)                         \
-  do {                                                                \
-    vec2 st_ = uv / texel_size - 0.5;                                 \
-    ivec2 iuv_ = ivec2(floor(st_));                                   \
-    vec2 fuv_ = fract(st_);                                           \
-    vec4 a_ = imageLoad(image, (iuv_ + ivec2(0, 0)));                 \
-    vec4 b_ = imageLoad(image, (iuv_ + ivec2(1, 0)));                 \
-    vec4 c_ = imageLoad(image, (iuv_ + ivec2(0, 1)));                 \
-    vec4 d_ = imageLoad(image, (iuv_ + ivec2(1, 1)));                 \
-    result =  mix(mix(a_, b_, fuv_.x), mix(c_, d_, fuv_.x), fuv_.y);  \
+#define bilerp(image, uv, texel_size, result)                                 \
+  do {                                                                        \
+    vec2 st_ = uv / texel_size - 0.5;                                         \
+    ivec2 iuv_ = ivec2(floor(st_));                                           \
+    vec2 fuv_ = fract(st_);                                                   \
+    vec4 a_ = imageLoad(image, (iuv_ + ivec2(0, 0)));                         \
+    vec4 b_ = imageLoad(image, (iuv_ + ivec2(1, 0)));                         \
+    vec4 c_ = imageLoad(image, (iuv_ + ivec2(0, 1)));                         \
+    vec4 d_ = imageLoad(image, (iuv_ + ivec2(1, 1)));                         \
+    result = mix(mix(a_, b_, fuv_.x), mix(c_, d_, fuv_.x), fuv_.y);           \
   } while (false)
 
 vec4 velocity_input(ivec2 p) {
@@ -82,7 +82,6 @@ vec4 dye_input(ivec2 p) {
   else
     return imageLoad(dye1, p);
 }
-
 
 void main() {
   vec4 result;
@@ -101,7 +100,7 @@ void main() {
   if (WORKFLOW_SPLAT == ubo.workflow) {
     vec2 dp = uv_norm - ubo.point.xy;
     dp.x *= ubo.aspect_ratio;
-    vec3 splat = exp(-dot(dp, dp) /  ubo.radius) * ubo.color.xyz;
+    vec3 splat = exp(-dot(dp, dp) / ubo.radius) * ubo.color.xyz;
     vec3 base = imageLoad(source0, uv_world).xyz;
     result = vec4(base + splat, 1.0);
   } else if (WORKFLOW_ADVECT == ubo.workflow) {

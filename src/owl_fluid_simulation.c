@@ -2,16 +2,13 @@
 
 #include "owl_internal.h"
 #include "owl_vector_math.h"
-#include "vulkan/vulkan_core.h"
 
 #define OWL_SIM_RESOLUTION 128
 #define OWL_DYE_RESOLUTION 1024
 
-OWL_PUBLIC owl_code
-owl_fluid_simulation_buffer_init(struct owl_renderer *renderer,
-                                 void const *data, uint32_t width,
-                                 uint32_t height,
-                                 struct owl_fluid_simulation_buffer *buffer) {
+OWL_PUBLIC owl_code owl_fluid_simulation_buffer_init(
+    struct owl_renderer *renderer, void const *data, uint32_t width,
+    uint32_t height, struct owl_fluid_simulation_buffer *buffer) {
   owl_code code = OWL_OK;
   VkDevice const device = renderer->device;
 
@@ -81,8 +78,7 @@ error:
   return code;
 }
 
-OWL_PUBLIC void
-owl_fluid_simulation_buffer_deinit(
+OWL_PUBLIC void owl_fluid_simulation_buffer_deinit(
     struct owl_renderer *renderer,
     struct owl_fluid_simulation_buffer *buffer) {
   VkDevice const device = renderer->device;
@@ -94,9 +90,8 @@ owl_fluid_simulation_buffer_deinit(
   owl_texture_deinit(renderer, &buffer->texture);
 }
 
-OWL_PUBLIC owl_code
-owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
-                          struct owl_renderer *renderer) {
+OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
+                                              struct owl_renderer *renderer) {
   int i;
   owl_v4 *dye;
   owl_v4 *vec;
@@ -354,9 +349,8 @@ error:
   return code;
 }
 
-OWL_PUBLIC void
-owl_fluid_simulation_deinit(struct owl_fluid_simulation *sim,
-                            struct owl_renderer *renderer) {
+OWL_PUBLIC void owl_fluid_simulation_deinit(struct owl_fluid_simulation *sim,
+                                            struct owl_renderer *renderer) {
   int i;
 
   VkDevice const device = renderer->device;
@@ -381,9 +375,9 @@ owl_fluid_simulation_deinit(struct owl_fluid_simulation *sim,
   vkDestroyBuffer(device, sim->uniform_buffer, NULL);
 }
 
-OWL_PUBLIC void
-owl_fluid_simulation_update(struct owl_fluid_simulation *sim,
-                            struct owl_renderer *renderer, float dt) {
+OWL_PUBLIC void owl_fluid_simulation_update(struct owl_fluid_simulation *sim,
+                                            struct owl_renderer *renderer,
+                                            float dt) {
   VkSubmitInfo submit_info;
   VkPipelineStageFlagBits stage;
   VkCommandBuffer const command_buffer = sim->command_buffer;

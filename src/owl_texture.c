@@ -8,8 +8,7 @@
 
 #define OWL_TEXTURE_MAX_PATH_LENGTH 128
 
-static VkFormat
-owl_pixel_format_as_vk_format(enum owl_pixel_format format) {
+static VkFormat owl_pixel_format_as_vk_format(enum owl_pixel_format format) {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
     return VK_FORMAT_R8_UNORM;
@@ -25,8 +24,7 @@ owl_pixel_format_as_vk_format(enum owl_pixel_format format) {
   }
 }
 
-static uint64_t
-owl_pixel_format_size(enum owl_pixel_format format) {
+static uint64_t owl_pixel_format_size(enum owl_pixel_format format) {
   switch (format) {
   case OWL_PIXEL_FORMAT_R8_UNORM:
     return 1 * sizeof(uint8_t);
@@ -42,15 +40,13 @@ owl_pixel_format_size(enum owl_pixel_format format) {
   }
 }
 
-static uint32_t
-owl_texture_calculate_mipmaps(struct owl_texture *texture) {
+static uint32_t owl_texture_calculate_mipmaps(struct owl_texture *texture) {
   return (uint32_t)(floor(log2(OWL_MAX(texture->width, texture->height))) + 1);
 }
 
-OWL_PUBLIC void
-owl_texture_change_layout(struct owl_texture *texture,
-                          VkCommandBuffer command_buffer,
-                          VkImageLayout layout) {
+OWL_PUBLIC void owl_texture_change_layout(struct owl_texture *texture,
+                                          VkCommandBuffer command_buffer,
+                                          VkImageLayout layout) {
   VkImageMemoryBarrier barrier;
   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_NONE_KHR;
   VkPipelineStageFlags dst_stage = VK_PIPELINE_STAGE_NONE_KHR;
@@ -122,9 +118,8 @@ owl_texture_change_layout(struct owl_texture *texture,
   texture->layout = layout;
 }
 
-static void
-owl_texture_generate_mipmaps(struct owl_texture *texture,
-                             struct owl_renderer *renderer) {
+static void owl_texture_generate_mipmaps(struct owl_texture *texture,
+                                         struct owl_renderer *renderer) {
   int32_t i;
   int32_t width;
   int32_t height;
@@ -216,9 +211,9 @@ owl_texture_generate_mipmaps(struct owl_texture *texture,
 }
 
 /* TODO(samuel): cleanup */
-OWL_PUBLIC owl_code
-owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
-                 struct owl_texture *texture) {
+OWL_PUBLIC owl_code owl_texture_init(struct owl_renderer *renderer,
+                                     struct owl_texture_desc *desc,
+                                     struct owl_texture *texture) {
   owl_code code;
 
   VkFormat vk_format;
@@ -349,18 +344,8 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
           goto error_free_upload_data;
         }
 
-        /* if texture->width and texture->height have been set (!= 0) */
-        if (texture->width && texture->height) {
-          /* the width and height loaded don't match, error out */
-          if (!((int)texture->width == width &&
-                (int)texture->height == height)) {
-            OWL_ASSERT(0);
-            stbi_image_free(data);
-            code = OWL_ERROR_FATAL;
-            goto error_free_upload_data;
-          }
-        } else { /* if texture->width and texture->height have not been set
-                  */
+        /* if texture->width and texture->height have not been set */
+        if (0 == texture->width && 0 == texture->height) {
           /* set them to the current width and height */
           texture->width = width;
           texture->height = height;
@@ -376,6 +361,11 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
             code = OWL_ERROR_FATAL;
             goto error_free_upload_data;
           }
+        } else if (!((int)texture->width == width &&
+                     (int)texture->height == height)) {
+          stbi_image_free(data);
+          code = OWL_ERROR_FATAL;
+          goto error_free_upload_data;
         }
 
         /* copy the image into the upload buffer at the current offset */
@@ -644,7 +634,7 @@ owl_texture_init(struct owl_renderer *renderer, struct owl_texture_desc *desc,
 
 error_free_descriptor_set:
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
-                        &texture->descriptor_set);
+                       &texture->descriptor_set);
 
 error_destroy_image_view:
   vkDestroyImageView(renderer->device, texture->image_view, NULL);
@@ -662,9 +652,8 @@ error_free_upload_data:
   return code;
 }
 
-OWL_PUBLIC void
-owl_texture_deinit(struct owl_renderer *renderer,
-                   struct owl_texture *texture) {
+OWL_PUBLIC void owl_texture_deinit(struct owl_renderer *renderer,
+                                   struct owl_texture *texture) {
   vkFreeDescriptorSets(renderer->device, renderer->descriptor_pool, 1,
                        &texture->descriptor_set);
   vkDestroyImageView(renderer->device, texture->image_view, NULL);
