@@ -192,7 +192,7 @@ static owl_code owl_draw_model_node(struct owl_renderer *renderer,
 
   node = &model->nodes[id];
 
-  for (i = 0; i < node->child_count; ++i) {
+  for (i = 0; i < node->num_children; ++i) {
     code = owl_draw_model_node(renderer, node->children[i], model, matrix);
     if (OWL_OK != code)
       return code;
@@ -235,7 +235,7 @@ static owl_code owl_draw_model_node(struct owl_renderer *renderer,
                           &uniform1_allocation.model_descriptor_set, 1,
                           &uniform1_allocation.offset);
 
-  for (i = 0; i < mesh->primitive_count; ++i) {
+  for (i = 0; i < mesh->num_primitives; ++i) {
     VkDescriptorSet sets[2];
     struct owl_model_primitive const *primitive;
     struct owl_model_material_push_constant push_constant;
@@ -345,7 +345,7 @@ OWL_PUBLIC owl_code owl_draw_model(struct owl_renderer *renderer,
   vkCmdBindIndexBuffer(command_buffer, model->index_buffer, 0,
                        VK_INDEX_TYPE_UINT32);
 
-  for (i = 0; i < model->root_count; ++i) {
+  for (i = 0; i < model->num_roots; ++i) {
     owl_model_node_id const root = model->roots[i];
     code = owl_draw_model_node(renderer, root, model, matrix);
     if (OWL_OK != code)
@@ -486,11 +486,11 @@ OWL_PUBLIC owl_code owl_draw_cloth_simulation(
   int32_t i;
   int32_t j;
 
-  uint32_t index_count;
+  uint32_t num_indices;
   uint32_t *indices;
   struct owl_renderer_index_allocation index_allocation;
 
-  uint64_t vertex_count;
+  uint64_t num_vertices;
   struct owl_pcu_vertex *vertices;
   struct owl_renderer_vertex_allocation vertex_allocation;
 
@@ -502,9 +502,9 @@ OWL_PUBLIC owl_code owl_draw_cloth_simulation(
 
   command_buffer = renderer->submit_command_buffers[renderer->frame];
 
-  index_count = (sim->width - 1) * (sim->height - 1) * 6;
+  num_indices = (sim->width - 1) * (sim->height - 1) * 6;
   indices = owl_renderer_index_allocate(
-      renderer, index_count * sizeof(*indices), &index_allocation);
+      renderer, num_indices * sizeof(*indices), &index_allocation);
   if (!indices)
     return OWL_ERROR_NO_FRAME_MEMORY;
 
@@ -522,9 +522,9 @@ OWL_PUBLIC owl_code owl_draw_cloth_simulation(
     }
   }
 
-  vertex_count = sim->width * sim->height;
+  num_vertices = sim->width * sim->height;
   vertices = owl_renderer_vertex_allocate(
-      renderer, vertex_count * sizeof(*vertices), &vertex_allocation);
+      renderer, num_vertices * sizeof(*vertices), &vertex_allocation);
   if (!vertices)
     return OWL_ERROR_NO_FRAME_MEMORY;
 
@@ -568,7 +568,7 @@ OWL_PUBLIC owl_code owl_draw_cloth_simulation(
                           OWL_ARRAY_SIZE(descriptor_sets), descriptor_sets, 1,
                           &uniform_allocation.offset);
 
-  vkCmdDrawIndexed(command_buffer, index_count, 1, 0, 0, 0);
+  vkCmdDrawIndexed(command_buffer, num_indices, 1, 0, 0, 0);
 
   return OWL_OK;
 }

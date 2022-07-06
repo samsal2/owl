@@ -25,7 +25,7 @@ OWL_PUBLIC owl_code owl_plataform_init(struct owl_plataform *plataform,
 OWL_PUBLIC void owl_plataform_deinit(struct owl_plataform *plataform);
 
 OWL_PUBLIC owl_code owl_plataform_get_required_instance_extensions(
-    struct owl_plataform *plataform, uint32_t *extension_count,
+    struct owl_plataform *plataform, uint32_t *num_extensions,
     char const *const **extensions);
 
 OWL_PUBLIC char const *

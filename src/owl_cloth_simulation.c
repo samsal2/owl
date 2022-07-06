@@ -31,9 +31,9 @@ OWL_PUBLIC owl_code owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
   sim->width = width;
   sim->height = height;
-  sim->particle_count = width * height;
+  sim->num_particles = width * height;
 
-  sim->particles = OWL_MALLOC(sim->particle_count * sizeof(*sim->particles));
+  sim->particles = OWL_MALLOC(sim->num_particles * sizeof(*sim->particles));
   if (!sim->particles) {
     code = OWL_ERROR_NO_MEMORY;
     goto error_deinit_material;
@@ -129,7 +129,7 @@ OWL_PUBLIC void owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
 OWL_PUBLIC void owl_cloth_simulation_update(struct owl_cloth_simulation *sim,
                                             float dt) {
   int32_t i;
-  for (i = 0; i < sim->particle_count; ++i) {
+  for (i = 0; i < sim->num_particles; ++i) {
     struct owl_cloth_particle *particle = &sim->particles[i];
     if (particle->movable) {
       int32_t j;

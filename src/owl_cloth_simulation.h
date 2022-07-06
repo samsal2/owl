@@ -24,7 +24,7 @@ struct owl_cloth_simulation {
   int32_t height;
   owl_m4 model;
 
-  int32_t particle_count;
+  int32_t num_particles;
   struct owl_cloth_particle *particles;
 
   struct owl_texture material;

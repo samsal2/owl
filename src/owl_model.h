@@ -64,7 +64,7 @@ struct owl_model_uniform {
 };
 
 struct owl_model_mesh {
-  int primitive_count;
+  int num_primitives;
   owl_model_primitive_id primitives[OWL_MODEL_MAX_ITEMS];
 };
 
@@ -86,7 +86,7 @@ struct owl_model_node {
   owl_model_mesh_id mesh;
   owl_model_skin_id skin;
 
-  int child_count;
+  int num_children;
   owl_model_node_id children[OWL_MODEL_MAX_ITEMS];
 };
 
@@ -120,7 +120,7 @@ struct owl_model_material {
 struct owl_model_skin_ssbo {
   owl_m4 matrix;
   owl_m4 joint_matices[OWL_MODEL_MAX_JOINTS];
-  int joint_matrix_count;
+  int num_joint_matrices;
 };
 
 struct owl_model_skin {
@@ -132,7 +132,7 @@ struct owl_model_skin {
 
   owl_m4 inverse_bind_matrices[OWL_MODEL_MAX_JOINTS];
 
-  int joint_count;
+  int num_joints;
   owl_model_node_id joints[OWL_MODEL_MAX_JOINTS];
 
   VkDeviceMemory ssbo_memory;
@@ -148,10 +148,10 @@ struct owl_model_skin {
 struct owl_model_anim_sampler {
   int interpolation;
 
-  int input_count;
+  int num_inputs;
   float inputs[OWL_MODEL_MAX_ITEMS];
 
-  int output_count;
+  int num_outputs;
   owl_v4 outputs[OWL_MODEL_MAX_ITEMS];
 };
 
@@ -169,10 +169,10 @@ struct owl_model_anim {
   float begin;
   float end;
 
-  int sampler_count;
+  int num_samplers;
   owl_model_anim_sampler_id samplers[OWL_MODEL_MAX_ITEMS];
 
-  int chan_count;
+  int num_chans;
   owl_model_anim_chan_id chans[OWL_MODEL_MAX_ITEMS];
 };
 
@@ -185,37 +185,37 @@ struct owl_model {
 
   owl_model_anim_id active_anim;
 
-  int root_count;
+  int num_roots;
   owl_model_node_id roots[OWL_MODEL_MAX_ITEMS];
 
-  int node_count;
+  int num_nodes;
   struct owl_model_node nodes[OWL_MODEL_MAX_ITEMS];
 
-  int image_count;
+  int num_images;
   struct owl_model_image images[OWL_MODEL_MAX_ITEMS];
 
-  int texture_count;
+  int num_textures;
   struct owl_model_texture textures[OWL_MODEL_MAX_ITEMS];
 
-  int material_count;
+  int num_materials;
   struct owl_model_material materials[OWL_MODEL_MAX_ITEMS];
 
-  int mesh_count;
+  int num_meshes;
   struct owl_model_mesh meshes[OWL_MODEL_MAX_ITEMS];
 
-  int primitive_count;
+  int num_primitives;
   struct owl_model_primitive primitives[OWL_MODEL_MAX_ITEMS];
 
-  int skin_count;
+  int num_skins;
   struct owl_model_skin skins[OWL_MODEL_MAX_ITEMS];
 
-  int anim_sampler_count;
+  int num_anim_samplers;
   struct owl_model_anim_sampler anim_samplers[OWL_MODEL_MAX_ITEMS];
 
-  int anim_chan_count;
+  int num_anim_chans;
   struct owl_model_anim_chan anim_chans[OWL_MODEL_MAX_ITEMS];
 
-  int anim_count;
+  int num_anim;
   struct owl_model_anim anims[OWL_MODEL_MAX_ITEMS];
 };
 
