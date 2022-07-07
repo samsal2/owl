@@ -14,15 +14,14 @@ static owl_m4 matrix;
 
 #define CHECK(fn)                                                             \
   do {                                                                        \
-    owl_code code = (fn);                                                     \
+    int code = (fn);                                                          \
     if (code) {                                                               \
       printf("something went wrong in call: %s, code %i\n", (#fn), code);     \
       return 0;                                                               \
     }                                                                         \
   } while (0)
 
-int
-main(void) {
+int main(void) {
   owl_v3 offset = {0.0F, 0.0F, -1.0F};
 
   window = malloc(sizeof(*window));

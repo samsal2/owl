@@ -21,10 +21,10 @@ enum owl_texture_source {
 };
 
 enum owl_pixel_format {
-  OWL_PIXEL_FORMAT_R8G8B8A8_SRGB,
-  OWL_PIXEL_FORMAT_R8G8B8A8_UNORM,
-  OWL_PIXEL_FORMAT_R8_UNORM,
-  OWL_PIXEL_FORMAT_R32G32B32A32_SFLOAT
+  OWL_RGBA8_SRGB,
+  OWL_RGBA8_UNORM,
+  OWL_R8_UNORM,
+  OWL_RGBA32_SFLOAT
 };
 
 struct owl_texture_desc {
@@ -49,16 +49,16 @@ struct owl_texture {
   VkDescriptorSet descriptor_set;
 };
 
-OWL_PUBLIC owl_code owl_texture_init(struct owl_renderer *renderer,
-                                     struct owl_texture_desc *desc,
-                                     struct owl_texture *texture);
+OWLAPI int owl_texture_init(struct owl_renderer *r,
+                            struct owl_texture_desc *desc,
+                            struct owl_texture *texture);
 
-OWL_PUBLIC void owl_texture_deinit(struct owl_renderer *renderer,
-                                   struct owl_texture *texture);
+OWLAPI void owl_texture_deinit(struct owl_renderer *r,
+                               struct owl_texture *texture);
 
-OWL_PUBLIC void owl_texture_change_layout(struct owl_texture *texture,
-                                          VkCommandBuffer command_buffer,
-                                          VkImageLayout layout);
+OWLAPI void owl_texture_change_layout(struct owl_texture *texture,
+                                      VkCommandBuffer command_buffer,
+                                      VkImageLayout layout);
 OWL_END_DECLARATIONS
 
 #endif

@@ -13,7 +13,7 @@
 
 OWL_BEGIN_DECLARATIONS
 
-#define OWL_PUBLIC extern
+#define OWLAPI extern
 
 typedef float owl_v2[2];
 typedef float owl_v3[3];
@@ -52,8 +52,6 @@ struct owl_pvm_uniform {
   owl_m4 view;
   owl_m4 model;
 };
-
-typedef int owl_code;
 
 #define OWL_OK 0
 #define OWL_ERROR_FATAL -1

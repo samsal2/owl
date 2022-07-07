@@ -9,13 +9,12 @@
 #define OWL_DAMPING 0.002F
 #define OWL_STEPS 4
 
-OWL_PUBLIC owl_code owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
-                                              struct owl_renderer *renderer,
-                                              int32_t width, int32_t height,
-                                              char const *material) {
+OWLAPI int owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
+                                     struct owl_renderer *r, int32_t width,
+                                     int32_t height, char const *material) {
   int32_t i;
   int32_t j;
-  owl_code code;
+  int ret;
   struct owl_texture_desc texture_desc;
 
   texture_desc.source = OWL_TEXTURE_SOURCE_FILE;
@@ -23,10 +22,10 @@ OWL_PUBLIC owl_code owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
   texture_desc.path = material;
   texture_desc.width = 0;
   texture_desc.height = 0;
-  texture_desc.format = OWL_PIXEL_FORMAT_R8G8B8A8_SRGB;
+  texture_desc.format = OWL_RGBA8_SRGB;
 
-  code = owl_texture_init(renderer, &texture_desc, &sim->material);
-  if (code)
+  ret = owl_texture_init(r, &texture_desc, &sim->material);
+  if (ret)
     goto out;
 
   sim->width = width;
@@ -35,7 +34,7 @@ OWL_PUBLIC owl_code owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
   sim->particles = OWL_MALLOC(sim->num_particles * sizeof(*sim->particles));
   if (!sim->particles) {
-    code = OWL_ERROR_NO_MEMORY;
+    ret = OWL_ERROR_NO_MEMORY;
     goto error_deinit_material;
   }
 
@@ -112,22 +111,22 @@ OWL_PUBLIC owl_code owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
   goto out;
 
 error_deinit_material:
-  owl_texture_deinit(renderer, &sim->material);
+  owl_texture_deinit(r, &sim->material);
 
 out:
-  return code;
+  return ret;
 }
 
-OWL_PUBLIC void owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
-                                            struct owl_renderer *renderer) {
-  vkDeviceWaitIdle(renderer->device);
+OWLAPI void owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
+                                        struct owl_renderer *r) {
+  vkDeviceWaitIdle(r->device);
 
   OWL_FREE(sim->particles);
-  owl_texture_deinit(renderer, &sim->material);
+  owl_texture_deinit(r, &sim->material);
 }
 
-OWL_PUBLIC void owl_cloth_simulation_update(struct owl_cloth_simulation *sim,
-                                            float dt) {
+OWLAPI void owl_cloth_simulation_update(struct owl_cloth_simulation *sim,
+                                        float dt) {
   int32_t i;
   for (i = 0; i < sim->num_particles; ++i) {
     struct owl_cloth_particle *particle = &sim->particles[i];

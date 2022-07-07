@@ -30,16 +30,15 @@ struct owl_cloth_simulation {
   struct owl_texture material;
 };
 
-OWL_PUBLIC owl_code owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
-                                              struct owl_renderer *renderer,
-                                              int32_t width, int32_t height,
-                                              char const *material);
+OWLAPI int owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
+                                     struct owl_renderer *r, int32_t width,
+                                     int32_t height, char const *material);
 
-OWL_PUBLIC void owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
-                                            struct owl_renderer *renderer);
+OWLAPI void owl_cloth_simulation_deinit(struct owl_cloth_simulation *sim,
+                                        struct owl_renderer *r);
 
-OWL_PUBLIC void owl_cloth_simulation_update(struct owl_cloth_simulation *sim,
-                                            float dt);
+OWLAPI void owl_cloth_simulation_update(struct owl_cloth_simulation *sim,
+                                        float dt);
 
 OWL_END_DECLARATIONS
 

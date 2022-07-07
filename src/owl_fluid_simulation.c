@@ -6,11 +6,12 @@
 #define OWL_SIM_RESOLUTION 128
 #define OWL_DYE_RESOLUTION 1024
 
-OWL_PUBLIC owl_code owl_fluid_simulation_buffer_init(
-    struct owl_renderer *renderer, void const *data, uint32_t width,
-    uint32_t height, struct owl_fluid_simulation_buffer *buffer) {
-  owl_code code = OWL_OK;
-  VkDevice const device = renderer->device;
+OWLAPI int
+owl_fluid_simulation_buffer_init(struct owl_renderer *r, void const *data,
+                                 uint32_t width, uint32_t height,
+                                 struct owl_fluid_simulation_buffer *buffer) {
+  int ret = OWL_OK;
+  VkDevice const device = r->device;
 
   {
     struct owl_texture_desc desc;
@@ -21,10 +22,10 @@ OWL_PUBLIC owl_code owl_fluid_simulation_buffer_init(
     desc.pixels = data;
     desc.width = width;
     desc.height = height;
-    desc.format = OWL_PIXEL_FORMAT_R32G32B32A32_SFLOAT;
+    desc.format = OWL_RGBA32_SFLOAT;
 
-    code = owl_texture_init(renderer, &desc, &buffer->texture);
-    if (code)
+    ret = owl_texture_init(r, &desc, &buffer->texture);
+    if (ret)
       goto error;
   }
 
@@ -34,15 +35,14 @@ OWL_PUBLIC owl_code owl_fluid_simulation_buffer_init(
 
     info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     info.pNext = NULL;
-    info.descriptorPool = renderer->descriptor_pool;
+    info.descriptorPool = r->descriptor_pool;
     info.descriptorSetCount = 1;
-    info.pSetLayouts =
-        &renderer->fluid_simulation_source_descriptor_set_layout;
+    info.pSetLayouts = &r->fluid_simulation_source_descriptor_set_layout;
 
     vk_result = vkAllocateDescriptorSets(device, &info,
                                          &buffer->storage_descriptor_set);
     if (vk_result) {
-      code = OWL_ERROR_FATAL;
+      ret = OWL_ERROR_FATAL;
       goto error_deinit_texture;
     }
   }
@@ -72,31 +72,30 @@ OWL_PUBLIC owl_code owl_fluid_simulation_buffer_init(
   return OWL_OK;
 
 error_deinit_texture:
-  owl_texture_deinit(renderer, &buffer->texture);
+  owl_texture_deinit(r, &buffer->texture);
 
 error:
-  return code;
+  return ret;
 }
 
-OWL_PUBLIC void owl_fluid_simulation_buffer_deinit(
-    struct owl_renderer *renderer,
-    struct owl_fluid_simulation_buffer *buffer) {
-  VkDevice const device = renderer->device;
+OWLAPI void owl_fluid_simulation_buffer_deinit(
+    struct owl_renderer *r, struct owl_fluid_simulation_buffer *buffer) {
+  VkDevice const device = r->device;
 
   vkDeviceWaitIdle(device);
 
-  vkFreeDescriptorSets(device, renderer->descriptor_pool, 1,
+  vkFreeDescriptorSets(device, r->descriptor_pool, 1,
                        &buffer->storage_descriptor_set);
-  owl_texture_deinit(renderer, &buffer->texture);
+  owl_texture_deinit(r, &buffer->texture);
 }
 
-OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
-                                              struct owl_renderer *renderer) {
+OWLAPI int owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
+                                     struct owl_renderer *r) {
   int i;
   owl_v4 *dye;
   owl_v4 *vec;
-  owl_code code = OWL_OK;
-  VkDevice const device = renderer->device;
+  int ret = OWL_OK;
+  VkDevice const device = r->device;
 
   sim->requires_record = 1;
 
@@ -115,7 +114,7 @@ OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
 
     vk_result = vkCreateBuffer(device, &info, NULL, &sim->uniform_buffer);
     if (vk_result) {
-      code = OWL_ERROR_FATAL;
+      ret = OWL_ERROR_FATAL;
       goto error;
     }
   }
@@ -137,25 +136,25 @@ OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
     info.pNext = NULL;
     info.allocationSize = requirements.size;
     info.memoryTypeIndex = owl_renderer_find_memory_type(
-        renderer, requirements.memoryTypeBits, properties);
+        r, requirements.memoryTypeBits, properties);
 
     vk_result = vkAllocateMemory(device, &info, NULL, &sim->uniform_memory);
     if (vk_result) {
-      code = OWL_ERROR_FATAL;
+      ret = OWL_ERROR_FATAL;
       goto error_destroy_uniform_buffer;
     }
 
     vk_result = vkBindBufferMemory(device, sim->uniform_buffer,
                                    sim->uniform_memory, 0);
     if (vk_result) {
-      code = OWL_ERROR_FATAL;
+      ret = OWL_ERROR_FATAL;
       goto error_free_uniform_memory;
     }
 
     vk_result = vkMapMemory(device, sim->uniform_memory, 0, VK_WHOLE_SIZE, 0,
                             &data);
     if (vk_result) {
-      code = OWL_ERROR_FATAL;
+      ret = OWL_ERROR_FATAL;
       goto error_free_uniform_memory;
     }
 
@@ -168,10 +167,9 @@ OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
 
     info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     info.pNext = NULL;
-    info.descriptorPool = renderer->descriptor_pool;
+    info.descriptorPool = r->descriptor_pool;
     info.descriptorSetCount = 1;
-    info.pSetLayouts =
-        &renderer->fluid_simulation_uniform_descriptor_set_layout;
+    info.pSetLayouts = &r->fluid_simulation_uniform_descriptor_set_layout;
 
     vk_result = vkAllocateDescriptorSets(device, &info,
                                          &sim->uniform_descriptor_set);
@@ -186,11 +184,11 @@ OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
     info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     info.pNext = NULL;
     info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    info.queueFamilyIndex = renderer->compute_family;
+    info.queueFamilyIndex = r->compute_family;
 
     vk_result = vkCreateCommandPool(device, &info, NULL, &sim->command_pool);
     if (vk_result) {
-      code = OWL_ERROR_FATAL;
+      ret = OWL_ERROR_FATAL;
       goto error_free_uniform_descriptor_sets;
     }
   }
@@ -207,7 +205,7 @@ OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
 
     vk_result = vkAllocateCommandBuffers(device, &info, &sim->command_buffer);
     if (vk_result) {
-      code = OWL_ERROR_FATAL;
+      ret = OWL_ERROR_FATAL;
       goto error_destroy_command_pool;
     }
   }
@@ -237,14 +235,14 @@ OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
   /* NOTE(samuel): MAKE SURE IT's 0 INITIALIZED */
   dye = OWL_CALLOC(OWL_DYE_RESOLUTION * OWL_DYE_RESOLUTION, sizeof(*dye));
   if (!dye) {
-    code = OWL_ERROR_NO_MEMORY;
+    ret = OWL_ERROR_NO_MEMORY;
     goto error_free_command_buffer;
   }
 
   /* NOTE(samuel): MAKE SURE IT's 0 INITIALIZED */
   vec = OWL_CALLOC(OWL_SIM_RESOLUTION * OWL_SIM_RESOLUTION, sizeof(*vec));
   if (!vec) {
-    code = OWL_ERROR_NO_MEMORY;
+    ret = OWL_ERROR_NO_MEMORY;
     goto error_free_dye;
   }
 
@@ -252,9 +250,9 @@ OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
   sim->velocity_write = 0;
   for (i = 0; i < 2; ++i) {
     struct owl_fluid_simulation_buffer *buffer = &sim->velocity[i];
-    code = owl_fluid_simulation_buffer_init(renderer, vec, OWL_SIM_RESOLUTION,
-                                            OWL_SIM_RESOLUTION, buffer);
-    if (code)
+    ret = owl_fluid_simulation_buffer_init(r, vec, OWL_SIM_RESOLUTION,
+                                           OWL_SIM_RESOLUTION, buffer);
+    if (ret)
       goto error_deinit_velocity;
   }
 
@@ -262,9 +260,9 @@ OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
   sim->pressure_write = 0;
   for (i = 0; i < 2; ++i) {
     struct owl_fluid_simulation_buffer *buffer = &sim->pressure[i];
-    code = owl_fluid_simulation_buffer_init(renderer, vec, OWL_SIM_RESOLUTION,
-                                            OWL_SIM_RESOLUTION, buffer);
-    if (code)
+    ret = owl_fluid_simulation_buffer_init(r, vec, OWL_SIM_RESOLUTION,
+                                           OWL_SIM_RESOLUTION, buffer);
+    if (ret)
       goto error_deinit_pressure;
   }
 
@@ -282,21 +280,21 @@ OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
   sim->dye_write = 0;
   for (i = 0; i < 2; ++i) {
     struct owl_fluid_simulation_buffer *buffer = &sim->dye[i];
-    code = owl_fluid_simulation_buffer_init(renderer, dye, OWL_DYE_RESOLUTION,
-                                            OWL_DYE_RESOLUTION, buffer);
-    if (code)
-      if (code)
+    ret = owl_fluid_simulation_buffer_init(r, dye, OWL_DYE_RESOLUTION,
+                                           OWL_DYE_RESOLUTION, buffer);
+    if (ret)
+      if (ret)
         goto error_deinit_dye;
   }
 
-  code = owl_fluid_simulation_buffer_init(renderer, vec, OWL_SIM_RESOLUTION,
-                                          OWL_SIM_RESOLUTION, &sim->curl);
-  if (code)
+  ret = owl_fluid_simulation_buffer_init(r, vec, OWL_SIM_RESOLUTION,
+                                         OWL_SIM_RESOLUTION, &sim->curl);
+  if (ret)
     goto error_deinit_dye;
 
-  code = owl_fluid_simulation_buffer_init(
-      renderer, vec, OWL_SIM_RESOLUTION, OWL_SIM_RESOLUTION, &sim->divergence);
-  if (code)
+  ret = owl_fluid_simulation_buffer_init(r, vec, OWL_SIM_RESOLUTION,
+                                         OWL_SIM_RESOLUTION, &sim->divergence);
+  if (ret)
     goto error_deinit_curl;
 
   OWL_FREE(vec);
@@ -305,23 +303,23 @@ OWL_PUBLIC owl_code owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
   return OWL_OK;
 
 error_deinit_curl:
-  owl_fluid_simulation_buffer_deinit(renderer, &sim->curl);
+  owl_fluid_simulation_buffer_deinit(r, &sim->curl);
 
 error_deinit_dye:
   for (i = i - 1; i >= 0; --i)
-    owl_fluid_simulation_buffer_deinit(renderer, &sim->dye[i]);
+    owl_fluid_simulation_buffer_deinit(r, &sim->dye[i]);
 
   i = 2;
 
 error_deinit_pressure:
   for (i = i - 1; i >= 0; --i)
-    owl_fluid_simulation_buffer_deinit(renderer, &sim->pressure[i]);
+    owl_fluid_simulation_buffer_deinit(r, &sim->pressure[i]);
 
   i = 2;
 
 error_deinit_velocity:
   for (i = i - 1; i >= 0; --i)
-    owl_fluid_simulation_buffer_deinit(renderer, &sim->velocity[i]);
+    owl_fluid_simulation_buffer_deinit(r, &sim->velocity[i]);
 
   /* error_free_vec: */
   OWL_FREE(vec);
@@ -336,7 +334,7 @@ error_destroy_command_pool:
   vkDestroyCommandPool(device, sim->command_pool, NULL);
 
 error_free_uniform_descriptor_sets:
-  vkFreeDescriptorSets(device, renderer->descriptor_pool, 1,
+  vkFreeDescriptorSets(device, r->descriptor_pool, 1,
                        &sim->uniform_descriptor_set);
 
 error_free_uniform_memory:
@@ -346,38 +344,37 @@ error_destroy_uniform_buffer:
   vkDestroyBuffer(device, sim->uniform_buffer, NULL);
 
 error:
-  return code;
+  return ret;
 }
 
-OWL_PUBLIC void owl_fluid_simulation_deinit(struct owl_fluid_simulation *sim,
-                                            struct owl_renderer *renderer) {
+OWLAPI void owl_fluid_simulation_deinit(struct owl_fluid_simulation *sim,
+                                        struct owl_renderer *r) {
   int i;
 
-  VkDevice const device = renderer->device;
+  VkDevice const device = r->device;
 
-  owl_fluid_simulation_buffer_deinit(renderer, &sim->divergence);
-  owl_fluid_simulation_buffer_deinit(renderer, &sim->curl);
+  owl_fluid_simulation_buffer_deinit(r, &sim->divergence);
+  owl_fluid_simulation_buffer_deinit(r, &sim->curl);
 
   for (i = 0; i < (int)OWL_ARRAY_SIZE(sim->dye); ++i)
-    owl_fluid_simulation_buffer_deinit(renderer, &sim->dye[i]);
+    owl_fluid_simulation_buffer_deinit(r, &sim->dye[i]);
 
   for (i = 0; i < (int)OWL_ARRAY_SIZE(sim->pressure); ++i)
-    owl_fluid_simulation_buffer_deinit(renderer, &sim->pressure[i]);
+    owl_fluid_simulation_buffer_deinit(r, &sim->pressure[i]);
 
   for (i = 0; i < (int)OWL_ARRAY_SIZE(sim->velocity); ++i)
-    owl_fluid_simulation_buffer_deinit(renderer, &sim->velocity[i]);
+    owl_fluid_simulation_buffer_deinit(r, &sim->velocity[i]);
 
   vkFreeCommandBuffers(device, sim->command_pool, 1, &sim->command_buffer);
   vkDestroyCommandPool(device, sim->command_pool, NULL);
-  vkFreeDescriptorSets(device, renderer->descriptor_pool, 1,
+  vkFreeDescriptorSets(device, r->descriptor_pool, 1,
                        &sim->uniform_descriptor_set);
   vkFreeMemory(device, sim->uniform_memory, NULL);
   vkDestroyBuffer(device, sim->uniform_buffer, NULL);
 }
 
-OWL_PUBLIC void owl_fluid_simulation_update(struct owl_fluid_simulation *sim,
-                                            struct owl_renderer *renderer,
-                                            float dt) {
+OWLAPI void owl_fluid_simulation_update(struct owl_fluid_simulation *sim,
+                                        struct owl_renderer *r, float dt) {
   VkSubmitInfo submit_info;
   VkPipelineStageFlagBits stage;
   VkCommandBuffer const command_buffer = sim->command_buffer;
@@ -415,7 +412,7 @@ OWL_PUBLIC void owl_fluid_simulation_update(struct owl_fluid_simulation *sim,
     descriptor_sets[0] = sim->uniform_descriptor_set;
 
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE,
-                            renderer->fluid_simulation_pipeline_layout, 0, 1,
+                            r->fluid_simulation_pipeline_layout, 0, 1,
                             &descriptor_sets[0], 0, NULL);
 
     /* dispatch curl */
@@ -424,22 +421,22 @@ OWL_PUBLIC void owl_fluid_simulation_update(struct owl_fluid_simulation *sim,
     descriptor_sets[3] = sim->curl.storage_descriptor_set;
 
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE,
-                            renderer->fluid_simulation_pipeline_layout, 1, 1,
+                            r->fluid_simulation_pipeline_layout, 1, 1,
                             &descriptor_sets[1], 0, NULL);
 
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE,
-                            renderer->fluid_simulation_pipeline_layout, 3, 1,
+                            r->fluid_simulation_pipeline_layout, 3, 1,
                             &descriptor_sets[3], 0, NULL);
 
     push_constant.texel_size[0] = 1.0F / (float)OWL_SIM_RESOLUTION;
     push_constant.texel_size[1] = 1.0F / (float)OWL_SIM_RESOLUTION;
 
-    vkCmdPushConstants(
-        command_buffer, renderer->fluid_simulation_pipeline_layout,
-        VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push_constant), &push_constant);
+    vkCmdPushConstants(command_buffer, r->fluid_simulation_pipeline_layout,
+                       VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push_constant),
+                       &push_constant);
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE,
-                      renderer->fluid_simulation_curl_pipeline);
+                      r->fluid_simulation_curl_pipeline);
 
     vkCmdDispatch(command_buffer, OWL_SIM_RESOLUTION, OWL_SIM_RESOLUTION, 1);
 
@@ -457,7 +454,7 @@ OWL_PUBLIC void owl_fluid_simulation_update(struct owl_fluid_simulation *sim,
   submit_info.commandBufferCount = 1;
   submit_info.pCommandBuffers = &command_buffer;
 
-  vkQueueSubmit(renderer->compute_queue, 1, &submit_info, NULL);
+  vkQueueSubmit(r->compute_queue, 1, &submit_info, NULL);
   /* TODO(samuel): begin lazy here, just use a semaphore */
-  vkQueueWaitIdle(renderer->compute_queue);
+  vkQueueWaitIdle(r->compute_queue);
 }

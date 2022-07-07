@@ -1,5 +1,7 @@
 target_sources(${PROJECT_NAME} PRIVATE
   owl.h
+  owl_font.c
+  owl_font.h
   owl_cloth_simulation.c
   owl_cloth_simulation.h
   owl_definitions.h

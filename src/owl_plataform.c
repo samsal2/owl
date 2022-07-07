@@ -13,10 +13,10 @@
 
 #include <stdio.h>
 
-OWL_PUBLIC owl_code owl_plataform_init(struct owl_plataform *plataform, int w,
-                                       int h, char const *title) {
+OWLAPI int owl_plataform_init(struct owl_plataform *plataform, int w, int h,
+                              char const *title) {
   int res;
-  owl_code code = OWL_OK;
+  int ret = OWL_OK;
 
   res = glfwInit();
   if (res) {
@@ -26,33 +26,33 @@ OWL_PUBLIC owl_code owl_plataform_init(struct owl_plataform *plataform, int w,
     if (plataform->opaque)
       plataform->title = title;
     else
-      code = OWL_ERROR_FATAL;
+      ret = OWL_ERROR_FATAL;
 
   } else {
-    code = OWL_ERROR_FATAL;
+    ret = OWL_ERROR_FATAL;
   }
 
-  if (code)
+  if (ret)
     glfwTerminate();
 
-  return code;
+  return ret;
 }
 
-OWL_PUBLIC void owl_plataform_deinit(struct owl_plataform *plataform) {
+OWLAPI void owl_plataform_deinit(struct owl_plataform *plataform) {
   glfwDestroyWindow(plataform->opaque);
   glfwTerminate();
 }
 
 #define OWL_MAX_INSTANCE_EXTENSIONS 64
 
-OWL_PUBLIC owl_code owl_plataform_get_required_instance_extensions(
+OWLAPI int owl_plataform_get_required_instance_extensions(
     struct owl_plataform *plataform, uint32_t *num_extensions,
     char const *const **extensions) {
 #if defined(OWL_ENABLE_VALIDATION)
   char const *const *tmp;
   static char const *names[OWL_MAX_INSTANCE_EXTENSIONS];
 
-  owl_code code = OWL_OK;
+  int ret = OWL_OK;
 
   OWL_UNUSED(plataform);
 
@@ -62,10 +62,10 @@ OWL_PUBLIC owl_code owl_plataform_get_required_instance_extensions(
     names[(*num_extensions)++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
     *extensions = names;
   } else {
-    code = OWL_ERROR_NO_SPACE;
+    ret = OWL_ERROR_NO_SPACE;
   }
 
-  return code;
+  return ret;
 
 #else
   OWL_UNUSED(plataform);
@@ -78,22 +78,22 @@ OWL_PUBLIC owl_code owl_plataform_get_required_instance_extensions(
 #endif
 }
 
-OWL_PUBLIC int owl_plataform_should_close(struct owl_plataform *plataform) {
+OWLAPI int owl_plataform_should_close(struct owl_plataform *plataform) {
   return glfwWindowShouldClose(plataform->opaque);
 }
 
-OWL_PUBLIC void owl_plataform_poll_events(struct owl_plataform *plataform) {
+OWLAPI void owl_plataform_poll_events(struct owl_plataform *plataform) {
   OWL_UNUSED(plataform);
 
   glfwPollEvents();
 }
 
-OWL_PUBLIC owl_code owl_plataform_create_vulkan_surface(
-    struct owl_plataform *plataform, struct owl_renderer *renderer) {
+OWLAPI int owl_plataform_create_vulkan_surface(struct owl_plataform *plataform,
+                                               struct owl_renderer *r) {
   VkResult vk_result;
 
-  vk_result = glfwCreateWindowSurface(renderer->instance, plataform->opaque,
-                                      NULL, &renderer->surface);
+  vk_result = glfwCreateWindowSurface(r->instance, plataform->opaque, NULL,
+                                      &r->surface);
   OWL_DEBUG_LOG("vk_result: %i\n", vk_result);
   if (vk_result)
     return OWL_ERROR_FATAL;
@@ -101,7 +101,7 @@ OWL_PUBLIC owl_code owl_plataform_create_vulkan_surface(
   return OWL_OK;
 }
 
-OWL_PUBLIC void
+OWLAPI void
 owl_plataform_get_window_dimensions(struct owl_plataform const *plataform,
                                     uint32_t *width, uint32_t *height) {
   int internal_width;
@@ -113,7 +113,7 @@ owl_plataform_get_window_dimensions(struct owl_plataform const *plataform,
   *height = internal_height;
 }
 
-OWL_PUBLIC void
+OWLAPI void
 owl_plataform_get_framebuffer_dimensions(struct owl_plataform const *plataform,
                                          uint32_t *width, uint32_t *height) {
   int internal_width;
@@ -125,21 +125,21 @@ owl_plataform_get_framebuffer_dimensions(struct owl_plataform const *plataform,
   *height = internal_height;
 }
 
-OWL_PUBLIC double owl_plataform_get_time(struct owl_plataform *plataform) {
+OWLAPI double owl_plataform_get_time(struct owl_plataform *plataform) {
   OWL_UNUSED(plataform);
 
   return glfwGetTime();
 }
 
-OWL_PUBLIC char const *
+OWLAPI char const *
 owl_plataform_get_title(struct owl_plataform const *plataform) {
   return plataform->title;
 }
 
-OWL_PUBLIC owl_code owl_plataform_load_file(char const *path,
-                                            struct owl_plataform_file *file) {
+OWLAPI int owl_plataform_load_file(char const *path,
+                                   struct owl_plataform_file *file) {
   FILE *fp = NULL;
-  owl_code code = OWL_OK;
+  int ret = OWL_OK;
 
   fp = fopen(path, "rb");
   if (fp) {
@@ -151,18 +151,18 @@ OWL_PUBLIC owl_code owl_plataform_load_file(char const *path,
     if (file->data)
       fread(file->data, file->size, 1, fp);
     else
-      code = OWL_ERROR_NO_MEMORY;
+      ret = OWL_ERROR_NO_MEMORY;
 
     fclose(fp);
   } else {
-    code = OWL_ERROR_NOT_FOUND;
+    ret = OWL_ERROR_NOT_FOUND;
   }
 
   file->path = path;
 
-  return code;
+  return ret;
 }
 
-OWL_PUBLIC void owl_plataform_unload_file(struct owl_plataform_file *file) {
+OWLAPI void owl_plataform_unload_file(struct owl_plataform_file *file) {
   OWL_FREE(file->data);
 }
