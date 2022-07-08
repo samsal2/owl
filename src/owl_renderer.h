@@ -201,13 +201,13 @@ OWLAPI int owl_renderer_begin_frame(struct owl_renderer *r);
 
 OWLAPI int owl_renderer_end_frame(struct owl_renderer *r);
 
-OWLAPI void *owl_renderer_vertex_allocate(
-    struct owl_renderer *r, uint64_t size,
-    struct owl_renderer_vertex_allocation *allocation);
+OWLAPI void *
+owl_renderer_vertex_allocate(struct owl_renderer *r, uint64_t size,
+                             struct owl_renderer_vertex_allocation *alloc);
 
 OWLAPI void *
 owl_renderer_index_allocate(struct owl_renderer *r, uint64_t size,
-                            struct owl_renderer_index_allocation *allocation);
+                            struct owl_renderer_index_allocation *alloc);
 
 OWLAPI void *
 owl_renderer_uniform_allocate(struct owl_renderer *r, uint64_t size,
