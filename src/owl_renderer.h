@@ -93,25 +93,16 @@ struct owl_renderer {
   VkShaderModule model_fragment_shader;
   VkShaderModule skybox_vertex_shader;
   VkShaderModule skybox_fragment_shader;
-  VkShaderModule fluid_simulation_advect_shader;
-  VkShaderModule fluid_simulation_curl_shader;
-  VkShaderModule fluid_simulation_diverge_shader;
-  VkShaderModule fluid_simulation_gradient_subtract_shader;
-  VkShaderModule fluid_simulation_pressure_shader;
-  VkShaderModule fluid_simulation_splat_shader;
-  VkShaderModule fluid_simulation_vorticity_shader;
 
   VkDescriptorSetLayout common_uniform_descriptor_set_layout;
   VkDescriptorSetLayout common_texture_descriptor_set_layout;
   VkDescriptorSetLayout model_uniform_descriptor_set_layout;
-  VkDescriptorSetLayout model_joints_descriptor_set_layout;
-  VkDescriptorSetLayout model_material_descriptor_set_layout;
-  VkDescriptorSetLayout fluid_simulation_uniform_descriptor_set_layout;
-  VkDescriptorSetLayout fluid_simulation_source_descriptor_set_layout;
+  VkDescriptorSetLayout model_storage_descriptor_set_layout;
+  VkDescriptorSetLayout model_maps_descriptor_set_layout;
+  VkDescriptorSetLayout model_environment_descriptor_set_layout;
 
   VkPipelineLayout common_pipeline_layout;
   VkPipelineLayout model_pipeline_layout;
-  VkPipelineLayout fluid_simulation_pipeline_layout;
 
   VkPipeline basic_pipeline;
   VkPipeline wires_pipeline;
@@ -119,18 +110,25 @@ struct owl_renderer {
   VkPipeline model_pipeline;
   VkPipeline skybox_pipeline;
 
-  VkPipeline fluid_simulation_advect_pipeline;
-  VkPipeline fluid_simulation_curl_pipeline;
-  VkPipeline fluid_simulation_diverge_pipeline;
-  VkPipeline fluid_simulation_gradient_subtract_pipeline;
-  VkPipeline fluid_simulation_pressure_pipeline;
-  VkPipeline fluid_simulation_splat_pipeline;
-  VkPipeline fluid_simulation_vorticity_pipeline;
-
   VkSampler linear_sampler;
 
   int32_t skybox_loaded;
   struct owl_texture skybox;
+
+  VkImage irradiance_map_image;
+  VkDeviceMemory irradiance_map_memory;
+  VkImageView irradiance_map_image_view;
+
+  uint32_t prefiltered_map_mipmaps;
+  VkImage prefiltered_map_image;
+  VkDeviceMemory prefiltered_map_memory;
+  VkImageView prefiltered_map_image_view;
+
+  VkImage brdflut_map_image;
+  VkDeviceMemory brdflut_map_memory;
+  VkImageView brdflut_map_image_view;
+
+  VkDescriptorSet environment_descriptor_set;
 
   int32_t font_loaded;
   struct owl_font font;
@@ -205,9 +203,13 @@ OWLAPI void *
 owl_renderer_vertex_allocate(struct owl_renderer *r, uint64_t size,
                              struct owl_renderer_vertex_allocation *alloc);
 
+OWLAPI void owl_renderer_vertex_clear_offset(struct owl_renderer *r);
+
 OWLAPI void *
 owl_renderer_index_allocate(struct owl_renderer *r, uint64_t size,
                             struct owl_renderer_index_allocation *alloc);
+
+OWLAPI void owl_renderer_index_clear_offset(struct owl_renderer *r);
 
 OWLAPI void *
 owl_renderer_uniform_allocate(struct owl_renderer *r, uint64_t size,

@@ -71,7 +71,7 @@ OWLAPI int owl_draw_text(struct owl_renderer *r, char const *text,
  * @return int
  */
 OWLAPI int owl_draw_model(struct owl_renderer *r,
-                          struct owl_model const *model, owl_m4 const matrix);
+                          struct owl_model const *model, owl_m4 matrix);
 
 /**
  * @brief draws the renderer debug state

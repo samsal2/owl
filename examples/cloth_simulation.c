@@ -38,7 +38,7 @@ int main(void) {
 
   CHECK(owl_renderer_load_skybox(renderer, "../../assets/skybox"));
 
-  OWL_V4_IDENTITY(matrix);
+  OWL_M4_IDENTITY(matrix);
   owl_m4_translate(offset, matrix);
 
   prev_time_stamp = 0;

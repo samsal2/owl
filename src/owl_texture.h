@@ -59,6 +59,8 @@ OWLAPI void owl_texture_deinit(struct owl_renderer *r,
 OWLAPI void owl_texture_change_layout(struct owl_texture *texture,
                                       VkCommandBuffer command_buffer,
                                       VkImageLayout layout);
+
+uint32_t owl_texture_calculate_mipmaps(uint32_t w, uint32_t h);
 OWL_END_DECLARATIONS
 
 #endif

@@ -6,4 +6,3 @@ endmacro()
 
 add_example(cloth_simulation)
 add_example(model)
-add_example(fluid_simulation)

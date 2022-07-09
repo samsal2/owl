@@ -37,7 +37,7 @@ int main(void) {
 
   CHECK(owl_renderer_load_skybox(renderer, "../../assets/skybox"));
 
-  OWL_V4_IDENTITY(matrix);
+  OWL_M4_IDENTITY(matrix);
   owl_m4_translate(offset, matrix);
 
   prev_time_stamp = 0;
@@ -58,8 +58,10 @@ int main(void) {
 
     owl_draw_skybox(renderer);
 
-    owl_model_anim_update(model, renderer->frame, time_stamp - prev_time_stamp,
-                          0);
+#if 1
+    owl_model_update_animation(model, renderer->frame,
+                               time_stamp - prev_time_stamp, 0);
+#endif
 
     owl_draw_model(renderer, model, matrix);
     owl_draw_renderer_state(renderer);

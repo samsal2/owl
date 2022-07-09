@@ -5,6 +5,8 @@
 
 OWL_BEGIN_DECLARATIONS
 
+#define OWL_PI 3.1415926536F
+
 #define OWL_DEGREES_AS_RADIANS(a) ((a)*0.01745329252F)
 
 #define OWL_RADIANS_AS_DEGREES(a) ((a)*57.2957795131F)
@@ -59,7 +61,7 @@ OWL_BEGIN_DECLARATIONS
     (v)[3] = 0.0F;                                                            \
   } while (0)
 
-#define OWL_V4_IDENTITY(m)                                                    \
+#define OWL_M4_IDENTITY(m)                                                    \
   do {                                                                        \
     (m)[0][0] = 1.0F;                                                         \
     (m)[0][1] = 0.0F;                                                         \

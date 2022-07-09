@@ -7,13 +7,17 @@
 #include "owl_texture.h"
 #include "owl_vector_math.h"
 
+#ifndef OWL_POW
+#include <math.h>
+#define OWL_POW pow
+#endif
+
 #include <stdio.h>
 
 #define OWL_DEFAULT_BUFFER_SIZE (1 << 16)
 
 #if defined(OWL_ENABLE_VALIDATION)
 
-#include <stdio.h>
 static VKAPI_ATTR VKAPI_CALL VkBool32 owl_renderer_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT type,
@@ -122,12 +126,14 @@ static int owl_renderer_init_instance(struct owl_renderer *r) {
     info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     info.pNext = NULL;
     info.flags = 0;
-    info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                       VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                       VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    info.messageSeverity = 0;
+    info.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+    info.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+    info.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    info.messageType = 0;
+    info.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT;
+    info.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+    info.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     info.pfnUserCallback = owl_renderer_debug_callback;
     info.pUserData = r;
 
@@ -147,12 +153,10 @@ static int owl_renderer_init_instance(struct owl_renderer *r) {
 
 #if defined(OWL_ENABLE_VALIDATION)
 error_destroy_instance:
-  OWL_DEBUG_LOG("Got here2\n");
   vkDestroyInstance(r->instance, NULL);
 #endif
 
 error:
-  OWL_DEBUG_LOG("Got here\n");
   return OWL_ERROR_FATAL;
 }
 
@@ -840,13 +844,16 @@ static int owl_renderer_init_render_passes(struct owl_renderer *r) {
 
   dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
   dependency.dstSubpass = 0;
-  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.srcStageMask = 0;
+  dependency.srcStageMask |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  dependency.srcStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.dstStageMask = 0;
+  dependency.dstStageMask |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  dependency.dstStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   dependency.srcAccessMask = 0;
-  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  dependency.dstAccessMask = 0;
+  dependency.dstAccessMask |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  dependency.dstAccessMask |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
   dependency.dependencyFlags = 0;
 
   info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -1159,7 +1166,7 @@ static int owl_renderer_init_shaders(struct owl_renderer *r) {
     VkResult vk_result = VK_SUCCESS;
 
     static uint32_t const spv[] = {
-#include "owl_model.vert.spv.u32"
+#include "owl_pbr.vert.spv.u32"
     };
 
     info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1180,7 +1187,7 @@ static int owl_renderer_init_shaders(struct owl_renderer *r) {
     VkResult vk_result = VK_SUCCESS;
 
     static uint32_t const spv[] = {
-#include "owl_model.frag.spv.u32"
+#include "owl_pbr.frag.spv.u32"
     };
 
     info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1238,176 +1245,7 @@ static int owl_renderer_init_shaders(struct owl_renderer *r) {
       goto error_destroy_skybox_vertex_shader;
   }
 
-  {
-    VkShaderModuleCreateInfo info;
-    VkResult vk_result = VK_SUCCESS;
-
-    static uint32_t const spv[] = {
-#include "owl_fluid_advect.comp.spv.u32"
-    };
-
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
-
-    vk_result = vkCreateShaderModule(device, &info, NULL,
-                                     &r->fluid_simulation_advect_shader);
-
-    if (vk_result)
-      goto error_destroy_skybox_fragment_shader;
-  }
-
-  {
-    VkShaderModuleCreateInfo info;
-    VkResult vk_result = VK_SUCCESS;
-
-    static uint32_t const spv[] = {
-#include "owl_fluid_curl.comp.spv.u32"
-    };
-
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
-
-    vk_result = vkCreateShaderModule(device, &info, NULL,
-                                     &r->fluid_simulation_curl_shader);
-
-    if (vk_result)
-      goto error_destroy_fluid_simulation_advect_shader;
-  }
-
-  {
-    VkShaderModuleCreateInfo info;
-    VkResult vk_result = VK_SUCCESS;
-
-    static uint32_t const spv[] = {
-#include "owl_fluid_diverge.comp.spv.u32"
-    };
-
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
-
-    vk_result = vkCreateShaderModule(device, &info, NULL,
-                                     &r->fluid_simulation_diverge_shader);
-
-    if (vk_result)
-      goto error_destroy_fluid_simulation_curl_shader;
-  }
-
-  {
-    VkShaderModuleCreateInfo info;
-    VkResult vk_result = VK_SUCCESS;
-
-    static uint32_t const spv[] = {
-#include "owl_fluid_gradient_subtract.comp.spv.u32"
-    };
-
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
-
-    vk_result = vkCreateShaderModule(
-        device, &info, NULL, &r->fluid_simulation_gradient_subtract_shader);
-
-    if (vk_result)
-      goto error_destroy_fluid_simulation_diverge_shader;
-  }
-
-  {
-    VkShaderModuleCreateInfo info;
-    VkResult vk_result = VK_SUCCESS;
-
-    static uint32_t const spv[] = {
-#include "owl_fluid_pressure.comp.spv.u32"
-    };
-
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
-
-    vk_result = vkCreateShaderModule(device, &info, NULL,
-                                     &r->fluid_simulation_pressure_shader);
-
-    if (vk_result)
-      goto error_destroy_fluid_simulation_gradient_subtract_shader;
-  }
-
-  {
-    VkShaderModuleCreateInfo info;
-    VkResult vk_result = VK_SUCCESS;
-
-    static uint32_t const spv[] = {
-#include "owl_fluid_splat.comp.spv.u32"
-    };
-
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
-
-    vk_result = vkCreateShaderModule(device, &info, NULL,
-                                     &r->fluid_simulation_splat_shader);
-
-    if (vk_result)
-      goto error_destroy_fluid_simulation_pressure_shader;
-  }
-
-  {
-    VkShaderModuleCreateInfo info;
-    VkResult vk_result = VK_SUCCESS;
-
-    static uint32_t const spv[] = {
-#include "owl_fluid_vorticity.comp.spv.u32"
-    };
-
-    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.codeSize = sizeof(spv);
-    info.pCode = spv;
-
-    vk_result = vkCreateShaderModule(device, &info, NULL,
-                                     &r->fluid_simulation_vorticity_shader);
-
-    if (vk_result)
-      goto error_destroy_fluid_simulation_splat_shader;
-  }
-
   return OWL_OK;
-
-error_destroy_fluid_simulation_splat_shader:
-  vkDestroyShaderModule(device, r->fluid_simulation_splat_shader, NULL);
-
-error_destroy_fluid_simulation_pressure_shader:
-  vkDestroyShaderModule(device, r->fluid_simulation_pressure_shader, NULL);
-
-error_destroy_fluid_simulation_gradient_subtract_shader:
-  vkDestroyShaderModule(device, r->fluid_simulation_gradient_subtract_shader,
-                        NULL);
-
-error_destroy_fluid_simulation_diverge_shader:
-  vkDestroyShaderModule(device, r->fluid_simulation_diverge_shader, NULL);
-
-error_destroy_fluid_simulation_curl_shader:
-  vkDestroyShaderModule(device, r->fluid_simulation_curl_shader, NULL);
-
-error_destroy_fluid_simulation_advect_shader:
-  vkDestroyShaderModule(device, r->fluid_simulation_advect_shader, NULL);
-
-error_destroy_skybox_fragment_shader:
-  vkDestroyShaderModule(device, r->skybox_fragment_shader, NULL);
 
 error_destroy_skybox_vertex_shader:
   vkDestroyShaderModule(device, r->skybox_vertex_shader, NULL);
@@ -1433,14 +1271,6 @@ error:
 
 static void owl_renderer_deinit_shaders(struct owl_renderer *r) {
   VkDevice const device = r->device;
-  vkDestroyShaderModule(device, r->fluid_simulation_vorticity_shader, NULL);
-  vkDestroyShaderModule(device, r->fluid_simulation_splat_shader, NULL);
-  vkDestroyShaderModule(device, r->fluid_simulation_pressure_shader, NULL);
-  vkDestroyShaderModule(device, r->fluid_simulation_gradient_subtract_shader,
-                        NULL);
-  vkDestroyShaderModule(device, r->fluid_simulation_diverge_shader, NULL);
-  vkDestroyShaderModule(device, r->fluid_simulation_curl_shader, NULL);
-  vkDestroyShaderModule(device, r->fluid_simulation_advect_shader, NULL);
   vkDestroyShaderModule(device, r->skybox_fragment_shader, NULL);
   vkDestroyShaderModule(device, r->skybox_vertex_shader, NULL);
   vkDestroyShaderModule(device, r->model_fragment_shader, NULL);
@@ -1535,8 +1365,9 @@ static int owl_renderer_init_layouts(struct owl_renderer *r) {
     binding.binding = 0;
     binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     binding.descriptorCount = 1;
-    binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT |
-                         VK_SHADER_STAGE_VERTEX_BIT;
+    binding.stageFlags = 0;
+    binding.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+    binding.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
     binding.pImmutableSamplers = NULL;
 
     info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -1569,13 +1400,13 @@ static int owl_renderer_init_layouts(struct owl_renderer *r) {
     info.pBindings = &binding;
 
     vk_result = vkCreateDescriptorSetLayout(
-        device, &info, NULL, &r->model_joints_descriptor_set_layout);
+        device, &info, NULL, &r->model_storage_descriptor_set_layout);
     if (vk_result)
       goto error_destroy_model_uniform_descriptor_set_layout;
   }
 
   {
-    VkDescriptorSetLayoutBinding bindings[4];
+    VkDescriptorSetLayoutBinding bindings[6];
     VkDescriptorSetLayoutCreateInfo info;
     VkResult vk_result = VK_SUCCESS;
 
@@ -1603,6 +1434,18 @@ static int owl_renderer_init_layouts(struct owl_renderer *r) {
     bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     bindings[3].pImmutableSamplers = NULL;
 
+    bindings[4].binding = 4;
+    bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    bindings[4].descriptorCount = 1;
+    bindings[4].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[4].pImmutableSamplers = NULL;
+
+    bindings[5].binding = 5;
+    bindings[5].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    bindings[5].descriptorCount = 1;
+    bindings[5].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[5].pImmutableSamplers = NULL;
+
     info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     info.pNext = NULL;
     info.flags = 0;
@@ -1610,13 +1453,48 @@ static int owl_renderer_init_layouts(struct owl_renderer *r) {
     info.pBindings = bindings;
 
     vk_result = vkCreateDescriptorSetLayout(
-        device, &info, NULL, &r->model_material_descriptor_set_layout);
+        device, &info, NULL, &r->model_maps_descriptor_set_layout);
     if (vk_result)
-      goto error_destroy_model_joints_descriptor_set_layout;
+      goto error_destroy_model_storage_descriptor_set_layout;
   }
 
   {
-    VkDescriptorSetLayout layouts[3];
+    VkDescriptorSetLayoutBinding bindings[3];
+    VkDescriptorSetLayoutCreateInfo info;
+    VkResult vk_result = VK_SUCCESS;
+
+    bindings[0].binding = 0;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    bindings[0].descriptorCount = 1;
+    bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[0].pImmutableSamplers = NULL;
+
+    bindings[1].binding = 1;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    bindings[1].descriptorCount = 1;
+    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[1].pImmutableSamplers = NULL;
+
+    bindings[2].binding = 2;
+    bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    bindings[2].descriptorCount = 1;
+    bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[2].pImmutableSamplers = NULL;
+
+    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.bindingCount = OWL_ARRAY_SIZE(bindings);
+    info.pBindings = bindings;
+
+    vk_result = vkCreateDescriptorSetLayout(
+        device, &info, NULL, &r->model_environment_descriptor_set_layout);
+    if (vk_result)
+      goto error_destroy_model_maps_descriptor_set_layout;
+  }
+
+  {
+    VkDescriptorSetLayout layouts[4];
     VkPushConstantRange push_constant;
     VkPipelineLayoutCreateInfo info;
     VkResult vk_result = VK_SUCCESS;
@@ -1626,8 +1504,9 @@ static int owl_renderer_init_layouts(struct owl_renderer *r) {
     push_constant.size = sizeof(struct owl_model_material_push_constant);
 
     layouts[0] = r->model_uniform_descriptor_set_layout;
-    layouts[1] = r->model_material_descriptor_set_layout;
-    layouts[2] = r->model_joints_descriptor_set_layout;
+    layouts[1] = r->model_storage_descriptor_set_layout;
+    layouts[2] = r->model_maps_descriptor_set_layout;
+    layouts[3] = r->model_environment_descriptor_set_layout;
 
     info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     info.pNext = NULL;
@@ -1640,108 +1519,21 @@ static int owl_renderer_init_layouts(struct owl_renderer *r) {
     vk_result = vkCreatePipelineLayout(device, &info, NULL,
                                        &r->model_pipeline_layout);
     if (vk_result)
-      goto error_destroy_model_material_descriptor_set_layout;
-  }
-
-  {
-    VkDescriptorSetLayoutBinding binding;
-    VkDescriptorSetLayoutCreateInfo info;
-    VkResult vk_result = VK_SUCCESS;
-
-    binding.binding = 0;
-    binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    binding.descriptorCount = 1;
-    binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    binding.pImmutableSamplers = NULL;
-
-    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.bindingCount = 1;
-    info.pBindings = &binding;
-
-    vk_result = vkCreateDescriptorSetLayout(
-        device, &info, NULL,
-        &r->fluid_simulation_uniform_descriptor_set_layout);
-    if (vk_result)
-      goto error_destroy_model_pipeline_layout;
-  }
-
-  {
-    VkDescriptorSetLayoutBinding binding;
-    VkDescriptorSetLayoutCreateInfo info;
-    VkResult vk_result = VK_SUCCESS;
-
-    binding.binding = 0;
-    binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    binding.descriptorCount = 1;
-    binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    binding.pImmutableSamplers = NULL;
-
-    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.bindingCount = 1;
-    info.pBindings = &binding;
-
-    vk_result = vkCreateDescriptorSetLayout(
-        device, &info, NULL,
-        &r->fluid_simulation_source_descriptor_set_layout);
-    if (vk_result)
-      goto error_destroy_fluid_simulation_uniform_descriptor_set_layout;
-  }
-
-  {
-    VkDescriptorSetLayout layouts[4];
-    VkPushConstantRange push_constant;
-    VkPipelineLayoutCreateInfo info;
-    VkResult vk_result = VK_SUCCESS;
-
-    push_constant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    push_constant.offset = 0;
-    push_constant.size = sizeof(struct owl_model_material_push_constant);
-
-    layouts[0] = r->fluid_simulation_uniform_descriptor_set_layout;
-    layouts[1] = r->fluid_simulation_source_descriptor_set_layout;
-    layouts[2] = r->fluid_simulation_source_descriptor_set_layout;
-    layouts[3] = r->fluid_simulation_source_descriptor_set_layout;
-
-    info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    info.pNext = NULL;
-    info.flags = 0;
-    info.setLayoutCount = OWL_ARRAY_SIZE(layouts);
-    info.pSetLayouts = layouts;
-    info.pushConstantRangeCount = 1;
-    info.pPushConstantRanges = &push_constant;
-
-    vk_result = vkCreatePipelineLayout(device, &info, NULL,
-                                       &r->fluid_simulation_pipeline_layout);
-#if 0
-    OWL_ASSERT(0 && "correct size");
-#endif
-    if (vk_result)
-      goto error_destroy_fluid_simulation_source_descriptor_set_layout;
+      goto error_destroy_model_environment_descriptor_set_layout;
   }
 
   return OWL_OK;
 
-error_destroy_fluid_simulation_source_descriptor_set_layout:
+error_destroy_model_environment_descriptor_set_layout:
   vkDestroyDescriptorSetLayout(
-      device, r->fluid_simulation_source_descriptor_set_layout, NULL);
+      device, r->model_environment_descriptor_set_layout, NULL);
 
-error_destroy_fluid_simulation_uniform_descriptor_set_layout:
-  vkDestroyDescriptorSetLayout(
-      device, r->fluid_simulation_uniform_descriptor_set_layout, NULL);
-
-error_destroy_model_pipeline_layout:
-  vkDestroyPipelineLayout(device, r->model_pipeline_layout, NULL);
-
-error_destroy_model_material_descriptor_set_layout:
-  vkDestroyDescriptorSetLayout(device, r->model_material_descriptor_set_layout,
+error_destroy_model_maps_descriptor_set_layout:
+  vkDestroyDescriptorSetLayout(device, r->model_maps_descriptor_set_layout,
                                NULL);
 
-error_destroy_model_joints_descriptor_set_layout:
-  vkDestroyDescriptorSetLayout(device, r->model_joints_descriptor_set_layout,
+error_destroy_model_storage_descriptor_set_layout:
+  vkDestroyDescriptorSetLayout(device, r->model_storage_descriptor_set_layout,
                                NULL);
 
 error_destroy_model_uniform_descriptor_set_layout:
@@ -1765,19 +1557,16 @@ error:
 
 static void owl_renderer_deinit_layouts(struct owl_renderer *r) {
   VkDevice const device = r->device;
-  vkDestroyPipelineLayout(device, r->fluid_simulation_pipeline_layout, NULL);
-  vkDestroyDescriptorSetLayout(
-      device, r->fluid_simulation_source_descriptor_set_layout, NULL);
-  vkDestroyDescriptorSetLayout(
-      device, r->fluid_simulation_uniform_descriptor_set_layout, NULL);
   vkDestroyPipelineLayout(device, r->model_pipeline_layout, NULL);
-  vkDestroyPipelineLayout(device, r->common_pipeline_layout, NULL);
-  vkDestroyDescriptorSetLayout(device, r->model_material_descriptor_set_layout,
+  vkDestroyDescriptorSetLayout(
+      device, r->model_environment_descriptor_set_layout, NULL);
+  vkDestroyDescriptorSetLayout(device, r->model_maps_descriptor_set_layout,
                                NULL);
-  vkDestroyDescriptorSetLayout(device, r->model_joints_descriptor_set_layout,
+  vkDestroyDescriptorSetLayout(device, r->model_storage_descriptor_set_layout,
                                NULL);
   vkDestroyDescriptorSetLayout(device, r->model_uniform_descriptor_set_layout,
                                NULL);
+  vkDestroyPipelineLayout(device, r->common_pipeline_layout, NULL);
   vkDestroyDescriptorSetLayout(device, r->common_texture_descriptor_set_layout,
                                NULL);
   vkDestroyDescriptorSetLayout(device, r->common_uniform_descriptor_set_layout,
@@ -1786,7 +1575,7 @@ static void owl_renderer_deinit_layouts(struct owl_renderer *r) {
 
 static int owl_renderer_init_graphics_pipelines(struct owl_renderer *r) {
   VkVertexInputBindingDescription vertex_bindings;
-  VkVertexInputAttributeDescription vertex_attributes[6];
+  VkVertexInputAttributeDescription vertex_attributes[7];
   VkPipelineVertexInputStateCreateInfo vertex_input;
   VkPipelineInputAssemblyStateCreateInfo input_assembly;
   VkViewport viewport;
@@ -1799,27 +1588,32 @@ static int owl_renderer_init_graphics_pipelines(struct owl_renderer *r) {
   VkPipelineDepthStencilStateCreateInfo depth;
   VkPipelineShaderStageCreateInfo stages[2];
   VkGraphicsPipelineCreateInfo info;
+  int ret;
   VkResult vk_result;
   VkDevice const device = r->device;
 
+  ret = owl_renderer_init_shaders(r);
+  if (ret)
+    return ret;
+
   vertex_bindings.binding = 0;
-  vertex_bindings.stride = sizeof(struct owl_pcu_vertex);
+  vertex_bindings.stride = sizeof(struct owl_common_vertex);
   vertex_bindings.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
   vertex_attributes[0].binding = 0;
   vertex_attributes[0].location = 0;
   vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-  vertex_attributes[0].offset = offsetof(struct owl_pcu_vertex, position);
+  vertex_attributes[0].offset = offsetof(struct owl_common_vertex, position);
 
   vertex_attributes[1].binding = 0;
   vertex_attributes[1].location = 1;
   vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-  vertex_attributes[1].offset = offsetof(struct owl_pcu_vertex, color);
+  vertex_attributes[1].offset = offsetof(struct owl_common_vertex, color);
 
   vertex_attributes[2].binding = 0;
   vertex_attributes[2].location = 2;
   vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-  vertex_attributes[2].offset = offsetof(struct owl_pcu_vertex, uv);
+  vertex_attributes[2].offset = offsetof(struct owl_common_vertex, uv);
 
   vertex_input.sType =
       VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -1889,10 +1683,11 @@ static int owl_renderer_init_graphics_pipelines(struct owl_renderer *r) {
   color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
   color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
   color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-  color_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
-                                    VK_COLOR_COMPONENT_G_BIT |
-                                    VK_COLOR_COMPONENT_B_BIT |
-                                    VK_COLOR_COMPONENT_A_BIT;
+  color_attachment.colorWriteMask = 0;
+  color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
+  color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_G_BIT;
+  color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_B_BIT;
+  color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
 
   color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
   color.pNext = NULL;
@@ -1970,7 +1765,7 @@ static int owl_renderer_init_graphics_pipelines(struct owl_renderer *r) {
   vk_result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &info, NULL,
                                         &r->basic_pipeline);
   if (vk_result)
-    goto error;
+    goto error_denit_shaders;
 
   rasterization.polygonMode = VK_POLYGON_MODE_LINE;
 
@@ -1994,39 +1789,44 @@ static int owl_renderer_init_graphics_pipelines(struct owl_renderer *r) {
   if (vk_result)
     goto error_destroy_wires_pipeline;
 
-  vertex_bindings.stride = sizeof(struct owl_pnuujw_vertex);
+  vertex_bindings.stride = sizeof(struct owl_model_vertex);
 
   vertex_attributes[0].binding = 0;
   vertex_attributes[0].location = 0;
   vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-  vertex_attributes[0].offset = offsetof(struct owl_pnuujw_vertex, position);
+  vertex_attributes[0].offset = offsetof(struct owl_model_vertex, position);
 
   vertex_attributes[1].binding = 0;
   vertex_attributes[1].location = 1;
   vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-  vertex_attributes[1].offset = offsetof(struct owl_pnuujw_vertex, normal);
+  vertex_attributes[1].offset = offsetof(struct owl_model_vertex, normal);
 
   vertex_attributes[2].binding = 0;
   vertex_attributes[2].location = 2;
   vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-  vertex_attributes[2].offset = offsetof(struct owl_pnuujw_vertex, uv0);
+  vertex_attributes[2].offset = offsetof(struct owl_model_vertex, uv0);
 
   vertex_attributes[3].binding = 0;
   vertex_attributes[3].location = 3;
   vertex_attributes[3].format = VK_FORMAT_R32G32_SFLOAT;
-  vertex_attributes[3].offset = offsetof(struct owl_pnuujw_vertex, uv1);
+  vertex_attributes[3].offset = offsetof(struct owl_model_vertex, uv1);
 
   vertex_attributes[4].binding = 0;
   vertex_attributes[4].location = 4;
   vertex_attributes[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-  vertex_attributes[4].offset = offsetof(struct owl_pnuujw_vertex, joints0);
+  vertex_attributes[4].offset = offsetof(struct owl_model_vertex, joints0);
 
   vertex_attributes[5].binding = 0;
   vertex_attributes[5].location = 5;
   vertex_attributes[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-  vertex_attributes[5].offset = offsetof(struct owl_pnuujw_vertex, weights0);
+  vertex_attributes[5].offset = offsetof(struct owl_model_vertex, weights0);
 
-  vertex_input.vertexAttributeDescriptionCount = 6;
+  vertex_attributes[6].binding = 0;
+  vertex_attributes[6].location = 6;
+  vertex_attributes[6].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+  vertex_attributes[6].offset = offsetof(struct owl_model_vertex, color0);
+
+  vertex_input.vertexAttributeDescriptionCount = 7;
 
   color_attachment.blendEnable = VK_FALSE;
   color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
@@ -2044,12 +1844,12 @@ static int owl_renderer_init_graphics_pipelines(struct owl_renderer *r) {
   if (vk_result)
     goto error_destroy_text_pipeline;
 
-  vertex_bindings.stride = sizeof(struct owl_p_vertex);
+  vertex_bindings.stride = sizeof(struct owl_skybox_vertex);
 
   vertex_attributes[0].binding = 0;
   vertex_attributes[0].location = 0;
   vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-  vertex_attributes[0].offset = offsetof(struct owl_p_vertex, position);
+  vertex_attributes[0].offset = offsetof(struct owl_skybox_vertex, position);
 
   vertex_input.vertexAttributeDescriptionCount = 1;
 
@@ -2067,6 +1867,8 @@ static int owl_renderer_init_graphics_pipelines(struct owl_renderer *r) {
   if (vk_result)
     goto error_destroy_model_pipeline;
 
+  owl_renderer_deinit_shaders(r);
+
   return OWL_OK;
 
 error_destroy_model_pipeline:
@@ -2081,7 +1883,9 @@ error_destroy_wires_pipeline:
 error_destroy_basic_pipeline:
   vkDestroyPipeline(device, r->basic_pipeline, NULL);
 
-error:
+error_denit_shaders:
+  owl_renderer_deinit_shaders(r);
+
   return OWL_ERROR_FATAL;
 }
 
@@ -2092,104 +1896,6 @@ static void owl_renderer_deinit_graphics_pipelines(struct owl_renderer *r) {
   vkDestroyPipeline(device, r->text_pipeline, NULL);
   vkDestroyPipeline(device, r->wires_pipeline, NULL);
   vkDestroyPipeline(device, r->basic_pipeline, NULL);
-}
-
-static int owl_renderer_init_compute_pipelines(struct owl_renderer *r) {
-  VkComputePipelineCreateInfo info;
-  VkResult vk_result = VK_SUCCESS;
-  VkDevice const device = r->device;
-
-  info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-  info.pNext = NULL;
-  info.flags = 0;
-  info.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  info.stage.pNext = NULL;
-  info.stage.flags = 0;
-  info.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-  info.stage.module = r->fluid_simulation_advect_shader;
-  info.stage.pName = "main";
-  info.stage.pSpecializationInfo = NULL;
-  info.layout = r->fluid_simulation_pipeline_layout;
-  info.basePipelineHandle = VK_NULL_HANDLE;
-  info.basePipelineIndex = -1;
-  vk_result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &info, NULL,
-                                       &r->fluid_simulation_advect_pipeline);
-  if (vk_result)
-    goto error;
-
-  info.stage.module = r->fluid_simulation_curl_shader;
-  vk_result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &info, NULL,
-                                       &r->fluid_simulation_curl_pipeline);
-  if (vk_result)
-    goto error_destroy_fluid_simulation_advect_pipeline;
-
-  info.stage.module = r->fluid_simulation_diverge_shader;
-  vk_result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &info, NULL,
-                                       &r->fluid_simulation_diverge_pipeline);
-  if (vk_result)
-    goto error_destroy_fluid_simulation_curl_pipeline;
-
-  info.stage.module = r->fluid_simulation_gradient_subtract_shader;
-  vk_result = vkCreateComputePipelines(
-      device, VK_NULL_HANDLE, 1, &info, NULL,
-      &r->fluid_simulation_gradient_subtract_pipeline);
-  if (vk_result)
-    goto error_destroy_fluid_simulation_diverge_pipeline;
-
-  info.stage.module = r->fluid_simulation_pressure_shader;
-  vk_result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &info, NULL,
-                                       &r->fluid_simulation_pressure_pipeline);
-  if (vk_result)
-    goto error_destroy_fluid_simulation_gradient_subtract_pipeline;
-
-  info.stage.module = r->fluid_simulation_splat_shader;
-  vk_result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &info, NULL,
-                                       &r->fluid_simulation_splat_pipeline);
-  if (vk_result)
-    goto error_destroy_fluid_simulation_pressure_pipeline;
-
-  info.stage.module = r->fluid_simulation_vorticity_shader;
-  vk_result = vkCreateComputePipelines(
-      device, VK_NULL_HANDLE, 1, &info, NULL,
-      &r->fluid_simulation_vorticity_pipeline);
-  if (vk_result)
-    goto error_destroy_fluid_simulation_splat_pipeline;
-
-  return OWL_OK;
-
-error_destroy_fluid_simulation_splat_pipeline:
-  vkDestroyPipeline(device, r->fluid_simulation_splat_pipeline, NULL);
-
-error_destroy_fluid_simulation_pressure_pipeline:
-  vkDestroyPipeline(device, r->fluid_simulation_pressure_pipeline, NULL);
-
-error_destroy_fluid_simulation_gradient_subtract_pipeline:
-  vkDestroyPipeline(device, r->fluid_simulation_gradient_subtract_pipeline,
-                    NULL);
-
-error_destroy_fluid_simulation_diverge_pipeline:
-  vkDestroyPipeline(device, r->fluid_simulation_diverge_pipeline, NULL);
-
-error_destroy_fluid_simulation_curl_pipeline:
-  vkDestroyPipeline(device, r->fluid_simulation_curl_pipeline, NULL);
-
-error_destroy_fluid_simulation_advect_pipeline:
-  vkDestroyPipeline(device, r->fluid_simulation_advect_pipeline, NULL);
-
-error:
-  return OWL_ERROR_FATAL;
-}
-
-static void owl_renderer_deinit_compute_pipelines(struct owl_renderer *r) {
-  VkDevice const device = r->device;
-  vkDestroyPipeline(device, r->fluid_simulation_vorticity_pipeline, NULL);
-  vkDestroyPipeline(device, r->fluid_simulation_splat_pipeline, NULL);
-  vkDestroyPipeline(device, r->fluid_simulation_pressure_pipeline, NULL);
-  vkDestroyPipeline(device, r->fluid_simulation_gradient_subtract_pipeline,
-                    NULL);
-  vkDestroyPipeline(device, r->fluid_simulation_diverge_pipeline, NULL);
-  vkDestroyPipeline(device, r->fluid_simulation_curl_pipeline, NULL);
-  vkDestroyPipeline(device, r->fluid_simulation_advect_pipeline, NULL);
 }
 
 static int owl_renderer_init_upload_buffer(struct owl_renderer *r) {
@@ -2653,7 +2359,7 @@ static int owl_renderer_init_uniform_buffer(struct owl_renderer *r,
 
       descriptors[0].buffer = r->uniform_buffers[i];
       descriptors[0].offset = 0;
-      descriptors[0].range = sizeof(struct owl_pvm_uniform);
+      descriptors[0].range = sizeof(struct owl_common_uniform);
 
       writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       writes[0].pNext = NULL;
@@ -2929,6 +2635,1624 @@ static void owl_renderer_deinit_samplers(struct owl_renderer *r) {
   vkDestroySampler(device, r->linear_sampler, NULL);
 }
 
+/* TODO(samuel): cleanup */
+
+#define OWL_IRRADIANCE_MAP 0
+#define OWL_PREFILTERED_MAP 1
+#define OWL_NUM_ENVIRONMENT_MAPS 2
+
+struct owl_renderer_irradiance_push_constant {
+  owl_m4 mvp;
+  float delta_phi;
+  float delta_theta;
+};
+
+struct owl_renderer_prefiltered_push_constant {
+  owl_m4 mvp;
+  float roughness;
+  uint32_t samples;
+};
+
+static int owl_renderer_init_filter_maps(struct owl_renderer *r) {
+  int32_t i;
+  VkImage *images[OWL_NUM_ENVIRONMENT_MAPS];
+  VkDeviceMemory *memories[OWL_NUM_ENVIRONMENT_MAPS];
+  VkImageView *image_views[OWL_NUM_ENVIRONMENT_MAPS];
+  VkFormat formats[OWL_NUM_ENVIRONMENT_MAPS];
+  uint32_t dimensions[OWL_NUM_ENVIRONMENT_MAPS];
+  VkDeviceSize push_constant_ranges[OWL_NUM_ENVIRONMENT_MAPS];
+
+  static uint32_t const vertex_shader_source[] = {
+#include "owl_environment.vert.spv.u32"
+  };
+
+  static uint32_t const irradiance_fragment_shader_source[] = {
+#include "owl_irradiance.frag.spv.u32"
+  };
+
+  static uint32_t const prefilter_fragment_shader_source[] = {
+#include "owl_prefilter.frag.spv.u32"
+  };
+
+  VkRenderPass offscreen_pass = VK_NULL_HANDLE;
+  VkImage offscreen_image = VK_NULL_HANDLE;
+  VkDeviceMemory offscreen_memory = VK_NULL_HANDLE;
+  VkImageView offscreen_image_view = VK_NULL_HANDLE;
+  VkFramebuffer offscreen_framebuffer = VK_NULL_HANDLE;
+  VkShaderModule offscreen_vertex_shader = VK_NULL_HANDLE;
+  VkShaderModule offscreen_fragment_shader = VK_NULL_HANDLE;
+  VkPipelineLayout offscreen_pipeline_layout = VK_NULL_HANDLE;
+  VkPipeline offscreen_pipeline = VK_NULL_HANDLE;
+
+  int ret = OWL_OK;
+  VkDevice const device = r->device;
+
+  formats[OWL_IRRADIANCE_MAP] = VK_FORMAT_R32G32B32A32_SFLOAT;
+  formats[OWL_PREFILTERED_MAP] = VK_FORMAT_R16G16B16A16_SFLOAT;
+
+  dimensions[OWL_IRRADIANCE_MAP] = 64;
+  dimensions[OWL_PREFILTERED_MAP] = 512;
+
+  images[OWL_IRRADIANCE_MAP] = &r->irradiance_map_image;
+  images[OWL_PREFILTERED_MAP] = &r->prefiltered_map_image;
+
+  memories[OWL_IRRADIANCE_MAP] = &r->irradiance_map_memory;
+  memories[OWL_PREFILTERED_MAP] = &r->prefiltered_map_memory;
+
+  image_views[OWL_IRRADIANCE_MAP] = &r->irradiance_map_image_view;
+  image_views[OWL_PREFILTERED_MAP] = &r->prefiltered_map_image_view;
+
+  push_constant_ranges[OWL_IRRADIANCE_MAP] = sizeof(
+      struct owl_renderer_irradiance_push_constant);
+  push_constant_ranges[OWL_PREFILTERED_MAP] = sizeof(
+      struct owl_renderer_prefiltered_push_constant);
+
+  r->prefiltered_map_image = VK_NULL_HANDLE;
+  r->prefiltered_map_memory = VK_NULL_HANDLE;
+  r->prefiltered_map_image_view = VK_NULL_HANDLE;
+
+  r->irradiance_map_image = VK_NULL_HANDLE;
+  r->irradiance_map_memory = VK_NULL_HANDLE;
+  r->irradiance_map_image_view = VK_NULL_HANDLE;
+
+  for (i = 0; i < OWL_NUM_ENVIRONMENT_MAPS; ++i) {
+    uint32_t j;
+    VkViewport viewport;
+    VkRect2D scissor;
+    owl_m4 matrices[6];
+
+    VkFormat const format = formats[i];
+    uint32_t const dimension = dimensions[i];
+    uint32_t const mips = owl_texture_calculate_mipmaps(dimension, dimension);
+
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.width = dimension;
+    viewport.height = dimension;
+    viewport.minDepth = 0.0F;
+    viewport.maxDepth = 1.0F;
+
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent.width = dimension;
+    scissor.extent.height = dimension;
+
+    {
+      VkImageCreateInfo info;
+      VkResult vk_result;
+
+      info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+      info.imageType = VK_IMAGE_TYPE_2D;
+      info.format = formats[i];
+      info.extent.width = dimension;
+      info.extent.height = dimension;
+      info.extent.depth = 1;
+      info.mipLevels = mips;
+      info.arrayLayers = 6;
+      info.samples = VK_SAMPLE_COUNT_1_BIT;
+      info.tiling = VK_IMAGE_TILING_OPTIMAL;
+      info.usage = 0;
+      info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+      info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+      info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      info.queueFamilyIndexCount = 0;
+      info.pQueueFamilyIndices = NULL;
+      info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+      vk_result = vkCreateImage(device, &info, NULL, images[i]);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      VkMemoryPropertyFlagBits properties;
+      VkMemoryRequirements requirements;
+      VkMemoryAllocateInfo info;
+      VkResult vk_result;
+
+      properties = 0;
+      properties |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+      vkGetImageMemoryRequirements(device, *images[i], &requirements);
+
+      info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      info.pNext = NULL;
+      info.allocationSize = requirements.size;
+      info.memoryTypeIndex = owl_renderer_find_memory_type(
+          r, requirements.memoryTypeBits, properties);
+
+      vk_result = vkAllocateMemory(device, &info, NULL, memories[i]);
+      if (vk_result)
+        goto error;
+
+      vk_result = vkBindImageMemory(device, *images[i], *memories[i], 0);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      VkImageViewCreateInfo info;
+      VkResult vk_result;
+
+      info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      info.image = *images[i];
+      info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+      info.format = format;
+      info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+      info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+      info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+      info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+      info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      info.subresourceRange.baseMipLevel = 0;
+      info.subresourceRange.levelCount = mips;
+      info.subresourceRange.baseArrayLayer = 0;
+      info.subresourceRange.layerCount = 6;
+
+      vk_result = vkCreateImageView(device, &info, NULL, image_views[i]);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      VkAttachmentReference color_reference;
+      VkAttachmentDescription attachment;
+      VkSubpassDescription subpass;
+      VkSubpassDependency dependency;
+      VkRenderPassCreateInfo info;
+      VkResult vk_result;
+
+      color_reference.attachment = 0;
+      color_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+      attachment.flags = 0;
+      attachment.format = format;
+      attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+      attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+      attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+      attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+      attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+      attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+      subpass.flags = 0;
+      subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+      subpass.inputAttachmentCount = 0;
+      subpass.pInputAttachments = NULL;
+      subpass.colorAttachmentCount = 1;
+      subpass.pColorAttachments = &color_reference;
+      subpass.pResolveAttachments = NULL;
+      subpass.pDepthStencilAttachment = NULL;
+      subpass.preserveAttachmentCount = 0;
+      subpass.pPreserveAttachments = NULL;
+
+      dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+      dependency.dstSubpass = 0;
+      dependency.srcStageMask = 0;
+      dependency.srcStageMask |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+      dependency.srcStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+      dependency.dstStageMask = 0;
+      dependency.dstStageMask |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+      dependency.dstStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+      dependency.srcAccessMask = 0;
+      dependency.dstAccessMask = 0;
+      dependency.dstAccessMask |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+      dependency.dstAccessMask |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+      dependency.dependencyFlags = 0;
+
+      info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      info.attachmentCount = 1;
+      info.pAttachments = &attachment;
+      info.subpassCount = 1;
+      info.pSubpasses = &subpass;
+      info.dependencyCount = 1;
+      info.pDependencies = &dependency;
+
+      vk_result = vkCreateRenderPass(device, &info, NULL, &offscreen_pass);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      VkImageCreateInfo info;
+      VkResult vk_result;
+
+      info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+      info.imageType = VK_IMAGE_TYPE_2D;
+      info.format = formats[i];
+      info.extent.width = dimension;
+      info.extent.height = dimension;
+      info.extent.depth = 1;
+      info.mipLevels = 1;
+      info.arrayLayers = 6;
+      info.samples = VK_SAMPLE_COUNT_1_BIT;
+      info.tiling = VK_IMAGE_TILING_OPTIMAL;
+      info.usage = 0;
+      info.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+      info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+      info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      info.queueFamilyIndexCount = 0;
+      info.pQueueFamilyIndices = NULL;
+      info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+      vk_result = vkCreateImage(device, &info, NULL, &offscreen_image);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      VkMemoryPropertyFlagBits properties;
+      VkMemoryRequirements requirements;
+      VkMemoryAllocateInfo info;
+      VkResult vk_result;
+
+      properties = 0;
+      properties |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+      vkGetImageMemoryRequirements(device, offscreen_image, &requirements);
+
+      info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      info.pNext = NULL;
+      info.allocationSize = requirements.size;
+      info.memoryTypeIndex = owl_renderer_find_memory_type(
+          r, requirements.memoryTypeBits, properties);
+
+      vk_result = vkAllocateMemory(device, &info, NULL, &offscreen_memory);
+      if (vk_result)
+        goto error;
+
+      vk_result = vkBindImageMemory(device, offscreen_image, offscreen_memory,
+                                    0);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      VkImageViewCreateInfo info;
+      VkResult vk_result;
+
+      info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      info.image = offscreen_image;
+      info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+      info.format = format;
+      info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+      info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+      info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+      info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+      info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      info.subresourceRange.baseMipLevel = 0;
+      info.subresourceRange.levelCount = 1;
+      info.subresourceRange.baseArrayLayer = 0;
+      info.subresourceRange.layerCount = 1;
+
+      vk_result = vkCreateImageView(device, &info, NULL,
+                                    &offscreen_image_view);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      VkFramebufferCreateInfo info;
+      VkResult vk_result;
+
+      info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      info.renderPass = offscreen_pass;
+      info.attachmentCount = 1;
+      info.pAttachments = &offscreen_image_view;
+      info.width = dimension;
+      info.height = dimension;
+      info.layers = 1;
+
+      vk_result = vkCreateFramebuffer(device, &info, NULL,
+                                      &offscreen_framebuffer);
+      if (vk_result)
+        goto error;
+    }
+
+    /* TODO(samuel): why does he change the layout manualy instead of leaving
+     * it to the render pass?
+https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/src/main.cpp#L1288
+     */
+#if 0
+    ret = owl_renderer_begin_im_command_buffer(r);
+    if (ret)
+      goto error;
+
+    {
+
+    }
+
+    ret = owl_renderer_end_im_command_buffer(r);
+    if (ret)
+      goto error;
+#endif
+
+    {
+      VkPushConstantRange range;
+      VkPipelineLayoutCreateInfo info;
+      VkResult vk_result;
+
+      range.stageFlags = 0;
+      range.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
+      range.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+      range.offset = 0;
+      range.size = push_constant_ranges[i];
+
+      info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      info.setLayoutCount = 1;
+      info.pSetLayouts = &r->common_texture_descriptor_set_layout;
+      info.pushConstantRangeCount = 1;
+      info.pPushConstantRanges = &range;
+
+      vk_result = vkCreatePipelineLayout(device, &info, NULL,
+                                         &offscreen_pipeline_layout);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      VkShaderModuleCreateInfo info;
+      VkResult vk_result;
+
+      info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      info.codeSize = sizeof(vertex_shader_source);
+      info.pCode = vertex_shader_source;
+
+      vk_result = vkCreateShaderModule(device, &info, NULL,
+                                       &offscreen_vertex_shader);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      VkShaderModuleCreateInfo info;
+      VkResult vk_result;
+
+      info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      if (OWL_IRRADIANCE_MAP == i) {
+        info.codeSize = sizeof(irradiance_fragment_shader_source);
+        info.pCode = irradiance_fragment_shader_source;
+      } else if (OWL_PREFILTERED_MAP == i) {
+        info.codeSize = sizeof(prefilter_fragment_shader_source);
+        info.pCode = prefilter_fragment_shader_source;
+      } else {
+        OWL_ASSERT(0);
+        goto error;
+      }
+
+      vk_result = vkCreateShaderModule(device, &info, NULL,
+                                       &offscreen_fragment_shader);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      VkVertexInputBindingDescription vertex_binding;
+      VkVertexInputAttributeDescription vertex_attribute;
+      VkPipelineVertexInputStateCreateInfo vertex_input;
+      VkPipelineInputAssemblyStateCreateInfo input_assembly;
+      VkPipelineViewportStateCreateInfo viewport_state;
+      VkPipelineRasterizationStateCreateInfo rasterization;
+      VkPipelineMultisampleStateCreateInfo multisample;
+      VkPipelineColorBlendAttachmentState color_attachment;
+      VkPipelineColorBlendStateCreateInfo color;
+      VkPipelineDepthStencilStateCreateInfo depth;
+      VkDynamicState dynamic[2];
+      VkPipelineDynamicStateCreateInfo dynamic_state;
+      VkPipelineShaderStageCreateInfo stages[2];
+      VkGraphicsPipelineCreateInfo info;
+      VkResult vk_result;
+
+      vertex_binding.binding = 0;
+      /* TODO(samuel): remove dependance on the skybox vertex */
+      vertex_binding.stride = sizeof(struct owl_skybox_vertex);
+      vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+      vertex_attribute.location = 0;
+      vertex_attribute.binding = 0;
+      vertex_attribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+      vertex_attribute.offset = offsetof(struct owl_skybox_vertex, position);
+
+      vertex_input.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+      vertex_input.pNext = NULL;
+      vertex_input.flags = 0;
+      vertex_input.vertexBindingDescriptionCount = 1;
+      vertex_input.pVertexBindingDescriptions = &vertex_binding;
+      vertex_input.vertexAttributeDescriptionCount = 1;
+      vertex_input.pVertexAttributeDescriptions = &vertex_attribute;
+
+      input_assembly.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+      input_assembly.pNext = NULL;
+      input_assembly.flags = 0;
+      input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+      input_assembly.primitiveRestartEnable = VK_FALSE;
+
+      viewport.x = 0;
+      viewport.y = 0;
+      viewport.width = dimension;
+      viewport.height = dimension;
+      viewport.minDepth = 0.0F;
+      viewport.maxDepth = 1.0F;
+
+      scissor.offset.x = 0;
+      scissor.offset.y = 0;
+      scissor.extent.width = dimension;
+      scissor.extent.height = dimension;
+
+      viewport_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+      viewport_state.pNext = NULL;
+      viewport_state.flags = 0;
+      viewport_state.viewportCount = 1;
+      viewport_state.pViewports = &viewport;
+      viewport_state.scissorCount = 1;
+      viewport_state.pScissors = &scissor;
+
+      rasterization.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+      rasterization.pNext = NULL;
+      rasterization.flags = 0;
+      rasterization.depthClampEnable = VK_FALSE;
+      rasterization.rasterizerDiscardEnable = VK_FALSE;
+      rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+      rasterization.cullMode = VK_CULL_MODE_NONE;
+      rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+      rasterization.depthBiasEnable = VK_FALSE;
+      rasterization.depthBiasConstantFactor = 0.0F;
+      rasterization.depthBiasClamp = 0.0F;
+      rasterization.depthBiasSlopeFactor = 0.0F;
+      rasterization.lineWidth = 1.0F;
+
+      multisample.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+      multisample.pNext = NULL;
+      multisample.flags = 0;
+      multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+      multisample.sampleShadingEnable = VK_FALSE;
+      multisample.minSampleShading = 0.0F;
+      multisample.pSampleMask = NULL;
+      multisample.alphaToCoverageEnable = VK_FALSE;
+      multisample.alphaToOneEnable = VK_FALSE;
+
+      color_attachment.blendEnable = VK_FALSE;
+      color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+      color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+      color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+      color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+      color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+      color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+      color_attachment.colorWriteMask = 0;
+      color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
+      color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_G_BIT;
+      color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_B_BIT;
+      color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
+
+      color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+      color.pNext = NULL;
+      color.flags = 0;
+      color.logicOpEnable = VK_FALSE;
+      color.logicOp = VK_LOGIC_OP_CLEAR;
+      color.attachmentCount = 1;
+      color.pAttachments = &color_attachment;
+      color.blendConstants[0] = 0.0F;
+      color.blendConstants[1] = 0.0F;
+      color.blendConstants[2] = 0.0F;
+      color.blendConstants[3] = 0.0F;
+
+      depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+      depth.pNext = NULL;
+      depth.flags = 0;
+      depth.depthTestEnable = VK_FALSE;
+      depth.depthWriteEnable = VK_FALSE;
+      depth.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+      depth.depthBoundsTestEnable = VK_FALSE;
+      depth.stencilTestEnable = VK_FALSE;
+      depth.front.failOp = VK_STENCIL_OP_KEEP;
+      depth.front.passOp = VK_STENCIL_OP_KEEP;
+      depth.front.depthFailOp = VK_STENCIL_OP_KEEP;
+      depth.front.compareOp = VK_COMPARE_OP_NEVER;
+      depth.front.compareMask = 0;
+      depth.front.writeMask = 0;
+      depth.front.reference = 0;
+      depth.back.failOp = VK_STENCIL_OP_KEEP;
+      depth.back.passOp = VK_STENCIL_OP_KEEP;
+      depth.back.depthFailOp = VK_STENCIL_OP_KEEP;
+      depth.back.compareOp = VK_COMPARE_OP_ALWAYS;
+      depth.back.compareMask = 0;
+      depth.back.writeMask = 0;
+      depth.back.reference = 0;
+      depth.minDepthBounds = 0.0F;
+      depth.maxDepthBounds = 0.0F;
+
+      stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[0].pNext = NULL;
+      stages[0].flags = 0;
+      stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+      stages[0].module = offscreen_vertex_shader;
+      stages[0].pName = "main";
+      stages[0].pSpecializationInfo = NULL;
+
+      stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      stages[1].pNext = NULL;
+      stages[1].flags = 0;
+      stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      stages[1].module = offscreen_fragment_shader;
+      stages[1].pName = "main";
+      stages[1].pSpecializationInfo = NULL;
+
+      dynamic[0] = VK_DYNAMIC_STATE_VIEWPORT;
+      dynamic[1] = VK_DYNAMIC_STATE_SCISSOR;
+
+      dynamic_state.sType =
+          VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+      dynamic_state.pNext = NULL;
+      dynamic_state.flags = 0;
+      dynamic_state.dynamicStateCount = OWL_ARRAY_SIZE(dynamic);
+      dynamic_state.pDynamicStates = dynamic;
+
+      info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+      info.pNext = NULL;
+      info.flags = 0;
+      info.stageCount = OWL_ARRAY_SIZE(stages);
+      info.pStages = stages;
+      info.pVertexInputState = &vertex_input;
+      info.pInputAssemblyState = &input_assembly;
+      info.pTessellationState = NULL;
+      info.pViewportState = &viewport_state;
+      info.pRasterizationState = &rasterization;
+      info.pMultisampleState = &multisample;
+      info.pDepthStencilState = &depth;
+      info.pColorBlendState = &color;
+      info.pDynamicState = &dynamic_state;
+      info.layout = offscreen_pipeline_layout;
+      info.renderPass = offscreen_pass;
+      info.subpass = 0;
+      info.basePipelineHandle = VK_NULL_HANDLE;
+      info.basePipelineIndex = -1;
+
+      vk_result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &info,
+                                            NULL, &offscreen_pipeline);
+      if (vk_result)
+        goto error;
+    }
+
+    {
+      float angle;
+      owl_v3 axis;
+      owl_m4 tmp;
+
+      OWL_M4_IDENTITY(tmp);
+      angle = OWL_DEGREES_AS_RADIANS(90.0F);
+      axis[0] = 0.0F;
+      axis[1] = 1.0F;
+      axis[2] = 0.0F;
+      owl_m4_rotate(tmp, angle, axis, tmp);
+      angle = OWL_DEGREES_AS_RADIANS(180.0F);
+      axis[0] = 1.0F;
+      axis[1] = 0.0F;
+      axis[2] = 0.0F;
+      owl_m4_rotate(tmp, angle, axis, matrices[0]);
+
+      OWL_M4_IDENTITY(tmp);
+      angle = OWL_DEGREES_AS_RADIANS(-90.0F);
+      axis[0] = 0.0F;
+      axis[1] = 1.0F;
+      axis[2] = 0.0F;
+      owl_m4_rotate(tmp, angle, axis, tmp);
+      angle = OWL_DEGREES_AS_RADIANS(180.0F);
+      axis[0] = 1.0F;
+      axis[1] = 0.0F;
+      axis[2] = 0.0F;
+      owl_m4_rotate(tmp, angle, axis, matrices[1]);
+
+      OWL_M4_IDENTITY(tmp);
+      angle = OWL_DEGREES_AS_RADIANS(-90.0F);
+      axis[0] = 1.0F;
+      axis[1] = 0.0F;
+      axis[2] = 0.0F;
+      owl_m4_rotate(tmp, angle, axis, matrices[2]);
+
+      OWL_M4_IDENTITY(tmp);
+      angle = OWL_DEGREES_AS_RADIANS(90.0F);
+      axis[0] = 1.0F;
+      axis[1] = 0.0F;
+      axis[2] = 0.0F;
+      owl_m4_rotate(tmp, angle, axis, matrices[3]);
+
+      OWL_M4_IDENTITY(tmp);
+      angle = OWL_DEGREES_AS_RADIANS(180.0F);
+      axis[0] = 1.0F;
+      axis[1] = 0.0F;
+      axis[2] = 0.0F;
+      owl_m4_rotate(tmp, angle, axis, matrices[4]);
+
+      OWL_M4_IDENTITY(tmp);
+      angle = OWL_DEGREES_AS_RADIANS(180.0F);
+      axis[0] = 0.0F;
+      axis[1] = 0.0F;
+      axis[2] = 1.0F;
+      owl_m4_rotate(tmp, angle, axis, matrices[5]);
+    }
+
+    ret = owl_renderer_begin_im_command_buffer(r);
+    if (ret)
+      goto error;
+
+    {
+      VkImageMemoryBarrier barrier;
+      VkCommandBuffer const command_buffer = r->im_command_buffer;
+
+      barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      barrier.pNext = NULL;
+      barrier.srcAccessMask = VK_ACCESS_NONE;
+      barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      barrier.image = *images[i];
+      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      barrier.subresourceRange.baseMipLevel = 0;
+      barrier.subresourceRange.levelCount = mips;
+      barrier.subresourceRange.baseArrayLayer = 0;
+      barrier.subresourceRange.layerCount = 6;
+
+      vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0,
+                           NULL, 1, &barrier);
+    }
+
+    ret = owl_renderer_end_im_command_buffer(r);
+    if (ret)
+      goto error;
+
+    for (j = 0; j < mips; ++j) {
+      uint32_t k;
+      for (k = 0; k < 6; ++k) {
+        VkCommandBuffer command_buffer;
+
+        ret = owl_renderer_begin_im_command_buffer(r);
+        if (ret)
+          goto error;
+
+        command_buffer = r->im_command_buffer;
+
+        {
+          viewport.width = dimension * OWL_POW(0.5, (double)j);
+          viewport.height = viewport.width;
+
+          vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+          vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+        }
+
+        {
+          VkClearValue clear_value;
+          VkRenderPassBeginInfo info;
+
+          clear_value.color.float32[0] = 0.0F;
+          clear_value.color.float32[1] = 0.0F;
+          clear_value.color.float32[2] = 0.2F;
+          clear_value.color.float32[3] = 0.0F;
+
+          info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+          info.pNext = NULL;
+          info.renderPass = offscreen_pass;
+          info.framebuffer = offscreen_framebuffer;
+          info.renderArea.offset.x = 0;
+          info.renderArea.offset.y = 0;
+          info.renderArea.extent.width = dimension;
+          info.renderArea.extent.height = dimension;
+          info.clearValueCount = 1;
+          info.pClearValues = &clear_value;
+
+          vkCmdBeginRenderPass(command_buffer, &info,
+                               VK_SUBPASS_CONTENTS_INLINE);
+        }
+
+        {
+          vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            offscreen_pipeline);
+        }
+
+        if (OWL_IRRADIANCE_MAP == i) {
+          float fov;
+          float ratio;
+          float near;
+          float far;
+          owl_m4 perspective;
+          struct owl_renderer_irradiance_push_constant push_constant;
+
+          fov = OWL_PI / 2.0F;
+          ratio = 1.0F;
+          near = 0.1F;
+          far = 512.0F;
+          owl_m4_perspective(fov, ratio, near, far, perspective);
+          owl_m4_multiply(perspective, matrices[k], push_constant.mvp);
+
+          push_constant.delta_phi = 2.0F * OWL_PI / 180.0F;
+          push_constant.delta_theta = 0.5F * OWL_PI / 64.0F;
+
+          vkCmdPushConstants(command_buffer, offscreen_pipeline_layout,
+                             VK_SHADER_STAGE_VERTEX_BIT |
+                                 VK_SHADER_STAGE_FRAGMENT_BIT,
+                             0, sizeof(push_constant), &push_constant);
+        } else if (OWL_PREFILTERED_MAP == i) {
+          float fov;
+          float ratio;
+          float near;
+          float far;
+          owl_m4 perspective;
+          struct owl_renderer_prefiltered_push_constant push_constant;
+
+          fov = OWL_PI / 2.0F;
+          ratio = 1.0F;
+          near = 0.1F;
+          far = 512.0F;
+          owl_m4_perspective(fov, ratio, near, far, perspective);
+          owl_m4_multiply(perspective, matrices[k], push_constant.mvp);
+
+          push_constant.roughness = (float)j / (float)(mips - 1);
+          push_constant.samples = 32;
+
+          vkCmdPushConstants(command_buffer, offscreen_pipeline_layout,
+                             VK_SHADER_STAGE_VERTEX_BIT |
+                                 VK_SHADER_STAGE_FRAGMENT_BIT,
+                             0, sizeof(push_constant), &push_constant);
+        }
+
+        {
+          vkCmdBindDescriptorSets(command_buffer,
+                                  VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                  offscreen_pipeline_layout, 0, 1,
+                                  &r->skybox.descriptor_set, 0, NULL);
+        }
+
+        {
+          struct owl_skybox_vertex *mapped_vertices;
+          struct owl_renderer_vertex_allocation vertex_allocation;
+          uint32_t *mapped_indices;
+          struct owl_renderer_index_allocation index_allocation;
+          /*
+           *    4----5
+           *  / |  / |
+           * 0----1  |
+           * |  | |  |
+           * |  6-|--7
+           * | /  | /
+           * 2----3
+           */
+          static struct owl_skybox_vertex const vertices[] = {
+              {-1.0F, -1.0F, -1.0F}, /* 0 */
+              {1.0F, -1.0F, -1.0F},  /* 1 */
+              {-1.0F, 1.0F, -1.0F},  /* 2 */
+              {1.0F, 1.0F, -1.0F},   /* 3 */
+              {-1.0F, -1.0F, 1.0F},  /* 4 */
+              {1.0F, -1.0F, 1.0F},   /* 5 */
+              {-1.0F, 1.0F, 1.0F},   /* 6 */
+              {1.0F, 1.0F, 1.0F}};   /* 7 */
+          static uint32_t const indices[] = {
+              2, 3, 1, 1, 0, 2,  /* face 0 .....*/
+              3, 7, 5, 5, 1, 3,  /* face 1 */
+              6, 2, 0, 0, 4, 6,  /* face 2 */
+              7, 6, 4, 4, 5, 7,  /* face 3 */
+              3, 2, 6, 6, 7, 3,  /* face 4 */
+              4, 0, 1, 1, 5, 4}; /* face 5 */
+
+          mapped_vertices = owl_renderer_vertex_allocate(r, sizeof(vertices),
+                                                         &vertex_allocation);
+          if (!mapped_vertices)
+            goto error;
+
+          mapped_indices = owl_renderer_index_allocate(r, sizeof(indices),
+                                                       &index_allocation);
+          if (!mapped_indices)
+            goto error;
+
+          OWL_MEMCPY(mapped_vertices, vertices, sizeof(vertices));
+          OWL_MEMCPY(mapped_indices, indices, sizeof(indices));
+
+          vkCmdBindVertexBuffers(command_buffer, 0, 1,
+                                 &vertex_allocation.buffer,
+                                 &vertex_allocation.offset);
+
+          vkCmdBindIndexBuffer(command_buffer, index_allocation.buffer,
+                               index_allocation.offset, VK_INDEX_TYPE_UINT32);
+
+          vkCmdDrawIndexed(command_buffer, OWL_ARRAY_SIZE(indices), 1, 0, 0,
+                           0);
+        }
+
+        {
+          /* */
+          vkCmdEndRenderPass(command_buffer);
+        }
+
+        {
+          VkImageMemoryBarrier barrier;
+
+          barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+          barrier.pNext = NULL;
+          barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+          barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+          barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+          barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+          barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          barrier.image = offscreen_image;
+          barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+          barrier.subresourceRange.baseMipLevel = 0;
+          barrier.subresourceRange.levelCount = 1;
+          barrier.subresourceRange.baseArrayLayer = 0;
+          barrier.subresourceRange.layerCount = 1;
+
+          vkCmdPipelineBarrier(command_buffer,
+                               VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                               VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL,
+                               0, NULL, 1, &barrier);
+        }
+
+        {
+          /**/
+          VkImageCopy copy;
+
+          copy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+          copy.srcSubresource.mipLevel = 0;
+          copy.srcSubresource.baseArrayLayer = 0;
+          copy.srcSubresource.layerCount = 1;
+          copy.srcOffset.x = 0;
+          copy.srcOffset.y = 0;
+          copy.srcOffset.z = 0;
+          copy.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+          copy.dstSubresource.mipLevel = j;
+          copy.dstSubresource.baseArrayLayer = k;
+          copy.dstSubresource.layerCount = 1;
+          copy.dstOffset.x = 0;
+          copy.dstOffset.y = 0;
+          copy.dstOffset.z = 0;
+          copy.extent.width = viewport.width;
+          copy.extent.height = viewport.height;
+          copy.extent.depth = 1;
+
+          vkCmdCopyImage(command_buffer, offscreen_image,
+                         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *images[i],
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+        }
+
+        {
+          VkImageMemoryBarrier barrier;
+
+          barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+          barrier.pNext = NULL;
+          barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+          barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+          barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+          barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+          barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          barrier.image = offscreen_image;
+          barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+          barrier.subresourceRange.baseMipLevel = 0;
+          barrier.subresourceRange.levelCount = 1;
+          barrier.subresourceRange.baseArrayLayer = 0;
+          barrier.subresourceRange.layerCount = 1;
+
+          vkCmdPipelineBarrier(command_buffer,
+                               VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                               VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL,
+                               0, NULL, 1, &barrier);
+        }
+
+        ret = owl_renderer_end_im_command_buffer(r);
+        if (ret)
+          goto error;
+
+        owl_renderer_vertex_clear_offset(r);
+        owl_renderer_index_clear_offset(r);
+      }
+    }
+
+    ret = owl_renderer_begin_im_command_buffer(r);
+    if (ret)
+      goto error;
+
+    {
+      VkImageMemoryBarrier barrier;
+      VkCommandBuffer const command_buffer = r->im_command_buffer;
+
+      barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      barrier.pNext = NULL;
+      barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+/* TODO(samuel): verify
+https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/src/main.cpp#L1619
+*/
+#if 1
+      barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+#else
+      barrier.dstAccessMask = 0;
+      barrier.dstAccessMask |= VK_ACCESS_TRANSFER_WRITE_BIT;
+      barrier.dstAccessMask |= VK_ACCESS_HOST_WRITE_BIT;
+#endif
+      barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      barrier.image = *images[i];
+      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      barrier.subresourceRange.baseMipLevel = 0;
+      barrier.subresourceRange.levelCount = mips;
+      barrier.subresourceRange.baseArrayLayer = 0;
+      barrier.subresourceRange.layerCount = 6;
+
+      vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0,
+                           NULL, 1, &barrier);
+    }
+    ret = owl_renderer_end_im_command_buffer(r);
+    if (ret)
+      goto error;
+
+    if (OWL_PREFILTERED_MAP == i)
+      r->prefiltered_map_mipmaps = mips;
+
+    vkDestroyPipeline(device, offscreen_pipeline, NULL);
+    offscreen_pipeline = VK_NULL_HANDLE;
+
+    vkDestroyPipelineLayout(device, offscreen_pipeline_layout, NULL);
+    offscreen_pipeline_layout = VK_NULL_HANDLE;
+
+    vkDestroyShaderModule(device, offscreen_fragment_shader, NULL);
+    offscreen_fragment_shader = VK_NULL_HANDLE;
+
+    vkDestroyShaderModule(device, offscreen_vertex_shader, NULL);
+    offscreen_vertex_shader = VK_NULL_HANDLE;
+
+    vkDestroyFramebuffer(device, offscreen_framebuffer, NULL);
+    offscreen_framebuffer = VK_NULL_HANDLE;
+
+    vkDestroyImageView(device, offscreen_image_view, NULL);
+    offscreen_image_view = VK_NULL_HANDLE;
+
+    vkFreeMemory(device, offscreen_memory, NULL);
+    offscreen_memory = VK_NULL_HANDLE;
+
+    vkDestroyImage(device, offscreen_image, NULL);
+    offscreen_image = VK_NULL_HANDLE;
+
+    vkDestroyRenderPass(device, offscreen_pass, NULL);
+    offscreen_pass = VK_NULL_HANDLE;
+  }
+
+  return OWL_OK;
+
+error:
+  owl_renderer_vertex_clear_offset(r);
+  owl_renderer_index_clear_offset(r);
+
+  if (offscreen_pipeline)
+    vkDestroyPipeline(device, offscreen_pipeline, NULL);
+
+  if (offscreen_pipeline_layout)
+    vkDestroyPipelineLayout(device, offscreen_pipeline_layout, NULL);
+
+  if (offscreen_fragment_shader)
+    vkDestroyShaderModule(device, offscreen_fragment_shader, NULL);
+
+  if (offscreen_vertex_shader)
+    vkDestroyShaderModule(device, offscreen_vertex_shader, NULL);
+
+  if (offscreen_framebuffer)
+    vkDestroyFramebuffer(device, offscreen_framebuffer, NULL);
+
+  if (offscreen_image_view)
+    vkDestroyImageView(device, offscreen_image_view, NULL);
+
+  if (offscreen_memory)
+    vkFreeMemory(device, offscreen_memory, NULL);
+
+  if (offscreen_image)
+    vkDestroyImage(device, offscreen_image, NULL);
+
+  if (offscreen_pass)
+    vkDestroyRenderPass(device, offscreen_pass, NULL);
+
+  if (r->prefiltered_map_image_view)
+    vkDestroyImageView(device, r->prefiltered_map_image_view, NULL);
+
+  if (r->prefiltered_map_memory)
+    vkFreeMemory(device, r->prefiltered_map_memory, NULL);
+
+  if (r->prefiltered_map_image)
+    vkDestroyImage(device, r->prefiltered_map_image, NULL);
+
+  if (r->irradiance_map_image_view)
+    vkDestroyImageView(device, r->irradiance_map_image_view, NULL);
+
+  if (r->irradiance_map_memory)
+    vkFreeMemory(device, r->irradiance_map_memory, NULL);
+
+  if (r->irradiance_map_image)
+    vkDestroyImage(device, r->irradiance_map_image, NULL);
+
+  return OWL_ERROR_FATAL;
+}
+
+static void owl_renderer_deinit_filter_maps(struct owl_renderer *r) {
+  VkDevice const device = r->device;
+  vkDestroyImageView(device, r->prefiltered_map_image_view, NULL);
+  vkFreeMemory(device, r->prefiltered_map_memory, NULL);
+  vkDestroyImage(device, r->prefiltered_map_image, NULL);
+  vkDestroyImageView(device, r->irradiance_map_image_view, NULL);
+  vkFreeMemory(device, r->irradiance_map_memory, NULL);
+  vkDestroyImage(device, r->irradiance_map_image, NULL);
+}
+
+static int owl_renderer_init_brdflut(struct owl_renderer *r) {
+  int ret = OWL_OK;
+  VkFormat const format = VK_FORMAT_R16G16_SFLOAT;
+  uint32_t const dimension = 512;
+
+  static uint32_t const vertex_shader_source[] = {
+#include "owl_brdflut.vert.spv.u32"
+  };
+
+  static uint32_t const fragment_shader_source[] = {
+#include "owl_brdflut.frag.spv.u32"
+  };
+
+  VkRenderPass offscreen_pass = VK_NULL_HANDLE;
+  VkFramebuffer offscreen_framebuffer = VK_NULL_HANDLE;
+  VkShaderModule offscreen_vertex_shader = VK_NULL_HANDLE;
+  VkShaderModule offscreen_fragment_shader = VK_NULL_HANDLE;
+  VkPipelineLayout offscreen_pipeline_layout = VK_NULL_HANDLE;
+  VkPipeline offscreen_pipeline = VK_NULL_HANDLE;
+  VkDevice const device = r->device;
+
+  {
+    VkImageCreateInfo info;
+    VkResult vk_result;
+
+    info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.imageType = VK_IMAGE_TYPE_2D;
+    info.format = format;
+    info.extent.width = dimension;
+    info.extent.height = dimension;
+    info.extent.depth = 1;
+    info.mipLevels = 1;
+    info.arrayLayers = 1;
+    info.samples = VK_SAMPLE_COUNT_1_BIT;
+    info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    info.usage = 0;
+    info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    info.queueFamilyIndexCount = 0;
+    info.pQueueFamilyIndices = NULL;
+    info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    vk_result = vkCreateImage(device, &info, NULL, &r->brdflut_map_image);
+    if (vk_result)
+      goto error;
+  }
+
+  {
+    VkMemoryPropertyFlagBits properties;
+    VkMemoryRequirements requirements;
+    VkMemoryAllocateInfo info;
+    VkResult vk_result;
+
+    properties = 0;
+    properties |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+    vkGetImageMemoryRequirements(device, r->brdflut_map_image, &requirements);
+
+    info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    info.pNext = NULL;
+    info.allocationSize = requirements.size;
+    info.memoryTypeIndex = owl_renderer_find_memory_type(
+        r, requirements.memoryTypeBits, properties);
+
+    vk_result = vkAllocateMemory(device, &info, NULL, &r->brdflut_map_memory);
+    if (vk_result)
+      goto error;
+
+    vk_result = vkBindImageMemory(device, r->brdflut_map_image,
+                                  r->brdflut_map_memory, 0);
+    if (vk_result)
+      goto error;
+  }
+
+  {
+    VkImageViewCreateInfo info;
+    VkResult vk_result;
+
+    info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.image = r->brdflut_map_image;
+    info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    info.format = format;
+    info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    info.subresourceRange.baseMipLevel = 0;
+    info.subresourceRange.levelCount = 1;
+    info.subresourceRange.baseArrayLayer = 0;
+    info.subresourceRange.layerCount = 1;
+
+    vk_result = vkCreateImageView(device, &info, NULL,
+                                  &r->brdflut_map_image_view);
+    if (vk_result)
+      goto error;
+  }
+
+  {
+    VkAttachmentReference color_reference;
+    VkAttachmentDescription attachment;
+    VkSubpassDescription subpass;
+    VkSubpassDependency dependency;
+    VkRenderPassCreateInfo info;
+    VkResult vk_result;
+
+    color_reference.attachment = 0;
+    color_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    attachment.flags = 0;
+    attachment.format = format;
+    attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    subpass.flags = 0;
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.inputAttachmentCount = 0;
+    subpass.pInputAttachments = NULL;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &color_reference;
+    subpass.pResolveAttachments = NULL;
+    subpass.pDepthStencilAttachment = NULL;
+    subpass.preserveAttachmentCount = 0;
+    subpass.pPreserveAttachments = NULL;
+
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = 0;
+    dependency.srcStageMask |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstStageMask = 0;
+    dependency.dstStageMask |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstAccessMask = 0;
+    dependency.dstAccessMask |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependency.dstAccessMask |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dependencyFlags = 0;
+
+    info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.attachmentCount = 1;
+    info.pAttachments = &attachment;
+    info.subpassCount = 1;
+    info.pSubpasses = &subpass;
+    info.dependencyCount = 1;
+    info.pDependencies = &dependency;
+
+    vk_result = vkCreateRenderPass(device, &info, NULL, &offscreen_pass);
+    if (vk_result)
+      goto error;
+  }
+
+  {
+    VkFramebufferCreateInfo info;
+    VkResult vk_result;
+
+    info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.renderPass = offscreen_pass;
+    info.attachmentCount = 1;
+    info.pAttachments = &r->brdflut_map_image_view;
+    info.width = dimension;
+    info.height = dimension;
+    info.layers = 1;
+
+    vk_result = vkCreateFramebuffer(device, &info, NULL,
+                                    &offscreen_framebuffer);
+    if (vk_result)
+      goto error;
+  }
+
+  {
+    VkPipelineLayoutCreateInfo info;
+    VkResult vk_result;
+
+    info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.setLayoutCount = 0;
+    info.pSetLayouts = NULL;
+    info.pushConstantRangeCount = 0;
+    info.pPushConstantRanges = NULL;
+
+    vk_result = vkCreatePipelineLayout(device, &info, NULL,
+                                       &offscreen_pipeline_layout);
+    if (vk_result)
+      goto error;
+  }
+
+  {
+    VkShaderModuleCreateInfo info;
+    VkResult vk_result;
+
+    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.codeSize = sizeof(vertex_shader_source);
+    info.pCode = vertex_shader_source;
+
+    vk_result = vkCreateShaderModule(device, &info, NULL,
+                                     &offscreen_vertex_shader);
+    if (vk_result)
+      goto error;
+  }
+
+  {
+    VkShaderModuleCreateInfo info;
+    VkResult vk_result;
+
+    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.codeSize = sizeof(fragment_shader_source);
+    info.pCode = fragment_shader_source;
+
+    vk_result = vkCreateShaderModule(device, &info, NULL,
+                                     &offscreen_fragment_shader);
+    if (vk_result)
+      goto error;
+  }
+
+  {
+    VkPipelineVertexInputStateCreateInfo vertex_input;
+    VkPipelineInputAssemblyStateCreateInfo input_assembly;
+    VkViewport viewport;
+    VkRect2D scissor;
+    VkPipelineViewportStateCreateInfo viewport_state;
+    VkPipelineRasterizationStateCreateInfo rasterization;
+    VkPipelineMultisampleStateCreateInfo multisample;
+    VkPipelineColorBlendAttachmentState color_attachment;
+    VkPipelineColorBlendStateCreateInfo color;
+    VkPipelineDepthStencilStateCreateInfo depth;
+    VkPipelineShaderStageCreateInfo stages[2];
+    VkGraphicsPipelineCreateInfo info;
+    VkResult vk_result;
+
+    vertex_input.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertex_input.pNext = NULL;
+    vertex_input.flags = 0;
+    vertex_input.vertexBindingDescriptionCount = 0;
+    vertex_input.pVertexBindingDescriptions = NULL;
+    vertex_input.vertexAttributeDescriptionCount = 0;
+    vertex_input.pVertexAttributeDescriptions = NULL;
+
+    input_assembly.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_assembly.pNext = NULL;
+    input_assembly.flags = 0;
+    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    input_assembly.primitiveRestartEnable = VK_FALSE;
+
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.width = dimension;
+    viewport.height = dimension;
+    viewport.minDepth = 0.0F;
+    viewport.maxDepth = 1.0F;
+
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent.width = dimension;
+    scissor.extent.height = dimension;
+
+    viewport_state.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport_state.pNext = NULL;
+    viewport_state.flags = 0;
+    viewport_state.viewportCount = 1;
+    viewport_state.pViewports = &viewport;
+    viewport_state.scissorCount = 1;
+    viewport_state.pScissors = &scissor;
+
+    rasterization.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterization.pNext = NULL;
+    rasterization.flags = 0;
+    rasterization.depthClampEnable = VK_FALSE;
+    rasterization.rasterizerDiscardEnable = VK_FALSE;
+    rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterization.cullMode = VK_CULL_MODE_NONE;
+    rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterization.depthBiasEnable = VK_FALSE;
+    rasterization.depthBiasConstantFactor = 0.0F;
+    rasterization.depthBiasClamp = 0.0F;
+    rasterization.depthBiasSlopeFactor = 0.0F;
+    rasterization.lineWidth = 1.0F;
+
+    multisample.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisample.pNext = NULL;
+    multisample.flags = 0;
+    multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisample.sampleShadingEnable = VK_FALSE;
+    multisample.minSampleShading = 0.0F;
+    multisample.pSampleMask = NULL;
+    multisample.alphaToCoverageEnable = VK_FALSE;
+    multisample.alphaToOneEnable = VK_FALSE;
+
+    color_attachment.blendEnable = VK_FALSE;
+    color_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+    color_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    color_attachment.colorWriteMask = 0;
+    color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
+    color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_G_BIT;
+    color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_B_BIT;
+    color_attachment.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
+
+    color.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    color.pNext = NULL;
+    color.flags = 0;
+    color.logicOpEnable = VK_FALSE;
+    color.logicOp = VK_LOGIC_OP_CLEAR;
+    color.attachmentCount = 1;
+    color.pAttachments = &color_attachment;
+    color.blendConstants[0] = 0.0F;
+    color.blendConstants[1] = 0.0F;
+    color.blendConstants[2] = 0.0F;
+    color.blendConstants[3] = 0.0F;
+
+    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth.pNext = NULL;
+    depth.flags = 0;
+    depth.depthTestEnable = VK_FALSE;
+    depth.depthWriteEnable = VK_FALSE;
+    depth.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depth.depthBoundsTestEnable = VK_FALSE;
+    depth.stencilTestEnable = VK_FALSE;
+    depth.front.failOp = VK_STENCIL_OP_KEEP;
+    depth.front.passOp = VK_STENCIL_OP_KEEP;
+    depth.front.depthFailOp = VK_STENCIL_OP_KEEP;
+    depth.front.compareOp = VK_COMPARE_OP_NEVER;
+    depth.front.compareMask = 0;
+    depth.front.writeMask = 0;
+    depth.front.reference = 0;
+    depth.back.failOp = VK_STENCIL_OP_KEEP;
+    depth.back.passOp = VK_STENCIL_OP_KEEP;
+    depth.back.depthFailOp = VK_STENCIL_OP_KEEP;
+    depth.back.compareOp = VK_COMPARE_OP_ALWAYS;
+    depth.back.compareMask = 0;
+    depth.back.writeMask = 0;
+    depth.back.reference = 0;
+    depth.minDepthBounds = 0.0F;
+    depth.maxDepthBounds = 0.0F;
+
+    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stages[0].pNext = NULL;
+    stages[0].flags = 0;
+    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    stages[0].module = offscreen_vertex_shader;
+    stages[0].pName = "main";
+    stages[0].pSpecializationInfo = NULL;
+
+    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stages[1].pNext = NULL;
+    stages[1].flags = 0;
+    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    stages[1].module = offscreen_fragment_shader;
+    stages[1].pName = "main";
+    stages[1].pSpecializationInfo = NULL;
+
+    info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    info.pNext = NULL;
+    info.flags = 0;
+    info.stageCount = OWL_ARRAY_SIZE(stages);
+    info.pStages = stages;
+    info.pVertexInputState = &vertex_input;
+    info.pInputAssemblyState = &input_assembly;
+    info.pTessellationState = NULL;
+    info.pViewportState = &viewport_state;
+    info.pRasterizationState = &rasterization;
+    info.pMultisampleState = &multisample;
+    info.pDepthStencilState = &depth;
+    info.pColorBlendState = &color;
+    info.pDynamicState = NULL;
+    info.layout = offscreen_pipeline_layout;
+    info.renderPass = offscreen_pass;
+    info.subpass = 0;
+    info.basePipelineHandle = VK_NULL_HANDLE;
+    info.basePipelineIndex = -1;
+
+    vk_result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &info,
+                                          NULL, &offscreen_pipeline);
+    if (vk_result)
+      goto error;
+  }
+
+  ret = owl_renderer_begin_im_command_buffer(r);
+  if (ret)
+    goto error;
+
+  {
+    VkClearValue clear_value;
+    VkRenderPassBeginInfo info;
+    VkCommandBuffer const command_buffer = r->im_command_buffer;
+
+    clear_value.color.float32[0] = 0.0F;
+    clear_value.color.float32[1] = 0.0F;
+    clear_value.color.float32[2] = 0.0F;
+    clear_value.color.float32[3] = 1.0F;
+
+    info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    info.pNext = NULL;
+    info.renderPass = offscreen_pass;
+    info.framebuffer = offscreen_framebuffer;
+    info.renderArea.offset.x = 0;
+    info.renderArea.offset.y = 0;
+    info.renderArea.extent.width = dimension;
+    info.renderArea.extent.height = dimension;
+    info.clearValueCount = 1;
+    info.pClearValues = &clear_value;
+
+    vkCmdBeginRenderPass(command_buffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+  }
+
+  {
+    VkCommandBuffer const command_buffer = r->im_command_buffer;
+    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      offscreen_pipeline);
+    vkCmdDraw(command_buffer, 3, 1, 0, 0);
+  }
+
+  {
+    VkCommandBuffer const command_buffer = r->im_command_buffer;
+    vkCmdEndRenderPass(command_buffer);
+  }
+
+  ret = owl_renderer_end_im_command_buffer(r);
+  if (ret)
+    goto error;
+
+  ret = owl_renderer_begin_im_command_buffer(r);
+  if (ret)
+    goto error;
+
+  {
+
+    VkImageMemoryBarrier barrier;
+    VkCommandBuffer const command_buffer = r->im_command_buffer;
+
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.pNext = NULL;
+    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = r->brdflut_map_image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0,
+                         NULL, 1, &barrier);
+  }
+
+  ret = owl_renderer_end_im_command_buffer(r);
+  if (ret)
+    goto error;
+
+  vkDestroyPipeline(device, offscreen_pipeline, NULL);
+  vkDestroyPipelineLayout(device, offscreen_pipeline_layout, NULL);
+  vkDestroyShaderModule(device, offscreen_fragment_shader, NULL);
+  vkDestroyShaderModule(device, offscreen_vertex_shader, NULL);
+  vkDestroyFramebuffer(device, offscreen_framebuffer, NULL);
+  vkDestroyRenderPass(device, offscreen_pass, NULL);
+
+  return OWL_OK;
+
+error:
+  if (offscreen_pipeline)
+    vkDestroyPipeline(device, offscreen_pipeline, NULL);
+
+  if (offscreen_pipeline_layout)
+    vkDestroyPipelineLayout(device, offscreen_pipeline_layout, NULL);
+
+  if (offscreen_fragment_shader)
+    vkDestroyShaderModule(device, offscreen_fragment_shader, NULL);
+
+  if (offscreen_vertex_shader)
+    vkDestroyShaderModule(device, offscreen_vertex_shader, NULL);
+
+  if (offscreen_framebuffer)
+    vkDestroyFramebuffer(device, offscreen_framebuffer, NULL);
+
+  if (offscreen_pass)
+    vkDestroyRenderPass(device, offscreen_pass, NULL);
+
+  if (r->brdflut_map_image_view)
+    vkDestroyImageView(device, r->brdflut_map_image_view, NULL);
+
+  if (r->brdflut_map_memory)
+    vkFreeMemory(device, r->brdflut_map_memory, NULL);
+
+  if (r->brdflut_map_image)
+    vkDestroyImage(device, r->brdflut_map_image, NULL);
+
+  return OWL_ERROR_FATAL;
+}
+
+static void owl_renderer_deinit_brdflut(struct owl_renderer *r) {
+  VkDevice const device = r->device;
+  vkDestroyImageView(device, r->brdflut_map_image_view, NULL);
+  vkFreeMemory(device, r->brdflut_map_memory, NULL);
+  vkDestroyImage(device, r->brdflut_map_image, NULL);
+}
+
 OWLAPI int owl_renderer_init(struct owl_renderer *r, struct owl_plataform *p) {
   uint32_t width;
   uint32_t height;
@@ -3021,16 +4345,10 @@ OWLAPI int owl_renderer_init(struct owl_renderer *r, struct owl_plataform *p) {
     goto error_deinit_swapchain;
   }
 
-  ret = owl_renderer_init_shaders(r);
-  if (ret) {
-    OWL_DEBUG_LOG("Failed to initialize shaders!\n");
-    goto error_deinit_pools;
-  }
-
   ret = owl_renderer_init_layouts(r);
   if (ret) {
     OWL_DEBUG_LOG("Failed to initialize layouts!\n");
-    goto error_deinit_shaders;
+    goto error_deinit_pools;
   }
 
   ret = owl_renderer_init_graphics_pipelines(r);
@@ -3039,16 +4357,10 @@ OWLAPI int owl_renderer_init(struct owl_renderer *r, struct owl_plataform *p) {
     goto error_deinit_layouts;
   }
 
-  ret = owl_renderer_init_compute_pipelines(r);
-  if (ret) {
-    OWL_DEBUG_LOG("Failed to initialize compute pipelines!\n");
-    goto error_deinit_graphics_pipelines;
-  }
-
   ret = owl_renderer_init_upload_buffer(r);
   if (ret) {
     OWL_DEBUG_LOG("Failed to initialize upload heap!\n");
-    goto error_deinit_compute_pipelines;
+    goto error_deinit_graphics_pipelines;
   }
 
   ret = owl_renderer_init_samplers(r);
@@ -3107,17 +4419,11 @@ error_deinit_samplers:
 error_deinit_upload_buffer:
   owl_renderer_deinit_upload_buffer(r);
 
-error_deinit_compute_pipelines:
-  owl_renderer_deinit_compute_pipelines(r);
-
 error_deinit_graphics_pipelines:
   owl_renderer_deinit_graphics_pipelines(r);
 
 error_deinit_layouts:
   owl_renderer_deinit_layouts(r);
-
-error_deinit_shaders:
-  owl_renderer_deinit_shaders(r);
 
 error_deinit_pools:
   owl_renderer_deinit_pools(r);
@@ -3160,10 +4466,8 @@ OWLAPI void owl_renderer_deinit(struct owl_renderer *r) {
   owl_renderer_deinit_frames(r);
   owl_renderer_deinit_samplers(r);
   owl_renderer_deinit_upload_buffer(r);
-  owl_renderer_deinit_compute_pipelines(r);
   owl_renderer_deinit_graphics_pipelines(r);
   owl_renderer_deinit_layouts(r);
-  owl_renderer_deinit_shaders(r);
   owl_renderer_deinit_pools(r);
   owl_renderer_deinit_swapchain(r);
   owl_renderer_deinit_render_passes(r);
@@ -3270,6 +4574,10 @@ owl_renderer_vertex_allocate(struct owl_renderer *r, uint64_t size,
   return &data[frame * aligned_size + alloc->offset];
 }
 
+OWLAPI void owl_renderer_vertex_clear_offset(struct owl_renderer *r) {
+  r->vertex_buffer_offset = 0;
+}
+
 OWLAPI void *
 owl_renderer_index_allocate(struct owl_renderer *r, uint64_t size,
                             struct owl_renderer_index_allocation *alloc) {
@@ -3302,6 +4610,10 @@ owl_renderer_index_allocate(struct owl_renderer *r, uint64_t size,
   r->index_buffer_offset = OWL_ALIGN_UP_2(required, alignment);
 
   return &data[frame * aligned_size + alloc->offset];
+}
+
+OWLAPI void owl_renderer_index_clear_offset(struct owl_renderer *r) {
+  r->index_buffer_offset = 0;
 }
 
 OWLAPI void *
@@ -3576,10 +4888,8 @@ OWLAPI void owl_renderer_upload_free(struct owl_renderer *r, void *data) {
 OWLAPI int owl_renderer_load_font(struct owl_renderer *r, uint32_t size,
                                   char const *path) {
   int ret = owl_font_init(r, path, size, &r->font);
-
   if (!ret)
     r->font_loaded = 1;
-
   return ret;
 }
 
@@ -3593,6 +4903,7 @@ OWLAPI void owl_renderer_unload_font(struct owl_renderer *r) {
 OWLAPI int owl_renderer_load_skybox(struct owl_renderer *r, char const *path) {
   int ret;
   struct owl_texture_desc texture_desc;
+  VkDevice const device = r->device;
 
   texture_desc.type = OWL_TEXTURE_TYPE_CUBE;
   texture_desc.source = OWL_TEXTURE_SOURCE_FILE;
@@ -3603,13 +4914,111 @@ OWLAPI int owl_renderer_load_skybox(struct owl_renderer *r, char const *path) {
   texture_desc.format = OWL_RGBA8_SRGB;
 
   ret = owl_texture_init(r, &texture_desc, &r->skybox);
-  if (!ret)
-    r->skybox_loaded = 1;
+  if (ret)
+    goto error;
 
+  ret = owl_renderer_init_filter_maps(r);
+  if (ret)
+    goto error_deinit_texture;
+
+  r->skybox_loaded = 1;
+
+  ret = owl_renderer_init_brdflut(r);
+  if (ret)
+    goto error_deinit_filter_maps;
+
+  {
+    VkDescriptorSetAllocateInfo info;
+    VkResult vk_result;
+
+    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    info.pNext = NULL;
+    info.descriptorPool = r->descriptor_pool;
+    info.descriptorSetCount = 1;
+    info.pSetLayouts = &r->model_environment_descriptor_set_layout;
+
+    vk_result = vkAllocateDescriptorSets(device, &info,
+                                         &r->environment_descriptor_set);
+    if (vk_result) {
+      ret = OWL_ERROR_FATAL;
+      goto error_deinit_brdflut;
+    }
+  }
+
+  {
+    VkDescriptorImageInfo descriptors[3];
+    VkWriteDescriptorSet writes[3];
+
+    descriptors[0].sampler = VK_NULL_HANDLE;
+    descriptors[0].imageView = r->irradiance_map_image_view;
+    descriptors[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    descriptors[1].sampler = VK_NULL_HANDLE;
+    descriptors[1].imageView = r->prefiltered_map_image_view;
+    descriptors[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    descriptors[2].sampler = VK_NULL_HANDLE;
+    descriptors[2].imageView = r->brdflut_map_image_view;
+    descriptors[2].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[0].pNext = NULL;
+    writes[0].dstSet = r->environment_descriptor_set;
+    writes[0].dstBinding = 0;
+    writes[0].dstArrayElement = 0;
+    writes[0].descriptorCount = 1;
+    writes[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    writes[0].pImageInfo = &descriptors[0];
+    writes[0].pBufferInfo = NULL;
+    writes[0].pTexelBufferView = NULL;
+
+    writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[1].pNext = NULL;
+    writes[1].dstSet = r->environment_descriptor_set;
+    writes[1].dstBinding = 1;
+    writes[1].dstArrayElement = 0;
+    writes[1].descriptorCount = 1;
+    writes[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    writes[1].pImageInfo = &descriptors[1];
+    writes[1].pBufferInfo = NULL;
+    writes[1].pTexelBufferView = NULL;
+
+    writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[2].pNext = NULL;
+    writes[2].dstSet = r->environment_descriptor_set;
+    writes[2].dstBinding = 2;
+    writes[2].dstArrayElement = 0;
+    writes[2].descriptorCount = 1;
+    writes[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    writes[2].pImageInfo = &descriptors[2];
+    writes[2].pBufferInfo = NULL;
+    writes[2].pTexelBufferView = NULL;
+
+    vkUpdateDescriptorSets(device, OWL_ARRAY_SIZE(writes), writes, 0, NULL);
+  }
+
+  return OWL_OK;
+
+error_deinit_brdflut:
+  owl_renderer_deinit_brdflut(r);
+
+error_deinit_filter_maps:
+  owl_renderer_deinit_filter_maps(r);
+
+error_deinit_texture:
+  owl_texture_deinit(r, &r->skybox);
+
+error:
   return ret;
 }
 
 OWLAPI void owl_renderer_unload_skybox(struct owl_renderer *r) {
+  VkDevice const device = r->device;
+
+  vkFreeDescriptorSets(device, r->descriptor_pool, 1,
+                       &r->environment_descriptor_set);
+  owl_renderer_deinit_brdflut(r);
+  owl_renderer_deinit_filter_maps(r);
   owl_texture_deinit(r, &r->skybox);
   r->skybox_loaded = 0;
 }

@@ -17,8 +17,8 @@ OWLAPI int owl_draw_quad(struct owl_renderer *r, struct owl_quad const *quad,
   uint8_t *data;
   VkDescriptorSet descriptor_sets[2];
   VkCommandBuffer command_buffer;
-  struct owl_pvm_uniform uniform;
-  struct owl_pcu_vertex vertices[4];
+  struct owl_common_uniform uniform;
+  struct owl_common_vertex vertices[4];
   struct owl_renderer_vertex_allocation vertex_allocation;
   struct owl_renderer_index_allocation index_allocation;
   struct owl_renderer_uniform_allocation uniform_allocation;
@@ -114,7 +114,7 @@ static int owl_draw_glyph(struct owl_renderer *r, struct owl_glyph *glyph,
   scale[1] = 2.0F / (float)r->height;
   scale[2] = 2.0F / (float)r->height;
 
-  OWL_V4_IDENTITY(matrix);
+  OWL_M4_IDENTITY(matrix);
   owl_m4_scale_v3(matrix, scale, matrix);
 
   quad.texture = &r->font.atlas;
@@ -168,161 +168,203 @@ OWLAPI int owl_draw_text(struct owl_renderer *r, char const *text,
   return OWL_OK;
 }
 
-static int owl_draw_model_node(struct owl_renderer *r, owl_model_node_id id,
-                               struct owl_model const *model,
-                               owl_m4 const matrix) {
-  int i;
+static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
+                               struct owl_model const *m, owl_m4 matrix) {
+  int32_t i;
+  int ret;
   uint8_t *data;
-  owl_model_node_id parent;
-  VkCommandBuffer command_buffer;
+  int32_t p;
   struct owl_model_node const *node;
   struct owl_model_mesh const *mesh;
   struct owl_model_skin const *skin;
-  struct owl_model_skin_ssbo *ssbo;
+  struct owl_model_joints_ssbo *ssbo;
   struct owl_model_uniform uniform;
-  struct owl_renderer_uniform_allocation uniform1_allocation;
-  int ret;
+  struct owl_renderer_uniform_allocation uniform_allocation;
+  VkCommandBuffer command_buffer = r->submit_command_buffers[r->frame];
 
-  command_buffer = r->submit_command_buffers[r->frame];
-
-  node = &model->nodes[id];
+  node = &m->nodes[id];
 
   for (i = 0; i < node->num_children; ++i) {
-    ret = owl_draw_model_node(r, node->children[i], model, matrix);
-    if (OWL_OK != ret)
+    ret = owl_draw_model_node(r, node->children[i], m, matrix);
+    if (ret)
       return ret;
   }
 
-  if (OWL_MODEL_MESH_NONE == node->mesh)
+  if (-1 == node->mesh)
     return OWL_OK;
 
-  mesh = &model->meshes[node->mesh];
-  skin = &model->skins[node->skin];
-  ssbo = skin->ssbos[r->frame];
+  if (-1 == node->skin)
+    return OWL_OK;
+
+  mesh = &m->meshes[node->mesh];
+  skin = &m->skins[node->skin];
+  ssbo = skin->mapped_ssbos[r->frame];
 
   OWL_M4_COPY(node->matrix, ssbo->matrix);
 
-  for (parent = node->parent; OWL_MODEL_NODE_NONE != parent;
-       parent = model->nodes[parent].parent)
-    owl_m4_multiply(model->nodes[parent].matrix, ssbo->matrix, ssbo->matrix);
+  for (p = node->parent; - 1 != p; p = m->nodes[p].parent)
+    owl_m4_multiply(m->nodes[p].matrix, ssbo->matrix, ssbo->matrix);
 
   OWL_M4_COPY(r->projection, uniform.projection);
-  OWL_M4_COPY(r->view, uniform.view);
   OWL_M4_COPY(matrix, uniform.model);
-  OWL_V4_ZERO(uniform.camera_position);
-  OWL_V4_ZERO(uniform.light_direction);
-  OWL_V4_ZERO(uniform.light_position);
-  uniform.exposure = 0;
-  uniform.gamma = 0;
-  uniform.prefiltered_cube_mips = 0;
-  uniform.scale_ibl_ambient = 0;
-  uniform.debug_view_inputs = 0;
-  uniform.debug_view_equation = 0;
+  OWL_M4_COPY(r->view, uniform.view);
+
+#if 0
+  OWL_M4_IDENTITY(uniform.model);
+  OWL_M4_IDENTITY(uniform.projection);
+  OWL_M4_IDENTITY(uniform.view);
+
+  OWL_DEBUG_LOG("\n projection: " OWL_M4_FORMAT "\n",
+                OWL_M4_FORMAT_ARGS(uniform.projection));
+
+  OWL_DEBUG_LOG("\n view: " OWL_M4_FORMAT "\n",
+                OWL_M4_FORMAT_ARGS(uniform.view));
+
+  OWL_DEBUG_LOG("\n model: " OWL_M4_FORMAT "\n",
+                OWL_M4_FORMAT_ARGS(uniform.model));
+#endif
+
+  uniform.light_direction[0] = 0.0F;
+  uniform.light_direction[1] = 1.0F;
+  uniform.light_direction[2] = 0.0F;
+  uniform.light_direction[3] = 0.0F;
+  uniform.camera_position[0] = 0.0F;
+  uniform.camera_position[1] = 0.0F;
+  uniform.camera_position[2] = 5.0F;
+  uniform.exposure = 4.5F;
+  uniform.gamma = 2.2F;
+  uniform.prefiltered_cube_mip_levels = r->prefiltered_map_mipmaps;
+  uniform.scale_ibl_ambient = 1.0F;
+  uniform.debug_view_inputs = 0.0F;
+  uniform.debug_view_equation = 0.0F;
 
   data = owl_renderer_uniform_allocate(r, sizeof(uniform),
-                                       &uniform1_allocation);
+                                       &uniform_allocation);
   if (!data)
-    return OWL_ERROR_NO_FRAME_MEMORY;
+    return OWL_ERROR_NO_MEMORY;
   OWL_MEMCPY(data, &uniform, sizeof(uniform));
 
   vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           r->model_pipeline_layout, 0, 1,
-                          &uniform1_allocation.model_descriptor_set, 1,
-                          &uniform1_allocation.offset);
+                          &uniform_allocation.model_descriptor_set, 1,
+                          &uniform_allocation.offset);
 
   for (i = 0; i < mesh->num_primitives; ++i) {
-    VkDescriptorSet sets[2];
+    VkDescriptorSet descriptors_sets[3];
     struct owl_model_primitive const *primitive;
-    struct owl_model_material_push_constant push_constant;
     struct owl_model_material const *material;
+    struct owl_model_push_constant push_constant;
 
-    primitive = &model->primitives[mesh->primitives[i]];
+    OWL_MEMSET(&push_constant, 0, sizeof(push_constant));
 
-    if (!primitive->count) {
+    primitive = &m->primitives[mesh->primitives[i]];
+
+    if (!primitive->num_vertices)
       continue;
-    }
 
-    material = &model->materials[primitive->material];
+    material = &m->materials[primitive->material];
 
-    sets[0] = material->descriptor_set;
-    sets[1] = skin->ssbo_sets[r->frame];
+    descriptors_sets[0] = skin->ssbo_descriptor_sets[r->frame];
+    OWL_ASSERT(descriptors_sets[0]);
+    descriptors_sets[1] = material->descriptor_set;
+    OWL_ASSERT(descriptors_sets[1]);
+    descriptors_sets[2] = r->environment_descriptor_set;
+    OWL_ASSERT(descriptors_sets[2]);
 
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            r->model_pipeline_layout, 1, OWL_ARRAY_SIZE(sets),
-                            sets, 0, NULL);
+                            r->model_pipeline_layout, 1,
+                            OWL_ARRAY_SIZE(descriptors_sets), descriptors_sets,
+                            0, NULL);
 
-    push_constant.base_color_factor[0] = material->base_color_factor[0];
-    push_constant.base_color_factor[1] = material->base_color_factor[1];
-    push_constant.base_color_factor[2] = material->base_color_factor[2];
-    push_constant.base_color_factor[3] = material->base_color_factor[3];
+    push_constant.emissive_factor[0] = material->emissive_factor[0];
+    push_constant.emissive_factor[1] = material->emissive_factor[1];
+    push_constant.emissive_factor[2] = material->emissive_factor[2];
+    push_constant.emissive_factor[3] = material->emissive_factor[3];
 
-    push_constant.emissive_factor[0] = 0.0F;
-    push_constant.emissive_factor[1] = 0.0F;
-    push_constant.emissive_factor[2] = 0.0F;
-    push_constant.emissive_factor[3] = 0.0F;
+    push_constant.diffuse_factor[0] = material->diffuse_factor[0];
+    push_constant.diffuse_factor[1] = material->diffuse_factor[1];
+    push_constant.diffuse_factor[2] = material->diffuse_factor[2];
+    push_constant.diffuse_factor[3] = material->diffuse_factor[3];
 
-    push_constant.diffuse_factor[0] = 0.0F;
-    push_constant.diffuse_factor[1] = 0.0F;
-    push_constant.diffuse_factor[2] = 0.0F;
-    push_constant.diffuse_factor[3] = 0.0F;
+    push_constant.specular_factor[0] = material->specular_factor[0];
+    push_constant.specular_factor[1] = material->specular_factor[1];
+    push_constant.specular_factor[2] = material->specular_factor[2];
+    push_constant.specular_factor[3] = material->specular_factor[3];
 
-    push_constant.specular_factor[0] = 0.0F;
-    push_constant.specular_factor[1] = 0.0F;
-    push_constant.specular_factor[2] = 0.0F;
-    push_constant.specular_factor[3] = 0.0F;
-
-    push_constant.workflow = 0;
-
-    /* FIXME(samuel): add uv sets in material */
-    if (OWL_MODEL_TEXTURE_NONE == material->base_color_texture) {
+    if (-1 == material->base_color_texture)
       push_constant.base_color_uv_set = -1;
-    } else {
-      push_constant.base_color_uv_set = 0;
-    }
+    else
+      push_constant.base_color_uv_set = material->base_color_texcoord;
 
-    if (OWL_MODEL_TEXTURE_NONE == material->physical_desc_texture) {
-      push_constant.physical_desc_uv_set = -1;
-    } else {
-      push_constant.physical_desc_uv_set = 0;
-    }
-
-    if (OWL_MODEL_TEXTURE_NONE == material->normal_texture) {
+    if (-1 == material->normal_texcoord)
       push_constant.normal_uv_set = -1;
-    } else {
-      push_constant.normal_uv_set = 0;
-    }
+    else
+      push_constant.normal_uv_set = material->normal_texcoord;
 
-    if (OWL_MODEL_TEXTURE_NONE == material->occlusion_texture) {
+    if (-1 == material->occlusion_texture)
       push_constant.occlusion_uv_set = -1;
-    } else {
-      push_constant.occlusion_uv_set = 0;
-    }
+    else
+      push_constant.occlusion_uv_set = material->occlusion_texcoord;
 
-    if (OWL_MODEL_TEXTURE_NONE == material->emissive_texture) {
+    if (-1 == material->emissive_texture)
       push_constant.emissive_uv_set = -1;
-    } else {
-      push_constant.emissive_uv_set = 0;
+    else
+      push_constant.emissive_uv_set = material->emissive_texcoord;
+
+    push_constant.physical_desc_uv_set = -1;
+
+    push_constant.alpha_mask = material->alpha_mode == OWL_ALPHA_MODE_MASK;
+    push_constant.alpha_mask_cutoff = material->alpha_cutoff;
+
+    if (material->metallic_roughness_enable) {
+      push_constant.workflow = 0;
+      push_constant.base_color_factor[0] = material->base_color_factor[0];
+      push_constant.base_color_factor[1] = material->base_color_factor[1];
+      push_constant.base_color_factor[2] = material->base_color_factor[2];
+      push_constant.base_color_factor[3] = material->base_color_factor[3];
+
+      push_constant.metallic_factor = material->metallic_factor;
+      push_constant.roughness_factor = material->roughness_factor;
+
+      if (-1 == material->metallic_roughness_texture)
+        push_constant.physical_desc_uv_set = -1;
+      else
+        push_constant.physical_desc_uv_set =
+            material->metallic_roughness_texcoord;
     }
 
-    push_constant.metallic_factor = 0.0F;
-    push_constant.roughness_factor = 0.0F;
-    push_constant.roughness_factor = 0.0F;
-    push_constant.alpha_mask = 0.0F;
-    push_constant.alpha_mask_cutoff = material->alpha_cutoff;
+    if (material->specular_glossiness_enable) {
+      push_constant.workflow = 1;
+
+      if (-1 == material->specular_glossiness_texture)
+        push_constant.physical_desc_uv_set = -1;
+      else
+        push_constant.physical_desc_uv_set =
+            material->specular_glossiness_texture;
+
+      if (-1 == material->diffuse_texture)
+        push_constant.base_color_uv_set = -1;
+      else
+        push_constant.base_color_uv_set = material->base_color_texcoord;
+    }
 
     vkCmdPushConstants(command_buffer, r->model_pipeline_layout,
                        VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push_constant),
                        &push_constant);
 
-    vkCmdDrawIndexed(command_buffer, primitive->count, 1, primitive->first, 0,
-                     0);
+    if (primitive->has_indices)
+      vkCmdDrawIndexed(command_buffer, primitive->num_indices, 1,
+                       primitive->first, 0, 0);
+    else
+      vkCmdDraw(command_buffer, primitive->num_vertices, 1, primitive->first,
+                0);
   }
 
   return OWL_OK;
 }
 
 OWLAPI int owl_draw_model(struct owl_renderer *r,
-                          struct owl_model const *model, owl_m4 const matrix) {
+                          struct owl_model const *model, owl_m4 matrix) {
   int i;
 
   uint64_t offset = 0;
@@ -340,9 +382,9 @@ OWLAPI int owl_draw_model(struct owl_renderer *r,
                        VK_INDEX_TYPE_UINT32);
 
   for (i = 0; i < model->num_roots; ++i) {
-    owl_model_node_id const root = model->roots[i];
+    int32_t root = model->roots[i];
     ret = owl_draw_model_node(r, root, model, matrix);
-    if (OWL_OK != ret)
+    if (ret)
       return ret;
   }
 
@@ -356,7 +398,7 @@ OWLAPI int owl_draw_skybox(struct owl_renderer *r) {
   struct owl_renderer_uniform_allocation uniform_allocation;
   VkDescriptorSet descriptor_sets[2];
   VkCommandBuffer command_buffer;
-  struct owl_pvm_uniform uniform;
+  struct owl_common_uniform uniform;
   /*
    *    4----5
    *  / |  / |
@@ -366,20 +408,22 @@ OWLAPI int owl_draw_skybox(struct owl_renderer *r) {
    * | /  | /
    * 2----3
    */
-  static struct owl_p_vertex const vertices[] = {{-1.0F, -1.0F, -1.0F}, /* 0 */
-                                                 {1.0F, -1.0F, -1.0F},  /* 1 */
-                                                 {-1.0F, 1.0F, -1.0F},  /* 2 */
-                                                 {1.0F, 1.0F, -1.0F},   /* 3 */
-                                                 {-1.0F, -1.0F, 1.0F},  /* 4 */
-                                                 {1.0F, -1.0F, 1.0F},   /* 5 */
-                                                 {-1.0F, 1.0F, 1.0F},   /* 6 */
-                                                 {1.0F, 1.0F, 1.0F}};   /* 7 */
-  static uint32_t const indices[] = {2, 3, 1, 1, 0, 2,  /* face 0 ....*/
-                                     3, 7, 5, 5, 1, 3,  /* face 1 */
-                                     6, 2, 0, 0, 4, 6,  /* face 2 */
-                                     7, 6, 4, 4, 5, 7,  /* face 3 */
-                                     3, 2, 6, 6, 7, 3,  /* face 4 */
-                                     4, 0, 1, 1, 5, 4}; /* face 5 */
+  static struct owl_skybox_vertex const vertices[] = {
+      {-1.0F, -1.0F, -1.0F}, /* 0 */
+      {1.0F, -1.0F, -1.0F},  /* 1 */
+      {-1.0F, 1.0F, -1.0F},  /* 2 */
+      {1.0F, 1.0F, -1.0F},   /* 3 */
+      {-1.0F, -1.0F, 1.0F},  /* 4 */
+      {1.0F, -1.0F, 1.0F},   /* 5 */
+      {-1.0F, 1.0F, 1.0F},   /* 6 */
+      {1.0F, 1.0F, 1.0F}};   /* 7 */
+  static uint32_t const indices[] = {
+      2, 3, 1, 1, 0, 2,  /* face 0 ...............*/
+      3, 7, 5, 5, 1, 3,  /* face 1 */
+      6, 2, 0, 0, 4, 6,  /* face 2 */
+      7, 6, 4, 4, 5, 7,  /* face 3 */
+      3, 2, 6, 6, 7, 3,  /* face 4 */
+      4, 0, 1, 1, 5, 4}; /* face 5 */
 
   command_buffer = r->submit_command_buffers[r->frame];
 
@@ -397,9 +441,9 @@ OWLAPI int owl_draw_skybox(struct owl_renderer *r) {
   OWL_MEMCPY(data, indices, sizeof(indices));
 
   OWL_M4_COPY(r->projection, uniform.projection);
-  OWL_V4_IDENTITY(uniform.view);
+  OWL_M4_IDENTITY(uniform.view);
   OWL_M3_COPY(r->view, uniform.view);
-  OWL_V4_IDENTITY(uniform.model);
+  OWL_M4_IDENTITY(uniform.model);
 
   data = owl_renderer_uniform_allocate(r, sizeof(uniform),
                                        &uniform_allocation);
@@ -483,11 +527,11 @@ OWLAPI int owl_draw_cloth_simulation(struct owl_renderer *r,
   struct owl_renderer_index_allocation index_allocation;
 
   uint64_t num_vertices;
-  struct owl_pcu_vertex *vertices;
+  struct owl_common_vertex *vertices;
   struct owl_renderer_vertex_allocation vertex_allocation;
 
   VkDescriptorSet descriptor_sets[2];
-  struct owl_pvm_uniform *uniform;
+  struct owl_common_uniform *uniform;
   struct owl_renderer_uniform_allocation uniform_allocation;
 
   VkCommandBuffer command_buffer;
@@ -525,7 +569,7 @@ OWLAPI int owl_draw_cloth_simulation(struct owl_renderer *r,
       int32_t k = i * sim->width + j;
 
       struct owl_cloth_particle *particle = &sim->particles[k];
-      struct owl_pcu_vertex *vertex = &vertices[k];
+      struct owl_common_vertex *vertex = &vertices[k];
 
       OWL_V3_COPY(particle->position, vertex->position);
       OWL_V3_SET(vertex->color, 1.0F, 1.0F, 1.0F);

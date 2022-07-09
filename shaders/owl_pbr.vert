@@ -42,6 +42,7 @@ void main()
 	outColor0 = inColor0;
 
 	vec4 locPos;
+
 	if (node.jointCount > 0.0) {
 		// Mesh is skinned
 		mat4 skinMat = 
@@ -56,6 +57,7 @@ void main()
 		locPos = ubo.model * node.matrix * vec4(inPos, 1.0);
 		outNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix))) * inNormal);
 	}
+
 	locPos.y = -locPos.y;
 	outWorldPos = locPos.xyz / locPos.w;
 	outUV0 = inUV0;

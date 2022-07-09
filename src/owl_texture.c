@@ -40,8 +40,8 @@ static uint64_t owl_pixel_format_size(enum owl_pixel_format format) {
   }
 }
 
-static uint32_t owl_texture_calculate_mipmaps(struct owl_texture *texture) {
-  return (uint32_t)(floor(log2(OWL_MAX(texture->width, texture->height))) + 1);
+uint32_t owl_texture_calculate_mipmaps(uint32_t w, uint32_t h) {
+  return (uint32_t)(floor(log2(OWL_MAX(w, h))) + 1);
 }
 
 OWLAPI void owl_texture_change_layout(struct owl_texture *texture,
@@ -266,7 +266,7 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
     /* when loading from disk, always use r8g8b8a8_srgb */
     vk_format = owl_pixel_format_as_vk_format(OWL_RGBA8_SRGB);
 
-    /* if it's just one 2D texture, simpling use stbi_load and load */
+    /* if it's just one 2D texture, simply use stbi_load and load */
     if (OWL_TEXTURE_TYPE_2D == desc->type ||
         OWL_TEXTURE_TYPE_COMPUTE == desc->type) {
       int width;
@@ -386,7 +386,8 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
   if (OWL_TEXTURE_TYPE_COMPUTE == desc->type)
     texture->mipmaps = 1;
   else
-    texture->mipmaps = owl_texture_calculate_mipmaps(texture);
+    texture->mipmaps = owl_texture_calculate_mipmaps(texture->width,
+                                                     texture->height);
 
   /* create the vulkan resources */
 
@@ -485,7 +486,7 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
     info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
     info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     info.subresourceRange.baseMipLevel = 0;
-    info.subresourceRange.levelCount = 1;
+    info.subresourceRange.levelCount = texture->mipmaps;
     info.subresourceRange.baseArrayLayer = 0;
     info.subresourceRange.layerCount = texture->layers;
 

@@ -104,7 +104,7 @@ OWLAPI int owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
   {
     owl_v3 position = {0.0F, 0.0F, -1.0F};
-    OWL_V4_IDENTITY(sim->model);
+    OWL_M4_IDENTITY(sim->model);
     owl_m4_translate(position, sim->model);
   }
 
