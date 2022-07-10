@@ -45,6 +45,9 @@ static int owl_model_get_real_uri(struct owl_model *m, char const *src,
   return ret;
 }
 
+/* TODO(samuel): gltf specifies the sampler requiremets for each image, right
+ * now there is only one thats shared by all textures, add the posibility to
+ * use a custom one on owl_texture */
 static int owl_model_load_images(struct owl_renderer *r,
                                  struct cgltf_data *gltf,
                                  struct owl_model *m) {
@@ -146,11 +149,11 @@ static int owl_model_load_materials(struct owl_renderer *r,
     out_material->emissive_factor[1] = 1.0F;
     out_material->emissive_factor[2] = 1.0F;
     out_material->emissive_factor[3] = 1.0F;
-    out_material->base_color_texcoord = 0;
-    out_material->metallic_roughness_texcoord = 0;
-    out_material->specular_glossiness_texcoord = 0;
-    out_material->normal_texcoord = 0;
-    out_material->emissive_texcoord = 0;
+    out_material->base_color_texcoord = -1;
+    out_material->metallic_roughness_texcoord = -1;
+    out_material->specular_glossiness_texcoord = -1;
+    out_material->normal_texcoord = -1;
+    out_material->emissive_texcoord = -1;
     out_material->base_color_texture = -1;
     out_material->base_color_texcoord = -1;
 
@@ -187,7 +190,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
         out_material->base_color_texcoord = view->texcoord;
       } else {
         out_material->base_color_texture = -1;
-        out_material->base_color_texcoord = 0;
+        out_material->base_color_texcoord = -1;
       }
 
       view = &metallic->metallic_roughness_texture;
@@ -197,7 +200,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
         out_material->metallic_roughness_texcoord = view->texcoord;
       } else {
         out_material->metallic_roughness_texture = -1;
-        out_material->metallic_roughness_texcoord = 0;
+        out_material->metallic_roughness_texcoord = -1;
       }
 
       out_material->roughness_factor = metallic->roughness_factor;
@@ -223,7 +226,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
         out_material->normal_texcoord = view->texcoord;
       } else {
         out_material->normal_texture = -1;
-        out_material->normal_texcoord = 0;
+        out_material->normal_texcoord = -1;
       }
 
       view = &in_material->emissive_texture;
@@ -233,7 +236,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
         out_material->emissive_texcoord = view->texcoord;
       } else {
         out_material->emissive_texture = -1;
-        out_material->emissive_texcoord = 0;
+        out_material->emissive_texcoord = -1;
       }
 
       view = &in_material->occlusion_texture;
@@ -243,7 +246,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
         out_material->occlusion_texcoord = view->texcoord;
       } else {
         out_material->occlusion_texture = -1;
-        out_material->occlusion_texcoord = 0;
+        out_material->occlusion_texcoord = -1;
       }
 
       out_material->alpha_mode = in_material->alpha_mode;
@@ -271,7 +274,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
         out_material->specular_glossiness_texcoord = view->texcoord;
       } else {
         out_material->specular_glossiness_texture = -1;
-        out_material->specular_glossiness_texcoord = 0;
+        out_material->specular_glossiness_texcoord = -1;
       }
 
       view = &specular->diffuse_texture;
@@ -343,8 +346,9 @@ static int owl_model_load_materials(struct owl_renderer *r,
           image = &m->images[m->textures[texture->image].image];
           descriptors[2].imageView = image->texture.image_view;
         }
+      }
 
-      } else if (out_material->metallic_roughness_enable) {
+      if (out_material->metallic_roughness_enable) {
         if (-1 != out_material->base_color_texture) {
           struct owl_model_texture *texture;
           struct owl_model_image *image;
@@ -760,6 +764,11 @@ static int owl_model_load_nodes(struct owl_renderer *r,
             OWL_ASSERT(2 <= uv0_stride);
             vertex->uv0[0] = (&uv0[k * uv0_stride])[0];
             vertex->uv0[1] = (&uv0[k * uv0_stride])[1];
+#if 0
+            OWL_DEBUG_LOG("  uv0: " OWL_V2_FORMAT "\n", OWL_V2_FORMAT_ARGS(vertex->uv0));
+            OWL_ASSERT(vertex->uv0[0] < 1.0F && vertex->uv0[0] > 0.0F);
+            OWL_ASSERT(vertex->uv0[1] < 1.0F && vertex->uv0[1] > 0.0F);
+#endif
           } else {
             vertex->uv0[0] = 0.0F;
             vertex->uv0[1] = 0.0F;

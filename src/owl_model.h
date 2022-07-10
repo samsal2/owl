@@ -39,23 +39,6 @@ struct owl_model_uniform {
   float debug_view_equation;
 };
 
-struct owl_model_material_push_constant {
-  owl_v4 base_color_factor;
-  owl_v4 emmisive_factor;
-  owl_v4 diffuse_factor;
-  owl_v4 specular_factor;
-  float workflow;
-  int base_color_texcoord;
-  int physical_descriptor_texcoord;
-  int normal_texcoord;
-  int occlusion_texcoord;
-  int emissive_texcoord;
-  float metallic_factor;
-  float roughness_factor;
-  float alpha_mask;
-  float alpha_cutoff;
-};
-
 struct owl_model_bbox {
   owl_v3 min;
   owl_v3 max;

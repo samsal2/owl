@@ -9,7 +9,7 @@
 OWL_BEGIN_DECLARATIONS
 
 #define OWL_MAX_SWAPCHAIN_IMAGES 8
-#define OWL_NUM_IN_FLIGHT_FRAMES 3
+#define OWL_NUM_IN_FLIGHT_FRAMES 2
 #define OWL_NUM_GARBAGE_FRAMES (OWL_NUM_IN_FLIGHT_FRAMES + 1)
 
 struct owl_renderer_upload_allocation {
@@ -151,6 +151,7 @@ struct owl_renderer {
   VkSemaphore acquire_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
   VkSemaphore render_done_semaphores[OWL_NUM_IN_FLIGHT_FRAMES];
 
+  VkDeviceSize vertex_buffer_last_offset;
   VkDeviceSize vertex_buffer_size;
   VkDeviceSize vertex_buffer_offset;
   VkDeviceSize vertex_buffer_alignment;
@@ -159,6 +160,7 @@ struct owl_renderer {
   void *vertex_buffer_data;
   VkBuffer vertex_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
 
+  VkDeviceSize index_buffer_last_offset;
   VkDeviceSize index_buffer_size;
   VkDeviceSize index_buffer_offset;
   VkDeviceSize index_buffer_alignment;
@@ -167,6 +169,7 @@ struct owl_renderer {
   void *index_buffer_data;
   VkBuffer index_buffers[OWL_NUM_IN_FLIGHT_FRAMES];
 
+  VkDeviceSize uniform_buffer_last_offset;
   VkDeviceSize uniform_buffer_size;
   VkDeviceSize uniform_buffer_offset;
   VkDeviceSize uniform_buffer_alignment;
@@ -216,6 +219,8 @@ OWLAPI void owl_renderer_index_clear_offset(struct owl_renderer *r);
 OWLAPI void *
 owl_renderer_uniform_allocate(struct owl_renderer *r, uint64_t size,
                               struct owl_renderer_uniform_allocation *alloc);
+
+OWLAPI void owl_renderer_uniform_clear_offset(struct owl_renderer *r);
 
 OWLAPI void *
 owl_renderer_upload_allocate(struct owl_renderer *r, uint64_t size,

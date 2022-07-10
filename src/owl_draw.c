@@ -183,11 +183,6 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
   mesh = &m->meshes[node->mesh];
   ssbo = mesh->mapped_ssbos[r->frame];
 
-#if 0
-  OWL_DEBUG_LOG("ssbo data:\n");
-  OWL_DEBUG_LOG("  num_joints = %i\n", ssbo->num_joints);
-#endif
-
   OWL_M4_COPY(node->matrix, ssbo->matrix);
 
   for (p = node->parent; - 1 != p; p = m->nodes[p].parent)
@@ -202,8 +197,8 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
   uniform.light_direction[2] = 0.0F;
   uniform.light_direction[3] = 0.0F;
   uniform.camera_position[0] = r->camera_eye[0];
-  uniform.camera_position[1] = r->camera_eye[0];
-  uniform.camera_position[2] = r->camera_eye[0];
+  uniform.camera_position[1] = r->camera_eye[1];
+  uniform.camera_position[2] = r->camera_eye[2];
   uniform.exposure = 4.5F;
   uniform.gamma = 2.2F;
   uniform.prefiltered_cube_mip_levels = r->prefiltered_map_mipmaps;
@@ -228,7 +223,12 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
     struct owl_model_material const *material;
     struct owl_model_push_constant push_constant;
 
-    OWL_MEMSET(&push_constant, 0, sizeof(push_constant));
+    push_constant.workflow = 0.0F;
+    push_constant.base_color_uv_set = -1;
+    push_constant.physical_desc_uv_set = -1;
+    push_constant.normal_uv_set = -1;
+    push_constant.occlusion_uv_set = -1;
+    push_constant.emissive_uv_set = -1;
 
     primitive = &m->primitives[mesh->primitives[i]];
 
@@ -238,11 +238,8 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
     material = &m->materials[primitive->material];
 
     descriptors_sets[0] = mesh->ssbo_descriptor_sets[r->frame];
-    OWL_ASSERT(descriptors_sets[0]);
     descriptors_sets[1] = material->descriptor_set;
-    OWL_ASSERT(descriptors_sets[1]);
     descriptors_sets[2] = r->environment_descriptor_set;
-    OWL_ASSERT(descriptors_sets[2]);
 
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             r->model_pipeline_layout, 1,
@@ -266,8 +263,11 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
 
     if (-1 == material->base_color_texture)
       push_constant.base_color_uv_set = -1;
-    else
+    else {
       push_constant.base_color_uv_set = material->base_color_texcoord;
+
+      OWL_ASSERT(0 == push_constant.base_color_uv_set);
+    }
 
     if (-1 == material->normal_texcoord)
       push_constant.normal_uv_set = -1;
@@ -289,6 +289,21 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
     push_constant.alpha_mask = material->alpha_mode == OWL_ALPHA_MODE_MASK;
     push_constant.alpha_mask_cutoff = material->alpha_cutoff;
 
+    if (material->specular_glossiness_enable) {
+      push_constant.workflow = 1;
+
+      if (-1 == material->specular_glossiness_texture)
+        push_constant.physical_desc_uv_set = -1;
+      else
+        push_constant.physical_desc_uv_set =
+            material->specular_glossiness_texture;
+
+      if (-1 == material->diffuse_texture)
+        push_constant.base_color_uv_set = -1;
+      else
+        push_constant.base_color_uv_set = material->base_color_texcoord;
+    }
+
     if (material->metallic_roughness_enable) {
       push_constant.workflow = 0;
       push_constant.base_color_factor[0] = material->base_color_factor[0];
@@ -304,21 +319,6 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
       else
         push_constant.physical_desc_uv_set =
             material->metallic_roughness_texcoord;
-    }
-
-    if (material->specular_glossiness_enable) {
-      push_constant.workflow = 1;
-
-      if (-1 == material->specular_glossiness_texture)
-        push_constant.physical_desc_uv_set = -1;
-      else
-        push_constant.physical_desc_uv_set =
-            material->specular_glossiness_texture;
-
-      if (-1 == material->diffuse_texture)
-        push_constant.base_color_uv_set = -1;
-      else
-        push_constant.base_color_uv_set = material->base_color_texcoord;
     }
 
     vkCmdPushConstants(command_buffer, r->model_pipeline_layout,
@@ -484,6 +484,27 @@ OWLAPI int owl_draw_renderer_state(struct owl_renderer *r) {
 
   snprintf(buffer, sizeof(buffer), "upload_buffer_size: %llu",
            r->upload_buffer_size);
+
+  owl_draw_text(r, buffer, position, color);
+
+  position[1] += 0.05F;
+
+  snprintf(buffer, sizeof(buffer), "vertex_buffer_last_offset: %llu",
+           r->vertex_buffer_last_offset);
+
+  owl_draw_text(r, buffer, position, color);
+
+  position[1] += 0.05F;
+
+  snprintf(buffer, sizeof(buffer), "index_buffer_last_offset: %llu",
+           r->index_buffer_last_offset);
+
+  owl_draw_text(r, buffer, position, color);
+
+  position[1] += 0.05F;
+
+  snprintf(buffer, sizeof(buffer), "uniform_buffer_last_offset: %llu",
+           r->uniform_buffer_last_offset);
 
   owl_draw_text(r, buffer, position, color);
 

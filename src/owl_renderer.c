@@ -86,8 +86,8 @@ static int owl_renderer_init_instance(struct owl_renderer *r) {
     info.enabledLayerCount = OWL_ARRAY_SIZE(debug_validation_layers);
     info.ppEnabledLayerNames = debug_validation_layers;
 #else  /* OWL_ENABLE_VALIDATION */
-    instance_create_info.enabledLayerCount = 0;
-    instance_create_info.ppEnabledLayerNames = NULL;
+    info.enabledLayerCount = 0;
+    info.ppEnabledLayerNames = NULL;
 #endif /* OWL_ENABLE_VALIDATION */
     info.enabledExtensionCount = num_extensions;
     info.ppEnabledExtensionNames = extensions;
@@ -258,7 +258,7 @@ static int owl_renderer_select_physical_device(struct owl_renderer *r) {
     uint32_t num_present_modes;
     VkPresentModeKHR present_modes[16];
     int32_t found_present_mode = 0;
-#if 0
+#if 1
     VkPresentModeKHR requested_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 #else
     VkPresentModeKHR requested_present_mode = VK_PRESENT_MODE_FIFO_KHR;
@@ -478,6 +478,7 @@ static int owl_renderer_select_physical_device(struct owl_renderer *r) {
       OWL_DEBUG_LOG("falling back to VK_PRESENT_MODE_FIFO_KHR\n");
       r->present_mode = VK_PRESENT_MODE_FIFO_KHR;
     } else {
+      OWL_DEBUG_LOG("found the required present mode!\n");
       r->present_mode = requested_present_mode;
     }
 
@@ -1505,7 +1506,7 @@ static int owl_renderer_init_layouts(struct owl_renderer *r) {
 
     push_constant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     push_constant.offset = 0;
-    push_constant.size = sizeof(struct owl_model_material_push_constant);
+    push_constant.size = sizeof(struct owl_model_push_constant);
 
     layouts[0] = r->model_uniform_descriptor_set_layout;
     layouts[1] = r->model_storage_descriptor_set_layout;
@@ -2086,6 +2087,8 @@ static int owl_renderer_init_vertex_buffer(struct owl_renderer *r,
 
   VkDevice const device = r->device;
 
+  r->vertex_buffer_last_offset = 0;
+
   for (i = 0; i < (int32_t)r->num_frames; ++i) {
     VkBufferCreateInfo info;
     VkResult vk_result = VK_SUCCESS;
@@ -2179,6 +2182,8 @@ static int owl_renderer_init_index_buffer(struct owl_renderer *r,
   int32_t i;
   VkDevice const device = r->device;
 
+  r->index_buffer_last_offset = 0;
+
   for (i = 0; i < (int32_t)r->num_frames; ++i) {
     VkBufferCreateInfo info;
     VkResult vk_result = VK_SUCCESS;
@@ -2270,6 +2275,8 @@ static int owl_renderer_init_uniform_buffer(struct owl_renderer *r,
                                             uint64_t size) {
   int32_t i;
   VkDevice const device = r->device;
+
+  r->uniform_buffer_last_offset = 0;
 
   for (i = 0; i < (int32_t)r->num_frames; ++i) {
     VkBufferCreateInfo info;
@@ -2614,9 +2621,15 @@ static int owl_renderer_init_samplers(struct owl_renderer *r) {
   info.magFilter = VK_FILTER_LINEAR;
   info.minFilter = VK_FILTER_LINEAR;
   info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+#if 0
   info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
   info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
   info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+#else
+  info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+#endif
   info.mipLodBias = 0.0F;
   info.anisotropyEnable = VK_TRUE;
   info.maxAnisotropy = 16.0F;
@@ -4286,7 +4299,7 @@ OWLAPI int owl_renderer_init(struct owl_renderer *r, struct owl_plataform *p) {
 
   ratio = (float)width / (float)height;
 
-  OWL_V3_SET(r->camera_eye, 0.0F, 0.0F, 3.0F);
+  OWL_V3_SET(r->camera_eye, 0.0F, -0.5F, 3.0F);
   OWL_V4_SET(r->camera_direction, 0.0F, 0.0F, 1.0F, 1.0F);
   OWL_V3_SET(up, 0.0F, 1.0F, 0.0F);
 
@@ -4577,6 +4590,7 @@ owl_renderer_vertex_allocate(struct owl_renderer *r, uint64_t size,
 }
 
 OWLAPI void owl_renderer_vertex_clear_offset(struct owl_renderer *r) {
+  r->vertex_buffer_last_offset = r->vertex_buffer_offset;
   r->vertex_buffer_offset = 0;
 }
 
@@ -4615,6 +4629,7 @@ owl_renderer_index_allocate(struct owl_renderer *r, uint64_t size,
 }
 
 OWLAPI void owl_renderer_index_clear_offset(struct owl_renderer *r) {
+  r->index_buffer_last_offset = r->index_buffer_offset;
   r->index_buffer_offset = 0;
 }
 
@@ -4652,6 +4667,11 @@ owl_renderer_uniform_allocate(struct owl_renderer *r, uint64_t size,
   r->uniform_buffer_offset = OWL_ALIGN_UP_2(required, alignment);
 
   return &data[frame * aligned_size + alloc->offset];
+}
+
+OWLAPI void owl_renderer_uniform_clear_offset(struct owl_renderer *r) {
+  r->uniform_buffer_last_offset = r->uniform_buffer_offset;
+  r->uniform_buffer_offset = 0;
 }
 
 #define OWL_RENDERER_IS_SWAPCHAIN_OUT_OF_DATE(vk_result)                      \
@@ -4792,9 +4812,9 @@ OWLAPI int owl_renderer_end_frame(struct owl_renderer *r) {
   }
 
   r->frame = (r->frame + 1) % r->num_frames;
-  r->vertex_buffer_offset = 0;
-  r->index_buffer_offset = 0;
-  r->uniform_buffer_offset = 0;
+  owl_renderer_vertex_clear_offset(r);
+  owl_renderer_index_clear_offset(r);
+  owl_renderer_uniform_clear_offset(r);
 
   return OWL_OK;
 }
