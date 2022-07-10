@@ -85,18 +85,30 @@ OWLAPI void owl_font_deinit(struct owl_renderer *r, struct owl_font *font) {
 }
 
 OWLAPI int owl_font_fill_glyph(struct owl_font *font, char c, owl_v2 offset,
-                               struct owl_glyph *glyph) {
+                               int32_t w, int32_t h, struct owl_glyph *glyph) {
   stbtt_aligned_quad quad;
+  int const atlas_width = OWL_FONT_ATLAS_WIDTH;
+  int const atlas_height = OWL_FONT_ATLAS_HEIGHT;
+  stbtt_packedchar *packed_chars = (stbtt_packedchar *)(&font->chars[0]);
   int ret = OWL_OK;
 
-  stbtt_GetPackedQuad((stbtt_packedchar *)(&font->chars[0]),
-                      OWL_FONT_ATLAS_WIDTH, OWL_FONT_ATLAS_HEIGHT,
+  /* -1 ---- +
+   *  |      |  h
+   *  |      |
+   *  + ---- 1
+   *     w      */
+
+  stbtt_GetPackedQuad(packed_chars, atlas_width, atlas_height,
                       c - OWL_FIRST_CHAR, &offset[0], &offset[1], &quad, 1);
 
-  OWL_V3_SET(glyph->positions[0], quad.x0, quad.y0, 0.0F);
-  OWL_V3_SET(glyph->positions[1], quad.x1, quad.y0, 0.0F);
-  OWL_V3_SET(glyph->positions[2], quad.x0, quad.y1, 0.0F);
-  OWL_V3_SET(glyph->positions[3], quad.x1, quad.y1, 0.0F);
+  OWL_V3_SET(glyph->positions[0], quad.x0 / (float)w, quad.y0 / (float)h,
+             0.0F);
+  OWL_V3_SET(glyph->positions[1], quad.x1 / (float)w, quad.y0 / (float)h,
+             0.0F);
+  OWL_V3_SET(glyph->positions[2], quad.x0 / (float)w, quad.y1 / (float)h,
+             0.0F);
+  OWL_V3_SET(glyph->positions[3], quad.x1 / (float)w, quad.y1 / (float)h,
+             0.0F);
 
   OWL_V2_SET(glyph->uvs[0], quad.s0, quad.t0);
   OWL_V2_SET(glyph->uvs[1], quad.s1, quad.t0);

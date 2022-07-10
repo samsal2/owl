@@ -39,7 +39,13 @@ void owl_debug_free(void *p, char const *f, int l) {
 void owl_debug_log(char const *f, int l, char const *format, ...) {
   va_list args;
   va_start(args, format);
+#if 0
   printf("\033[33m[OWL_DEBUG_LOG]\033[0m \033[31m(f:%s l:%d)\033[0m ", f, l);
+#else
+  OWL_UNUSED(f);
+  OWL_UNUSED(l);
+  printf("\033[33m[OWL_DEBUG_LOG]\033[0m ");
+#endif
   vprintf(format, args);
   va_end(args);
 }

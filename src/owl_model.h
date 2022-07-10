@@ -101,7 +101,7 @@ struct owl_model_primitive {
 
 struct owl_model_joints_ssbo {
   owl_m4 matrix;
-  owl_m4 joints[256];
+  owl_m4 joints[128];
   int32_t num_joints;
 };
 
@@ -110,6 +110,11 @@ struct owl_model_mesh {
   int32_t primitives[128];
   struct owl_model_bbox bb;
   struct owl_model_bbox aabb;
+
+  VkBuffer ssbos[OWL_NUM_IN_FLIGHT_FRAMES];
+  VkDeviceMemory ssbo_memory;
+  VkDescriptorSet ssbo_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
+  struct owl_model_joints_ssbo *mapped_ssbos[OWL_NUM_IN_FLIGHT_FRAMES];
 };
 
 struct owl_model_skin {
@@ -121,12 +126,6 @@ struct owl_model_skin {
 
   int32_t num_joints;
   int32_t joints[128];
-
-  VkBuffer ssbos[OWL_NUM_IN_FLIGHT_FRAMES];
-  VkDeviceMemory ssbo_memory;
-  VkDescriptorSet ssbo_descriptor_sets[OWL_NUM_IN_FLIGHT_FRAMES];
-
-  struct owl_model_joints_ssbo *mapped_ssbos[OWL_NUM_IN_FLIGHT_FRAMES];
 };
 
 struct owl_model_node {
@@ -209,6 +208,9 @@ struct owl_model_texture {
 };
 
 struct owl_model {
+  char path[256];
+  char directory[256];
+
   VkBuffer vertex_buffer;
   VkDeviceMemory vertex_memory;
 
@@ -259,8 +261,9 @@ OWLAPI int owl_model_init(struct owl_model *model, struct owl_renderer *r,
 
 OWLAPI void owl_model_deinit(struct owl_model *model, struct owl_renderer *r);
 
-OWLAPI int owl_model_update_animation(struct owl_model *model, uint32_t frame,
-                                      float dt, int32_t animation);
+OWLAPI int owl_model_update_animation(struct owl_renderer *r,
+                                      struct owl_model *m, float dt,
+                                      int32_t animation);
 
 OWL_END_DECLARATIONS
 

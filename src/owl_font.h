@@ -39,7 +39,7 @@ OWLAPI int owl_font_init(struct owl_renderer *r, char const *path,
 OWLAPI void owl_font_deinit(struct owl_renderer *r, struct owl_font *font);
 
 OWLAPI int owl_font_fill_glyph(struct owl_font *font, char c, owl_v2 offset,
-                               struct owl_glyph *glyph);
+                               int32_t w, int32_t h, struct owl_glyph *glyph);
 
 OWL_END_DECLARATIONS
 

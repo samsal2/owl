@@ -36,6 +36,8 @@ struct owl_renderer_uniform_allocation {
 struct owl_renderer {
   struct owl_plataform *plataform;
 
+  owl_v3 camera_eye;
+  owl_v3 camera_direction;
   owl_m4 projection;
   owl_m4 view;
 

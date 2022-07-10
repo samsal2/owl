@@ -36,11 +36,9 @@ struct owl_quad {
  *
  * @param vk the renderer instance created with owl_renderer_init(...)
  * @param quad the quad struct describing a quad
- * @param matrix the model matrix
  * @return int
  */
-OWLAPI int owl_draw_quad(struct owl_renderer *r, struct owl_quad const *quad,
-                         owl_m4 const matrix);
+OWLAPI int owl_draw_quad(struct owl_renderer *r, struct owl_quad const *quad);
 
 /**
  * @brief draw the loaded skybox
@@ -90,15 +88,6 @@ OWLAPI int owl_draw_renderer_state(struct owl_renderer *r);
  */
 OWLAPI int owl_draw_cloth_simulation(struct owl_renderer *r,
                                      struct owl_cloth_simulation *sim);
-/**
- * @brief
- *
- * @param renderer
- * @param sim
- * @return OWLAPI
- */
-OWLAPI int owl_draw_fluid_simulation(struct owl_renderer *r,
-                                     struct owl_fluid_simulation *sim);
 
 OWL_END_DECLARATIONS
 

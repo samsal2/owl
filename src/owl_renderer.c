@@ -258,7 +258,11 @@ static int owl_renderer_select_physical_device(struct owl_renderer *r) {
     uint32_t num_present_modes;
     VkPresentModeKHR present_modes[16];
     int32_t found_present_mode = 0;
+#if 0
     VkPresentModeKHR requested_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+#else
+    VkPresentModeKHR requested_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+#endif
     VkFormatProperties d24_unorm_s8_uint_properties;
     VkFormatProperties d32_sfloat_s8_uint_properties;
     int32_t found_format = 0;
@@ -417,7 +421,7 @@ static int owl_renderer_select_physical_device(struct owl_renderer *r) {
     supported_samples |= device_properties.limits.framebufferDepthSampleCounts;
 
     if (VK_SAMPLE_COUNT_1_BIT & requested_samples) {
-      OWL_DEBUG_LOG("VK_SAMPLE_COUNT_1_BIT not supporeted, falling back to "
+      OWL_DEBUG_LOG("VK_SAMPLE_COUNT_1_BIT not supported, falling back to "
                     "VK_SAMPLE_COUNT_2_BIT\n");
       r->msaa = VK_SAMPLE_COUNT_2_BIT;
     } else if (supported_samples & requested_samples) {
@@ -4256,14 +4260,12 @@ static void owl_renderer_deinit_brdflut(struct owl_renderer *r) {
 OWLAPI int owl_renderer_init(struct owl_renderer *r, struct owl_plataform *p) {
   uint32_t width;
   uint32_t height;
-  owl_v3 eye;
-  owl_v3 direction;
   owl_v3 up;
   int ret;
   float ratio;
   float const fov = OWL_DEGREES_AS_RADIANS(45.0F);
   float const near = 0.01;
-  float const far = 10.0F;
+  float const far = 512.0F;
 
   r->plataform = p;
   r->im_command_buffer = VK_NULL_HANDLE;
@@ -4271,9 +4273,9 @@ OWLAPI int owl_renderer_init(struct owl_renderer *r, struct owl_plataform *p) {
   r->font_loaded = 0;
   r->num_frames = OWL_NUM_IN_FLIGHT_FRAMES;
 
-  r->clear_values[0].color.float32[0] = 0.01F;
-  r->clear_values[0].color.float32[1] = 0.01F;
-  r->clear_values[0].color.float32[2] = 0.01F;
+  r->clear_values[0].color.float32[0] = 0.0F;
+  r->clear_values[0].color.float32[1] = 0.0F;
+  r->clear_values[0].color.float32[2] = 0.0F;
   r->clear_values[0].color.float32[3] = 1.0F;
   r->clear_values[1].depthStencil.depth = 1.0F;
   r->clear_values[1].depthStencil.stencil = 0.0F;
@@ -4284,12 +4286,12 @@ OWLAPI int owl_renderer_init(struct owl_renderer *r, struct owl_plataform *p) {
 
   ratio = (float)width / (float)height;
 
-  OWL_V3_SET(eye, 0.0F, 0.0F, 5.0F);
-  OWL_V4_SET(direction, 0.0F, 0.0F, 1.0F, 1.0F);
+  OWL_V3_SET(r->camera_eye, 0.0F, 0.0F, 3.0F);
+  OWL_V4_SET(r->camera_direction, 0.0F, 0.0F, 1.0F, 1.0F);
   OWL_V3_SET(up, 0.0F, 1.0F, 0.0F);
 
   owl_m4_perspective(fov, ratio, near, far, r->projection);
-  owl_m4_look(eye, direction, up, r->view);
+  owl_m4_look(r->camera_eye, r->camera_direction, up, r->view);
 
   ret = owl_renderer_init_instance(r);
   if (ret) {

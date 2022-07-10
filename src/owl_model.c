@@ -36,10 +36,11 @@ owl_resolve_gltf_accessor(struct cgltf_accessor const *accessor) {
   return &data[accessor->offset + view->offset];
 }
 
-static int owl_model_get_real_uri(char const *src, struct owl_model_uri *uri) {
+static int owl_model_get_real_uri(struct owl_model *m, char const *src,
+                                  struct owl_model_uri *uri) {
   int ret = OWL_OK;
 
-  snprintf(uri->path, sizeof(uri->path), "../../assets/%s", src);
+  snprintf(uri->path, sizeof(uri->path), "%s/%s", m->directory, src);
 
   return ret;
 }
@@ -54,13 +55,18 @@ static int owl_model_load_images(struct owl_renderer *r,
 
   m->num_images = (int32_t)gltf->images_count;
 
+  OWL_DEBUG_LOG("loading images\n");
+
   for (i = 0; i < m->num_images; ++i) {
     struct owl_model_uri uri;
     struct owl_texture_desc desc;
-    struct owl_model_image *image = &m->images[i];
+    struct owl_model_image *out_image = &m->images[i];
+    struct cgltf_image *in_image = &gltf->images[i];
 
-    ret = owl_model_get_real_uri(gltf->images[i].uri, &uri);
+    ret = owl_model_get_real_uri(m, in_image->uri, &uri);
     OWL_ASSERT(!ret);
+
+    OWL_DEBUG_LOG("  trying %s\n", uri.path);
 
     desc.source = OWL_TEXTURE_SOURCE_FILE;
     desc.type = OWL_TEXTURE_TYPE_2D;
@@ -69,7 +75,7 @@ static int owl_model_load_images(struct owl_renderer *r,
     desc.height = 0;
     desc.format = OWL_RGBA8_SRGB;
 
-    ret = owl_texture_init(r, &desc, &image->texture);
+    ret = owl_texture_init(r, &desc, &out_image->texture);
     OWL_ASSERT(!ret);
   }
 
@@ -531,14 +537,17 @@ static int owl_model_load_nodes(struct owl_renderer *r,
   int32_t num_vertices = 0;
   int32_t num_indices = 0;
   int ret = OWL_OK;
+  VkDevice const device = r->device;
 
   OWL_UNUSED(r);
 
   OWL_ASSERT(gltf->nodes_count < OWL_ARRAY_SIZE(m->nodes));
   OWL_ASSERT(gltf->meshes_count < OWL_ARRAY_SIZE(m->meshes));
-  m->num_primitives = 0;
 
+  m->num_primitives = 0;
+  m->num_meshes = 0;
   m->num_nodes = (int32_t)gltf->nodes_count;
+
   for (i = 0; i < m->num_nodes; ++i) {
     int32_t j;
     struct cgltf_node const *in_node;
@@ -608,13 +617,21 @@ static int owl_model_load_nodes(struct owl_renderer *r,
     else
       out_node->skin = -1;
 
+    /* FIXME(samuel): not sure if each node has it's own mesh, however as I
+     * allocate resources per mesh, it's easier to give each one it's own
+     * instead of checking if it exists */
     if (in_node->mesh) {
       struct cgltf_mesh const *in_mesh;
       struct owl_model_mesh *out_mesh;
 
       in_mesh = in_node->mesh;
 
-      out_mesh = &m->meshes[(int32_t)(in_mesh - gltf->meshes)];
+#if 0
+      out_node->mesh = (int32_t)(in_mesh - gltf->meshes);
+#else
+      out_node->mesh = m->num_meshes++;
+#endif
+      out_mesh = &m->meshes[out_node->mesh];
 
       OWL_ASSERT(in_mesh->primitives_count <
                  OWL_ARRAY_SIZE(out_mesh->primitives));
@@ -863,6 +880,136 @@ static int owl_model_load_nodes(struct owl_renderer *r,
           num_vertices += num_local_vertices;
         }
       }
+
+      for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(out_mesh->ssbos); ++j) {
+        VkBufferCreateInfo info;
+        VkResult vk_result;
+        OWL_UNUSED(vk_result);
+
+        info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        info.pNext = NULL;
+        info.flags = 0;
+        info.size = sizeof(struct owl_model_joints_ssbo);
+        info.usage = 0;
+        info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        info.queueFamilyIndexCount = 0;
+        info.pQueueFamilyIndices = NULL;
+
+        vk_result = vkCreateBuffer(device, &info, NULL, &out_mesh->ssbos[j]);
+        OWL_ASSERT(!vk_result);
+      }
+
+      {
+        uint64_t aligned_size;
+        VkMemoryPropertyFlagBits properties;
+        VkMemoryRequirements requirements;
+        VkMemoryAllocateInfo info;
+        VkResult vk_result;
+        OWL_UNUSED(vk_result);
+
+        properties = 0;
+        properties |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        properties |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+        vkGetBufferMemoryRequirements(device, out_mesh->ssbos[0],
+                                      &requirements);
+
+        aligned_size = OWL_ALIGN_UP_2(requirements.size,
+                                      requirements.alignment);
+
+        info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        info.pNext = NULL;
+        info.allocationSize = aligned_size * OWL_ARRAY_SIZE(out_mesh->ssbos);
+        info.memoryTypeIndex = owl_renderer_find_memory_type(
+            r, requirements.memoryTypeBits, properties);
+
+        vk_result = vkAllocateMemory(device, &info, NULL,
+                                     &out_mesh->ssbo_memory);
+        OWL_ASSERT(!vk_result);
+
+        for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(out_mesh->ssbos); ++j) {
+          vk_result = vkBindBufferMemory(device, out_mesh->ssbos[j],
+                                         out_mesh->ssbo_memory,
+                                         j * aligned_size);
+          OWL_ASSERT(!vk_result);
+        }
+
+        {
+          void *data;
+          vk_result = vkMapMemory(device, out_mesh->ssbo_memory, 0,
+                                  VK_WHOLE_SIZE, 0, &data);
+          OWL_ASSERT(!vk_result);
+          for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(out_mesh->ssbos); ++j) {
+            uint64_t const offset = j * aligned_size;
+            out_mesh->mapped_ssbos[j] = (void *)&((uint8_t *)(data))[offset];
+          }
+        }
+
+        for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(out_mesh->ssbos); ++j) {
+          int32_t l;
+          struct owl_model_joints_ssbo *ssbo = out_mesh->mapped_ssbos[j];
+
+          if (-1 != out_node->skin)
+            ssbo->num_joints = m->skins[out_node->skin].num_joints;
+          else
+            ssbo->num_joints = 0;
+
+          OWL_M4_IDENTITY(ssbo->matrix);
+
+          for (l = 0; l < (int32_t)OWL_ARRAY_SIZE(ssbo->joints); ++l)
+            OWL_M4_IDENTITY(ssbo->joints[l]);
+        }
+      }
+
+      {
+        VkDescriptorSetLayout layouts[OWL_ARRAY_SIZE(out_mesh->ssbos)];
+        VkDescriptorSetAllocateInfo info;
+        VkResult vk_result;
+        OWL_UNUSED(vk_result);
+
+        OWL_ASSERT(OWL_ARRAY_SIZE(out_mesh->ssbo_descriptor_sets) ==
+                   OWL_ARRAY_SIZE(out_mesh->ssbos));
+
+        for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(layouts); ++j)
+          layouts[j] = r->model_storage_descriptor_set_layout;
+
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        info.pNext = NULL;
+        info.descriptorPool = r->descriptor_pool;
+        info.descriptorSetCount = OWL_ARRAY_SIZE(layouts);
+        info.pSetLayouts = layouts;
+
+        vk_result = vkAllocateDescriptorSets(device, &info,
+                                             out_mesh->ssbo_descriptor_sets);
+        OWL_ASSERT(!vk_result);
+      }
+      {
+        VkDescriptorBufferInfo descriptors[OWL_ARRAY_SIZE(out_mesh->ssbos)];
+        VkWriteDescriptorSet writes[OWL_ARRAY_SIZE(out_mesh->ssbos)];
+
+        for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(descriptors); ++j) {
+          descriptors[j].buffer = out_mesh->ssbos[j];
+          descriptors[j].offset = 0;
+          descriptors[j].range = sizeof(struct owl_model_joints_ssbo);
+
+          writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          writes[j].pNext = NULL;
+          writes[j].dstSet = out_mesh->ssbo_descriptor_sets[j];
+          writes[j].dstBinding = 0;
+          writes[j].dstArrayElement = 0;
+          writes[j].descriptorCount = 1;
+          writes[j].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+          writes[j].pImageInfo = NULL;
+          writes[j].pBufferInfo = &descriptors[j];
+          writes[j].pTexelBufferView = NULL;
+        }
+
+        vkUpdateDescriptorSets(device, OWL_ARRAY_SIZE(writes), writes, 0,
+                               NULL);
+      }
+    } else {
+      out_node->mesh = -1;
     }
   }
 
@@ -874,8 +1021,26 @@ static int owl_model_load_nodes(struct owl_renderer *r,
 
 static void owl_model_unload_nodes(struct owl_renderer *r,
                                    struct owl_model *m) {
-  OWL_UNUSED(r);
-  OWL_UNUSED(m);
+  int32_t i;
+  VkDevice const device = r->device;
+  /* could just iterate each mesh instead of going trough each node,
+     however it's easier to cleanup future resource allocations this way */
+  for (i = 0; i < m->num_nodes; ++i) {
+    struct owl_model_node *node = &m->nodes[i];
+
+    if (-1 != node->mesh) {
+      int32_t j;
+      struct owl_model_mesh *mesh = &m->meshes[node->mesh];
+      vkFreeDescriptorSets(device, r->descriptor_pool,
+                           OWL_ARRAY_SIZE(mesh->ssbos),
+                           mesh->ssbo_descriptor_sets);
+
+      vkFreeMemory(device, mesh->ssbo_memory, NULL);
+
+      for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(mesh->ssbos); ++j)
+        vkDestroyBuffer(device, mesh->ssbos[j], NULL);
+    }
+  }
 }
 
 static int owl_model_init_buffers(struct owl_renderer *r,
@@ -1090,12 +1255,14 @@ static void owl_model_deinit_buffers(struct owl_renderer *r,
   vkDestroyBuffer(device, m->vertex_buffer, NULL);
 }
 
+/* TODO(samuel): do a simplify pass */
 static int owl_model_load_skins(struct owl_renderer *r,
                                 struct cgltf_data const *gltf,
                                 struct owl_model *m) {
   int32_t i;
   int ret = OWL_OK;
-  VkDevice const device = r->device;
+
+  OWL_UNUSED(r);
 
   OWL_ASSERT(gltf->skins_count < OWL_ARRAY_SIZE(m->skins));
 
@@ -1121,148 +1288,21 @@ static int owl_model_load_skins(struct owl_renderer *r,
     OWL_ASSERT(in_skin->joints_count < OWL_ARRAY_SIZE(out_skin->joints));
 
     out_skin->num_joints = (int32_t)in_skin->joints_count;
-    for (j = 0; j < out_skin->num_joints; ++j) {
+    for (j = 0; j < out_skin->num_joints; ++j)
       out_skin->joints[j] = (int32_t)(in_skin->joints[j] - gltf->nodes);
 
-      OWL_ASSERT(!OWL_STRNCMP(m->nodes[out_skin->joints[j]].name,
-                              in_skin->joints[j]->name, 256));
-    }
+    if (in_skin->inverse_bind_matrices) {
+      struct cgltf_accessor *accessor = in_skin->inverse_bind_matrices;
+      owl_m4 const *matrices = owl_resolve_gltf_accessor(accessor);
 
-    for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(out_skin->ssbos); ++j) {
-      VkBufferCreateInfo info;
-      VkResult vk_result;
-      OWL_UNUSED(vk_result);
+      OWL_ASSERT(accessor->count < OWL_ARRAY_SIZE(out_skin->joints));
 
-      info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-      info.pNext = NULL;
-      info.flags = 0;
-      info.size = sizeof(struct owl_model_joints_ssbo);
-      info.usage = 0;
-      info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-      info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-      info.queueFamilyIndexCount = 0;
-      info.pQueueFamilyIndices = NULL;
-
-      vk_result = vkCreateBuffer(device, &info, NULL, &out_skin->ssbos[j]);
-      OWL_ASSERT(!vk_result);
-    }
-
-    /* allocate ssbo memory */
-    {
-      uint64_t aligned_size;
-      VkMemoryPropertyFlagBits properties;
-      VkMemoryRequirements requirements;
-      VkMemoryAllocateInfo info;
-      VkResult vk_result;
-      OWL_UNUSED(vk_result);
-
-      properties = 0;
-      properties |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-      properties |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-      vkGetBufferMemoryRequirements(device, out_skin->ssbos[0], &requirements);
-
-      aligned_size = OWL_ALIGN_UP_2(requirements.size, requirements.alignment);
-
-      info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-      info.pNext = NULL;
-      info.allocationSize = aligned_size * OWL_ARRAY_SIZE(out_skin->ssbos);
-      info.memoryTypeIndex = owl_renderer_find_memory_type(
-          r, requirements.memoryTypeBits, properties);
-
-      vk_result = vkAllocateMemory(device, &info, NULL,
-                                   &out_skin->ssbo_memory);
-      OWL_ASSERT(!vk_result);
-
-      for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(out_skin->ssbos); ++j) {
-        vk_result = vkBindBufferMemory(device, out_skin->ssbos[j],
-                                       out_skin->ssbo_memory,
-                                       j * aligned_size);
-        OWL_ASSERT(!vk_result);
-      }
-
-      {
-        void *data;
-        vk_result = vkMapMemory(device, out_skin->ssbo_memory, 0,
-                                VK_WHOLE_SIZE, 0, &data);
-        OWL_ASSERT(!vk_result);
-        for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(out_skin->mapped_ssbos); ++j) {
-          uint64_t const offset = j * aligned_size;
-          out_skin->mapped_ssbos[j] = (void *)&((uint8_t *)(data))[offset];
-        }
-      }
-
-      if (in_skin->inverse_bind_matrices) {
-        struct cgltf_accessor *accessor = in_skin->inverse_bind_matrices;
-        owl_m4 const *matrices = owl_resolve_gltf_accessor(accessor);
-
-        OWL_ASSERT(accessor->count < OWL_ARRAY_SIZE(out_skin->joints));
-
-        out_skin->num_inverse_bind_matrices = accessor->count;
-        for (j = 0; j < out_skin->num_inverse_bind_matrices; ++j)
-          OWL_M4_COPY(matrices[j], out_skin->inverse_bind_matrices[j]);
-
-        for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(out_skin->mapped_ssbos); ++j) {
-          int32_t k;
-          struct owl_model_joints_ssbo *ssbo = out_skin->mapped_ssbos[j];
-
-          OWL_M4_IDENTITY(ssbo->matrix);
-
-          for (k = 0; k < out_skin->num_joints; ++k)
-            OWL_M4_COPY(matrices[j], ssbo->joints[j]);
-        }
-      } else {
-        out_skin->num_inverse_bind_matrices = 0;
-      }
+      out_skin->num_inverse_bind_matrices = accessor->count;
+      for (j = 0; j < out_skin->num_inverse_bind_matrices; ++j)
+        OWL_M4_COPY(matrices[j], out_skin->inverse_bind_matrices[j]);
     }
 
     /* allocate and write the descriptor sets */
-    {
-
-      VkDescriptorSetLayout layouts[OWL_ARRAY_SIZE(out_skin->ssbos)];
-      VkDescriptorSetAllocateInfo info;
-      VkResult vk_result;
-      OWL_UNUSED(vk_result);
-
-      OWL_ASSERT(OWL_ARRAY_SIZE(out_skin->ssbo_descriptor_sets) ==
-                 OWL_ARRAY_SIZE(out_skin->ssbos));
-
-      for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(layouts); ++j)
-        layouts[j] = r->model_storage_descriptor_set_layout;
-
-      info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-      info.pNext = NULL;
-      info.descriptorPool = r->descriptor_pool;
-      info.descriptorSetCount = OWL_ARRAY_SIZE(layouts);
-      info.pSetLayouts = layouts;
-
-      vk_result = vkAllocateDescriptorSets(device, &info,
-                                           out_skin->ssbo_descriptor_sets);
-      OWL_ASSERT(!vk_result);
-    }
-    {
-      VkDescriptorBufferInfo descriptors[OWL_ARRAY_SIZE(out_skin->ssbos)];
-      VkWriteDescriptorSet writes[OWL_ARRAY_SIZE(out_skin->ssbos)];
-
-      for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(descriptors); ++j) {
-        descriptors[j].buffer = out_skin->ssbos[j];
-        descriptors[j].offset = 0;
-        descriptors[j].range = sizeof(struct owl_model_joints_ssbo);
-
-        writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writes[j].pNext = NULL;
-        writes[j].dstSet = out_skin->ssbo_descriptor_sets[j];
-        writes[j].dstBinding = 0;
-        writes[j].dstArrayElement = 0;
-        writes[j].descriptorCount = 1;
-        writes[j].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        writes[j].pImageInfo = NULL;
-        writes[j].pBufferInfo = &descriptors[j];
-        writes[j].pTexelBufferView = NULL;
-      }
-
-      vkUpdateDescriptorSets(device, OWL_ARRAY_SIZE(writes), writes, 0, NULL);
-    }
   }
 
   return ret;
@@ -1270,22 +1310,8 @@ static int owl_model_load_skins(struct owl_renderer *r,
 
 static void owl_model_unload_skins(struct owl_renderer *r,
                                    struct owl_model *m) {
-  int32_t i;
-  VkDevice const device = r->device;
-  for (i = 0; i < m->num_skins; ++i) {
-    int j;
-    struct owl_model_skin *skin = &m->skins[i];
-
-    vkFreeDescriptorSets(device, r->descriptor_pool,
-                         OWL_ARRAY_SIZE(skin->ssbo_descriptor_sets),
-                         skin->ssbo_descriptor_sets);
-
-    vkFreeMemory(device, skin->ssbo_memory, NULL);
-
-    for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(skin->ssbos); ++j) {
-      vkDestroyBuffer(device, skin->ssbos[j], NULL);
-    }
-  }
+  OWL_UNUSED(r);
+  OWL_UNUSED(m);
 }
 
 static int owl_model_load_animations(struct owl_renderer *r,
@@ -1464,6 +1490,8 @@ static void owl_model_unload_roots(struct owl_renderer *r,
   OWL_UNUSED(m);
 }
 
+#define OWL_PATH_SEPARATOR '/'
+
 /* TODO(samuel): cleanup on error */
 OWLAPI int owl_model_init(struct owl_model *model, struct owl_renderer *r,
                           char const *path) {
@@ -1482,6 +1510,23 @@ OWLAPI int owl_model_init(struct owl_model *model, struct owl_renderer *r,
   empty_desc.path = "../../assets/none.png";
   ret = owl_texture_init(r, &empty_desc, &model->empty_texture);
   OWL_ASSERT(!ret);
+
+  OWL_STRNCPY(model->path, path, sizeof(model->path));
+
+  {
+    uint32_t end = 0;
+    uint64_t const max_length = sizeof(model->directory);
+
+    OWL_STRNCPY(model->directory, path, sizeof(model->path));
+
+    while ('\0' != model->directory[end] && end < max_length)
+      ++end;
+
+    while (OWL_PATH_SEPARATOR != model->directory[end] && end)
+      --end;
+
+    model->directory[end] = '\0';
+  }
 
   if (cgltf_result_success != cgltf_parse_file(&options, path, &data)) {
     OWL_DEBUG_LOG("Filed to parse gltf file!");
@@ -1506,13 +1551,13 @@ OWLAPI int owl_model_init(struct owl_model *model, struct owl_renderer *r,
   ret = owl_model_init_all_primitives(&all_primitives, data);
   OWL_ASSERT(!ret);
 
+  ret = owl_model_load_skins(r, data, model);
+  OWL_ASSERT(!ret);
+
   ret = owl_model_load_nodes(r, data, &all_primitives, model);
   OWL_ASSERT(!ret);
 
   ret = owl_model_init_buffers(r, &all_primitives, model);
-  OWL_ASSERT(!ret);
-
-  ret = owl_model_load_skins(r, data, model);
   OWL_ASSERT(!ret);
 
   ret = owl_model_load_animations(r, data, model);
@@ -1574,42 +1619,54 @@ static void owl_model_resolve_node_matrix(struct owl_model const *m,
   }
 }
 
-static void owl_model_node_joints_update(struct owl_model *m, uint32_t frame,
-                                         int32_t id) {
+static void owl_model_update_node_joints(struct owl_renderer *r,
+                                         struct owl_model *m, int32_t id) {
   int32_t i;
   owl_m4 tmp;
   owl_m4 inverse;
+  struct owl_model_mesh const *mesh;
   struct owl_model_skin const *skin;
   struct owl_model_node const *node;
+  uint32_t const frame = r->frame;
 
   node = &m->nodes[id];
 
   for (i = 0; i < node->num_children; ++i)
-    owl_model_node_joints_update(m, frame, node->children[i]);
+    owl_model_update_node_joints(r, m, node->children[i]);
+
+  if (-1 == node->mesh)
+    return;
 
   if (-1 == node->skin)
     return;
 
+  mesh = &m->meshes[node->mesh];
   skin = &m->skins[node->skin];
 
   owl_model_resolve_node_matrix(m, id, tmp);
   owl_m4_inverse(tmp, inverse);
 
+#if 1
   for (i = 0; i < skin->num_joints; ++i) {
-    struct owl_model_joints_ssbo *ssbo = skin->mapped_ssbos[frame];
+    struct owl_model_joints_ssbo *ssbo = mesh->mapped_ssbos[frame];
 
     owl_model_resolve_node_matrix(m, skin->joints[i], tmp);
     owl_m4_multiply(tmp, skin->inverse_bind_matrices[i], tmp);
     owl_m4_multiply(inverse, tmp, ssbo->joints[i]);
   }
+#else
+  OWL_UNUSED(frame);
+  OWL_UNUSED(skin);
+#endif
 }
 
-OWLAPI int owl_model_update_animation(struct owl_model *m, uint32_t frame,
-                                      float dt, int32_t id) {
+OWLAPI int owl_model_update_animation(struct owl_renderer *r,
+                                      struct owl_model *m, float dt,
+                                      int32_t id) {
   int32_t i;
   struct owl_model_animation *animation;
 
-  if (-1 <= id || id >= (int32_t)OWL_ARRAY_SIZE(m->animations))
+  if (-1 >= id || id >= (int32_t)OWL_ARRAY_SIZE(m->animations))
     return OWL_ERROR_FATAL; /* TODO(samuel0) invalid value */
 
   animation = &m->animations[id];
@@ -1662,7 +1719,7 @@ OWLAPI int owl_model_update_animation(struct owl_model *m, uint32_t frame,
   }
 
   for (i = 0; i < m->num_roots; ++i)
-    owl_model_node_joints_update(m, frame, m->roots[i]);
+    owl_model_update_node_joints(r, m, m->roots[i]);
 
   return OWL_OK;
 }

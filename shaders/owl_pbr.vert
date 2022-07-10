@@ -28,7 +28,7 @@ layout (set = 0, binding = 0) uniform UBO
 layout(std430, set = 1, binding = 0) readonly buffer SSBO {
 	mat4 matrix;
 	mat4 jointMatrix[MAX_NUM_JOINTS];
-	float jointCount;
+	int jointCount;
 } node;
 
 layout (location = 0) out vec3 outWorldPos;

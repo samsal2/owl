@@ -30,7 +30,8 @@ int main(void) {
   CHECK(owl_renderer_init(renderer, window));
 
   model = malloc(sizeof(*model));
-  CHECK(owl_model_init(model, renderer, "../../assets/CesiumMan.gltf"));
+  CHECK(owl_model_init(model, renderer,
+                       "../../assets/CesiumMan/glTF/CesiumMan.gltf"));
 
   CHECK(owl_renderer_load_font(renderer, 64.0F,
                                "../../assets/CascadiaMono.ttf"));
@@ -45,6 +46,7 @@ int main(void) {
 
   while (!owl_plataform_should_close(window)) {
     owl_v3 axis = {1.0F, 0.0F, 0.0F};
+    float const dt = time_stamp - prev_time_stamp;
 
     prev_time_stamp = time_stamp;
     time_stamp = owl_plataform_get_time(window);
@@ -59,8 +61,7 @@ int main(void) {
     owl_draw_skybox(renderer);
 
 #if 1
-    owl_model_update_animation(model, renderer->frame,
-                               time_stamp - prev_time_stamp, 0);
+    owl_model_update_animation(renderer, model, dt, 0);
 #endif
 
     owl_draw_model(renderer, model, matrix);

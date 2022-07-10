@@ -12,8 +12,7 @@
 
 /* TODO(samuel): this can be optimized to a single uniforma allcation, even
  * just a push_constant */
-OWLAPI int owl_draw_quad(struct owl_renderer *r, struct owl_quad const *quad,
-                         owl_m4 const matrix) {
+OWLAPI int owl_draw_quad(struct owl_renderer *r, struct owl_quad const *quad) {
   uint8_t *data;
   VkDescriptorSet descriptor_sets[2];
   VkCommandBuffer command_buffer;
@@ -62,25 +61,22 @@ OWLAPI int owl_draw_quad(struct owl_renderer *r, struct owl_quad const *quad,
   vertices[3].uv[0] = quad->uv1[0];
   vertices[3].uv[1] = quad->uv1[1];
 
-  OWL_M4_COPY(r->projection, uniform.projection);
-  OWL_M4_COPY(r->view, uniform.view);
-  OWL_M4_COPY(matrix, uniform.model);
+  OWL_M4_IDENTITY(uniform.projection);
+  OWL_M4_IDENTITY(uniform.view);
+  OWL_M4_IDENTITY(uniform.model);
 
   data = owl_renderer_vertex_allocate(r, sizeof(vertices), &vertex_allocation);
-  OWL_ASSERT(data);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, vertices, sizeof(vertices));
 
   data = owl_renderer_index_allocate(r, sizeof(indices), &index_allocation);
-  OWL_ASSERT(data);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, indices, sizeof(indices));
 
   data = owl_renderer_uniform_allocate(r, sizeof(uniform),
                                        &uniform_allocation);
-  OWL_ASSERT(data);
   if (!data)
     return OWL_ERROR_NO_FRAME_MEMORY;
   OWL_MEMCPY(data, &uniform, sizeof(uniform));
@@ -106,16 +102,7 @@ OWLAPI int owl_draw_quad(struct owl_renderer *r, struct owl_quad const *quad,
 
 static int owl_draw_glyph(struct owl_renderer *r, struct owl_glyph *glyph,
                           owl_v3 const color) {
-  owl_m4 matrix;
-  owl_v3 scale;
   struct owl_quad quad;
-
-  scale[0] = 2.0F / (float)r->height;
-  scale[1] = 2.0F / (float)r->height;
-  scale[2] = 2.0F / (float)r->height;
-
-  OWL_M4_IDENTITY(matrix);
-  owl_m4_scale_v3(matrix, scale, matrix);
 
   quad.texture = &r->font.atlas;
 
@@ -135,7 +122,7 @@ static int owl_draw_glyph(struct owl_renderer *r, struct owl_glyph *glyph,
   quad.uv1[0] = glyph->uvs[3][0];
   quad.uv1[1] = glyph->uvs[3][1];
 
-  return owl_draw_quad(r, &quad, matrix);
+  return owl_draw_quad(r, &quad);
 }
 
 OWLAPI int owl_draw_text(struct owl_renderer *r, char const *text,
@@ -150,13 +137,14 @@ OWLAPI int owl_draw_text(struct owl_renderer *r, char const *text,
   vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     r->text_pipeline);
 
-  offset[0] = position[0] * (float)r->width;
-  offset[1] = position[1] * (float)r->height;
+  offset[0] = position[0] * r->width;
+  offset[1] = position[1] * r->height;
 
   for (letter = &text[0]; '\0' != *letter; ++letter) {
     struct owl_glyph glyph;
 
-    ret = owl_font_fill_glyph(&r->font, *letter, offset, &glyph);
+    ret = owl_font_fill_glyph(&r->font, *letter, offset, r->width, r->height,
+                              &glyph);
     if (ret)
       return ret;
 
@@ -176,7 +164,6 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
   int32_t p;
   struct owl_model_node const *node;
   struct owl_model_mesh const *mesh;
-  struct owl_model_skin const *skin;
   struct owl_model_joints_ssbo *ssbo;
   struct owl_model_uniform uniform;
   struct owl_renderer_uniform_allocation uniform_allocation;
@@ -193,12 +180,13 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
   if (-1 == node->mesh)
     return OWL_OK;
 
-  if (-1 == node->skin)
-    return OWL_OK;
-
   mesh = &m->meshes[node->mesh];
-  skin = &m->skins[node->skin];
-  ssbo = skin->mapped_ssbos[r->frame];
+  ssbo = mesh->mapped_ssbos[r->frame];
+
+#if 0
+  OWL_DEBUG_LOG("ssbo data:\n");
+  OWL_DEBUG_LOG("  num_joints = %i\n", ssbo->num_joints);
+#endif
 
   OWL_M4_COPY(node->matrix, ssbo->matrix);
 
@@ -209,28 +197,13 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
   OWL_M4_COPY(matrix, uniform.model);
   OWL_M4_COPY(r->view, uniform.view);
 
-#if 0
-  OWL_M4_IDENTITY(uniform.model);
-  OWL_M4_IDENTITY(uniform.projection);
-  OWL_M4_IDENTITY(uniform.view);
-
-  OWL_DEBUG_LOG("\n projection: " OWL_M4_FORMAT "\n",
-                OWL_M4_FORMAT_ARGS(uniform.projection));
-
-  OWL_DEBUG_LOG("\n view: " OWL_M4_FORMAT "\n",
-                OWL_M4_FORMAT_ARGS(uniform.view));
-
-  OWL_DEBUG_LOG("\n model: " OWL_M4_FORMAT "\n",
-                OWL_M4_FORMAT_ARGS(uniform.model));
-#endif
-
-  uniform.light_direction[0] = 0.0F;
-  uniform.light_direction[1] = 1.0F;
+  uniform.light_direction[0] = -1.0F;
+  uniform.light_direction[1] = 0.0F;
   uniform.light_direction[2] = 0.0F;
   uniform.light_direction[3] = 0.0F;
-  uniform.camera_position[0] = 0.0F;
-  uniform.camera_position[1] = 0.0F;
-  uniform.camera_position[2] = 5.0F;
+  uniform.camera_position[0] = r->camera_eye[0];
+  uniform.camera_position[1] = r->camera_eye[0];
+  uniform.camera_position[2] = r->camera_eye[0];
   uniform.exposure = 4.5F;
   uniform.gamma = 2.2F;
   uniform.prefiltered_cube_mip_levels = r->prefiltered_map_mipmaps;
@@ -264,7 +237,7 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
 
     material = &m->materials[primitive->material];
 
-    descriptors_sets[0] = skin->ssbo_descriptor_sets[r->frame];
+    descriptors_sets[0] = mesh->ssbo_descriptor_sets[r->frame];
     OWL_ASSERT(descriptors_sets[0]);
     descriptors_sets[1] = material->descriptor_set;
     OWL_ASSERT(descriptors_sets[1]);
@@ -607,40 +580,4 @@ OWLAPI int owl_draw_cloth_simulation(struct owl_renderer *r,
   vkCmdDrawIndexed(command_buffer, num_indices, 1, 0, 0, 0);
 
   return OWL_OK;
-}
-
-OWLAPI int owl_draw_fluid_simulation(struct owl_renderer *r,
-                                     struct owl_fluid_simulation *sim) {
-  struct owl_quad quad;
-  owl_m4 const matrix = OWL_M4_IDENTITY_VALUE;
-  uint32_t const frame = r->frame;
-  VkCommandBuffer command_buffer = r->submit_command_buffers[frame];
-
-  quad.position0[0] = -1.0F;
-  quad.position0[1] = -1.0F;
-
-  quad.position1[0] = 1.0F;
-  quad.position1[1] = 1.0F;
-
-  quad.color[0] = 1.0F;
-  quad.color[1] = 1.0F;
-  quad.color[2] = 1.0F;
-
-  quad.uv0[0] = 0.0F;
-  quad.uv0[1] = 0.0F;
-
-  quad.uv1[0] = 1.0F;
-  quad.uv1[1] = 1.0F;
-
-#if 1
-  quad.texture = &sim->dye[sim->dye_read].texture;
-#else
-  quad.texture = &r->font_atlas;
-  OWL_UNUSED(sim);
-#endif
-
-  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    r->basic_pipeline);
-
-  return owl_draw_quad(r, &quad, matrix);
 }
