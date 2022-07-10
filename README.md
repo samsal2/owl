@@ -1,1 +1,1 @@
-![Screenshot](assets/CessiumMan.png)
+![Screenshot](assets/screenshot.png)
