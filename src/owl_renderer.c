@@ -2243,8 +2243,6 @@ static int owl_renderer_init_index_buffer(struct owl_renderer *r,
     int32_t i;
     VkDevice const device = r->device;
 
-    r->index_buffer_last_offset = 0;
-
     for (i = 0; i < (int32_t)r->num_frames; ++i) {
         VkBufferCreateInfo info;
         VkResult vk_result = VK_SUCCESS;
@@ -2308,6 +2306,7 @@ static int owl_renderer_init_index_buffer(struct owl_renderer *r,
             goto error_free_memory;
     }
 
+    r->index_buffer_last_offset = 0;
     r->index_buffer_offset = 0;
     r->index_buffer_size = size;
 
@@ -2341,8 +2340,6 @@ static int owl_renderer_init_uniform_buffer(struct owl_renderer *r,
 {
     int32_t i;
     VkDevice const device = r->device;
-
-    r->uniform_buffer_last_offset = 0;
 
     for (i = 0; i < (int32_t)r->num_frames; ++i) {
         VkBufferCreateInfo info;
@@ -2474,6 +2471,7 @@ static int owl_renderer_init_uniform_buffer(struct owl_renderer *r,
         }
     }
 
+    r->uniform_buffer_last_offset = 0;
     r->uniform_buffer_offset = 0;
     r->uniform_buffer_size = size;
 
