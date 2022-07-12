@@ -29,7 +29,7 @@ modules:
 .PHONY: format
 format:
 	clang-format -i src/owl_*
-	clang-format -i shaders/owl_*
+	clang-format -i glsl/owl_*
 
 .PHONY: clean
 clean:

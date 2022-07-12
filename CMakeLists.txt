@@ -30,7 +30,7 @@ target_include_directories(${PROJECT_NAME}
 # add sources
 add_subdirectory(deps)
 add_subdirectory(src)
-add_subdirectory(shaders)
+add_subdirectory(glsl)
 
 # compile options
 target_compile_options(${PROJECT_NAME} PUBLIC

@@ -12,23 +12,23 @@ struct owl_cloth_simulation;
 struct owl_fluid_simulation;
 
 struct owl_quad {
-  /*
+    /*
    * 0 - x
    * |   |
    * x - 1
    */
-  /** normalized top left corner position */
-  owl_v2 position0;
-  /** normalized bottom right corner position */
-  owl_v2 position1;
-  /** color blend value */
-  owl_v3 color;
-  /** normalized top left uv */
-  owl_v2 uv0;
-  /** normalized bottom right uv  */
-  owl_v2 uv1;
-  /** texture to draw */
-  struct owl_texture *texture;
+    /** normalized top left corner position */
+    owl_v2 position0;
+    /** normalized bottom right corner position */
+    owl_v2 position1;
+    /** color blend value */
+    owl_v3 color;
+    /** normalized top left uv */
+    owl_v2 uv0;
+    /** normalized bottom right uv  */
+    owl_v2 uv1;
+    /** texture to draw */
+    struct owl_texture *texture;
 };
 
 /**

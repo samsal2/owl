@@ -8,14 +8,14 @@ OWL_BEGIN_DECLARATIONS
 struct owl_renderer;
 
 struct owl_plataform {
-  char const *title;
-  void *opaque;
+    char const *title;
+    void *opaque;
 };
 
 struct owl_plataform_file {
-  char const *path;
-  uint64_t size;
-  uint8_t *data;
+    char const *path;
+    uint64_t size;
+    uint8_t *data;
 };
 
 OWLAPI int owl_plataform_init(struct owl_plataform *plataform, int width,

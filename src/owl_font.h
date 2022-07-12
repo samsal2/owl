@@ -12,25 +12,25 @@ struct owl_renderer;
 #define OWL_NUM_CHARS ((int)('~' - ' '))
 
 struct owl_packed_char {
-  uint16_t x0;
-  uint16_t y0;
-  uint16_t x1;
-  uint16_t y1;
-  float x_offset;
-  float y_offset;
-  float x_advance;
-  float x_offset2;
-  float y_offset2;
+    uint16_t x0;
+    uint16_t y0;
+    uint16_t x1;
+    uint16_t y1;
+    float x_offset;
+    float y_offset;
+    float x_advance;
+    float x_offset2;
+    float y_offset2;
 };
 
 struct owl_glyph {
-  owl_v3 positions[4];
-  owl_v2 uvs[4];
+    owl_v3 positions[4];
+    owl_v2 uvs[4];
 };
 
 struct owl_font {
-  struct owl_texture atlas;
-  struct owl_packed_char chars[OWL_NUM_CHARS];
+    struct owl_texture atlas;
+    struct owl_packed_char chars[OWL_NUM_CHARS];
 };
 
 OWLAPI int owl_font_init(struct owl_renderer *r, char const *path,
