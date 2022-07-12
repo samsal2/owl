@@ -13,10 +13,10 @@ struct owl_fluid_simulation;
 
 struct owl_quad {
     /*
-   * 0 - x
-   * |   |
-   * x - 1
-   */
+     * 0 - x
+     * |   |
+     * x - 1
+     */
     /** normalized top left corner position */
     owl_v2 position0;
     /** normalized bottom right corner position */

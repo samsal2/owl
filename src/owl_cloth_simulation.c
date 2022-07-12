@@ -44,7 +44,7 @@ OWLAPI int owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
             float const x = 2.0F * (float)j / (float)(width - 1) - 1.0F;
             float const y = 2.0F * (float)i / (float)(height - 1) - 1.0F;
             struct owl_cloth_particle *particle =
-                    &sim->particles[i * width + j];
+                &sim->particles[i * width + j];
 
             particle->movable = i != 0;
             OWL_V3_SET(particle->position, x, y, 0.0F);
@@ -57,15 +57,15 @@ OWLAPI int owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
     for (i = 0; i < height; ++i) {
         for (j = 0; j < width; ++j) {
             struct owl_cloth_particle *particle =
-                    &sim->particles[i * width + j];
+                &sim->particles[i * width + j];
 
             if (0 < j) {
                 struct owl_cloth_particle *link =
-                        &sim->particles[i * width + (j - 1)];
+                    &sim->particles[i * width + (j - 1)];
 
                 particle->links[0] = link;
                 particle->distances[0] =
-                        owl_v3_distance(particle->position, link->position);
+                    owl_v3_distance(particle->position, link->position);
             } else {
                 particle->links[0] = NULL;
                 particle->distances[0] = 0.0F;
@@ -73,11 +73,11 @@ OWLAPI int owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
             if (0 < i) {
                 struct owl_cloth_particle *link =
-                        &sim->particles[(i - 1) * width + j];
+                    &sim->particles[(i - 1) * width + j];
 
                 particle->links[1] = link;
                 particle->distances[1] =
-                        owl_v3_distance(particle->position, link->position);
+                    owl_v3_distance(particle->position, link->position);
             } else {
                 particle->links[1] = NULL;
                 particle->distances[1] = 0.0F;
@@ -85,11 +85,11 @@ OWLAPI int owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
             if ((width - 1) > j) {
                 struct owl_cloth_particle *link =
-                        &sim->particles[i * width + (j + 1)];
+                    &sim->particles[i * width + (j + 1)];
 
                 particle->links[2] = link;
                 particle->distances[2] =
-                        owl_v3_distance(particle->position, link->position);
+                    owl_v3_distance(particle->position, link->position);
             } else {
                 particle->links[2] = NULL;
                 particle->distances[2] = 0.0F;
@@ -97,11 +97,11 @@ OWLAPI int owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
 
             if ((height - 1) > i) {
                 struct owl_cloth_particle *link =
-                        &sim->particles[(i + 1) * width + j];
+                    &sim->particles[(i + 1) * width + j];
 
                 particle->links[3] = link;
                 particle->distances[3] =
-                        owl_v3_distance(particle->position, link->position);
+                    owl_v3_distance(particle->position, link->position);
             } else {
                 particle->links[3] = NULL;
                 particle->distances[3] = 0.0F;
@@ -110,7 +110,7 @@ OWLAPI int owl_cloth_simulation_init(struct owl_cloth_simulation *sim,
     }
 
     {
-        owl_v3 position = { 0.0F, 0.0F, -1.0F };
+        owl_v3 position = {0.0F, 0.0F, -1.0F};
         OWL_M4_IDENTITY(sim->model);
         owl_m4_translate(position, sim->model);
     }
@@ -177,8 +177,8 @@ OWLAPI void owl_cloth_simulation_update(struct owl_cloth_simulation *sim,
                         owl_v3 delta;
                         owl_v3 correction;
 
-                        /* get the distance between the newly calculated position and the
-             * link position */
+                        /* get the distance between the newly calculated
+                         * position and the link position */
                         OWL_V3_SUB(link->position, particle->position, delta);
 
                         /* calculate the contraints factor */
@@ -188,13 +188,15 @@ OWLAPI void owl_cloth_simulation_update(struct owl_cloth_simulation *sim,
                         /* find the correction value */
                         OWL_V3_SCALE(delta, factor, correction);
 
-                        /* half the correction value and apply it to the particle */
+                        /* half the correction value and apply it to the
+                         * particle */
                         OWL_V3_SCALE(correction, 0.5F, correction);
                         OWL_V3_ADD(particle->position, correction,
                                    particle->position);
 
-                        /* if the link is movable, apply the other half of the correction
-             */
+                        /* if the link is movable, apply the other half of the
+                         * correction
+                         */
                         if (link->movable)
                             OWL_V3_SUB(link->position, correction,
                                        link->position);

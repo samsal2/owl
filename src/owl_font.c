@@ -95,10 +95,10 @@ OWLAPI int owl_font_fill_glyph(struct owl_font *font, char c, owl_v2 offset,
     int ret = OWL_OK;
 
     /* -1 ---- +
-   *  |      |  h
-   *  |      |
-   *  + ---- 1
-   *     w      */
+     *  |      |  h
+     *  |      |
+     *  + ---- 1
+     *     w      */
 
     stbtt_GetPackedQuad(packed_chars, atlas_width, atlas_height,
                         c - OWL_FIRST_CHAR, &offset[0], &offset[1], &quad, 1);

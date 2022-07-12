@@ -3,29 +3,30 @@
 #define WORKFLOW_SPLAT 0
 #define WORKFLOW_ADVECT 2
 
-layout(set = 0, binding = 0) uniform UBO {
-  int workflow;
-  int velocity_index;
-  int dye_index;
-  float radius;
+layout(set = 0, binding = 0) uniform UBO
+{
+    int workflow;
+    int velocity_index;
+    int dye_index;
+    float radius;
 
-  vec2 point;
-  vec2 padding;
+    vec2 point;
+    vec2 padding;
 
-  vec4 color;
+    vec4 color;
 
-  vec2 dye_dimensions;
-  vec2 sim_dimensions;
+    vec2 dye_dimensions;
+    vec2 sim_dimensions;
 
-  float dt;
-  float dissipation;
-  vec2 texel_size;
+    float dt;
+    float dissipation;
+    vec2 texel_size;
 
-  vec2 dye_texel_size;
-  vec2 sim_texel_size;
+    vec2 dye_texel_size;
+    vec2 sim_texel_size;
 
-  float aspect_ratio;
-  float decay;
+    float aspect_ratio;
+    float decay;
 }
 ubo;
 
@@ -45,70 +46,74 @@ layout(set = 3, binding = 0, rgba32f) uniform readonly image2D source0;
 /* https://github.com/KhronosGroup/GLSL/issues/57 */
 /* welp, macro time */
 #if 1
-vec4 bilerp(readonly image2D image, vec2 uv, vec2 texel_size) {
-  vec2 st = uv / texel_size - 0.5;
-  ivec2 iuv = ivec2(floor(st));
-  vec2 fuv = fract(st);
-  vec4 a = imageLoad(image, (iuv + ivec2(0, 0)));
-  vec4 b = imageLoad(image, (iuv + ivec2(1, 0)));
-  vec4 c = imageLoad(image, (iuv + ivec2(0, 1)));
-  vec4 d = imageLoad(image, (iuv + ivec2(1, 1)));
-  return mix(mix(a, b, fuv.x), mix(c, d, fuv.x), fuv.y);
+vec4 bilerp(readonly image2D image, vec2 uv, vec2 texel_size)
+{
+    vec2 st = uv / texel_size - 0.5;
+    ivec2 iuv = ivec2(floor(st));
+    vec2 fuv = fract(st);
+    vec4 a = imageLoad(image, (iuv + ivec2(0, 0)));
+    vec4 b = imageLoad(image, (iuv + ivec2(1, 0)));
+    vec4 c = imageLoad(image, (iuv + ivec2(0, 1)));
+    vec4 d = imageLoad(image, (iuv + ivec2(1, 1)));
+    return mix(mix(a, b, fuv.x), mix(c, d, fuv.x), fuv.y);
 }
 #endif
 
 #define bilerp(image, uv, texel_size, result)                                 \
-  do {                                                                        \
-    vec2 st_ = uv / texel_size - 0.5;                                         \
-    ivec2 iuv_ = ivec2(floor(st_));                                           \
-    vec2 fuv_ = fract(st_);                                                   \
-    vec4 a_ = imageLoad(image, (iuv_ + ivec2(0, 0)));                         \
-    vec4 b_ = imageLoad(image, (iuv_ + ivec2(1, 0)));                         \
-    vec4 c_ = imageLoad(image, (iuv_ + ivec2(0, 1)));                         \
-    vec4 d_ = imageLoad(image, (iuv_ + ivec2(1, 1)));                         \
-    result = mix(mix(a_, b_, fuv_.x), mix(c_, d_, fuv_.x), fuv_.y);           \
-  } while (false)
+    do {                                                                      \
+        vec2 st_ = uv / texel_size - 0.5;                                     \
+        ivec2 iuv_ = ivec2(floor(st_));                                       \
+        vec2 fuv_ = fract(st_);                                               \
+        vec4 a_ = imageLoad(image, (iuv_ + ivec2(0, 0)));                     \
+        vec4 b_ = imageLoad(image, (iuv_ + ivec2(1, 0)));                     \
+        vec4 c_ = imageLoad(image, (iuv_ + ivec2(0, 1)));                     \
+        vec4 d_ = imageLoad(image, (iuv_ + ivec2(1, 1)));                     \
+        result = mix(mix(a_, b_, fuv_.x), mix(c_, d_, fuv_.x), fuv_.y);       \
+    } while (false)
 
-vec4 velocity_input(ivec2 p) {
-  if (0 == ubo.velocity_index)
-    return imageLoad(velocity0, p);
-  else
-    return imageLoad(velocity1, p);
+vec4 velocity_input(ivec2 p)
+{
+    if (0 == ubo.velocity_index)
+        return imageLoad(velocity0, p);
+    else
+        return imageLoad(velocity1, p);
 }
 
-vec4 dye_input(ivec2 p) {
-  if (0 == ubo.dye_index)
-    return imageLoad(dye0, p);
-  else
-    return imageLoad(dye1, p);
+vec4 dye_input(ivec2 p)
+{
+    if (0 == ubo.dye_index)
+        return imageLoad(dye0, p);
+    else
+        return imageLoad(dye1, p);
 }
 
-void main() {
-  vec4 result;
+void main()
+{
+    vec4 result;
 
-  ivec2 uv_world;
-  uv_world.x = int(gl_GlobalInvocationID.x + 1);
-  uv_world.y = int(gl_GlobalInvocationID.y + 1);
+    ivec2 uv_world;
+    uv_world.x = int(gl_GlobalInvocationID.x + 1);
+    uv_world.y = int(gl_GlobalInvocationID.y + 1);
 
-  ivec2 vl = ivec2(uv_world.x - 1, uv_world.y);
-  ivec2 vr = ivec2(uv_world.x + 1, uv_world.y);
-  ivec2 vt = ivec2(uv_world.x, uv_world.y - 1);
-  ivec2 vb = ivec2(uv_world.x, uv_world.y + 1);
+    ivec2 vl = ivec2(uv_world.x - 1, uv_world.y);
+    ivec2 vr = ivec2(uv_world.x + 1, uv_world.y);
+    ivec2 vt = ivec2(uv_world.x, uv_world.y - 1);
+    ivec2 vb = ivec2(uv_world.x, uv_world.y + 1);
 
-  vec2 uv_norm = uv_world * ubo.texel_size;
+    vec2 uv_norm = uv_world * ubo.texel_size;
 
-  if (WORKFLOW_SPLAT == ubo.workflow) {
-    vec2 dp = uv_norm - ubo.point.xy;
-    dp.x *= ubo.aspect_ratio;
-    vec3 splat = exp(-dot(dp, dp) / ubo.radius) * ubo.color.xyz;
-    vec3 base = imageLoad(source0, uv_world).xyz;
-    result = vec4(base + splat, 1.0);
-  } else if (WORKFLOW_ADVECT == ubo.workflow) {
-    vec4 tmp;
+    if (WORKFLOW_SPLAT == ubo.workflow) {
+        vec2 dp = uv_norm - ubo.point.xy;
+        dp.x *= ubo.aspect_ratio;
+        vec3 splat = exp(-dot(dp, dp) / ubo.radius) * ubo.color.xyz;
+        vec3 base = imageLoad(source0, uv_world).xyz;
+        result = vec4(base + splat, 1.0);
+    } else if (WORKFLOW_ADVECT == ubo.workflow) {
+        vec4 tmp;
 
-    vec4 coord_norm;
-    bilerp(source0, coord_norm, ubo.texel_size, tmp);
-  }
+        vec4 coord_norm;
+        bilerp(source0, coord_norm, ubo.texel_size, tmp);
+    }
 
-  imageStore(destination0, uv_world, result);
+    imageStore(destination0, uv_world, result);
 }

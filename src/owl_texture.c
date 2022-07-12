@@ -259,8 +259,8 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
         bitmap_size = texture->width * texture->height * pixel_size;
 
         /* allocate staging memory */
-        upload_data = owl_renderer_upload_allocate(r, bitmap_size,
-                                                   &upload_allocation);
+        upload_data =
+            owl_renderer_upload_allocate(r, bitmap_size, &upload_allocation);
         if (!upload_data) {
             ret = OWL_ERROR_NO_MEMORY;
             goto error_free_upload_data;
@@ -323,13 +323,13 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
             uint64_t offset = 0;
             uint64_t bitmap_size = 0;
             uint64_t pixel_size;
-            /* TODO(samuel): currently the images in the specified must have these
-       * names and extensions, make this a non requirement */
-            static char const *names[6] = { "left.jpg",  "right.jpg",
-                                            "top.jpg",   "bottom.jpg",
-                                            "front.jpg", "back.jpg" };
+            /* TODO(samuel): currently the images in the specified must have
+             * these names and extensions, make this a non requirement */
+            static char const *names[6] = {"left.jpg",  "right.jpg",
+                                           "top.jpg",   "bottom.jpg",
+                                           "front.jpg", "back.jpg"};
             /* set the width and texture to 0 as a way to check if a width and
-       * height has been loaded */
+             * height has been loaded */
             texture->width = 0;
             texture->height = 0;
             texture->layers = 6;
@@ -364,7 +364,7 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
 
                     /* allocate enought memory for 6 layers */
                     upload_data = owl_renderer_upload_allocate(
-                            r, bitmap_size * 6, &upload_allocation);
+                        r, bitmap_size * 6, &upload_allocation);
                     if (!upload_data) { /* not enough memory, error out */
                         stbi_image_free(data);
                         ret = OWL_ERROR_FATAL;
@@ -377,7 +377,8 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
                     goto error_free_upload_data;
                 }
 
-                /* copy the image into the upload buffer at the current offset */
+                /* copy the image into the upload buffer at the current offset
+                 */
                 OWL_MEMCPY(upload_data + offset, data, bitmap_size);
 
                 /* update the offset */
@@ -396,7 +397,7 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
         texture->mipmaps = 1;
     else
         texture->mipmaps =
-                owl_texture_calculate_mipmaps(texture->width, texture->height);
+            owl_texture_calculate_mipmaps(texture->width, texture->height);
 
     /* create the vulkan resources */
 
@@ -461,7 +462,7 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
         info.pNext = NULL;
         info.allocationSize = requirements.size;
         info.memoryTypeIndex = owl_renderer_find_memory_type(
-                r, requirements.memoryTypeBits, properties);
+            r, requirements.memoryTypeBits, properties);
 
         vk_result = vkAllocateMemory(r->device, &info, NULL, &texture->memory);
         if (vk_result) {
@@ -469,8 +470,8 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
             goto error_destroy_image;
         }
 
-        vk_result = vkBindImageMemory(r->device, texture->image,
-                                      texture->memory, 0);
+        vk_result =
+            vkBindImageMemory(r->device, texture->image, texture->memory, 0);
         if (vk_result) {
             ret = OWL_ERROR_FATAL;
             goto error_free_memory;
@@ -499,8 +500,8 @@ OWLAPI int owl_texture_init(struct owl_renderer *r,
         info.subresourceRange.baseArrayLayer = 0;
         info.subresourceRange.layerCount = texture->layers;
 
-        vk_result = vkCreateImageView(r->device, &info, NULL,
-                                      &texture->image_view);
+        vk_result =
+            vkCreateImageView(r->device, &info, NULL, &texture->image_view);
         if (vk_result) {
             ret = OWL_ERROR_FATAL;
             goto error_free_memory;

@@ -9,7 +9,8 @@ layout(location = 0) out vec3 outUVW;
 
 out gl_PerVertex { vec4 gl_Position; };
 
-void main() {
-  outUVW = inPos;
-  gl_Position = pushConsts.mvp * vec4(inPos.xyz, 1.0);
+void main()
+{
+    outUVW = inPos;
+    gl_Position = pushConsts.mvp * vec4(inPos.xyz, 1.0);
 }

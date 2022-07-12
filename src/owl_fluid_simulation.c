@@ -141,10 +141,10 @@ OWLAPI int owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
         info.pNext = NULL;
         info.allocationSize = requirements.size;
         info.memoryTypeIndex = owl_renderer_find_memory_type(
-                r, requirements.memoryTypeBits, properties);
+            r, requirements.memoryTypeBits, properties);
 
         vk_result =
-                vkAllocateMemory(device, &info, NULL, &sim->uniform_memory);
+            vkAllocateMemory(device, &info, NULL, &sim->uniform_memory);
         if (vk_result) {
             ret = OWL_ERROR_FATAL;
             goto error_destroy_uniform_buffer;
@@ -193,7 +193,7 @@ OWLAPI int owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
         info.queueFamilyIndex = r->compute_family;
 
         vk_result =
-                vkCreateCommandPool(device, &info, NULL, &sim->command_pool);
+            vkCreateCommandPool(device, &info, NULL, &sim->command_pool);
         if (vk_result) {
             ret = OWL_ERROR_FATAL;
             goto error_free_uniform_descriptor_sets;
@@ -211,7 +211,7 @@ OWLAPI int owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
         info.commandBufferCount = 1;
 
         vk_result =
-                vkAllocateCommandBuffers(device, &info, &sim->command_buffer);
+            vkAllocateCommandBuffers(device, &info, &sim->command_buffer);
         if (vk_result) {
             ret = OWL_ERROR_FATAL;
             goto error_destroy_command_pool;
@@ -301,7 +301,7 @@ OWLAPI int owl_fluid_simulation_init(struct owl_fluid_simulation *sim,
         goto error_deinit_dye;
 
     ret = owl_fluid_simulation_buffer_init(
-            r, vec, OWL_SIM_RESOLUTION, OWL_SIM_RESOLUTION, &sim->divergence);
+        r, vec, OWL_SIM_RESOLUTION, OWL_SIM_RESOLUTION, &sim->divergence);
     if (ret)
         goto error_deinit_curl;
 
@@ -427,7 +427,7 @@ OWLAPI void owl_fluid_simulation_update(struct owl_fluid_simulation *sim,
 
         /* dispatch curl */
         descriptor_sets[1] =
-                sim->velocity[sim->velocity_read].storage_descriptor_set;
+            sim->velocity[sim->velocity_read].storage_descriptor_set;
         descriptor_sets[3] = sim->curl.storage_descriptor_set;
 
         vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE,

@@ -8,12 +8,13 @@ layout(location = 1) in vec2 in_uv;
 
 layout(location = 0) out vec4 out_color;
 
-void main() {
+void main()
+{
 #if 1
-  out_color = vec4(in_color, 1.0) *
-              texture(sampler2D(texture0, sampler0), in_uv);
+    out_color =
+        vec4(in_color, 1.0) * texture(sampler2D(texture0, sampler0), in_uv);
 
 #else
-  out_color = texture(sampler2D(texture0, sampler0), in_uv);
+    out_color = texture(sampler2D(texture0, sampler0), in_uv);
 #endif
 }

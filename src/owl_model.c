@@ -11,12 +11,12 @@
 
 #if !defined(NDEBUG)
 
-#define OWL_CHECK(e)                                                   \
-    do {                                                               \
-        VkResult const result_ = e;                                    \
-        if (VK_SUCCESS != result_)                                     \
-            OWL_DEBUG_LOG("OWL_CHECK(%s) result = %i\n", #e, result_); \
-        OWL_ASSERT(VK_SUCCESS == result_);                             \
+#define OWL_CHECK(e)                                                          \
+    do {                                                                      \
+        VkResult const result_ = e;                                           \
+        if (VK_SUCCESS != result_)                                            \
+            OWL_DEBUG_LOG("OWL_CHECK(%s) result = %i\n", #e, result_);        \
+        OWL_ASSERT(VK_SUCCESS == result_);                                    \
     } while (0)
 
 #else /* NDEBUG */
@@ -175,9 +175,9 @@ static int owl_model_load_materials(struct owl_renderer *r,
         out_material->base_color_factor[3] = 1.0F;
 
         out_material->metallic_roughness_enable =
-                in_material->has_pbr_metallic_roughness;
+            in_material->has_pbr_metallic_roughness;
         out_material->specular_glossiness_enable =
-                in_material->has_pbr_specular_glossiness;
+            in_material->has_pbr_specular_glossiness;
 
         if (in_material->has_pbr_metallic_roughness) {
             /* i really dislike how convoluted this is */
@@ -203,7 +203,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
             texture = view->texture;
             if (texture) {
                 out_material->metallic_roughness_texture =
-                        (int32_t)(texture - first);
+                    (int32_t)(texture - first);
                 out_material->metallic_roughness_texcoord = view->texcoord;
             } else {
                 out_material->metallic_roughness_texture = -1;
@@ -214,13 +214,13 @@ static int owl_model_load_materials(struct owl_renderer *r,
             out_material->metallic_factor = metallic->metallic_factor;
 
             out_material->base_color_factor[0] =
-                    metallic->base_color_factor[0];
+                metallic->base_color_factor[0];
             out_material->base_color_factor[1] =
-                    metallic->base_color_factor[1];
+                metallic->base_color_factor[1];
             out_material->base_color_factor[2] =
-                    metallic->base_color_factor[2];
+                metallic->base_color_factor[2];
             out_material->base_color_factor[3] =
-                    metallic->base_color_factor[3];
+                metallic->base_color_factor[3];
         }
 
         {
@@ -282,7 +282,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
             texture = view->texture;
             if (texture) {
                 out_material->specular_glossiness_texture =
-                        (int32_t)(texture - first);
+                    (int32_t)(texture - first);
                 out_material->specular_glossiness_texcoord = view->texcoord;
             } else {
                 out_material->specular_glossiness_texture = -1;
@@ -319,7 +319,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
             info.pSetLayouts = &r->model_maps_descriptor_set_layout;
 
             vk_result = vkAllocateDescriptorSets(
-                    r->device, &info, &out_material->descriptor_set);
+                r->device, &info, &out_material->descriptor_set);
             OWL_ASSERT(!vk_result);
         }
 
@@ -333,17 +333,17 @@ static int owl_model_load_materials(struct owl_renderer *r,
             descriptors[0].sampler = r->linear_sampler;
             descriptors[0].imageView = VK_NULL_HANDLE;
             descriptors[0].imageLayout =
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
             descriptors[1].sampler = VK_NULL_HANDLE;
             descriptors[1].imageView = m->empty_texture.image_view;
             descriptors[1].imageLayout =
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
             descriptors[2].sampler = VK_NULL_HANDLE;
             descriptors[2].imageView = m->empty_texture.image_view;
             descriptors[2].imageLayout =
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
             if (out_material->specular_glossiness_enable) {
                 if (-1 != out_material->diffuse_texture) {
@@ -357,9 +357,8 @@ static int owl_model_load_materials(struct owl_renderer *r,
                 if (-1 != out_material->specular_glossiness_texture) {
                     struct owl_model_texture *texture;
                     struct owl_model_image *image;
-                    texture =
-                            &m->textures[out_material
-                                                 ->specular_glossiness_texture];
+                    texture = &m->textures[out_material
+                                               ->specular_glossiness_texture];
                     image = &m->images[m->textures[texture->image].image];
                     descriptors[2].imageView = image->texture.image_view;
                 }
@@ -378,8 +377,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
                     struct owl_model_texture *texture;
                     struct owl_model_image *image;
                     texture =
-                            &m->textures[out_material
-                                                 ->metallic_roughness_texture];
+                        &m->textures[out_material->metallic_roughness_texture];
                     image = &m->images[texture->image];
                     descriptors[2].imageView = image->texture.image_view;
                 }
@@ -396,7 +394,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
                 descriptors[3].imageView = m->empty_texture.image_view;
             }
             descriptors[3].imageLayout =
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
             descriptors[4].sampler = VK_NULL_HANDLE;
             if (-1 != out_material->occlusion_texture) {
@@ -409,7 +407,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
                 descriptors[4].imageView = m->empty_texture.image_view;
             }
             descriptors[4].imageLayout =
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
             descriptors[5].sampler = VK_NULL_HANDLE;
             if (-1 != out_material->emissive_texture) {
@@ -422,7 +420,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
                 descriptors[5].imageView = m->empty_texture.image_view;
             }
             descriptors[5].imageLayout =
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
             for (j = 0; j < OWL_ARRAY_SIZE(writes); ++j) {
                 writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -435,7 +433,7 @@ static int owl_model_load_materials(struct owl_renderer *r,
                     writes[j].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
                 else
                     writes[j].descriptorType =
-                            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
                 writes[j].pImageInfo = &descriptors[j];
                 writes[j].pBufferInfo = NULL;
                 writes[j].pTexelBufferView = NULL;
@@ -598,7 +596,7 @@ static int owl_model_load_nodes(struct owl_renderer *r,
         out_node->num_children = (int32_t)in_node->children_count;
         for (j = 0; j < out_node->num_children; ++j)
             out_node->children[j] =
-                    (int32_t)(in_node->children[j] - gltf->nodes);
+                (int32_t)(in_node->children[j] - gltf->nodes);
 
         if (in_node->name) {
             uint32_t const max_length = OWL_ARRAY_SIZE(out_node->name);
@@ -651,8 +649,8 @@ static int owl_model_load_nodes(struct owl_renderer *r,
             out_node->skin = -1;
 
         /* FIXME(samuel): not sure if each node has it's own mesh, however as I
-     * allocate resources per mesh, it's easier to give each one it's own
-     * instead of checking if it exists */
+         * allocate resources per mesh, it's easier to give each one it's own
+         * instead of checking if it exists */
         if (in_node->mesh) {
             struct cgltf_mesh const *in_mesh;
             struct owl_model_mesh *out_mesh;
@@ -772,7 +770,7 @@ static int owl_model_load_nodes(struct owl_renderer *r,
 
                 for (k = 0; k < num_local_vertices; ++k) {
                     struct owl_model_vertex *vertex =
-                            &p->vertices[num_vertices + k];
+                        &p->vertices[num_vertices + k];
 
                     OWL_ASSERT(position);
                     OWL_ASSERT(3 <= position_stride);
@@ -818,23 +816,23 @@ static int owl_model_load_nodes(struct owl_renderer *r,
                         OWL_ASSERT(4 == joints0_stride);
                         if (joints0_component_is_u8) {
                             vertex->joints0[0] =
-                                    (&joints0[k * joints0_stride])[0];
+                                (&joints0[k * joints0_stride])[0];
                             vertex->joints0[1] =
-                                    (&joints0[k * joints0_stride])[1];
+                                (&joints0[k * joints0_stride])[1];
                             vertex->joints0[2] =
-                                    (&joints0[k * joints0_stride])[2];
+                                (&joints0[k * joints0_stride])[2];
                             vertex->joints0[3] =
-                                    (&joints0[k * joints0_stride])[3];
+                                (&joints0[k * joints0_stride])[3];
                         } else {
                             uint16_t *joints0_u16 = (uint16_t *)joints0;
                             vertex->joints0[0] =
-                                    (&joints0_u16[k * joints0_stride])[0];
+                                (&joints0_u16[k * joints0_stride])[0];
                             vertex->joints0[1] =
-                                    (&joints0_u16[k * joints0_stride])[1];
+                                (&joints0_u16[k * joints0_stride])[1];
                             vertex->joints0[2] =
-                                    (&joints0_u16[k * joints0_stride])[2];
+                                (&joints0_u16[k * joints0_stride])[2];
                             vertex->joints0[3] =
-                                    (&joints0_u16[k * joints0_stride])[3];
+                                (&joints0_u16[k * joints0_stride])[3];
                         }
                     } else {
                         vertex->joints0[0] = 0.0F;
@@ -846,13 +844,13 @@ static int owl_model_load_nodes(struct owl_renderer *r,
                     if (has_skin) {
                         OWL_ASSERT(4 == weights0_stride);
                         vertex->weights0[0] =
-                                (&weights0[k * weights0_stride])[0];
+                            (&weights0[k * weights0_stride])[0];
                         vertex->weights0[1] =
-                                (&weights0[k * weights0_stride])[1];
+                            (&weights0[k * weights0_stride])[1];
                         vertex->weights0[2] =
-                                (&weights0[k * weights0_stride])[2];
+                            (&weights0[k * weights0_stride])[2];
                         vertex->weights0[3] =
-                                (&weights0[k * weights0_stride])[3];
+                            (&weights0[k * weights0_stride])[3];
                     } else {
                         vertex->weights0[0] = 1.0F;
                         vertex->weights0[1] = 0.0F;
@@ -886,26 +884,26 @@ static int owl_model_load_nodes(struct owl_renderer *r,
                     case cgltf_component_type_r_32u: {
                         int32_t l;
                         uint32_t const *data =
-                                owl_resolve_gltf_accessor(accessor);
+                            owl_resolve_gltf_accessor(accessor);
                         for (l = 0; l < num_local_indices; ++l)
                             p->indices[num_indices + l] =
-                                    data[l] + num_vertices;
+                                data[l] + num_vertices;
                     } break;
                     case cgltf_component_type_r_16u: {
                         int32_t l;
                         uint16_t const *data =
-                                owl_resolve_gltf_accessor(accessor);
+                            owl_resolve_gltf_accessor(accessor);
                         for (l = 0; l < num_local_indices; ++l)
                             p->indices[num_indices + l] =
-                                    data[l] + num_vertices;
+                                data[l] + num_vertices;
                     } break;
                     case cgltf_component_type_r_8u: {
                         int32_t l;
                         uint8_t const *data =
-                                owl_resolve_gltf_accessor(accessor);
+                            owl_resolve_gltf_accessor(accessor);
                         for (l = 0; l < num_local_indices; ++l)
                             p->indices[num_indices + l] =
-                                    data[l] + num_vertices;
+                                data[l] + num_vertices;
                     } break;
                     case cgltf_component_type_invalid:
                     case cgltf_component_type_r_8:
@@ -932,8 +930,8 @@ static int owl_model_load_nodes(struct owl_renderer *r,
                     out_primitive->bbox.max[1] = max_pos[1];
                     out_primitive->bbox.max[2] = max_pos[2];
 
-                    material = (int32_t)(in_primitive->material -
-                                         gltf->materials);
+                    material =
+                        (int32_t)(in_primitive->material - gltf->materials);
                     out_primitive->material = material;
 
                     num_indices += num_local_indices;
@@ -956,8 +954,8 @@ static int owl_model_load_nodes(struct owl_renderer *r,
                 info.queueFamilyIndexCount = 0;
                 info.pQueueFamilyIndices = NULL;
 
-                vk_result = vkCreateBuffer(device, &info, NULL,
-                                           &out_mesh->ssbos[j]);
+                vk_result =
+                    vkCreateBuffer(device, &info, NULL, &out_mesh->ssbos[j]);
                 OWL_ASSERT(!vk_result);
             }
 
@@ -976,15 +974,15 @@ static int owl_model_load_nodes(struct owl_renderer *r,
                 vkGetBufferMemoryRequirements(device, out_mesh->ssbos[0],
                                               &requirements);
 
-                aligned_size = OWL_ALIGN_UP_2(requirements.size,
-                                              requirements.alignment);
+                aligned_size =
+                    OWL_ALIGN_UP_2(requirements.size, requirements.alignment);
 
                 info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
                 info.pNext = NULL;
                 info.allocationSize =
-                        aligned_size * OWL_ARRAY_SIZE(out_mesh->ssbos);
+                    aligned_size * OWL_ARRAY_SIZE(out_mesh->ssbos);
                 info.memoryTypeIndex = owl_renderer_find_memory_type(
-                        r, requirements.memoryTypeBits, properties);
+                    r, requirements.memoryTypeBits, properties);
 
                 vk_result = vkAllocateMemory(device, &info, NULL,
                                              &out_mesh->ssbo_memory);
@@ -1007,7 +1005,7 @@ static int owl_model_load_nodes(struct owl_renderer *r,
                          ++j) {
                         uint64_t const offset = j * aligned_size;
                         out_mesh->mapped_ssbos[j] =
-                                (void *)&((uint8_t *)(data))[offset];
+                            (void *)&((uint8_t *)(data))[offset];
                     }
                 }
 
@@ -1015,7 +1013,7 @@ static int owl_model_load_nodes(struct owl_renderer *r,
                      ++j) {
                     int32_t l;
                     struct owl_model_joints_ssbo *ssbo =
-                            out_mesh->mapped_ssbos[j];
+                        out_mesh->mapped_ssbos[j];
 
                     if (-1 != out_node->skin)
                         ssbo->num_joints = m->skins[out_node->skin].num_joints;
@@ -1048,19 +1046,19 @@ static int owl_model_load_nodes(struct owl_renderer *r,
                 info.pSetLayouts = layouts;
 
                 vk_result = vkAllocateDescriptorSets(
-                        device, &info, out_mesh->ssbo_descriptor_sets);
+                    device, &info, out_mesh->ssbo_descriptor_sets);
                 OWL_ASSERT(!vk_result);
             }
             {
                 VkDescriptorBufferInfo
-                        descriptors[OWL_ARRAY_SIZE(out_mesh->ssbos)];
+                    descriptors[OWL_ARRAY_SIZE(out_mesh->ssbos)];
                 VkWriteDescriptorSet writes[OWL_ARRAY_SIZE(out_mesh->ssbos)];
 
                 for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(descriptors); ++j) {
                     descriptors[j].buffer = out_mesh->ssbos[j];
                     descriptors[j].offset = 0;
                     descriptors[j].range =
-                            sizeof(struct owl_model_joints_ssbo);
+                        sizeof(struct owl_model_joints_ssbo);
 
                     writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     writes[j].pNext = NULL;
@@ -1069,7 +1067,7 @@ static int owl_model_load_nodes(struct owl_renderer *r,
                     writes[j].dstArrayElement = 0;
                     writes[j].descriptorCount = 1;
                     writes[j].descriptorType =
-                            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
                     writes[j].pImageInfo = NULL;
                     writes[j].pBufferInfo = &descriptors[j];
                     writes[j].pTexelBufferView = NULL;
@@ -1155,13 +1153,13 @@ static int owl_model_init_buffers(struct owl_renderer *r,
         info.pNext = NULL;
         info.allocationSize = requirements.size;
         info.memoryTypeIndex = owl_renderer_find_memory_type(
-                r, requirements.memoryTypeBits, properties);
+            r, requirements.memoryTypeBits, properties);
 
         vk_result = vkAllocateMemory(device, &info, NULL, &m->vertex_memory);
         OWL_ASSERT(!vk_result);
 
-        vk_result = vkBindBufferMemory(device, m->vertex_buffer,
-                                       m->vertex_memory, 0);
+        vk_result =
+            vkBindBufferMemory(device, m->vertex_buffer, m->vertex_memory, 0);
         OWL_ASSERT(!vk_result);
     }
 
@@ -1255,10 +1253,10 @@ static int owl_model_init_buffers(struct owl_renderer *r,
             info.pNext = NULL;
             info.allocationSize = requirements.size;
             info.memoryTypeIndex = owl_renderer_find_memory_type(
-                    r, requirements.memoryTypeBits, properties);
+                r, requirements.memoryTypeBits, properties);
 
             vk_result =
-                    vkAllocateMemory(device, &info, NULL, &m->index_memory);
+                vkAllocateMemory(device, &info, NULL, &m->index_memory);
             OWL_ASSERT(!vk_result);
 
             vk_result = vkBindBufferMemory(device, m->index_buffer,
@@ -1525,7 +1523,7 @@ static int owl_model_load_animations(struct owl_renderer *r,
 
             out_channel->path = in_channel->target_path;
             out_channel->node =
-                    (int32_t)(in_channel->target_node - gltf->nodes);
+                (int32_t)(in_channel->target_node - gltf->nodes);
 
             id = (int32_t)(in_channel->sampler - in_animation->samplers);
             out_channel->sampler = out_animation->samplers[id];

@@ -22,7 +22,7 @@ OWLAPI int owl_draw_quad(struct owl_renderer *r, struct owl_quad const *quad)
     struct owl_renderer_vertex_allocation vertex_allocation;
     struct owl_renderer_index_allocation index_allocation;
     struct owl_renderer_uniform_allocation uniform_allocation;
-    static uint32_t const indices[] = { 2, 3, 1, 1, 0, 2 };
+    static uint32_t const indices[] = {2, 3, 1, 1, 0, 2};
 
     command_buffer = r->submit_command_buffers[r->frame];
 
@@ -66,8 +66,8 @@ OWLAPI int owl_draw_quad(struct owl_renderer *r, struct owl_quad const *quad)
     OWL_M4_IDENTITY(uniform.view);
     OWL_M4_IDENTITY(uniform.model);
 
-    data = owl_renderer_vertex_allocate(r, sizeof(vertices),
-                                        &vertex_allocation);
+    data =
+        owl_renderer_vertex_allocate(r, sizeof(vertices), &vertex_allocation);
     if (!data)
         return OWL_ERROR_NO_FRAME_MEMORY;
     OWL_MEMCPY(data, vertices, sizeof(vertices));
@@ -77,8 +77,8 @@ OWLAPI int owl_draw_quad(struct owl_renderer *r, struct owl_quad const *quad)
         return OWL_ERROR_NO_FRAME_MEMORY;
     OWL_MEMCPY(data, indices, sizeof(indices));
 
-    data = owl_renderer_uniform_allocate(r, sizeof(uniform),
-                                         &uniform_allocation);
+    data =
+        owl_renderer_uniform_allocate(r, sizeof(uniform), &uniform_allocation);
     if (!data)
         return OWL_ERROR_NO_FRAME_MEMORY;
     OWL_MEMCPY(data, &uniform, sizeof(uniform));
@@ -211,8 +211,8 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
     uniform.debug_view_inputs = 0.0F;
     uniform.debug_view_equation = 0.0F;
 
-    data = owl_renderer_uniform_allocate(r, sizeof(uniform),
-                                         &uniform_allocation);
+    data =
+        owl_renderer_uniform_allocate(r, sizeof(uniform), &uniform_allocation);
     if (!data)
         return OWL_ERROR_NO_MEMORY;
     OWL_MEMCPY(data, &uniform, sizeof(uniform));
@@ -246,11 +246,10 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
         descriptors_sets[1] = material->descriptor_set;
         descriptors_sets[2] = r->environment_descriptor_set;
 
-        vkCmdBindDescriptorSets(command_buffer,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                r->model_pipeline_layout, 1,
-                                OWL_ARRAY_SIZE(descriptors_sets),
-                                descriptors_sets, 0, NULL);
+        vkCmdBindDescriptorSets(
+            command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            r->model_pipeline_layout, 1, OWL_ARRAY_SIZE(descriptors_sets),
+            descriptors_sets, 0, NULL);
 
         push_constant.emissive_factor[0] = material->emissive_factor[0];
         push_constant.emissive_factor[1] = material->emissive_factor[1];
@@ -302,25 +301,25 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
                 push_constant.physical_desc_uv_set = -1;
             else
                 push_constant.physical_desc_uv_set =
-                        material->specular_glossiness_texture;
+                    material->specular_glossiness_texture;
 
             if (-1 == material->diffuse_texture)
                 push_constant.base_color_uv_set = -1;
             else
                 push_constant.base_color_uv_set =
-                        material->base_color_texcoord;
+                    material->base_color_texcoord;
         }
 
         if (material->metallic_roughness_enable) {
             push_constant.workflow = 0;
             push_constant.base_color_factor[0] =
-                    material->base_color_factor[0];
+                material->base_color_factor[0];
             push_constant.base_color_factor[1] =
-                    material->base_color_factor[1];
+                material->base_color_factor[1];
             push_constant.base_color_factor[2] =
-                    material->base_color_factor[2];
+                material->base_color_factor[2];
             push_constant.base_color_factor[3] =
-                    material->base_color_factor[3];
+                material->base_color_factor[3];
 
             push_constant.metallic_factor = material->metallic_factor;
             push_constant.roughness_factor = material->roughness_factor;
@@ -329,7 +328,7 @@ static int owl_draw_model_node(struct owl_renderer *r, int32_t id,
                 push_constant.physical_desc_uv_set = -1;
             else
                 push_constant.physical_desc_uv_set =
-                        material->metallic_roughness_texcoord;
+                    material->metallic_roughness_texcoord;
         }
 
         vkCmdPushConstants(command_buffer, r->model_pipeline_layout,
@@ -387,40 +386,38 @@ OWLAPI int owl_draw_skybox(struct owl_renderer *r)
     VkCommandBuffer command_buffer;
     struct owl_common_uniform uniform;
     /*
-   *    4----5
-   *  / |  / |
-   * 0----1  |
-   * |  | |  |
-   * |  6-|--7
-   * | /  | /
-   * 2----3
-   */
+     *    4----5
+     *  / |  / |
+     * 0----1  |
+     * |  | |  |
+     * |  6-|--7
+     * | /  | /
+     * 2----3
+     */
     static struct owl_skybox_vertex const vertices[] = {
-        { -1.0F, -1.0F, -1.0F }, /* 0 */
-        { 1.0F, -1.0F, -1.0F }, /* 1 */
-        { -1.0F, 1.0F, -1.0F }, /* 2 */
-        { 1.0F, 1.0F, -1.0F }, /* 3 */
-        { -1.0F, -1.0F, 1.0F }, /* 4 */
-        { 1.0F, -1.0F, 1.0F }, /* 5 */
-        { -1.0F, 1.0F, 1.0F }, /* 6 */
-        { 1.0F, 1.0F, 1.0F }
-    }; /* 7 */
+        {-1.0F, -1.0F, -1.0F}, /* 0 */
+        {1.0F, -1.0F, -1.0F},  /* 1 */
+        {-1.0F, 1.0F, -1.0F},  /* 2 */
+        {1.0F, 1.0F, -1.0F},   /* 3 */
+        {-1.0F, -1.0F, 1.0F},  /* 4 */
+        {1.0F, -1.0F, 1.0F},   /* 5 */
+        {-1.0F, 1.0F, 1.0F},   /* 6 */
+        {1.0F, 1.0F, 1.0F}};   /* 7 */
     static uint32_t const indices[] = {
-        2, 3, 1, 1, 0, 2, /* face 0 ...............*/
-        3, 7, 5, 5, 1, 3, /* face 1 */
-        6, 2, 0, 0, 4, 6, /* face 2 */
-        7, 6, 4, 4, 5, 7, /* face 3 */
-        3, 2, 6, 6, 7, 3, /* face 4 */
-        4, 0, 1, 1, 5, 4
-    }; /* face 5 */
+        2, 3, 1, 1, 0, 2,  /* face 0 ...............*/
+        3, 7, 5, 5, 1, 3,  /* face 1 */
+        6, 2, 0, 0, 4, 6,  /* face 2 */
+        7, 6, 4, 4, 5, 7,  /* face 3 */
+        3, 2, 6, 6, 7, 3,  /* face 4 */
+        4, 0, 1, 1, 5, 4}; /* face 5 */
 
     command_buffer = r->submit_command_buffers[r->frame];
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       r->skybox_pipeline);
 
-    data = owl_renderer_vertex_allocate(r, sizeof(vertices),
-                                        &vertex_allocation);
+    data =
+        owl_renderer_vertex_allocate(r, sizeof(vertices), &vertex_allocation);
     if (!data)
         return OWL_ERROR_NO_FRAME_MEMORY;
     OWL_MEMCPY(data, vertices, sizeof(vertices));
@@ -435,8 +432,8 @@ OWLAPI int owl_draw_skybox(struct owl_renderer *r)
     OWL_M3_COPY(r->view, uniform.view);
     OWL_M4_IDENTITY(uniform.model);
 
-    data = owl_renderer_uniform_allocate(r, sizeof(uniform),
-                                         &uniform_allocation);
+    data =
+        owl_renderer_uniform_allocate(r, sizeof(uniform), &uniform_allocation);
     if (!data)
         return OWL_ERROR_NO_FRAME_MEMORY;
     OWL_MEMCPY(data, &uniform, sizeof(uniform));
@@ -463,8 +460,8 @@ OWLAPI int owl_draw_skybox(struct owl_renderer *r)
 OWLAPI int owl_draw_renderer_state(struct owl_renderer *r)
 {
     char buffer[256];
-    owl_v3 position = { -0.8F, -0.8F, 0.0F };
-    owl_v3 color = { 1.0F, 1.0F, 1.0F };
+    owl_v3 position = {-0.8F, -0.8F, 0.0F};
+    owl_v3 color = {1.0F, 1.0F, 1.0F};
     static double previous_time = 0.0;
     static double current_time = 0.0;
     double fps = 0.0;
@@ -573,7 +570,7 @@ OWLAPI int owl_draw_cloth_simulation(struct owl_renderer *r,
 
     num_vertices = sim->width * sim->height;
     vertices = owl_renderer_vertex_allocate(
-            r, num_vertices * sizeof(*vertices), &vertex_allocation);
+        r, num_vertices * sizeof(*vertices), &vertex_allocation);
     if (!vertices)
         return OWL_ERROR_NO_FRAME_MEMORY;
 

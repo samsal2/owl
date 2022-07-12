@@ -511,8 +511,8 @@ void owl_m4_inverse(owl_m4 const mat, owl_m4 out)
     out[2][3] = -(a * t[1] - b * t[3] + d * t[5]);
     out[3][3] = a * t[2] - b * t[4] + c * t[5];
 
-    det = 1.0F /
-          (a * out[0][0] + b * out[1][0] + c * out[2][0] + d * out[3][0]);
+    det =
+        1.0F / (a * out[0][0] + b * out[1][0] + c * out[2][0] + d * out[3][0]);
 
     OWL_M4_SCALE(out, det, out);
 }
