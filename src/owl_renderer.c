@@ -493,7 +493,8 @@ static int owl_renderer_select_physical_device(struct owl_renderer *r)
         if (!ok)
             continue;
 
-        ok = owl_renderer_request_present_mode(r, VK_PRESENT_MODE_FIFO_KHR);
+        ok = owl_renderer_request_present_mode(r,
+                                               VK_PRESENT_MODE_IMMEDIATE_KHR);
         if (!ok)
             continue;
 
@@ -2786,10 +2787,11 @@ static int owl_renderer_init_filter_maps(struct owl_renderer *r)
         VkRect2D scissor;
         owl_m4 matrices[6];
 
+        uint32_t mips;
         VkFormat const format = formats[i];
         uint32_t const dimension = dimensions[i];
-        uint32_t const mips =
-            owl_texture_calculate_mipmaps(dimension, dimension);
+
+        mips = owl_texture_calculate_mipmaps(dimension, dimension);
 
         viewport.x = 0;
         viewport.y = 0;
@@ -3055,9 +3057,9 @@ static int owl_renderer_init_filter_maps(struct owl_renderer *r)
         }
 
         /* TODO(samuel): why does he change the layout manualy instead of
-leaving
+    leaving
      * it to the render pass?
-https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/src/main.cpp#L1288
+    https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/src/main.cpp#L1288
      */
 #if 0
     ret = owl_renderer_begin_im_command_buffer(r);

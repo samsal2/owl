@@ -43,35 +43,33 @@ target_compile_options(${PROJECT_NAME} PUBLIC
 		-pedantic-errors
 		-Walloca 
 		-Wvla 
-    -fdiagnostics-color=always
-    -Wno-long-long       # required C99 extension
-    -Wno-variadic-macros # required C99 extension (for debug logging)
-    -Wno-comment         # glslangValidator geenrates // comments
-  ">"
-	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
+        -fdiagnostics-color=always
+        -Wno-long-long       # required C99 extension
+        -Wno-variadic-macros # required C99 extension (for debug logging)
+        -Wno-comment         # glslangValidator geenrates // comments
+    ">"
+    "$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
 		-O0
 		-g
-    -fsanitize=address
-    -fsanitize=undefined
-    -fsanitize=bounds
-#   -fsanitize=leak
-  ">"
-	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Release>>:"
+        -fsanitize=address
+        -fsanitize=undefined
+        -fsanitize=bounds
+    ">"
+    "$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Release>>:"
 		-Ofast
-    -flto
-  ">")
+        -flto
+    ">")
 
 # link options
 target_link_options(${PROJECT_NAME} PUBLIC
 	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Debug>>:"
-    -fsanitize=address
-    -fsanitize=undefined
-    -fsanitize=bounds
-#		-fsanitize=leak
-  ">"
-	"$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Release>>:"
-    -flto
-  ">")
+        -fsanitize=address
+        -fsanitize=undefined
+        -fsanitize=bounds
+    ">"
+    "$<$<AND:$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>,$<CONFIG:Release>>:"
+        -flto
+    ">")
 
 # compile definitions
 target_compile_definitions(${PROJECT_NAME} PRIVATE
