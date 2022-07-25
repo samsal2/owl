@@ -3816,6 +3816,7 @@ error:
 static void owl_renderer_deinit_filter_maps(struct owl_renderer *r)
 {
     VkDevice const device = r->device;
+
     vkDestroyImageView(device, r->prefiltered_map_image_view, NULL);
     vkFreeMemory(device, r->prefiltered_map_memory, NULL);
     vkDestroyImage(device, r->prefiltered_map_image, NULL);

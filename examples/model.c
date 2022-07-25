@@ -46,10 +46,6 @@ int main(void)
     prev_time_stamp = 0;
     time_stamp = 0;
 
-    {
-        owl_v3 axis = { 0.0F, 1.0F, 0.0F };
-    }
-
     while (!owl_plataform_should_close(window)) {
         owl_v3 axis = { 0.0F, 1.0F, 0.0F };
         float const dt = time_stamp - prev_time_stamp;
