@@ -10,6 +10,6 @@ layout(location = 0) out vec4 out_color;
 
 void main()
 {
-    out_color = vec4(in_color, 1.0F) *
-                vec4(texture(sampler2D(texture0, sampler0), in_uv).r);
+	out_color = vec4(in_color, 1.0F) *
+		    vec4(texture(sampler2D(texture0, sampler0), in_uv).r);
 }
