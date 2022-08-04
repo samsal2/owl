@@ -1588,10 +1588,11 @@ static int owl_model_load_skins(struct owl_renderer *r,
 				(int32_t)(in_skin->joints[j] - gltf->nodes);
 
 		if (in_skin->inverse_bind_matrices) {
-			struct cgltf_accessor *accessor =
-				in_skin->inverse_bind_matrices;
-			owl_m4 const *matrices =
-				owl_resolve_gltf_accessor(accessor);
+			struct cgltf_accessor *accessor;
+			owl_m4 const *matrices;
+
+			accessor = in_skin->inverse_bind_matrices;
+			matrices = owl_resolve_gltf_accessor(accessor);
 
 			OWL_ASSERT(accessor->count <
 				   OWL_ARRAY_SIZE(out_skin->joints));
@@ -1998,13 +1999,13 @@ OWLAPI int owl_model_update_animation(struct owl_renderer *r,
 
 	for (i = 0; i < animation->num_channels; ++i) {
 		int32_t j;
-		int32_t const channel_id = animation->channels[i];
-		struct owl_model_animation_channel *channel =
-			&m->channels[channel_id];
-		int32_t const sampler_id = channel->sampler;
-		struct owl_model_animation_sampler *sampler =
-			&m->samplers[sampler_id];
-		struct owl_model_node *node = &m->nodes[channel->node];
+		struct owl_model_animation_channel *channel;
+		struct owl_model_animation_sampler *sampler;
+		struct owl_model_node *node;
+
+		channel = &m->channels[animation->channels[i]];
+		sampler = &m->samplers[channel->sampler];
+		node = &m->nodes[channel->node];
 
 		if (OWL_ANIMATION_INTERPOLATION_LINEAR !=
 		    sampler->interpolation)
