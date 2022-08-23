@@ -119,12 +119,6 @@ static int owl_renderer_init_instance(struct owl_renderer *r)
 	if (!r->vk_destroy_debug_utils_messenger_ext)
 		goto error_destroy_instance;
 
-	r->vk_debug_marker_set_object_name_ext =
-		(PFN_vkDebugMarkerSetObjectNameEXT)vkGetInstanceProcAddr(
-			r->instance, "vkDebugMarkerSetObjectNameEXT");
-	if (!r->vk_destroy_debug_utils_messenger_ext)
-		goto error_destroy_instance;
-
 	{
 		VkResult vk_result;
 		VkDebugUtilsMessengerCreateInfoEXT info;
@@ -158,7 +152,6 @@ static int owl_renderer_init_instance(struct owl_renderer *r)
 	r->debug_messenger = NULL;
 	r->vk_create_debug_utils_messenger_ext = NULL;
 	r->vk_destroy_debug_utils_messenger_ext = NULL;
-	r->vk_debug_marker_set_object_name_ext = NULL;
 #endif
 
 	return OWL_OK;
@@ -5367,10 +5360,9 @@ OWLAPI uint32_t owl_renderer_find_memory_type(struct owl_renderer *r,
 					    &memory_properties);
 
 	for (type = 0; type < memory_properties.memoryTypeCount; ++type) {
-		uint32_t flags =
-			memory_properties.memoryTypes[type].propertyFlags;
+		uint32_t f = memory_properties.memoryTypes[type].propertyFlags;
 
-		if ((flags & properties) && (filter & (1U << type)))
+		if ((f & properties) && (filter & (1U << type)))
 			return type;
 	}
 

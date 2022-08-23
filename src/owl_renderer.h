@@ -191,7 +191,6 @@ struct owl_renderer {
 
 	PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_ext;
 	PFN_vkDestroyDebugUtilsMessengerEXT vk_destroy_debug_utils_messenger_ext;
-	PFN_vkDebugMarkerSetObjectNameEXT vk_debug_marker_set_object_name_ext;
 };
 
 OWLAPI int owl_renderer_init(struct owl_renderer *r, struct owl_plataform *p);
