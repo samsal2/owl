@@ -614,6 +614,143 @@ static int32_t owl_model_gltf_stride(cgltf_type type)
 	}
 }
 
+static int owl_model_load_mesh(struct owl_renderer *r, cgltf_mesh const *mesh,
+			       struct owl_model_node *n,
+			       struct owl_model_all_primitives *p,
+			       struct owl_model *m)
+{
+	int32_t i;
+	struct owl_model_mesh *out_mesh;
+
+	/* push a new mesh to the model */
+	n->mesh = m->num_meshes++;
+
+	/* get the mesh memory */
+	out_mesh = &m->meshes[n->mesh];
+
+	/* can we hold the required primitves? */
+	OWL_ASSERT(mesh->primitives_count <
+		   OWL_ARRAY_SIZE(out_mesh->primitives));
+
+	out_mesh->num_primitives = (int32_t)mesh->primitives_count;
+
+	/* for each primitive */
+	for (i = 0; i < out_mesh->num_primitives; ++i) {
+		int32_t j;
+		int32_t has_skin;
+		int32_t num_local_vertices = 0;
+		int32_t num_local_indices = 0;
+
+		int32_t position_stride = 0;
+		float const *position = NULL;
+
+		owl_v3 min_pos;
+		owl_v3 max_pos;
+
+		int32_t normal_stride = 0;
+		float const *normal = NULL;
+
+		int32_t uv0_stride = 0;
+		float const *uv0 = NULL;
+
+		int32_t uv1_stride = 0;
+		float const *uv1 = NULL;
+
+		int32_t joints0_component_is_u8 = -1;
+		int32_t joints0_stride = 0;
+		uint8_t const *joints0 = NULL;
+
+		int32_t weights0_stride = 0;
+		float const *weights0 = NULL;
+
+		int32_t color0_stride = 0;
+		float const *color0 = NULL;
+
+		struct cgltf_attribute const *attr = NULL;
+		struct owl_model_primitive *out_primitive = NULL;
+		struct cgltf_primitive const *in_primitive = NULL;
+
+		in_primitive = &mesh->primitives[j];
+		out_mesh->primitives[j] = m->num_primitives++;
+		out_primitive = &m->primitives[out_mesh->primitives[j]];
+
+		attr = owl_find_gltf_attribute(in_primitive, "POSITION");
+
+		if (attr) {
+			cgltf_accessor const *data = attr->data;
+			position = owl_resolve_gltf_accessor(data);
+			position_stride = owl_model_gltf_stride(data->type);
+			num_local_vertices = (int32_t)data->count;
+
+			if (data->has_min) {
+				min_pos[0] = data->min[0];
+				min_pos[1] = data->min[1];
+				min_pos[2] = data->min[2];
+			}
+
+			if (attr->data->has_max) {
+				max_pos[0] = data->max[0];
+				max_pos[1] = data->max[1];
+				max_pos[2] = data->max[2];
+			}
+		}
+
+		attr = owl_find_gltf_attribute(in_primitive, "NORMAL");
+		if (attr) {
+			cgltf_accessor const *data = attr->data;
+			normal = owl_resolve_gltf_accessor(data);
+			normal_stride = owl_model_gltf_stride(data->type);
+		}
+
+		attr = owl_find_gltf_attribute(in_primitive, "TEXCOORD_0");
+		if (attr) {
+			cgltf_accessor const *data = attr->data;
+			uv0 = owl_resolve_gltf_accessor(data);
+			uv0_stride = owl_model_gltf_stride(data->type);
+		}
+
+		attr = owl_find_gltf_attribute(in_primitive, "TEXCOORD_1");
+		if (attr) {
+			cgltf_accessor const *data = attr->data;
+			uv1 = owl_resolve_gltf_accessor(data);
+			uv1_stride = owl_model_gltf_stride(data->type);
+		}
+
+		attr = owl_find_gltf_attribute(in_primitive, "JOINTS_0");
+		if (attr) {
+			cgltf_accessor const *data = attr->data;
+			joints0 = owl_resolve_gltf_accessor(data);
+			joints0_stride = owl_model_gltf_stride(data->type);
+
+			if (data->component_type == cgltf_component_type_r_8u)
+				joints0_component_is_u8 = 1;
+			else
+				joints0_component_is_u8 = 0;
+		}
+
+		attr = owl_find_gltf_attribute(in_primitive, "WEIGHTS_0");
+		if (attr) {
+			cgltf_accessor const *data = attr->data;
+			weights0 = owl_resolve_gltf_accessor(data);
+			weights0_stride = owl_model_gltf_stride(data->type);
+		}
+
+		attr = owl_find_gltf_attribute(in_primitive, "COLOR_0");
+		if (attr) {
+			cgltf_accessor const *data = attr->data;
+			color0 = owl_resolve_gltf_accessor(data);
+			color0_stride = owl_model_gltf_stride(data->type);
+		}
+
+		has_skin = joints0 && weights0;
+
+		for (j = 0; j < num_local_vertices; ++j) {
+			struct owl_model_vertex *vertex =
+				&p->vertices[num_vertices + k];
+		}
+	}
+}
+
 static int owl_model_load_nodes(struct owl_renderer *r,
 				struct cgltf_data const *gltf,
 				struct owl_model_all_primitives *p,
@@ -657,12 +794,10 @@ static int owl_model_load_nodes(struct owl_renderer *r,
 				(int32_t)(in_node->children[j] - gltf->nodes);
 
 		if (in_node->name) {
-			uint32_t const max_length =
-				OWL_ARRAY_SIZE(out_node->name);
+			uint32_t max_length = OWL_ARRAY_SIZE(out_node->name);
 			OWL_STRNCPY(out_node->name, in_node->name, max_length);
 		} else {
-			uint32_t const max_length =
-				OWL_ARRAY_SIZE(out_node->name);
+			uint32_t max_length = OWL_ARRAY_SIZE(out_node->name);
 			OWL_STRNCPY(out_node->name, "NO NAME", max_length);
 		}
 
@@ -718,7 +853,7 @@ static int owl_model_load_nodes(struct owl_renderer *r,
 			in_mesh = in_node->mesh;
 
 #if 0
-      out_node->mesh = (int32_t)(in_mesh - gltf->meshes);
+			out_node->mesh = (int32_t)(in_mesh - gltf->meshes);
 #else
 			out_node->mesh = m->num_meshes++;
 #endif
@@ -835,7 +970,7 @@ static int owl_model_load_nodes(struct owl_renderer *r,
 				}
 
 				attr = owl_find_gltf_attribute(in_primitive,
-							       "WEIGHTS_0");
+							       "weights_0");
 				if (attr) {
 					weights0 = owl_resolve_gltf_accessor(
 						attr->data);
@@ -1306,23 +1441,28 @@ static void owl_model_unload_nodes(struct owl_renderer *r, struct owl_model *m)
 	int32_t i;
 	VkDevice const device = r->device;
 	/* could just iterate each mesh instead of going trough each node,
-     however it's easier to cleanup future resource allocations this way */
+     	however it's easier to cleanup future resource allocations this way */
 	for (i = 0; i < m->num_nodes; ++i) {
-		struct owl_model_node *node = &m->nodes[i];
+		int32_t j;
+		struct owl_model_node *node;
+		struct owl_model_mesh *mesh;
 
-		if (-1 != node->mesh) {
-			int32_t j;
-			struct owl_model_mesh *mesh = &m->meshes[node->mesh];
-			vkFreeDescriptorSets(device, r->descriptor_pool,
-					     OWL_ARRAY_SIZE(mesh->ssbos),
-					     mesh->ssbo_descriptor_sets);
+		node = &m->nodes[i];
 
-			vkFreeMemory(device, mesh->ssbo_memory, NULL);
+		/* if no mesh, continue */
+		if (-1 == node->mesh)
+			continue;
 
-			for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(mesh->ssbos);
-			     ++j)
-				vkDestroyBuffer(device, mesh->ssbos[j], NULL);
-		}
+		mesh = &m->meshes[node->mesh];
+
+		vkFreeDescriptorSets(device, r->descriptor_pool,
+				     OWL_ARRAY_SIZE(mesh->ssbos),
+				     mesh->ssbo_descriptor_sets);
+
+		vkFreeMemory(device, mesh->ssbo_memory, NULL);
+
+		for (j = 0; j < (int32_t)OWL_ARRAY_SIZE(mesh->ssbos); ++j)
+			vkDestroyBuffer(device, mesh->ssbos[j], NULL);
 	}
 }
 

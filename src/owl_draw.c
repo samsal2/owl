@@ -475,7 +475,7 @@ OWLAPI int owl_draw_renderer_state(struct owl_renderer *r)
 	owl_v3 color = { 1.0F, 1.0F, 1.0F };
 	static double previous_time = 0.0;
 	static double current_time = 0.0;
-	double fps = 0.0;
+	float fps = 0.0;
 
 	previous_time = current_time;
 	current_time = owl_plataform_get_time(r->plataform);
@@ -531,6 +531,20 @@ OWLAPI int owl_draw_renderer_state(struct owl_renderer *r)
 
 	snprintf(buffer, sizeof(buffer), "uniform_buffer_last_offset: %llu",
 		 r->uniform_buffer_last_offset);
+
+	owl_draw_text(r, buffer, position, color);
+
+	position[1] += 0.05F;
+
+	snprintf(buffer, sizeof(buffer), "color_memory_size: %llu",
+		 r->color_memory_size);
+
+	owl_draw_text(r, buffer, position, color);
+
+	position[1] += 0.05F;
+
+	snprintf(buffer, sizeof(buffer), "depth_memory_size: %llu",
+		 r->depth_memory_size);
 
 	owl_draw_text(r, buffer, position, color);
 

@@ -65,10 +65,12 @@ struct owl_renderer {
 	VkFormat depth_format;
 
 	VkImage color_image;
+	VkDeviceSize color_memory_size;
 	VkDeviceMemory color_memory;
 	VkImageView color_image_view;
 
 	VkImage depth_image;
+	VkDeviceSize depth_memory_size;
 	VkDeviceMemory depth_memory;
 	VkImageView depth_image_view;
 

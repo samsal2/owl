@@ -450,7 +450,6 @@ static int owl_renderer_find_depth_format(struct owl_renderer *r)
 	return 0;
 }
 
-/* TODO(samuel): refactor this function, it's way too big */
 static int owl_renderer_select_physical_device(struct owl_renderer *r)
 {
 	uint32_t i;
@@ -494,10 +493,17 @@ static int owl_renderer_select_physical_device(struct owl_renderer *r)
 		if (!ok)
 			continue;
 
+#if 0
 		ok = owl_renderer_request_present_mode(
 			r, VK_PRESENT_MODE_IMMEDIATE_KHR);
 		if (!ok)
 			continue;
+#else
+		ok = owl_renderer_request_present_mode(
+			r, VK_PRESENT_MODE_FIFO_KHR);
+		if (!ok)
+			continue;
+#endif
 
 		ok = owl_renderer_request_msaa(r, VK_SAMPLE_COUNT_2_BIT);
 		if (!ok)
@@ -651,6 +657,8 @@ static int owl_renderer_init_attachments(struct owl_renderer *r)
 					      r->color_memory, 0);
 		if (vk_result)
 			goto error_free_color_memory;
+
+		r->color_memory_size = requirements.size;
 	}
 
 	{
@@ -734,6 +742,8 @@ static int owl_renderer_init_attachments(struct owl_renderer *r)
 					      r->depth_memory, 0);
 		if (vk_result)
 			goto error_free_depth_memory;
+
+		r->depth_memory_size = requirements.size;
 	}
 	{
 		VkImageViewCreateInfo info;
