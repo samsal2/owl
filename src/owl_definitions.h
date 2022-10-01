@@ -29,19 +29,19 @@ typedef owl_v3 owl_m3[3];
 typedef owl_v4 owl_m4[4];
 
 struct owl_skybox_vertex {
-	owl_v3 position;
+  owl_v3 position;
 };
 
 struct owl_common_vertex {
-	owl_v3 position;
-	owl_v3 color;
-	owl_v2 uv;
+  owl_v3 position;
+  owl_v3 color;
+  owl_v2 uv;
 };
 
 struct owl_common_uniform {
-	owl_m4 projection;
-	owl_m4 view;
-	owl_m4 model;
+  owl_m4 projection;
+  owl_m4 view;
+  owl_m4 model;
 };
 
 #define OWL_OK 0

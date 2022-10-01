@@ -12,23 +12,23 @@ struct owl_cloth_simulation;
 struct owl_fluid_simulation;
 
 struct owl_quad {
-	/*
-     * 0 - x
-     * |   |
-     * x - 1
-     */
-	/** normalized top left corner position */
-	owl_v2 position0;
-	/** normalized bottom right corner position */
-	owl_v2 position1;
-	/** color blend value */
-	owl_v3 color;
-	/** normalized top left uv */
-	owl_v2 uv0;
-	/** normalized bottom right uv  */
-	owl_v2 uv1;
-	/** texture to draw */
-	struct owl_texture *texture;
+  /*
+   * 0 - x
+   * |   |
+   * x - 1
+   */
+  /** normalized top left corner position */
+  owl_v2 position0;
+  /** normalized bottom right corner position */
+  owl_v2 position1;
+  /** color blend value */
+  owl_v3 color;
+  /** normalized top left uv */
+  owl_v2 uv0;
+  /** normalized bottom right uv  */
+  owl_v2 uv1;
+  /** texture to draw */
+  struct owl_texture *texture;
 };
 
 /**
@@ -58,7 +58,7 @@ OWLAPI int owl_draw_skybox(struct owl_renderer *r);
  * @return int
  */
 OWLAPI int owl_draw_text(struct owl_renderer *r, char const *text,
-			 owl_v3 const position, owl_v3 const color);
+                         owl_v3 const position, owl_v3 const color);
 
 /**
  * @brief draw a model
@@ -69,7 +69,7 @@ OWLAPI int owl_draw_text(struct owl_renderer *r, char const *text,
  * @return int
  */
 OWLAPI int owl_draw_model(struct owl_renderer *r, struct owl_model const *model,
-			  owl_m4 matrix);
+                          owl_m4 matrix);
 
 /**
  * @brief draws the renderer debug state
@@ -87,7 +87,7 @@ OWLAPI int owl_draw_renderer_state(struct owl_renderer *r);
  * @return OWLAPI
  */
 OWLAPI int owl_draw_cloth_simulation(struct owl_renderer *r,
-				     struct owl_cloth_simulation *sim);
+                                     struct owl_cloth_simulation *sim);
 
 OWL_END_DECLARATIONS
 
