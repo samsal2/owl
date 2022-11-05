@@ -531,6 +531,7 @@ static int32_t owl_model_gltf_stride(cgltf_type type) {
   }
 }
 
+#if 0
 static int owl_model_load_mesh(struct owl_renderer *r, cgltf_mesh const *mesh,
                                struct owl_model_node *n,
                                struct owl_model_all_primitives *p,
@@ -664,6 +665,7 @@ static int owl_model_load_mesh(struct owl_renderer *r, cgltf_mesh const *mesh,
     }
   }
 }
+#endif
 
 static int owl_model_load_nodes(struct owl_renderer *r,
                                 struct cgltf_data const *gltf,
