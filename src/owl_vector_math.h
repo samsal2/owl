@@ -299,7 +299,7 @@ OWLAPI float owl_v2_magnitude(owl_v2 const v);
 
 OWLAPI float owl_v3_magnitude(owl_v3 const v);
 
-OWLAPI float owl_v4_magnitude(owl_v3 const v);
+OWLAPI float owl_v4_magnitude(owl_v4 const v);
 
 OWLAPI void owl_v3_normalize(owl_v3 const v, owl_v3 out);
 
